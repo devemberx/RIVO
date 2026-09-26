@@ -117,6 +117,7 @@ object CharacterArtwork {
 
     val hungryCharacters =
         mapOf(
+            "friend:mobi" to CharacterAsset(R.drawable.mobimon_mobi_hungry, translationYFraction = -35.24f / 1254f),
             "friend:luna" to CharacterAsset(R.drawable.mobimon_luna_hungry, visualScale = 0.87f),
         )
 

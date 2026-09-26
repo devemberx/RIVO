@@ -340,6 +340,7 @@ fun PetAvatar(
                     modifier = Modifier.fillMaxSize(),
                     fallbackAsset = CharacterArtwork.preview(friendId, equippedAccessory),
                     vehicleWarning = isSick,
+                    vehicleHungry = isHungry,
                     animateNormal = isAnimated && equippedLook == null,
                     motionEnabled = motionEnabled,
                 )

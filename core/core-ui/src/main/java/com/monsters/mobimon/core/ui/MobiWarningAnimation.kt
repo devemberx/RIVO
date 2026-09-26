@@ -149,6 +149,7 @@ fun MobiIdleBreathAnimation(
     contentDescription: String? = null,
     fallbackAsset: CharacterAsset = CharacterArtwork.characters.getValue("friend:mobi"),
     vehicleWarning: Boolean = false,
+    vehicleHungry: Boolean = false,
     animateNormal: Boolean = true,
     motionEnabled: Boolean = LocalMobiMonMotionEnabled.current,
 ) {
@@ -184,10 +185,22 @@ fun MobiIdleBreathAnimation(
     ) {
         if (showNormal) {
             Box(Modifier.matchParentSize().graphicsLayer { alpha = 1f - blend.opacity.value }) {
-                if (animateNormal) {
-                    NormalMobiIdleAnimation(Modifier.matchParentSize(), null, fallbackAsset)
+                if (vehicleHungry) {
+                    if (animateNormal) {
+                        NormalMobiHungryAnimation(
+                            modifier = Modifier.matchParentSize(),
+                            contentDescription = null,
+                            fallbackAsset = CharacterArtwork.hungry("friend:mobi"),
+                        )
+                    } else {
+                        CharacterAssetImage(CharacterArtwork.hungry("friend:mobi"), Modifier.matchParentSize(), null)
+                    }
                 } else {
-                    CharacterAssetImage(fallbackAsset, Modifier.matchParentSize(), null)
+                    if (animateNormal) {
+                        NormalMobiIdleAnimation(Modifier.matchParentSize(), null, fallbackAsset)
+                    } else {
+                        CharacterAssetImage(fallbackAsset, Modifier.matchParentSize(), null)
+                    }
                 }
             }
         }
