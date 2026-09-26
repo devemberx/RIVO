@@ -192,6 +192,80 @@ internal fun NormalMobiIdleAnimation(
     )
 }
 
+internal object MobiHungrySpriteCache {
+    const val ASSET_PATH = "characters/mobi/hungry/mobi_hungry_sprite.png"
+
+    @Volatile private var cached: ImageBitmap? = null
+
+    fun peek(): ImageBitmap? = cached
+
+    fun clear() {
+        cached = null
+    }
+
+    fun getOrLoad(context: Context): ImageBitmap? {
+        cached?.let { return it }
+        return synchronized(this) {
+            cached?.let { return it }
+            val assets = context.applicationContext.assets
+            val options =
+                BitmapFactory.Options().apply {
+                    inScaled = false
+                }
+            try {
+                assets.open(ASSET_PATH).use { stream ->
+                    val bitmap = requireNotNull(BitmapFactory.decodeStream(stream, null, options))
+                    require(
+                        bitmap.width == 256 * MobiIdleTimeline.COLUMNS && bitmap.height == 256 * MobiIdleTimeline.ROWS,
+                    )
+                    bitmap.asImageBitmap().also { cached = it }
+                }
+            } catch (_: java.io.IOException) {
+                null
+            }
+        }
+    }
+}
+
+@Composable
+internal fun NormalMobiHungryAnimation(
+    modifier: Modifier = Modifier,
+    contentDescription: String? = null,
+    fallbackAsset: CharacterAsset = CharacterArtwork.hungry("friend:mobi"),
+) {
+    val context = LocalContext.current.applicationContext
+    val sprite by produceState<ImageBitmap?>(initialValue = MobiHungrySpriteCache.peek(), context) {
+        value = withContext(Dispatchers.IO) { MobiHungrySpriteCache.getOrLoad(context) }
+    }
+    val sheet = sprite
+    if (sheet == null) {
+        CharacterAssetImage(fallbackAsset, modifier, contentDescription)
+        return
+    }
+    val elapsed = remember { mutableLongStateOf(0L) }
+    LaunchedEffect(sheet) {
+        val origin = withInfiniteAnimationFrameNanos { it }
+        while (isActive) {
+            elapsed.longValue = withInfiniteAnimationFrameNanos { it } - origin
+        }
+    }
+    Box(
+        modifier
+            .semantics { if (contentDescription != null) this.contentDescription = contentDescription }
+            .graphicsLayer {
+                // Hungry motion is authored in the atlas; do not add idle sway or breathing.
+                translationY = size.minDimension * fallbackAsset.translationYFraction
+                compositingStrategy = CompositingStrategy.Offscreen
+                transformOrigin = TransformOrigin(0.5f, 0.9f)
+                clip = false
+            }.mobiSpriteFrames(sheet, MobiIdleTimeline.COLUMNS, MobiIdleTimeline.ROWS) {
+                val time = elapsed.longValue
+                val frame = MobiIdleTimeline.frameAt(time)
+                frame + MobiIdleTimeline.blendAt(time, frame)
+            },
+    )
+}
+
 /** Shared fixed-canvas atlas draw. Time/progress is read only in draw, never bitmap allocation. */
 internal fun Modifier.mobiSpriteFrames(
     sheet: ImageBitmap,

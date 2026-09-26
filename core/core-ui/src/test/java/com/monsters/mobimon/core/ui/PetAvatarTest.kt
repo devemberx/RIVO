@@ -110,12 +110,27 @@ class PetAvatarTest {
     }
 
     @Test
+    fun mobiHungryAnimationCacheLoadsOneSheetAndReusesIt() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        val sprite = requireNotNull(MobiHungrySpriteCache.getOrLoad(context))
+        assertEquals(256 * 6, sprite.width)
+        assertEquals(256 * 4, sprite.height)
+        assertTrue(sprite === MobiHungrySpriteCache.getOrLoad(context))
+        assertEquals(
+            listOf("mobi_hungry_sprite.png"),
+            context.assets.list("characters/mobi/hungry")!!.toList(),
+        )
+    }
+
+    @Test
     fun lunaAnimationCacheLoadsTwentyFourFramesFromAssets() {
         val context =
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
         val frames = LunaAnimationCache.getOrLoadFrames(context)
-        org.junit.Assert.assertEquals(24, frames.size)
+        assertEquals(24, frames.size)
     }
 
     @Test
@@ -243,9 +258,11 @@ class PetAvatarTest {
     }
 
     @Test
-    fun hungryAndSickArtworkAreDefinedForLuna() {
+    fun hungryAndSickArtworkAreDefinedForMobiAndLuna() {
+        val mobiHungry = CharacterArtwork.hungry("friend:mobi")
         val lunaHungry = CharacterArtwork.hungry("friend:luna")
         val lunaSick = CharacterArtwork.sick("friend:luna")
+        assertNotNull(mobiHungry)
         assertNotNull(lunaHungry)
         assertNotNull(lunaSick)
         assertEquals(0.87f, lunaHungry.visualScale)
