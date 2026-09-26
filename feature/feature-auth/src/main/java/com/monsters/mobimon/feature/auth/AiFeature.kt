@@ -1,5 +1,9 @@
 package com.monsters.mobimon.feature.auth
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,10 +14,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -51,6 +59,7 @@ class AiFeature(
     private val authentication: GitHubAuthentication,
     private val conversation: ConversationProvider,
     private val networkStatus: ConversationNetworkStatus = AssumedOnlineConversationNetworkStatus,
+    private val speechInput: ConversationSpeechInput = UnavailableConversationSpeechInput,
 ) : FeatureEntry {
     override val routes = setOf(AiRoute.COPILOT, AiRoute.CONVERSATION)
 
@@ -89,10 +98,34 @@ class AiFeature(
         val online by networkStatus.online.collectAsStateWithLifecycle()
         val conversationFactory =
             remember(this) {
-                viewModelFactory { initializer { ConversationViewModel(authentication, conversation, networkStatus) } }
+                viewModelFactory {
+                    initializer {
+                        ConversationViewModel(
+                            authentication,
+                            conversation,
+                            networkStatus,
+                            speechInput,
+                        )
+                    }
+                }
             }
         val conversationModel: ConversationViewModel = viewModel(factory = conversationFactory)
         val conversationState by conversationModel.state.collectAsStateWithLifecycle()
+        val context = LocalContext.current
+        var voicePermissionRequest by remember(conversationModel) { mutableLongStateOf(0L) }
+        val microphonePermission =
+            rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+                conversationModel.voicePermissionResult(voicePermissionRequest, granted)
+            }
+        val startVoice: () -> Unit = {
+            val granted =
+                ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+                    PackageManager.PERMISSION_GRANTED
+            conversationModel.requestVoice(granted)?.let { request ->
+                voicePermissionRequest = request
+                microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
+            }
+        }
         val friendId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.FRIEND) ?: "friend:mobi"
         LaunchedEffect(conversationModel, profile?.id, friendId) {
             profile?.id?.let { conversationModel.bind(it, friendId) }
@@ -105,6 +138,17 @@ class AiFeature(
                     awaitCancellation()
                 } finally {
                     conversationModel.deactivate()
+                }
+            }
+        }
+        LaunchedEffect(conversationModel, lifecycle, route) {
+            if (route != AiRoute.CONVERSATION) return@LaunchedEffect
+            lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                conversationModel.setVoiceResumed(true)
+                try {
+                    awaitCancellation()
+                } finally {
+                    conversationModel.setVoiceResumed(false)
                 }
             }
         }
@@ -200,6 +244,11 @@ class AiFeature(
                     onNewConversation = conversationModel::newConversation,
                     onReturnHome = navigator.returnHome,
                     onRecheckConnection = conversationModel::retryConnection,
+                    onStartVoice = startVoice,
+                    onStopVoice = conversationModel::stopVoice,
+                    onCancelVoice = conversationModel::cancelVoice,
+                    onDismissVoiceProblem = conversationModel::dismissVoiceProblem,
+                    onFinishVoiceReview = conversationModel::finishVoiceReview,
                 )
                 return@Column
             }

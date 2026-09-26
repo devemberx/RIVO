@@ -75,7 +75,9 @@ import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import com.monsters.mobimon.feature.auth.AssumedOnlineConversationNetworkStatus
 import com.monsters.mobimon.feature.auth.ConversationNetworkStatus
+import com.monsters.mobimon.feature.auth.ConversationSpeechInput
 import com.monsters.mobimon.feature.auth.ConversationViewModel
+import com.monsters.mobimon.feature.auth.UnavailableConversationSpeechInput
 import com.monsters.mobimon.runtime.AppUseStateSource
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
@@ -103,12 +105,22 @@ fun MobiMonApp(
     conversation: ConversationProvider,
     vehicle: VehiclePresentation,
     networkStatus: ConversationNetworkStatus = AssumedOnlineConversationNetworkStatus,
+    speechInput: ConversationSpeechInput = UnavailableConversationSpeechInput,
 ) {
     val state by appUse.states.collectAsStateWithLifecycle()
     val session by authentication.session.collectAsStateWithLifecycle()
     val conversationFactory =
-        remember(authentication, conversation, networkStatus) {
-            viewModelFactory { initializer { ConversationViewModel(authentication, conversation, networkStatus) } }
+        remember(authentication, conversation, networkStatus, speechInput) {
+            viewModelFactory {
+                initializer {
+                    ConversationViewModel(
+                        authentication,
+                        conversation,
+                        networkStatus,
+                        speechInput,
+                    )
+                }
+            }
         }
     val conversationModel: ConversationViewModel = viewModel(factory = conversationFactory)
     val parked = vehicle.snapshot().parkedVerified

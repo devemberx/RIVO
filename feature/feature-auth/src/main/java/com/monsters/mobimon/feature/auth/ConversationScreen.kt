@@ -50,7 +50,7 @@ import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.mobiMonReferenceTextStyle
 import com.monsters.mobimon.core.ui.MobiMonColors as Colors
 
-/** Keyboard chat presentation. The caller owns readiness, messages and request lifecycle. */
+/** Conversation presentation. The caller owns readiness, input and request lifecycles. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ConversationScreen(
@@ -74,6 +74,11 @@ fun ConversationScreen(
     onReturnHome: () -> Unit = onBack,
     onRecheckConnection: () -> Unit = onRetry,
     parkingBadgeConfirmed: Boolean = interactionAllowed,
+    onStartVoice: () -> Unit = {},
+    onStopVoice: () -> Unit = {},
+    onCancelVoice: () -> Unit = {},
+    onDismissVoiceProblem: () -> Unit = {},
+    onFinishVoiceReview: () -> Unit = {},
 ) {
     val friend = stringResource(if (friendId == "friend:luna") R.string.copilot_luna else R.string.copilot_mobi)
     val title = stringResource(R.string.chat_title)
@@ -94,15 +99,40 @@ fun ConversationScreen(
         if (ViewCompat.getRootWindowInsets(view)?.isVisible(WindowInsetsCompat.Type.ime()) == true) {
             keyboard?.hide()
             focus.clearFocus()
+        } else if (state.voice.capturing || state.voice.phase == VoiceInputPhase.PERMISSION) {
+            onCancelVoice()
+        } else if (state.voice.phase == VoiceInputPhase.REVIEW) {
+            onFinishVoiceReview()
         } else {
             onBack()
         }
     }
     BackHandler(enabled = imeVisible && interactionAllowed) { back() }
+    BackHandler(
+        enabled =
+            interactionAllowed &&
+                (
+                    state.voice.capturing ||
+                        state.voice.phase in
+                        setOf(
+                            VoiceInputPhase.PERMISSION,
+                            VoiceInputPhase.REVIEW,
+                        )
+                ),
+    ) {
+        back()
+    }
     BackHandler(enabled = !interactionAllowed) { onReturnHome() }
     BackHandler(enabled = connectionDialog) { onReturnHome() }
-    LaunchedEffect(interactionAllowed, connectionDialog) {
+    LaunchedEffect(interactionAllowed, connectionDialog, onCancelVoice) {
         if (!interactionAllowed || connectionDialog) {
+            onCancelVoice()
+            keyboard?.hide()
+            focus.clearFocus()
+        }
+    }
+    LaunchedEffect(state.voice.capturing, state.voice.phase == VoiceInputPhase.PERMISSION) {
+        if (state.voice.capturing || state.voice.phase == VoiceInputPhase.PERMISSION) {
             keyboard?.hide()
             focus.clearFocus()
         }
@@ -158,6 +188,10 @@ fun ConversationScreen(
                         onNewConversation,
                         onRetry,
                         onDismissFailure,
+                        onStartVoice,
+                        onStopVoice,
+                        onCancelVoice,
+                        onDismissVoiceProblem,
                     )
                     ConversationAuthBadge(
                         connection = state.connection,
@@ -198,6 +232,10 @@ fun ConversationScreen(
                         onNewConversation,
                         onRetry,
                         onDismissFailure,
+                        onStartVoice,
+                        onStopVoice,
+                        onCancelVoice,
+                        onDismissVoiceProblem,
                     )
                 }
             }

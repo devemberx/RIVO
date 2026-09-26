@@ -3,6 +3,7 @@ package com.monsters.mobimon.feature.auth
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -17,6 +18,7 @@ import com.monsters.mobimon.core.domain.GitHubSession
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -28,8 +30,10 @@ class ConversationViewModel(
     private val authentication: GitHubAuthentication,
     private val provider: ConversationProvider,
     private val networkStatus: ConversationNetworkStatus = AssumedOnlineConversationNetworkStatus,
+    private val speechInput: ConversationSpeechInput = UnavailableConversationSpeechInput,
 ) : ViewModel() {
-    private val mutableState = MutableStateFlow(ConversationUiState())
+    private val mutableState =
+        MutableStateFlow(ConversationUiState(voice = VoiceInputState(available = speechInput.isAvailable())))
     val state = mutableState.asStateFlow()
     var draft by mutableStateOf(TextFieldValue())
         private set
@@ -48,6 +52,14 @@ class ConversationViewModel(
     private var checkWork: Job? = null
     private var authenticationRetry: Job? = null
     private var history = emptyList<ConversationMessage>()
+    private var voiceGeneration = 0L
+    private var voiceTimer: Job? = null
+    private var voiceTimeout: Job? = null
+
+    // RESUMED is independent of Park-driven activation restarts; only the lifecycle owner changes it.
+    private var voiceResumed = false
+    private var voicePermissionGranted = false
+    private var returnToVoiceReview = false
 
     init {
         viewModelScope.launch {
@@ -60,6 +72,7 @@ class ConversationViewModel(
                     fail(ConversationProblem.NETWORK)
                 }
                 if (checkWork?.isActive == true || authenticationRetry?.isActive == true) {
+                    cancelVoice()
                     cancelCheck()
                     mutableState.value =
                         state.value.copy(
@@ -109,6 +122,7 @@ class ConversationViewModel(
                         }
                     }
                     GitHubSession.Restoring -> {
+                        cancelVoice()
                         if (!retryingAuthentication) {
                             cancel()
                             cancelCheck()
@@ -116,6 +130,7 @@ class ConversationViewModel(
                         }
                     }
                     is GitHubSession.Failure -> {
+                        cancelVoice()
                         if (!retryingAuthentication ||
                             session.problem !in setOf(AuthenticationProblem.NETWORK, AuthenticationProblem.PROVIDER)
                         ) {
@@ -147,6 +162,7 @@ class ConversationViewModel(
                         }
                     }
                     GitHubSession.SignedOut -> {
+                        cancelVoice()
                         cancel()
                         cancelCheck()
                         mutableState.value =
@@ -166,6 +182,7 @@ class ConversationViewModel(
             profileId = profile
         }
         if (friendId != friend) {
+            cancelVoice()
             cancel()
             conversationId = UUID.randomUUID().toString()
             friendId = friend
@@ -182,6 +199,7 @@ class ConversationViewModel(
         active = true
         allowed = interactionAllowed
         if (!allowed) {
+            cancelVoice()
             cancel()
             if (!foregroundAllowed) cancelCheck()
         } else if (state.value.connection == ConversationConnection.UNAVAILABLE &&
@@ -200,6 +218,7 @@ class ConversationViewModel(
         foregroundManaged = true
         foregroundAllowed = interactionAllowed
         if (!checkAllowed()) {
+            cancelVoice()
             cancelCheck()
             cancel()
         } else if (interactionAllowed &&
@@ -216,6 +235,7 @@ class ConversationViewModel(
     }
 
     fun deactivate() {
+        cancelVoice()
         active = false
         allowed = false
         cancel()
@@ -223,9 +243,222 @@ class ConversationViewModel(
     }
 
     fun edit(value: TextFieldValue) {
-        if (!active || !allowed || state.value.replyPending || state.value.failed) return
+        if (!active ||
+            !allowed ||
+            state.value.replyPending ||
+            state.value.failed ||
+            state.value.voice.capturing ||
+            state.value.voice.phase == VoiceInputPhase.PERMISSION
+        ) {
+            return
+        }
         draft = value
+        if (state.value.voice.problem != null) updateVoice(state.value.voice.copy(problem = null))
     }
+
+    fun setVoiceResumed(resumed: Boolean) {
+        voiceResumed = resumed
+        if (resumed && !state.value.voice.capturing) {
+            updateVoice(state.value.voice.copy(available = speechInput.isAvailable()))
+        }
+        if (!resumed && state.value.voice.capturing) {
+            cancelVoice()
+        } else if (resumed && voicePermissionGranted && state.value.voice.phase == VoiceInputPhase.PERMISSION) {
+            startVoice(state.value.voice.sessionId)
+        }
+    }
+
+    /** A permission reply is accepted only for this foreground request, including after the native dialog pauses us. */
+    fun requestVoice(permissionGranted: Boolean): Long? {
+        if (!canUseVoice() ||
+            !voiceResumed ||
+            state.value.voice.capturing ||
+            state.value.voice.phase == VoiceInputPhase.PERMISSION
+        ) {
+            return null
+        }
+        val available = speechInput.isAvailable()
+        if (!available) {
+            updateVoice(state.value.voice.copy(available = false, problem = VoiceInputProblem.UNAVAILABLE))
+            return null
+        }
+        returnToVoiceReview = state.value.voice.phase == VoiceInputPhase.REVIEW
+        voicePermissionGranted = permissionGranted
+        val session = ++voiceGeneration
+        updateVoice(VoiceInputState(available = true, phase = VoiceInputPhase.PERMISSION, sessionId = session))
+        if (permissionGranted) {
+            startVoice(session)
+            return null
+        }
+        return session
+    }
+
+    fun voicePermissionResult(
+        session: Long,
+        granted: Boolean,
+    ) {
+        if (session != voiceGeneration ||
+            state.value.voice.phase != VoiceInputPhase.PERMISSION ||
+            !canUseVoice()
+        ) {
+            return
+        }
+        if (!granted) {
+            finishVoice(problem = VoiceInputProblem.PERMISSION)
+            return
+        }
+        voicePermissionGranted = true
+        if (voiceResumed) startVoice(session)
+    }
+
+    fun stopVoice() {
+        if (state.value.voice.phase != VoiceInputPhase.LISTENING || !canUseVoice()) return
+        waitForVoiceResult(state.value.voice.sessionId)
+        speechInput.stop()
+    }
+
+    fun cancelVoice() {
+        val wasCapturing = state.value.voice.capturing
+        voiceGeneration++
+        voicePermissionGranted = false
+        voiceTimer?.cancel()
+        voiceTimeout?.cancel()
+        if (wasCapturing) speechInput.cancel()
+        updateVoice(
+            VoiceInputState(
+                available = state.value.voice.available,
+                phase =
+                    if ((returnToVoiceReview || state.value.voice.phase == VoiceInputPhase.REVIEW) &&
+                        draft.text.isNotBlank()
+                    ) {
+                        VoiceInputPhase.REVIEW
+                    } else {
+                        VoiceInputPhase.IDLE
+                    },
+            ),
+        )
+    }
+
+    fun dismissVoiceProblem() = updateVoice(state.value.voice.copy(problem = null))
+
+    fun finishVoiceReview() {
+        returnToVoiceReview = false
+        updateVoice(state.value.voice.copy(phase = VoiceInputPhase.IDLE))
+    }
+
+    private fun startVoice(session: Long) {
+        if (!canUseVoice() || !voiceResumed || session != voiceGeneration) {
+            cancelVoice()
+            return
+        }
+        updateVoice(state.value.voice.copy(phase = VoiceInputPhase.STARTING))
+        voiceTimeout?.cancel()
+        voiceTimeout =
+            viewModelScope.launch {
+                delay(60_000)
+                if (voiceCurrent(session)) finishVoice(problem = VoiceInputProblem.TIMEOUT)
+            }
+        speechInput.start(
+            object : ConversationSpeechInput.Listener {
+                override fun onReady() {
+                    if (!voiceCurrent(session) || state.value.voice.phase != VoiceInputPhase.STARTING) return
+                    updateVoice(state.value.voice.copy(phase = VoiceInputPhase.LISTENING))
+                    voiceTimer =
+                        viewModelScope.launch {
+                            while (voiceCurrent(session) && state.value.voice.phase == VoiceInputPhase.LISTENING) {
+                                delay(1_000)
+                                if (voiceCurrent(session) && state.value.voice.phase == VoiceInputPhase.LISTENING) {
+                                    updateVoice(
+                                        state.value.voice.copy(
+                                            elapsedSeconds =
+                                                state.value.voice.elapsedSeconds + 1,
+                                        ),
+                                    )
+                                }
+                            }
+                        }
+                }
+
+                override fun onLevel(level: Float) {
+                    if (voiceCurrent(session) &&
+                        state.value.voice.phase == VoiceInputPhase.LISTENING &&
+                        level.isFinite()
+                    ) {
+                        updateVoice(
+                            state.value.voice.copy(
+                                levels = (state.value.voice.levels + level.coerceIn(0f, 1f)).takeLast(64),
+                            ),
+                        )
+                    }
+                }
+
+                override fun onPartial(text: String) {
+                    if (voiceCurrent(session)) {
+                        updateVoice(state.value.voice.copy(partial = text.take(ConversationLimits.INPUT_CHARACTERS)))
+                    }
+                }
+
+                override fun onEndOfSpeech() {
+                    if (voiceCurrent(session)) waitForVoiceResult(session)
+                }
+
+                override fun onResult(text: String) {
+                    if (!voiceCurrent(session)) return
+                    when {
+                        text.isBlank() -> finishVoice(problem = VoiceInputProblem.NO_MATCH)
+                        text.length > ConversationLimits.INPUT_CHARACTERS ->
+                            finishVoice(
+                                problem = VoiceInputProblem.TOO_LONG,
+                            )
+                        else -> {
+                            draft = TextFieldValue(text, TextRange(text.length))
+                            returnToVoiceReview = true
+                            finishVoice()
+                        }
+                    }
+                }
+
+                override fun onFailure(problem: VoiceInputProblem) {
+                    if (voiceCurrent(session)) finishVoice(problem)
+                }
+            },
+        )
+    }
+
+    private fun waitForVoiceResult(session: Long) {
+        voiceTimer?.cancel()
+        updateVoice(state.value.voice.copy(phase = VoiceInputPhase.STOPPING))
+        voiceTimeout?.cancel()
+        voiceTimeout =
+            viewModelScope.launch {
+                delay(5_000)
+                if (voiceCurrent(session)) finishVoice(problem = VoiceInputProblem.TIMEOUT)
+            }
+    }
+
+    private fun finishVoice(problem: VoiceInputProblem? = null) {
+        cancelVoice()
+        updateVoice(state.value.voice.copy(problem = problem))
+    }
+
+    private fun updateVoice(voice: VoiceInputState) {
+        mutableState.value = state.value.copy(voice = voice)
+    }
+
+    private fun voiceCurrent(session: Long) =
+        session == voiceGeneration && state.value.voice.capturing && voiceResumed && canUseVoice()
+
+    private fun canUseVoice() =
+        active &&
+            allowed &&
+            interactionAvailable() &&
+            profileId != null &&
+            accountId != null &&
+            (authentication.session.value as? GitHubSession.Authenticated)?.account?.id == accountId &&
+            !state.value.replyPending &&
+            !state.value.failed &&
+            state.value.connectionProblem == null &&
+            !state.value.connectionRetrying
 
     fun send(text: String = draft.text) = sendInternal(text, retry = false)
 
@@ -234,6 +467,8 @@ class ConversationViewModel(
         retry: Boolean,
     ) {
         if (!canInteract() ||
+            state.value.voice.capturing ||
+            state.value.voice.phase == VoiceInputPhase.PERMISSION ||
             work?.isActive == true ||
             (state.value.failed && !retry) ||
             text.isBlank() ||
@@ -250,6 +485,9 @@ class ConversationViewModel(
             return
         }
         val account = accountId ?: return
+        cancelVoice()
+        returnToVoiceReview = false
+        updateVoice(state.value.voice.copy(phase = VoiceInputPhase.IDLE))
         val request = ++generation
         val user = ConversationMessage((++messageId).toString(), text, true)
         draft = draft.copy(composition = null)
@@ -300,6 +538,7 @@ class ConversationViewModel(
     fun retryConnection() {
         if (!interactionAvailable() || checkWork?.isActive == true || authenticationRetry?.isActive == true) return
         if (!networkStatus.isOnline()) {
+            cancelVoice()
             mutableState.value =
                 state.value.copy(
                     connection = ConversationConnection.UNAVAILABLE,
@@ -391,6 +630,9 @@ class ConversationViewModel(
 
     fun newConversation() {
         if (!active || !allowed) return
+        cancelVoice()
+        returnToVoiceReview = false
+        updateVoice(state.value.voice.copy(phase = VoiceInputPhase.IDLE))
         cancel()
         history = emptyList()
         conversationId = UUID.randomUUID().toString()
@@ -399,12 +641,19 @@ class ConversationViewModel(
     }
 
     private fun clear() {
+        cancelVoice()
+        returnToVoiceReview = false
         cancel()
         cancelCheck()
         history = emptyList()
         conversationId = UUID.randomUUID().toString()
         draft = TextFieldValue()
-        mutableState.value = ConversationUiState()
+        mutableState.value = ConversationUiState(voice = VoiceInputState(available = speechInput.isAvailable()))
+    }
+
+    override fun onCleared() {
+        cancelVoice()
+        super.onCleared()
     }
 
     private fun changeAccount(next: Long?) {
@@ -445,6 +694,7 @@ class ConversationViewModel(
         val account = (authentication.session.value as? GitHubSession.Authenticated)?.account?.id ?: return
         if (account != accountId) return
         if (!networkStatus.isOnline()) {
+            cancelVoice()
             mutableState.value =
                 state.value.copy(
                     connection = ConversationConnection.UNAVAILABLE,
@@ -465,6 +715,7 @@ class ConversationViewModel(
                 val result = safelyWithinWait { provider.connect(account) }
                 if (request != checkGeneration || !checkAllowed() || account != accountId) return@launch
                 checkWork = null
+                if (result is ConversationResult.Failure) cancelVoice()
                 mutableState.value =
                     when (result) {
                         is ConversationResult.Success -> {

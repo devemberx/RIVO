@@ -192,8 +192,7 @@ Keep the attempted user turn during recovery. After a network or timeout dialog
 closes, show its inline failure until Edit or Retry. Align the single-line warning
 and actions with the [failed-reply export](ui/conversation/reply-failed.svg). Edit
 removes the unanswered user bubble while preserving the draft and completed
-history; selection and IME composition changes do not dismiss the failure. The
-checked-in exports still show the older follow-up action and bubble appearance.
+history; selection and IME composition changes do not dismiss the failure.
 
 When Park and AAOS allow chat, show Copilot readiness and disable Send until the
 connection is verified. Keep the destination visible during initial loading. An
@@ -212,9 +211,21 @@ Unverified parking shows the [parking dialog](ui/conversation/parking-required.s
 disables editing and hides the IME. Home and Back preserve the draft. Verified
 parking removes the dialog; AAOS restrictions remove the screen.
 
-Hide unsupported voice controls. Future voice input requires permission, transcript
-review and explicit Send; stopping never submits.
-Playback yields to calls/navigation; restrictions stop playback and recording.
+Use the updated [recording](ui/conversation/voice-listening.svg) and
+[review](ui/conversation/voice-review.svg) geometry. The composer contains separate
+microphone and Send actions; recording replaces the microphone with Stop and keeps
+Send disabled. Cancel, the live 64-bar waveform, Stop and Send retain their exported
+positions. Put the recording timer below the composer. Preserve 26px draft text,
+24px recording guidance and 18px footer text at reference scale; native touch bounds
+remain at least 76dp without overlap at AAOS density.
+
+Ask microphone permission on explicit activation. Stop finishes recognition into an
+editable draft; only explicit Send submits. Review retains the microphone for another
+recording. Cancel, Back, background and restrictions stop recording and preserve the
+previous draft. Denied permission, unavailable models/services, silence and errors
+offer keyboard input and a recoverable explanation. Hide the microphone when no
+recognizer exists. Review guidance is exposed to accessibility without adding a
+second visible caption. Playback remains planned; it must yield to calls/navigation.
 
 Use the existing footer to name GitHub Copilot, disclose dialogue/companion-name
 transmission and warn about AI accuracy. Provider retention/training policies and

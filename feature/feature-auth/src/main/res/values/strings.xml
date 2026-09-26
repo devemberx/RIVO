@@ -159,4 +159,22 @@
     <string name="chat_retry">다시 보내기</string>
     <string name="chat_return">내용 수정</string>
     <string name="chat_failure_subtitle">보내지 못한 메시지를 보관하고 있어요.</string>
+  <string name="chat_voice_start">음성으로 입력</string>
+  <string name="chat_voice_recording">음성 입력 중</string>
+  <string name="chat_voice_cancel">음성 입력 취소</string>
+  <string name="chat_voice_stop">녹음 마치고 내용 확인</string>
+  <string name="chat_voice_listening">듣고 있어요 · %1$02d:%2$02d</string>
+  <string name="chat_voice_review">음성을 확인한 뒤 보내 주세요. 내용을 눌러 수정할 수 있어요.</string>
+  <string name="chat_voice_starting">마이크를 준비하고 있어요</string>
+  <string name="chat_voice_stopping">음성을 글자로 바꾸고 있어요</string>
+  <string name="chat_voice_permission_pending">마이크 사용을 허용해 주세요</string>
+  <string name="chat_voice_permission">마이크 권한이 필요해요. 기기의 앱 권한 설정을 확인하거나 글자로 입력해 주세요.</string>
+  <string name="chat_voice_unavailable">이 기기에서 음성 입력을 사용할 수 없어요. 글자로 입력해 주세요.</string>
+  <string name="chat_voice_no_match">음성을 알아듣지 못했어요. 다시 녹음하거나 글자로 입력해 주세요.</string>
+  <string name="chat_voice_audio">마이크를 사용할 수 없어요. 통화가 끝난 뒤 다시 시도해 주세요.</string>
+  <string name="chat_voice_busy">다른 앱이 음성 입력을 사용하고 있어요. 잠시 후 다시 시도해 주세요.</string>
+  <string name="chat_voice_language">한국어 음성 모델이 필요해요. 기기의 음성 인식 설정을 확인해 주세요.</string>
+  <string name="chat_voice_network">오프라인 음성 인식을 사용할 수 없어요. 글자로 입력해 주세요.</string>
+  <string name="chat_voice_service">음성 입력을 마치지 못했어요. 다시 녹음하거나 글자로 입력해 주세요.</string>
+  <string name="chat_voice_timeout">음성 입력 시간이 지났어요. 다시 녹음해 주세요.</string>
 </resources>

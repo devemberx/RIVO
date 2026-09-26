@@ -8,12 +8,12 @@ This document owns technical contracts. [DESIGN.md](DESIGN.md) owns UX,
 
 Implemented: Home, menu, Settings, customization, Vehicle and Quest routes;
 Room storage, DataStore preferences; GitHub device authentication and encrypted
-session restoration; experimental Copilot text conversation; Mobi/Luna artwork and
+session restoration; experimental Copilot text conversation and system-service Korean voice input; Mobi/Luna artwork and
 breathing animation.
 
 Vehicle input and driving evaluation are Debug simulations. Release vehicle data
 is unavailable. Debug raw VSS sources are interpreted before they become vehicle
-snapshots; production VSS input still needs a verified adapter. Voice, condition
+snapshots; production VSS input still needs a verified adapter. Condition
 expressions and background tracking remain unimplemented. The floating companion
 overlay exists behind explicit opt-in and system permission; OEM launcher placement
 and lifecycle still need verification.
@@ -171,6 +171,26 @@ New conversation clears the draft and exchanges. Leaving, backgrounding, parking
 or companion changes cancel pending work; request generations reject late replies.
 The conversation route displays a blocking parking dialog while parking is unverified;
 its Home action returns to Home, retaining the draft in Activity memory.
+
+`app` binds the feature-owned `ConversationSpeechInput` interface to Android
+`SpeechRecognizer`. The adapter prefers the dedicated on-device recognizer when
+available; otherwise it uses the configured service with `ko-KR`, free-form input
+and `EXTRA_PREFER_OFFLINE`. That flag is a [service-dependent preference](https://developer.android.com/reference/android/speech/RecognizerIntent#EXTRA_PREFER_OFFLINE),
+not a guarantee against cloud use while connected. The tested AAOS 14 image has
+GoogleTTSRecognitionService and an installed Korean model; its default microphone
+path supports offline recognition although the dedicated on-device API is unavailable.
+Other OEM images, absent models and physical vehicle microphones need verification.
+
+Voice starts only from an explicit microphone action on a resumed, permitted
+conversation. Request microphone permission before opening the recognizer. Keep
+partial results separate from the draft; a final nonempty, bounded result becomes
+an editable review draft. Stop waits at most five seconds for a final result and
+never sends; recording has a sixty-second total bound. Cancellation, background,
+navigation, restriction or ownership changes release the recognizer and invalidate
+late callbacks. Cancellation and errors preserve the previous draft; account/profile
+changes follow the existing clearing contract. The app neither stores nor logs audio.
+Explicit Send uses the existing guarded Copilot path; offline STT does not make
+Copilot conversation offline.
 
 On foreground entry, the Activity-scoped conversation ViewModel waits for an
 authenticated session and verified Park/AAOS allowance, then calls `connect` to

@@ -19,4 +19,5 @@ data class ConversationUiState(
     val problem: ConversationProblem? = null,
     val connectionProblem: ConversationProblem? = null,
     val connectionRetrying: Boolean = false,
+    val voice: VoiceInputState = VoiceInputState(),
 )
