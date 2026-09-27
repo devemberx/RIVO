@@ -526,7 +526,6 @@ private fun CompanionStatusPanel(
                         "friend:mobi" ->
                             when (mood) {
                                 VehicleMood.GOOD -> R.drawable.mobi_vehicle_normal
-                                VehicleMood.ATTENTION -> R.drawable.mobi_vehicle_hungry
                                 else -> null
                             }
                         "friend:luna" ->

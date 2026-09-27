@@ -278,6 +278,8 @@ internal fun NormalMobiHungryAnimation(
             .semantics { if (contentDescription != null) this.contentDescription = contentDescription }
             .graphicsLayer {
                 // Hungry motion is authored in the atlas; do not add idle sway or breathing.
+                scaleX = MobiIdleTimeline.scaleXAt(0L)
+                scaleY = MobiIdleTimeline.scaleYAt(0L)
                 translationY = size.minDimension * fallbackAsset.translationYFraction
                 compositingStrategy = CompositingStrategy.Offscreen
                 transformOrigin = TransformOrigin(0.5f, 0.9f)

@@ -86,4 +86,31 @@ class MobiWarningAnimationTest {
         compose.waitForIdle()
         assertEquals(0f, blend.opacity.value)
     }
+
+    @Test
+    fun hungryCrossfadeAnimatesOpacityOverTwoHundredMilliseconds() {
+        val hungry = mutableStateOf(false)
+        val blend = MobiHungryBlend()
+        compose.mainClock.autoAdvance = false
+        compose.setContent { LaunchedEffect(hungry.value) { blend.target(hungry.value, true) } }
+
+        compose.runOnIdle {
+            hungry.value = true
+            Snapshot.sendApplyNotifications()
+        }
+        compose.mainClock.advanceTimeByFrame()
+        compose.mainClock.advanceTimeBy(100)
+        val halfway = blend.opacity.value
+        assertTrue(halfway in 0.35f..0.65f)
+        compose.mainClock.advanceTimeBy(240)
+        assertEquals(1f, blend.opacity.value)
+
+        compose.runOnIdle {
+            hungry.value = false
+            Snapshot.sendApplyNotifications()
+        }
+        compose.mainClock.advanceTimeByFrame()
+        compose.mainClock.advanceTimeBy(240)
+        assertEquals(0f, blend.opacity.value)
+    }
 }
