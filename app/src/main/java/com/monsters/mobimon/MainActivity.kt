@@ -18,6 +18,7 @@ import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.feature.auth.ConversationNetworkStatus
+import com.monsters.mobimon.feature.auth.ConversationSpeechInput
 import com.monsters.mobimon.feature.vehicle.VehicleCardSelectionStore
 import com.monsters.mobimon.runtime.AppUseStateSource
 import com.monsters.mobimon.service.FloatingCompanionService
@@ -43,6 +44,8 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var networkStatus: ConversationNetworkStatus
 
+    @Inject lateinit var speechInput: ConversationSpeechInput
+
     @Inject lateinit var vehicle: VehiclePresentation
 
     @Inject lateinit var points: PointEconomy
@@ -64,6 +67,7 @@ class MainActivity : ComponentActivity() {
                 conversation,
                 vehicle,
                 networkStatus,
+                speechInput,
                 points,
                 questCatalog,
                 vehicleCards,

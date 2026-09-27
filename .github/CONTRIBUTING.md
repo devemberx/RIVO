@@ -46,7 +46,8 @@ binaries, even when the checkout is under `/mnt/c`.
 - Confirm the module, dependency, task, or integration in source and build files;
   design documents may describe work that is not implemented yet.
 
-Validate an issue locally with Python 3.9 or newer:
+The issue and PR validators use Python 3 and only its standard library.
+Validate an issue locally:
 
 ```bash
 python3 scripts/github/validate_issue.py --title 'Restore the session on startup' --body-file /tmp/issue.md

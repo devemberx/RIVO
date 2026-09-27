@@ -1,13 +1,10 @@
 package com.monsters.mobimon.core.ui
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.paddingFromBaseline
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -90,55 +87,43 @@ fun MobiMonParkingBadge(
         color = MobiMonColors.panel,
         contentColor = foreground,
     ) {
-        if (positioned && !restricted) {
-            Box(Modifier.fillMaxSize()) {
-                Icon(
-                    painterResource(R.drawable.mobimon_parking),
-                    contentDescription = null,
-                    modifier =
-                        Modifier.offset(62.dp * scale, 18.dp * scale).size(40.dp * scale).testTag("parking-icon"),
-                )
-                Text(
-                    status,
-                    Modifier.offset(127.65.dp * scale, 7.dp * scale).paddingFromBaseline(top = 42.dp * scale),
-                    style = textStyle,
-                    maxLines = 1,
-                )
-            }
-        } else {
-            Row(
-                Modifier
-                    .then(
-                        if (positioned) {
-                            Modifier.fillMaxSize()
-                        } else {
-                            Modifier
-                                .widthIn(min = width)
-                                .heightIn(min = 76.dp * scale)
-                                .padding(horizontal = 24.dp * scale, vertical = 12.dp * scale)
-                        },
-                    ),
-                horizontalArrangement =
-                    Arrangement.spacedBy(
-                        (if (restricted) 16.dp else 25.65.dp) * scale,
-                        Alignment.CenterHorizontally,
-                    ),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    painterResource(
-                        if (restricted) R.drawable.mobimon_parking_unconfirmed else R.drawable.mobimon_parking,
-                    ),
-                    contentDescription = null,
-                    modifier = Modifier.size(40.dp * scale).testTag("parking-icon"),
-                )
-                Text(
-                    status,
-                    modifier = if (positioned) Modifier else Modifier.weight(1f, fill = false),
-                    style = textStyle,
-                    maxLines = 1,
-                )
-            }
+        Row(
+            Modifier
+                .then(
+                    if (positioned) {
+                        Modifier.fillMaxSize()
+                    } else {
+                        Modifier
+                            .widthIn(min = width)
+                            .heightIn(min = 76.dp * scale)
+                            .padding(horizontal = 24.dp * scale, vertical = 12.dp * scale)
+                    },
+                ),
+            horizontalArrangement =
+                Arrangement.spacedBy(
+                    (if (restricted) 24.dp else 25.65.dp) * scale,
+                    Alignment.CenterHorizontally,
+                ),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                painterResource(
+                    if (restricted) R.drawable.mobimon_parking_unconfirmed else R.drawable.mobimon_parking,
+                ),
+                contentDescription = null,
+                modifier =
+                    Modifier
+                        .size(
+                            (if (restricted) 20.dp else 40.dp) * scale,
+                            (if (restricted) 24.dp else 40.dp) * scale,
+                        ).testTag("parking-icon"),
+            )
+            Text(
+                status,
+                modifier = if (positioned) Modifier else Modifier.weight(1f, fill = false),
+                style = textStyle,
+                maxLines = 1,
+            )
         }
     }
 }

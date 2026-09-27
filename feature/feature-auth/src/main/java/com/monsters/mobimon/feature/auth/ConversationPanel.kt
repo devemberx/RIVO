@@ -50,6 +50,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -74,6 +75,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
@@ -106,12 +108,25 @@ internal fun ConversationPanel(
     onNewConversation: (() -> Unit)? = null,
     onRetry: () -> Unit = {},
     onDismissFailure: () -> Unit = {},
+    onStartVoice: () -> Unit = {},
+    onStopVoice: () -> Unit = {},
+    onCancelVoice: () -> Unit = {},
+    onDismissVoiceProblem: () -> Unit = {},
+    connectionRecovery: Boolean = false,
 ) {
+    val showFailure = state.failed || connectionRecovery
     val focusRequester = remember { FocusRequester() }
     val seenMessageIds = remember { mutableStateListOf<String>().apply { addAll(state.messages.map { it.id }) } }
     val keyboard = LocalSoftwareKeyboardController.current
+    val suggestionInputAllowed by rememberUpdatedState(
+        allowed &&
+            !state.replyPending &&
+            !state.failed &&
+            !state.voice.capturing &&
+            state.voice.phase != VoiceInputPhase.PERMISSION,
+    )
     val chooseSuggestion: (String) -> Unit = { text ->
-        if (allowed && !state.replyPending) {
+        if (suggestionInputAllowed) {
             onDraftChange(TextFieldValue(text, TextRange(text.length)))
             focusRequester.requestFocus()
             keyboard?.show()
@@ -136,6 +151,11 @@ internal fun ConversationPanel(
             onRetry,
             onDismissFailure,
             seenMessageIds,
+            onStartVoice,
+            onStopVoice,
+            onCancelVoice,
+            onDismissVoiceProblem,
+            connectionRecovery,
         )
         return
     }
@@ -190,10 +210,24 @@ internal fun ConversationPanel(
                 ConversationMessages(state, friend, scale, shortened, seenMessageIds, Modifier.fillMaxSize())
             }
         }
-        if (state.failed) {
-            CompactConversationInlineFailure(state.problem, onRetry, onDismissFailure, allowed, scale)
+        if (showFailure) {
+            CompactConversationInlineFailure(
+                state.problem,
+                onRetry,
+                onDismissFailure,
+                allowed,
+                scale,
+                connectionRecovery,
+                state.connectionRetrying,
+            )
         }
-        if (!shortened && !state.replyPending && !state.failed) {
+        if (!shortened &&
+            !state.replyPending &&
+            !showFailure &&
+            !state.voice.capturing &&
+            state.voice.phase != VoiceInputPhase.PERMISSION &&
+            state.voice.phase != VoiceInputPhase.REVIEW
+        ) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 if (state.messages.isNotEmpty() && onNewConversation != null) {
                     ConversationAction(
@@ -212,18 +246,42 @@ internal fun ConversationPanel(
             }
             Spacer(Modifier.height(24.dp * scale))
         }
-        ConversationComposer(
-            state,
-            draft,
-            onDraftChange,
-            onSend,
-            onCancelReply,
-            friend,
-            allowed,
-            scale,
-            wide,
-            focusRequester,
-        )
+        if (state.voice.showHint) {
+            Text(
+                voiceHintText(state.voice),
+                Modifier.padding(bottom = 24.dp * scale).semantics { liveRegion = LiveRegionMode.Polite },
+                style = mobiMonReferenceTextStyle(24f, scale),
+                color = Color(0xFFA9BDCF),
+            )
+        }
+        if (state.voice.capturing) {
+            BoxWithConstraints(Modifier.fillMaxWidth()) {
+                val recordingScale = maxWidth.value / 1577f
+                ConversationRecordingControl(
+                    state.voice,
+                    onStopVoice,
+                    onCancelVoice,
+                    allowed,
+                    recordingScale,
+                    Modifier.fillMaxWidth().height(87.dp * recordingScale),
+                )
+            }
+        } else {
+            ConversationComposer(
+                state,
+                draft,
+                onDraftChange,
+                onSend,
+                onCancelReply,
+                friend,
+                allowed,
+                scale,
+                wide,
+                focusRequester,
+                onStartVoice = onStartVoice,
+                onDismissVoiceProblem = onDismissVoiceProblem,
+            )
+        }
         if (draft.text.length > ConversationLimits.INPUT_CHARACTERS) {
             Text(
                 stringResource(R.string.chat_input_limit),
@@ -267,6 +325,8 @@ private fun CompactConversationInlineFailure(
     onDismiss: () -> Unit,
     allowed: Boolean,
     scale: Float,
+    connectionRecovery: Boolean,
+    retrying: Boolean,
 ) {
     Column(
         Modifier
@@ -277,25 +337,37 @@ private fun CompactConversationInlineFailure(
         verticalArrangement = Arrangement.spacedBy(8.dp * scale),
     ) {
         Text(
-            stringResource(R.string.chat_inline_failure_title),
+            stringResource(if (connectionRecovery) R.string.chat_unavailable else R.string.chat_inline_failure_title),
             style = mobiMonReferenceTextStyle(24f, scale, true),
             color = Color(0xFFEAB8AA),
         )
         Text(
-            stringResource(problem?.let(::conversationFailureNote) ?: R.string.chat_inline_failure_note),
+            stringResource(
+                if (connectionRecovery) {
+                    if (retrying) R.string.chat_network_rechecking_body else R.string.chat_network_body
+                } else {
+                    problem?.let(::conversationFailureNote) ?: R.string.chat_inline_failure_note
+                },
+            ),
             style = mobiMonReferenceTextStyle(20f, scale),
             color = Color(0xFFB5C5D5),
         )
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp * scale)) {
             ConversationAction(
-                stringResource(conversationRetryLabel(problem)),
+                stringResource(
+                    if (connectionRecovery) {
+                        if (retrying) R.string.chat_network_rechecking_action else R.string.chat_network_recheck
+                    } else {
+                        conversationRetryLabel(problem)
+                    },
+                ),
                 onRetry,
-                allowed,
+                allowed && !retrying,
                 scale,
                 Modifier.weight(1f),
             )
             ConversationAction(
-                stringResource(R.string.chat_return),
+                stringResource(if (connectionRecovery) R.string.chat_parking_home else R.string.chat_return),
                 onDismiss,
                 true,
                 scale,
@@ -324,7 +396,13 @@ private fun ReferenceConversationPanel(
     onRetry: () -> Unit,
     onDismissFailure: () -> Unit,
     seenMessageIds: MutableList<String>,
+    onStartVoice: () -> Unit,
+    onStopVoice: () -> Unit,
+    onCancelVoice: () -> Unit,
+    onDismissVoiceProblem: () -> Unit,
+    connectionRecovery: Boolean,
 ) {
+    val showFailure = state.failed || connectionRecovery
     BoxWithConstraints(
         modifier
             .background(Colors.panel, ConversationPanelShape(54.581f / 1692f))
@@ -335,7 +413,11 @@ private fun ReferenceConversationPanel(
         val bodyBottom =
             composerTop -
                 (
-                    if (state.failed) {
+                    if (showFailure ||
+                        state.voice.capturing ||
+                        state.voice.phase == VoiceInputPhase.REVIEW ||
+                        state.voice.showHint
+                    ) {
                         108.dp
                     } else if (state.messages.isNotEmpty() && !shortened && !state.replyPending) {
                         80.dp
@@ -365,7 +447,7 @@ private fun ReferenceConversationPanel(
                 .background(Colors.border),
         )
 
-        if (state.messages.isEmpty() && !state.replyPending && !state.failed) {
+        if (state.messages.isEmpty() && !state.replyPending && !showFailure) {
             val titleTop = if (shortened) (composerTop - 270.dp * scale) else 459.dp * scale
             Column(
                 Modifier.offset(y = titleTop).fillMaxWidth(),
@@ -385,7 +467,7 @@ private fun ReferenceConversationPanel(
                     textAlign = TextAlign.Center,
                 )
             }
-            if (!shortened) {
+            if (!shortened && !state.voice.capturing && state.voice.phase != VoiceInputPhase.PERMISSION) {
                 ReferenceSuggestion(
                     stringResource(R.string.chat_suggestion_mood),
                     372f,
@@ -423,7 +505,7 @@ private fun ReferenceConversationPanel(
                     reference = true,
                 )
             }
-            if (state.failed) {
+            if (showFailure) {
                 ConversationInlineFailure(
                     state.problem,
                     onRetry,
@@ -433,13 +515,17 @@ private fun ReferenceConversationPanel(
                     Modifier
                         .offset(56.dp * scale, composerTop - 91.dp * scale)
                         .size(1580.dp * scale, 70.dp * scale),
+                    connectionRecovery,
+                    state.connectionRetrying,
                 )
             }
             if (!shortened &&
                 !state.replyPending &&
-                !state.failed &&
+                !showFailure &&
                 state.messages.isNotEmpty() &&
-                onNewConversation != null
+                onNewConversation != null &&
+                !state.voice.capturing &&
+                state.voice.phase != VoiceInputPhase.REVIEW
             ) {
                 ReferenceAction(
                     stringResource(R.string.chat_new),
@@ -455,19 +541,51 @@ private fun ReferenceConversationPanel(
             }
         }
 
-        ConversationComposer(
-            state,
-            draft,
-            onDraftChange,
-            onSend,
-            onCancelReply,
-            friend,
-            allowed,
-            scale,
-            true,
-            focusRequester,
-            Modifier.offset(58.dp * scale, composerTop).size(1577.dp * scale, 87.dp * scale),
-        )
+        if (state.voice.showHint) {
+            MobiMonReferenceText(
+                voiceHintText(state.voice),
+                58f,
+                composerTop.value / scale + 120.5f,
+                24f,
+                scale = scale,
+                color = Color(0xFFA9BDCF),
+                modifier =
+                    Modifier.width(1580.dp * scale).testTag("chat-voice-hint").semantics {
+                        liveRegion =
+                            LiveRegionMode.Polite
+                    },
+            )
+        }
+        if (state.voice.capturing) {
+            ConversationRecordingControl(
+                state.voice,
+                onStopVoice,
+                onCancelVoice,
+                allowed,
+                scale,
+                Modifier.offset(57.5.dp * scale, composerTop + 0.5.dp * scale).size(1577.dp * scale, 87.dp * scale),
+            )
+        } else {
+            ConversationComposer(
+                state,
+                draft,
+                onDraftChange,
+                onSend,
+                onCancelReply,
+                friend,
+                allowed,
+                scale,
+                true,
+                focusRequester,
+                Modifier
+                    .offset(
+                        57.5.dp * scale,
+                        composerTop + 0.5.dp * scale,
+                    ).size(1577.dp * scale, 87.dp * scale),
+                onStartVoice,
+                onDismissVoiceProblem,
+            )
+        }
         if (draft.text.length > ConversationLimits.INPUT_CHARACTERS) {
             Text(
                 stringResource(R.string.chat_input_limit),
@@ -478,18 +596,24 @@ private fun ReferenceConversationPanel(
                 color = Colors.warning,
             )
         }
-        Text(
-            stringResource(
-                if (state.connection == ConversationConnection.SIGNED_OUT) {
-                    R.string.chat_sign_in_note
-                } else {
-                    R.string.chat_disclaimer
-                },
-            ),
-            Modifier.offset(58.dp * scale, maxHeight - (if (shortened) 20.dp else 47.dp) * scale),
-            style = mobiMonReferenceTextStyle(if (shortened) 14f else 20f, scale),
-            color = Colors.muted,
-        )
+        if (!state.voice.showHint) {
+            MobiMonReferenceText(
+                stringResource(
+                    if (state.connection ==
+                        ConversationConnection.SIGNED_OUT
+                    ) {
+                        R.string.chat_sign_in_note
+                    } else {
+                        R.string.chat_disclaimer
+                    },
+                ),
+                58f,
+                composerTop.value / scale + (if (shortened) 103.5f else 112f),
+                18f,
+                scale = scale,
+                color = Color(0xFFA9BDCF),
+            )
+        }
         if (state.connection == ConversationConnection.SIGNED_OUT && !shortened) {
             ReferenceAction(
                 stringResource(R.string.conversation_connect),
@@ -564,6 +688,8 @@ private fun ConversationInlineFailure(
     allowed: Boolean,
     scale: Float,
     modifier: Modifier = Modifier,
+    connectionRecovery: Boolean = false,
+    retrying: Boolean = false,
 ) {
     Box(modifier.testTag("chat-inline-failure")) {
         Icon(
@@ -573,7 +699,7 @@ private fun ConversationInlineFailure(
             tint = Color.Unspecified,
         )
         Text(
-            stringResource(R.string.chat_inline_failure_title),
+            stringResource(if (connectionRecovery) R.string.chat_unavailable else R.string.chat_inline_failure_title),
             Modifier.offset(48.dp * scale, -9.dp * scale).width(262.dp * scale),
             style = mobiMonReferenceTextStyle(30f, scale).copy(lineHeight = (36f * scale).sp),
             color = Color(0xFFEAB8AA),
@@ -582,9 +708,9 @@ private fun ConversationInlineFailure(
         )
         Text(
             stringResource(
-                if (problem ==
-                    null
-                ) {
+                if (connectionRecovery) {
+                    if (retrying) R.string.chat_network_rechecking_body else R.string.chat_network_body
+                } else if (problem == null) {
                     R.string.chat_inline_failure_note
                 } else {
                     conversationFailureNote(problem)
@@ -597,9 +723,15 @@ private fun ConversationInlineFailure(
             softWrap = false,
         )
         ReferenceFailureAction(
-            stringResource(conversationRetryLabel(problem)),
+            stringResource(
+                if (connectionRecovery) {
+                    if (retrying) R.string.chat_network_rechecking_action else R.string.chat_network_recheck
+                } else {
+                    conversationRetryLabel(problem)
+                },
+            ),
             onRetry,
-            allowed,
+            allowed && !retrying,
             scale,
             Modifier.offset(1122.dp * scale, 4.dp * scale).width(230.dp * scale),
             R.drawable.conversation_retry,
@@ -609,12 +741,12 @@ private fun ConversationInlineFailure(
             textColor = Color(0xFFD4F4F5),
         )
         ReferenceFailureAction(
-            stringResource(R.string.chat_return),
+            stringResource(if (connectionRecovery) R.string.chat_parking_home else R.string.chat_return),
             onDismiss,
             true,
             scale,
             Modifier.offset(1376.dp * scale, 4.dp * scale).width(206.dp * scale),
-            R.drawable.conversation_edit,
+            if (connectionRecovery) R.drawable.copilot_back else R.drawable.conversation_edit,
             "chat-inline-edit-visual",
             23f,
             backgroundColor = Color(0xFF22394E),
@@ -852,8 +984,10 @@ private fun MessageBubble(
     Column(Modifier.fillMaxWidth(), horizontalAlignment = if (fromUser) Alignment.End else Alignment.Start) {
         Text(
             if (fromUser) stringResource(R.string.chat_user) else friend,
-            Modifier.padding(horizontal = (if (reference) 22.dp else 16.dp) * scale),
-            style = mobiMonReferenceTextStyle(if (reference) 20f else 28f, scale, true),
+            Modifier
+                .padding(horizontal = (if (reference) 22.dp else 16.dp) * scale)
+                .offset(y = if (reference) (-3).dp * scale else 0.dp),
+            style = mobiMonReferenceTextStyle(if (reference) 20f else 28f, scale, !reference),
             color = Colors.accent,
         )
         Spacer(Modifier.height(labelGap))
@@ -1017,12 +1151,17 @@ private fun ConversationComposer(
     wide: Boolean,
     focusRequester: FocusRequester,
     modifier: Modifier = Modifier,
+    onStartVoice: () -> Unit = {},
+    onDismissVoiceProblem: () -> Unit = {},
 ) {
+    val reviewingVoice = state.voice.phase == VoiceInputPhase.REVIEW
+    val voicePermissionPending = state.voice.phase == VoiceInputPhase.PERMISSION
     val canSend =
         allowed &&
             state.connection == ConversationConnection.READY &&
             !state.failed &&
             !state.replyPending &&
+            !voicePermissionPending &&
             draft.text.length <= ConversationLimits.INPUT_CHARACTERS &&
             draft.text.isNotBlank()
     val submit = {
@@ -1033,6 +1172,7 @@ private fun ConversationComposer(
         }
     }
     val label = stringResource(R.string.chat_input)
+    val voiceReviewDescription = stringResource(R.string.chat_voice_review)
     val actionLabel = stringResource(if (state.replyPending) R.string.chat_stop else R.string.chat_send)
     Row(
         modifier
@@ -1047,28 +1187,76 @@ private fun ConversationComposer(
                     43.5.dp * scale,
                 ),
             ).padding(
-                start = (if (wide) 32.dp else 44.dp) * scale,
-                end = (if (wide) 8.dp else 28.dp) * scale,
+                start =
+                    (
+                        if (wide) {
+                            26.dp
+                        } else {
+                            44.dp
+                        }
+                    ) * scale,
+                end =
+                    (
+                        if (wide && reviewingVoice) {
+                            18.87.dp
+                        } else if (wide) {
+                            16.87.dp
+                        } else {
+                            28.dp
+                        }
+                    ) * scale,
                 top = (if (wide) 7.dp else 12.dp) * scale,
                 bottom = (if (wide) 7.dp else 12.dp) * scale,
             ),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(20.dp * scale),
+        horizontalArrangement =
+            Arrangement.spacedBy(
+                (
+                    if (wide && reviewingVoice) {
+                        21.1.dp
+                    } else if (wide) {
+                        23.1.dp
+                    } else {
+                        20.dp
+                    }
+                ) * scale,
+            ),
     ) {
         BasicTextField(
             value = draft,
-            onValueChange = { if (allowed && !state.replyPending && !state.failed) onDraftChange(it) },
+            onValueChange = {
+                if (allowed && !state.replyPending && !state.failed && !voicePermissionPending) {
+                    onDismissVoiceProblem()
+                    onDraftChange(it)
+                }
+            },
             modifier =
                 Modifier
                     .weight(1f)
-                    .heightIn(min = (if (wide) 60.dp else 64.dp) * scale)
+                    .padding(
+                        end =
+                            if (state.voice.available &&
+                                wide
+                            ) {
+                                (76.dp - 72.dp * scale).coerceAtLeast(0.dp)
+                            } else {
+                                0.dp
+                            },
+                    ).heightIn(min = (if (wide) 60.dp else 64.dp) * scale)
                     .focusRequester(focusRequester)
                     .testTag(
                         "chat-input",
-                    ).semantics { contentDescription = label },
+                    ).semantics {
+                        contentDescription = label
+                        if (reviewingVoice) stateDescription = voiceReviewDescription
+                    },
             enabled = allowed,
-            readOnly = state.replyPending || state.failed,
-            textStyle = mobiMonReferenceTextStyle(if (wide) 26f else 32f, scale).copy(color = Colors.text),
+            readOnly = state.replyPending || state.failed || voicePermissionPending,
+            textStyle =
+                mobiMonReferenceTextStyle(
+                    if (wide) 26f else 32f,
+                    scale,
+                ).copy(color = if (reviewingVoice) Color(0xFFF6F2E8) else Colors.text),
             cursorBrush = SolidColor(Colors.accent),
             maxLines = 3,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
@@ -1089,19 +1277,54 @@ private fun ConversationComposer(
                 }
             },
         )
-        var sendFocused by remember { mutableStateOf(false) }
-        val enabled = if (state.replyPending) allowed else canSend
-        val visualSize = (if (wide) 72.dp else 92.dp) * scale
-        val targetSize = visualSize.coerceAtLeast(76.dp)
-        Box(Modifier.size(if (wide) visualSize else targetSize), contentAlignment = Alignment.Center) {
-            Surface(
-                onClick = {
-                    if (state.replyPending) {
-                        onCancelReply()
+        if (state.voice.available) {
+            VoiceIconButton(
+                stringResource(R.string.chat_voice_start),
+                R.drawable.conversation_voice_mic,
+                onStartVoice,
+                allowed &&
+                    state.connection != ConversationConnection.SIGNED_OUT &&
+                    !state.replyPending &&
+                    !voicePermissionPending,
+                scale,
+                Modifier.size(if (wide) 72.dp * scale else (72.dp * scale).coerceAtLeast(76.dp)),
+                visualWidth = 72f,
+                visualHeight = 72f,
+                targetOffsetX =
+                    if (wide) {
+                        -(76.dp - (if (reviewingVoice) 91.36.dp else 93.36.dp) * scale).coerceAtLeast(
+                            0.dp,
+                        )
                     } else {
-                        submit()
-                    }
+                        0.dp
+                    },
+            )
+        }
+        val enabled = if (state.replyPending) allowed else canSend
+        val action = { if (state.replyPending) onCancelReply() else submit() }
+        if (wide) {
+            VoiceIconButton(
+                actionLabel,
+                when {
+                    state.replyPending -> R.drawable.conversation_voice_reply_stop
+                    canSend -> R.drawable.conversation_voice_send
+                    else -> R.drawable.conversation_voice_send_disabled
                 },
+                action,
+                enabled,
+                scale,
+                Modifier.size(68.53.dp * scale, 72.dp * scale),
+                "chat-send-visual",
+                visualWidth = 68.53f,
+                visualHeight = 72f,
+                actionTag = "chat-send",
+            )
+        } else {
+            var sendFocused by remember { mutableStateOf(false) }
+            val visualSize = 92.dp * scale
+            val targetSize = visualSize.coerceAtLeast(76.dp)
+            Surface(
+                onClick = action,
                 enabled = enabled,
                 modifier =
                     Modifier
@@ -1116,21 +1339,14 @@ private fun ConversationComposer(
                     Surface(
                         Modifier.size(visualSize).testTag("chat-send-visual"),
                         shape = CircleShape,
-                        color =
-                            if (wide) {
-                                if (enabled) Color(0xFFF6F2E8) else Color(0xFF233F55)
-                            } else if (enabled) {
-                                Colors.button
-                            } else {
-                                Color(0xFF33465B)
-                            },
+                        color = if (enabled) Colors.button else Color(0xFF33465B),
                         border = if (sendFocused) BorderStroke(3.dp, Colors.accent) else null,
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             if (state.replyPending) {
                                 Box(
-                                    Modifier.size((if (wide) 24.dp else 32.dp) * scale).background(
-                                        if (wide) Colors.panel else Colors.onButton,
+                                    Modifier.size(32.dp * scale).background(
+                                        Colors.onButton,
                                         RoundedCornerShape(
                                             3.dp * scale,
                                         ),
@@ -1140,15 +1356,8 @@ private fun ConversationComposer(
                                 Icon(
                                     painterResource(R.drawable.conversation_send),
                                     stringResource(R.string.chat_send),
-                                    Modifier.size((if (wide) 32.dp else 40.dp) * scale),
-                                    tint =
-                                        if (wide) {
-                                            if (enabled) Color(0xFF142B40) else Color(0xFF91A9BA)
-                                        } else if (enabled) {
-                                            Colors.onButton
-                                        } else {
-                                            Colors.muted
-                                        },
+                                    Modifier.size(40.dp * scale),
+                                    tint = if (enabled) Colors.onButton else Colors.muted,
                                 )
                             }
                         }

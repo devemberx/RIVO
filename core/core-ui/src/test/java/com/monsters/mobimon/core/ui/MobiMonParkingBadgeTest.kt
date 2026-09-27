@@ -53,7 +53,7 @@ class MobiMonParkingBadgeTest {
     }
 
     @Test
-    fun confirmedBadgeRestoresFigmaParkingIconAndGeometry() {
+    fun confirmedBadgeCentersParkingIconAndLabel() {
         compose.setContent {
             MobiMonTheme {
                 view = LocalView.current
@@ -66,7 +66,10 @@ class MobiMonParkingBadgeTest {
         assertEquals(344f, badgeBounds.width, 1f)
         assertEquals(76f, badgeBounds.height, 1f)
         val textBounds = compose.onNodeWithText("주차 확인됨", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
-        assertEquals(badgeBounds.left + 127.65f, textBounds.left, 1f)
+        val iconBounds = compose.onNodeWithTag("parking-icon", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        assertEquals(badgeBounds.center.x, (iconBounds.left + textBounds.right) / 2f, 1f)
+        assertEquals(badgeBounds.center.y, iconBounds.center.y, 1f)
+        assertEquals(badgeBounds.center.y, textBounds.center.y, 1f)
         val (background, hasIconPixels) = badgePixels()
         assertEquals(MobiMonColors.panel.toArgb(), background)
         assertTrue(hasIconPixels)

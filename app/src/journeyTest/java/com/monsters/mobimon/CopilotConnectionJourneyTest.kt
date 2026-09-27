@@ -139,10 +139,12 @@ class CopilotConnectionJourneyTest {
             compose.waitUntil(timeoutMillis = 10_000) { conversations.connections >= 1 }
             compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
             compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
-            waitFor(hasTestTag("chat-network-dialog"))
-            compose.onNodeWithTag("chat-send").assertDoesNotExist()
+            waitFor(hasTestTag("chat-inline-failure"))
+            compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+            compose.onNodeWithTag("chat-send").assertIsNotEnabled()
+            compose.onNodeWithContentDescription(text(AuthR.string.chat_voice_start)).assertIsEnabled()
             conversations.connectionResult = ConversationResult.Success("gpt-4o")
-            compose.onNodeWithTag("chat-network-retry").ensureDisplayed().performClick()
+            compose.onNodeWithText(text(AuthR.string.chat_network_recheck)).ensureDisplayed().performClick()
             waitFor(hasText(text(AuthR.string.chat_ready)))
             compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
             assertEquals(0, conversations.replies)
@@ -150,7 +152,7 @@ class CopilotConnectionJourneyTest {
     }
 
     @Test
-    fun offlineSendShowsOnlyNetworkDialogAndRecheckDoesNotCallCopilot() {
+    fun offlineSendKeepsLocalDraftAndRecheckDoesNotCallCopilot() {
         authentication.approve()
         ActivityScenario.launch(MainActivity::class.java).use {
             waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
@@ -162,11 +164,13 @@ class CopilotConnectionJourneyTest {
             networkStatus.online.value = false
             compose.onNodeWithTag("chat-send").performClick()
 
-            waitFor(hasText(text(AuthR.string.chat_network_title)))
-            compose.onNodeWithTag("chat-inline-failure").assertDoesNotExist()
+            waitFor(hasTestTag("chat-inline-failure"))
+            compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+            compose.onNodeWithTag("chat-send").assertIsNotEnabled()
+            compose.onNodeWithContentDescription(text(AuthR.string.chat_voice_start)).assertIsEnabled()
             assertEquals(0, conversations.replies)
-            compose.onNodeWithTag("chat-network-retry").ensureDisplayed().performClick()
-            compose.onNodeWithText(text(AuthR.string.chat_network_title)).assertExists()
+            compose.onNodeWithText(text(AuthR.string.chat_network_recheck)).ensureDisplayed().performClick()
+            compose.onNodeWithText(text(AuthR.string.chat_network_body)).assertExists()
             assertEquals(checksBeforeDisconnect, conversations.connections)
         }
     }
@@ -194,6 +198,7 @@ class CopilotConnectionJourneyTest {
             waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
             compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
             waitFor(hasTestTag("chat-input"))
+            waitFor(hasText(text(AuthR.string.chat_ready)))
             compose.onNodeWithTag("chat-input").performTextInput("오늘도 반가워")
             waitFor(hasTestTag("chat-send") and isEnabled())
             compose.onNodeWithTag("chat-send").performClick()

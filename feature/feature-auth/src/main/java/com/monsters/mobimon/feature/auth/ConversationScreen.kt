@@ -50,7 +50,7 @@ import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.mobiMonReferenceTextStyle
 import com.monsters.mobimon.core.ui.MobiMonColors as Colors
 
-/** Keyboard chat presentation. The caller owns readiness, messages and request lifecycle. */
+/** Conversation presentation. The caller owns readiness, input and request lifecycles. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ConversationScreen(
@@ -74,6 +74,11 @@ fun ConversationScreen(
     onReturnHome: () -> Unit = onBack,
     onRecheckConnection: () -> Unit = onRetry,
     parkingBadgeConfirmed: Boolean = interactionAllowed,
+    onStartVoice: () -> Unit = {},
+    onStopVoice: () -> Unit = {},
+    onCancelVoice: () -> Unit = {},
+    onDismissVoiceProblem: () -> Unit = {},
+    onFinishVoiceReview: () -> Unit = {},
 ) {
     val friend = stringResource(if (friendId == "friend:luna") R.string.copilot_luna else R.string.copilot_mobi)
     val title = stringResource(R.string.chat_title)
@@ -87,22 +92,51 @@ fun ConversationScreen(
             setOf(ConversationProblem.NETWORK, ConversationProblem.SERVICE, ConversationProblem.TIMEOUT)
     val connectionFailure = state.connectionProblem != null
     val networkChecking = state.connection == ConversationConnection.CHECKING && state.connectionRetrying
-    val connectionDialog = interactionAllowed && (connectionFailure || networkChecking)
+    val localNetworkRecovery =
+        state.voice.available &&
+            state.connection != ConversationConnection.SIGNED_OUT &&
+            (state.connectionProblem == ConversationProblem.NETWORK || networkChecking)
+    val connectionDialog = interactionAllowed && (connectionFailure || networkChecking) && !localNetworkRecovery
     val panelState = if (connectionDialog && state.failed) state.copy(failed = false) else state
     val back = {
         // adjustResize can consume Compose's IME bounds; check the window at the time of the action.
         if (ViewCompat.getRootWindowInsets(view)?.isVisible(WindowInsetsCompat.Type.ime()) == true) {
             keyboard?.hide()
             focus.clearFocus()
+        } else if (state.voice.capturing || state.voice.phase == VoiceInputPhase.PERMISSION) {
+            onCancelVoice()
+        } else if (state.voice.phase == VoiceInputPhase.REVIEW) {
+            onFinishVoiceReview()
         } else {
             onBack()
         }
     }
     BackHandler(enabled = imeVisible && interactionAllowed) { back() }
+    BackHandler(
+        enabled =
+            interactionAllowed &&
+                (
+                    state.voice.capturing ||
+                        state.voice.phase in
+                        setOf(
+                            VoiceInputPhase.PERMISSION,
+                            VoiceInputPhase.REVIEW,
+                        )
+                ),
+    ) {
+        back()
+    }
     BackHandler(enabled = !interactionAllowed) { onReturnHome() }
     BackHandler(enabled = connectionDialog) { onReturnHome() }
-    LaunchedEffect(interactionAllowed, connectionDialog) {
+    LaunchedEffect(interactionAllowed, connectionDialog, onCancelVoice) {
         if (!interactionAllowed || connectionDialog) {
+            onCancelVoice()
+            keyboard?.hide()
+            focus.clearFocus()
+        }
+    }
+    LaunchedEffect(state.voice.capturing, state.voice.phase == VoiceInputPhase.PERMISSION) {
+        if (state.voice.capturing || state.voice.phase == VoiceInputPhase.PERMISSION) {
             keyboard?.hide()
             focus.clearFocus()
         }
@@ -156,8 +190,13 @@ fun ConversationScreen(
                             .offset(796.dp * scale, 34.dp * scale)
                             .size(1692.dp * scale, (panelBottom - 34.dp * scale).coerceAtLeast(0.dp)),
                         onNewConversation,
-                        onRetry,
-                        onDismissFailure,
+                        if (localNetworkRecovery) onRecheckConnection else onRetry,
+                        if (localNetworkRecovery) onReturnHome else onDismissFailure,
+                        onStartVoice,
+                        onStopVoice,
+                        onCancelVoice,
+                        onDismissVoiceProblem,
+                        connectionRecovery = localNetworkRecovery,
                     )
                     ConversationAuthBadge(
                         connection = state.connection,
@@ -196,8 +235,13 @@ fun ConversationScreen(
                         false,
                         Modifier.weight(1f),
                         onNewConversation,
-                        onRetry,
-                        onDismissFailure,
+                        if (localNetworkRecovery) onRecheckConnection else onRetry,
+                        if (localNetworkRecovery) onReturnHome else onDismissFailure,
+                        onStartVoice,
+                        onStopVoice,
+                        onCancelVoice,
+                        onDismissVoiceProblem,
+                        connectionRecovery = localNetworkRecovery,
                     )
                 }
             }

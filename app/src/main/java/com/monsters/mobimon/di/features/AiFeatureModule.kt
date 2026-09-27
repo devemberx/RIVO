@@ -8,6 +8,7 @@ import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.feature.auth.AiFeature
 import com.monsters.mobimon.feature.auth.ConversationNetworkStatus
+import com.monsters.mobimon.feature.auth.ConversationSpeechInput
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -26,5 +27,6 @@ object AiFeatureModule {
         authentication: GitHubAuthentication,
         conversation: ConversationProvider,
         networkStatus: ConversationNetworkStatus,
-    ): FeatureEntry = AiFeature(pets, points, vehicle, authentication, conversation, networkStatus)
+        speechInput: ConversationSpeechInput,
+    ): FeatureEntry = AiFeature(pets, points, vehicle, authentication, conversation, networkStatus, speechInput)
 }
