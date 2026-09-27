@@ -6,9 +6,13 @@ The index links each export to its source frame. They are visual references, not
 Android assets or evidence that a feature is implemented. See [DESIGN.md](../DESIGN.md)
 for behavior and [ARCHITECTURE.md](../ARCHITECTURE.md) for current support.
 
-The three notification references are full-resolution PNGs from the current local
-Figma Bridge frames; their source file has not yet been synced to the linked Figma
-file. Every SVG export has a 2560 × 1440 viewBox, and the PNGs are 2560 × 1440.
+The shell references include home and menu states with zero, three, or five
+unconfirmed notifications, plus empty, three-alert, and scrolling notification
+panels. All are direct SVG exports from the linked v5 Figma frames. Every SVG
+export has a 2560 × 1440 viewBox.
+Menu and notification exports include subtle panel outlines, background-free
+close controls, and the restored notification header divider. Their visual and
+navigation rules are defined in [DESIGN.md](../DESIGN.md#screens-and-navigation).
 Standard frames show system bars at y=0–96
 and y=1280–1440, leaving 2560 × 1184 app content. The keyboard-input frame shows
 a keyboard in place of the bottom bar. Compare app content using actual device insets.
@@ -24,11 +28,15 @@ only with a new export from its linked frame. The connected screen includes a
 
 | Reference | Visible state |
 | --- | --- |
-| [home.svg](shell/home.svg) | [Home](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-3973) |
-| [menu.svg](shell/menu.svg) | [Home menu overlay](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-3844) |
-| [notifications-empty.png](shell/notifications-empty.png) | Empty popup; local Figma Bridge frame `757:173` |
-| [notifications-three.png](shell/notifications-three.png) | Three alerts; local Figma Bridge frame `757:2` |
-| [notifications-many.png](shell/notifications-many.png) | Scrolling alerts; local Figma Bridge frame `757:335` |
+| [home.svg](shell/home.svg) | [Home with notification indicator; three alerts](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-3973) |
+| [home-no-notifications.svg](shell/home-no-notifications.svg) | [Home without notification indicator](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=777-713) |
+| [home-many-notifications.svg](shell/home-many-notifications.svg) | [Home with notification indicator; five alerts](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=777-815) |
+| [menu.svg](shell/menu.svg) | [Menu with notification row; three alerts](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-3844) |
+| [menu-no-notifications.svg](shell/menu-no-notifications.svg) | [Menu without notification count badge](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=783-1025) |
+| [menu-many-notifications.svg](shell/menu-many-notifications.svg) | [Menu with notification row; five alerts](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=783-1164) |
+| [notifications-empty.svg](shell/notifications-empty.svg) | [Empty notification panel](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=777-350) |
+| [notifications-three.svg](shell/notifications-three.svg) | [Three alerts grouped by vehicle checks and quest rewards](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=777-203) |
+| [notifications-many.svg](shell/notifications-many.svg) | [Five alerts with a scrolling list and fixed header](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=777-470) |
 | [settings.svg](shell/settings.svg) | [Settings](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-3641) |
 
 ### Connection
