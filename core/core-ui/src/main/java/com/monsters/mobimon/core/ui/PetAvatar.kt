@@ -336,12 +336,18 @@ fun PetAvatar(
                 CharacterAssetImage(it, Modifier.fillMaxSize())
             }
             if (friendId == "friend:mobi") {
+                val hasMobiIdleSprite =
+                    equippedLook == null ||
+                        equippedAccessory == "accessory:mobi_headphones" ||
+                        equippedAccessory == "accessory:mobi_goggles"
+
                 MobiIdleBreathAnimation(
                     modifier = Modifier.fillMaxSize(),
+                    accessoryId = equippedAccessory,
                     fallbackAsset = CharacterArtwork.preview(friendId, equippedAccessory),
                     vehicleWarning = isSick,
                     vehicleHungry = isHungry,
-                    animateNormal = isAnimated && equippedLook == null,
+                    animateNormal = isAnimated && hasMobiIdleSprite,
                     motionEnabled = motionEnabled,
                 )
             } else if (isAnimated && (friendId == "friend:luna") && (equippedLook == null || hasLunaHat)) {
