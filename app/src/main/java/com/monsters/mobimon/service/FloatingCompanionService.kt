@@ -44,6 +44,7 @@ import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MOBI_RUN_FRAME_DURATION_MS
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import com.monsters.mobimon.core.ui.PetAvatar
+import com.monsters.mobimon.core.ui.preloadPetRunSprite
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -89,6 +90,12 @@ class FloatingCompanionService : Service() {
     private var vehicleWarning by mutableStateOf(false)
     private var vehicleHungry by mutableStateOf(false)
     private var currentFriendId by mutableStateOf("friend:mobi")
+    private var activeFriendId by mutableStateOf("friend:mobi")
+    private var activeAccessoryId by mutableStateOf<String?>(null)
+    private var activeOutfitId by mutableStateOf<String?>(null)
+    private var latestFriendId by mutableStateOf("friend:mobi")
+    private var latestAccessoryId by mutableStateOf<String?>(null)
+    private var latestOutfitId by mutableStateOf<String?>(null)
 
     // Unknown until the first preference read, so stay in place like the in-app shell.
     private var reducedMotion by mutableStateOf(true)
@@ -216,7 +223,24 @@ class FloatingCompanionService : Service() {
                     ) {
                         MobiMonTheme {
                             val appearanceState = companionAppearance.state()
-                            currentFriendId = appearanceState.friendId
+                            latestFriendId = appearanceState.friendId
+                            latestAccessoryId = appearanceState.accessoryId
+                            latestOutfitId = appearanceState.outfitId
+
+                            androidx.compose.runtime.LaunchedEffect(
+                                latestFriendId,
+                                latestAccessoryId,
+                                latestOutfitId,
+                                isMoving,
+                            ) {
+                                if (!isMoving) {
+                                    activeFriendId = latestFriendId
+                                    activeAccessoryId = latestAccessoryId
+                                    activeOutfitId = latestOutfitId
+                                    currentFriendId = latestFriendId
+                                }
+                            }
+
                             Box(
                                 modifier =
                                     Modifier
@@ -227,9 +251,9 @@ class FloatingCompanionService : Service() {
                                 PetAvatar(
                                     modifier = Modifier.fillMaxSize(),
                                     appearanceKey = "GOLDEN",
-                                    friendId = appearanceState.friendId,
-                                    accessoryId = appearanceState.accessoryId,
-                                    outfitId = appearanceState.outfitId,
+                                    friendId = activeFriendId,
+                                    accessoryId = activeAccessoryId,
+                                    outfitId = activeOutfitId,
                                     backgroundId = null,
                                     isAnimated = true,
                                     isMoving = isMoving,
@@ -383,6 +407,16 @@ class FloatingCompanionService : Service() {
                     if (abs(actualDx) < 30) {
                         continue
                     }
+
+                    val targetFriend = latestFriendId
+                    val targetAccessory = latestAccessoryId ?: latestOutfitId
+                    preloadPetRunSprite(this@FloatingCompanionService, targetFriend, targetAccessory)
+                    if (!isActive) break
+
+                    activeFriendId = targetFriend
+                    activeAccessoryId = latestAccessoryId
+                    activeOutfitId = latestOutfitId
+                    currentFriendId = targetFriend
 
                     movingLeft = actualDx < 0
                     isMoving = true

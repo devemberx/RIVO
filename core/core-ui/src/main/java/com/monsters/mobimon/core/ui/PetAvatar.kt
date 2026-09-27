@@ -320,7 +320,7 @@ fun PetAvatar(
 
     val activeLunaAnimation =
         when {
-            !cat || !isAnimated || (equippedLook != null && !hasLunaHat) -> LunaActiveAnimation.NONE
+            !cat || !isAnimated -> LunaActiveAnimation.NONE
             isSick -> LunaActiveAnimation.SICK
             isHungry -> LunaActiveAnimation.HUNGRY
             runEnabled -> LunaActiveAnimation.RUN
@@ -385,7 +385,7 @@ fun PetAvatar(
                             motionEnabled = motionEnabled,
                         )
                 }
-            } else if (isAnimated && (friendId == "friend:luna") && (equippedLook == null || hasLunaHat)) {
+            } else if (isAnimated && (friendId == "friend:luna")) {
                 when {
                     isSick ->
                         LunaSickAnimation(
@@ -605,6 +605,22 @@ private fun IdleBreathAnimation(
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Fit,
             )
+        }
+    }
+}
+
+/** Preloads run animation sprite assets for [friendId] and [accessoryId] on background thread. */
+suspend fun preloadPetRunSprite(
+    context: Context,
+    friendId: String,
+    accessoryId: String? = null,
+) {
+    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        if (friendId == "friend:mobi") {
+            MobiRunSpriteCache.getOrLoad(context, accessoryId)
+        } else if (friendId == "friend:luna") {
+            val hasHat = (accessoryId == "accessory:luna_cap")
+            LunaRunAnimationCache.getOrLoadFrames(context, hasHat)
         }
     }
 }
