@@ -784,7 +784,10 @@ class ConversationScreenTest {
             state = state.copy(voice = state.voice.copy(phase = VoiceInputPhase.REVIEW))
             draft = TextFieldValue("모비는 뭐가 좋았어?", TextRange("모비는 뭐가 좋았어?".length))
         }
+        compose.runOnIdle { state = state.copy(voice = state.voice.copy(problem = VoiceInputProblem.NO_MATCH)) }
         capture("voice-review")
+        compose.onNodeWithTag("chat-voice-hint").assertDoesNotExist()
+        compose.onNodeWithText("대화는 GitHub Copilot으로 전송돼요. AI 답변은 부정확할 수 있어요.").assertIsDisplayed()
         compose.onNodeWithTag("chat-input").assertIsDisplayed()
         compose.onNodeWithContentDescription("음성으로 입력").assertIsDisplayed()
         val composer = compose.onNodeWithTag("chat-composer").fetchSemanticsNode().boundsInRoot

@@ -158,6 +158,9 @@ internal fun VoiceIconButton(
     }
 }
 
+internal val VoiceInputState.showHint: Boolean
+    get() = phase == VoiceInputPhase.PERMISSION || (problem != null && problem != VoiceInputProblem.NO_MATCH)
+
 internal fun voiceHint(voice: VoiceInputState): Int =
     voice.problem?.let {
         when (it) {

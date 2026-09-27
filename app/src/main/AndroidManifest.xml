@@ -11,6 +11,12 @@
       android:name="android.hardware.type.automotive"
       android:required="true" />
 
+  <queries>
+    <intent>
+      <action android:name="android.speech.RecognitionService" />
+    </intent>
+  </queries>
+
   <application
       android:name=".MobiMonApplication"
       android:allowBackup="false"

@@ -42,7 +42,7 @@ import java.io.File
 import javax.inject.Inject
 import com.monsters.mobimon.feature.pet.R as PetR
 
-/** Bundled local STT and app UI; authentication, vehicle and Copilot remain isolated journey fakes. */
+/** System speech recognition and app UI; authentication, vehicle and Copilot remain isolated journey fakes. */
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
 class ConversationVoiceDeviceTest {
@@ -133,7 +133,7 @@ class ConversationVoiceDeviceTest {
             compose.waitUntil(20_000) {
                 compose
                     .onAllNodes(
-                        normalizedSpeech("안녕하세요 오늘 날씨가 좋습니다", partial = true),
+                        normalizedSpeech("안녕하세요", partial = true),
                     ).fetchSemanticsNodes(atLeastOneRootRequired = false)
                     .isNotEmpty()
             }
@@ -141,10 +141,28 @@ class ConversationVoiceDeviceTest {
             compose.onNodeWithContentDescription("녹음 마치고 내용 확인").assertIsEnabled()
             compose.onNodeWithTag("chat-send").assertIsNotEnabled()
             Log.i("MobiMonVoiceDeviceTest", "NEXT_PHRASE_READY_FOR_FIXTURE")
+            compose.waitUntil(20_000) {
+                compose
+                    .onAllNodes(
+                        normalizedSpeech("안녕하세요 안녕하세요", partial = true),
+                    ).fetchSemanticsNodes(atLeastOneRootRequired = false)
+                    .isNotEmpty()
+            }
+            Thread.sleep(1_500)
+            Log.i("MobiMonVoiceDeviceTest", "THIRD_PHRASE_READY_FOR_FIXTURE")
+            compose.waitUntil(20_000) {
+                compose
+                    .onAllNodes(
+                        normalizedSpeech("안녕하세요 안녕하세요 안녕하세요", partial = true),
+                    ).fetchSemanticsNodes(atLeastOneRootRequired = false)
+                    .isNotEmpty()
+            }
+            compose.onNodeWithTag("chat-send").assertIsNotEnabled()
+            compose.onNodeWithContentDescription("녹음 마치고 내용 확인").performClick()
             compose.waitUntil(45_000) {
                 compose
                     .onAllNodes(
-                        normalizedSpeech("안녕하세요 오늘 날씨가 좋습니다 안녕하세요 오늘 날씨가 좋습니다"),
+                        normalizedSpeech("안녕하세요 안녕하세요 안녕하세요"),
                     ).fetchSemanticsNodes(atLeastOneRootRequired = false)
                     .isNotEmpty()
             }
@@ -184,7 +202,7 @@ class ConversationVoiceDeviceTest {
             compose.waitUntil(10_000) {
                 compose.onAllNodesWithTag("chat-input").fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty()
             }
-            compose.onNode(normalizedSpeech("안녕하세요 오늘 날씨가 좋습니다 안녕하세요 오늘 날씨가 좋습니다 수정")).assertExists()
+            compose.onNode(normalizedSpeech("안녕하세요 안녕하세요 안녕하세요 수정")).assertExists()
             compose.waitUntil(30_000) {
                 compose
                     .onAllNodes(
@@ -205,7 +223,7 @@ class ConversationVoiceDeviceTest {
             compose.waitUntil(10_000) {
                 compose.onAllNodesWithTag("chat-input").fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty()
             }
-            compose.onNode(normalizedSpeech("안녕하세요 오늘 날씨가 좋습니다 안녕하세요 오늘 날씨가 좋습니다 수정")).assertExists()
+            compose.onNode(normalizedSpeech("안녕하세요 안녕하세요 안녕하세요 수정")).assertExists()
             assertEquals(0, conversations.replies)
             compose.onNodeWithTag("chat-send").performClick()
             compose.waitUntil(10_000) { conversations.replies == 1 }

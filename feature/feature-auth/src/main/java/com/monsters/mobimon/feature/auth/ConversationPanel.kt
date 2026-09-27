@@ -237,7 +237,7 @@ internal fun ConversationPanel(
             }
             Spacer(Modifier.height(24.dp * scale))
         }
-        if (state.voice.phase == VoiceInputPhase.PERMISSION || state.voice.problem != null) {
+        if (state.voice.showHint) {
             Text(
                 voiceHintText(state.voice),
                 Modifier.padding(bottom = 24.dp * scale).semantics { liveRegion = LiveRegionMode.Polite },
@@ -407,7 +407,7 @@ private fun ReferenceConversationPanel(
                     if (showFailure ||
                         state.voice.capturing ||
                         state.voice.phase == VoiceInputPhase.REVIEW ||
-                        state.voice.problem != null
+                        state.voice.showHint
                     ) {
                         108.dp
                     } else if (state.messages.isNotEmpty() && !shortened && !state.replyPending) {
@@ -532,7 +532,7 @@ private fun ReferenceConversationPanel(
             }
         }
 
-        if (state.voice.phase == VoiceInputPhase.PERMISSION || state.voice.problem != null) {
+        if (state.voice.showHint) {
             MobiMonReferenceText(
                 voiceHintText(state.voice),
                 58f,
@@ -587,7 +587,7 @@ private fun ReferenceConversationPanel(
                 color = Colors.warning,
             )
         }
-        if (state.voice.phase != VoiceInputPhase.PERMISSION && state.voice.problem == null) {
+        if (!state.voice.showHint) {
             MobiMonReferenceText(
                 stringResource(
                     if (state.connection ==

@@ -27,38 +27,6 @@ val githubClientId =
         .getOrElse(localProperties.getProperty("mobimon.githubClientId", ""))
 require(githubClientId.matches(Regex("[A-Za-z0-9_]*"))) { "Invalid GitHub OAuth client ID" }
 
-val speechAssets = layout.buildDirectory.dir("generated/speechAssets")
-val speechPython = providers.gradleProperty("mobimon.python").getOrElse("python3")
-val prepareSpeechModels =
-    tasks.register<Exec>("prepareSpeechModels") {
-        group = "build setup"
-        description = "Downloads and verifies pinned local speech models for APK assets."
-        inputs.files(rootProject.file("scripts/stt/prepare_models.py"), rootProject.file("scripts/stt/models.json"))
-        outputs.dir(speechAssets)
-        // Recheck cached bytes as well as generated assets, including after an interrupted build.
-        outputs.upToDateWhen { false }
-        commandLine(
-            speechPython,
-            rootProject.file("scripts/stt/prepare_models.py"),
-            "--manifest",
-            rootProject.file("scripts/stt/models.json"),
-            "--cache",
-            gradle.gradleUserHomeDir.resolve("caches/mobimon-stt"),
-            "--output",
-            speechAssets.get().asFile,
-        )
-    }
-val testSpeechModelProvisioning =
-    tasks.register<Exec>("testSpeechModelProvisioning") {
-        group = "verification"
-        description = "Tests speech model integrity, extraction and cache recovery without network access."
-        workingDir(rootProject.projectDir)
-        commandLine(speechPython, "-m", "unittest", "discover", "-s", "scripts/stt", "-p", "test_*.py")
-    }
-
-tasks.named("preBuild") { dependsOn(prepareSpeechModels) }
-tasks.named("check") { dependsOn(testSpeechModelProvisioning) }
-
 android {
     namespace = "com.monsters.mobimon"
     compileSdk = 34
@@ -87,10 +55,7 @@ android {
         }
     }
 
-    androidResources { noCompress += "onnx" }
-
     sourceSets {
-        getByName("main").assets.srcDir(speechAssets)
         getByName("testDebug").java.srcDir("src/journeyTest/java")
         getByName("androidTest").java.srcDir("src/journeyTest/java")
     }
@@ -137,12 +102,6 @@ dependencyLocking {
 }
 
 dependencies {
-    implementation(libs.sherpa.onnx) {
-        artifact {
-            type = "aar"
-            extension = "aar"
-        }
-    }
     implementation(project(":core:core-navigation"))
     implementation(project(":core:core-presentation"))
     kover(project(":core:core-navigation"))

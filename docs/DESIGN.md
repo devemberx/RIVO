@@ -1,358 +1,221 @@
 # Product design
 
 MobiMon is a parked companion for vehicle information, conversation, quests and
-personalization. [V5 exports](ui/README.md) define visual geometry;
-[ARCHITECTURE.md](ARCHITECTURE.md) distinguishes implemented support from plans.
+personalization. [V5 exports](ui/README.md) own screen geometry;
+[Architecture](ARCHITECTURE.md) separates implementation from integration gaps.
 
 ## Concept
 
-The product loop is **quests → points → accessories → personalization**. Do not
-restore legacy XP, levels, evolution or driving-score UI. Follow the
-[parking/AAOS authorization contract](ARCHITECTURE.md#vehicle-interaction-authorization).
-Moving/unknown state pauses interaction while preserving drafts and committed data.
-Expressions supplement vehicle facts; they never diagnose a vehicle or replace warnings.
+The loop is **quests → points → accessories → personalization**. Do not restore
+legacy XP, levels, evolution or driving-score UI. Follow the
+[Park/AAOS contract](ARCHITECTURE.md#vehicle-interaction-authorization): restrictions
+preserve drafts and committed data. Expressions supplement facts, never diagnose
+vehicles or replace warnings.
 
 ## Visual language
 
-- Target the fixed 2560 × 1440px AAOS display. Other display resolutions,
-  aspect ratios and arbitrary compact windows are outside the product scope.
-  App content excludes system bars; AAOS compatibility density changes its dp
-  dimensions. Preserve the target layout with those insets, enlarged text and
-  the system keyboard's reduced content height. Use the current
-  [export content bounds](ui/README.md), including the larger system bars.
-- Fit panel surfaces and bottom action groups to the available height. Reflow
-  Menu, Settings, store hints/actions and conversation input together; keep
-  footers, retry controls and pending indicators clear of adjacent controls and
-  system UI. Preserve font sizes and artwork proportions instead of scaling the
-  whole screen to fit.
-- Use `MobiMonTheme`, Twilight colors and bundled Noto Sans KR. Follow export
-  positions, typography, proportions and icons; use actual runtime insets.
-- Reflow or scroll when enlarged text or the keyboard requires it. Controls are at least
-  76 × 76dp, with 24dp spacing/edge clearance where possible. Maintain 4.5:1 text
-  contrast and 3:1 control/icon contrast; pair status colors with labels or shapes.
-- Reuse shared navigation controls and `MobiMonParkingBadge` on every loaded route.
-  Keep points and
-  simulation labels separate. Order focus by heading, information and actions;
-  trap dialog focus and return it to the trigger on dismissal.
-- Place the shared parking badge at the top right of standard routes, 72px from
-  the content edge and 36px from the content top in the reference layout. It
-  moves with its screen during navigation. The initial profile loading screen
-  omits it. The 344 × 76 capsule retains the Figma parking icon,
-  dark blue surface and cyan text for confirmed Park. Center the icon and label
-  together horizontally and vertically in both parking states. The restricted state keeps
-  this geometry and centers its visible 20 × 24 pause icon and label together,
-  separated by 24px without transparent icon padding. It uses the same
-  dark blue surface and border, with the conversation parking dialog's red
-  status color for the icon and text. Fresh, valid nonmoving `P` at speed zero
-  shows “주차 확인됨”;
-  every other state shows “주차 후 이용”. Conversation retains its separate Figma
-  badge at 258 × 60 when confirmed and 272 × 60 when restricted at reference
-  text size, positioned beside its connection badge. Enlarged text expands the
-  badge so its icon and label stay separate. Its icon and label are
-  also centered together in both states. Vehicle details may describe the specific signal
-  or data gap separately.
+- Target the fixed 2560 × 1440 AAOS display; other resolutions/aspect ratios are
+  outside scope. Use actual system insets and the [export content bounds](ui/README.md).
+  Preserve artwork proportions and font sizes at compatibility density.
+- Use `MobiMonTheme`, Twilight colors, bundled Noto Sans KR and shared controls.
+  Reflow/scroll for enlarged text and IME height; keep footers, hints and actions
+  clear of other controls and system UI. Do not shrink the whole screen to fit.
+- Touch bounds are at least 76 × 76dp, with 24dp clearance where possible. Maintain
+  4.5:1 text and 3:1 control/icon contrast; pair status color with labels/shapes.
+  Order focus logically, trap it in dialogs and restore it on dismissal.
+- Loaded routes share `MobiMonParkingBadge`; initial profile loading omits it.
+  Standard reference geometry is 344 × 76, 72px from the right and 36px from the
+  top. Center icon and label together in both states. Fresh valid nonmoving P at
+  zero speed shows “주차 확인됨”; otherwise “주차 후 이용”. Restricted status uses
+  red icon/text on the same dark capsule. Keep points/simulation labels separate.
+- Conversation retains its own badge beside connection status: 258 × 60 confirmed,
+  272 × 60 restricted. Enlarged text expands it without overlapping icon/label.
 
 ### Launcher icon and native splash
 
-Use shared Mobi artwork on Night, without a wordmark, with adaptive-mask clearance.
-The splash ends on the first app frame. These are app adaptations, not SVG references.
+Use shared Mobi artwork on Night, no wordmark, with adaptive-mask clearance.
+The splash ends on the first app frame; these are app adaptations, not SVG references.
 
 ## Reusable Compose library and asset handoff
 
-Use `core-ui` primitives before feature-local equivalents. Feature owners perform
+Use `core-ui` primitives first. Feature owners perform
 [final visual acceptance](TESTING.md#final-figma-visual-acceptance).
-
-Full-screen SVGs stay in `docs/ui`. Import original icons into the owning feature
-with a feature prefix; keep shared fonts/artwork in `core-ui` and preserve licenses.
-Do not package full-screen references or generation drafts as runtime UI.
+Full-screen SVGs remain references, not runtime assets. Import original feature
+icons with feature prefixes; share fonts/artwork in `core-ui` and retain licenses.
 
 ### Image asset locations
 
 | Asset | Location |
 | --- | --- |
-| Mobi idle sprite / Luna frames | `core/core-ui/src/main/assets/characters/{mobi,luna}/idle_breath/` |
-| Luna hungry / sick frames | `core/core-ui/src/main/assets/characters/luna/{hungry,sick}/` |
-| Original Mobi warning artwork | `art/characters/mobi/unhealthy/` (not packaged) |
-| Luna side/back master reference | [Luna_Side_Back.png](../art/characters/luna/references/Luna_Side_Back.png) (not packaged) |
-| Shared artwork, accessories and backgrounds | `core/core-ui/src/main/res/drawable-nodpi/` |
-| Feature icons/artwork | Owning module's `res/drawable/` or `res/drawable-nodpi/` |
-| References | [docs/ui](ui/README.md) |
-| Generation drafts | Ignored `output/imagegen/` and `tmp/imagegen/` |
+| Mobi/Luna idle | `core/core-ui/src/main/assets/characters/{mobi,luna}/idle_breath/` |
+| Mobi warning sprite | `core/core-ui/src/main/assets/characters/mobi/unhealthy/` |
+| Luna expressions | `core/core-ui/src/main/assets/characters/luna/{hungry,sick}/` |
+| Mobi warning masters | `art/characters/mobi/unhealthy/` (not packaged) |
+| Shared artwork/accessories/backgrounds | `core/core-ui/src/main/res/drawable-nodpi/` |
+| Feature artwork/icons | Owning module's `res/drawable[-nodpi]/` |
+| References / generation drafts | [docs/ui](ui/README.md) / ignored `output/imagegen/`, `tmp/imagegen/` |
 
-Use approved master assets for variants. Preserve identity, proportions, style,
-scene geometry, canvas size, framing, subject scale/anchor and transparency; change
-only requested properties. Check dimensions and compare visually before use.
+Generate variants from approved masters. Preserve identity, proportions, style,
+scene geometry, canvas, framing, subject scale/anchor and transparency; change only
+requested properties. Check dimensions and compare visually before accepting.
+Use replaceable [PetAvatar](ARCHITECTURE.md#state-and-lifecycle) rendering. Mobi normal
+and warning idle use sprite atlases with fixed ground anchors; warning crossfades
+must not shift layout. Equipped Mobi uses base warning artwork and restores equipment
+on recovery. Reduced animation stops frame cycling; source artwork stays unmodified.
 
 #### Luna generation references
 
-Always inspect and provide both approved references as image inputs when generating
-or editing any Luna image, including expressions, poses, animation frames and accessories:
+Inspect and provide both approved references for every Luna generation/edit,
+including poses, expressions, frames and accessories:
 
 - Front: [luna_idle_breath_01.png](../core/core-ui/src/main/assets/characters/luna/idle_breath/luna_idle_breath_01.png).
-- Side and back: [Luna_Side_Back.png](../art/characters/luna/references/Luna_Side_Back.png).
+- Side/back: [Luna_Side_Back.png](../art/characters/luna/references/Luna_Side_Back.png).
 
-Keep Luna's character proportions consistent in every view and frame: head-to-body
-ratio, head shape, ear size/spacing, limb length/thickness, tail length/thickness/curl
-and facial feature size/placement. Preserve these underlying proportions through
-perspective and pose changes; do not redesign or stretch anatomy to fit a canvas
-or accessory. Compare each result with both references before accepting it and
-reject unintended proportion drift. For variants, also supply the approved source
-image or frame and follow the preservation rules above.
-
-Mobi idle uses a lossless 6 x 4 atlas of all 24 original 1254px RGBA frames.
-The atlas retains every source frame pixel; separate frame PNGs are not kept.
-Forward playback already contains inhale/exhale; 24-to-01 is visually identical.
-The 4.05-second cycle includes the source's repeated extreme poses, with
-an independent 6.2-second, +/-2.35-degree seated-pivot tilt. Eyes and sprout are baked
-in; there are no synthetic blink/sprout layers. Original source discontinuities
-remain strongest at 08-to-09, 13-to-14 and 14-to-15; alpha-correct adjacent-cell blending softens these jumps but cannot repair artwork.
-Breathing adds up to 1.2% width/2.4% height; a separate 6.6-second bob adds tiny
-settle and lift. All transforms share the seated pivot and preserve layout.
-
-Mobi's collapsed idle uses a lossless 24-frame sprite atlas `mobi_collapsed_sprite.png` (6 x 4 grid of 408px RGBA cells) under `core/core-ui/src/main/assets/characters/mobi/unhealthy/`.
-Original collapsed and transition artwork remains under `art/characters/mobi/unhealthy/` for future edits; it is not packaged.
-The 200ms normal/warning crossfade is unchanged. The 24-frame animation loop plays continuously over 4.05 seconds with smooth frame interpolation, capturing shivering, sweating, eye movements, and dizziness.
-Reduced motion snaps to frame 0 and disables frame cycling.
-Equipped Mobi uses base collapsed artwork during warnings and restores its equipped normal look afterward.
-
-Use the replaceable [PetAvatar](ARCHITECTURE.md#state-and-lifecycle) renderer.
+Preserve head/body ratio, head/ears, limbs, tail and facial feature proportions
+through pose/perspective changes. Never stretch anatomy to fit a canvas/accessory.
+Also provide the approved source for variants; reject unintended drift against
+both references.
 
 ### Home scene
 
-Home and store preview share seven 2560 × 1440 backgrounds (five WebP and two PNG).
-Local hours select Midnight 00–04, Sunrise 05–06, Morning 07–11, Day 12–15,
-Afternoon 16–17, Sunset 18–19 and Night 20–23. A vehicle location timestamp does
-not change the scene; the separate Debug background preview override does when
-Debug mode is enabled. Vehicle interpretation controls do not change the scene.
-Sunrise keeps the morning sun's horizontal position and disk size near the
-horizon. Midnight's moon matches the night moon's disk size. It keeps the
-buildings and road fixed, turns off city windows and their reflections, and
-leaves road lights on. Home
-keeps the SVG artwork framing: a centered crop in
-the original 2560 × 1268 rectangle at y=76, clipped by the current safe content
-starting at design y=96. Changing available height does not recenter the horizon.
-Store previews crop within their own cards. Home adds cool tint/daylight shadows;
-artwork and tint crossfade for one second.
-Controls remain untinted.
+Home and Store share seven local-time backgrounds: Midnight 00–04, Sunrise 05–06,
+Morning 07–11, Day 12–15, Afternoon 16–17, Sunset 18–19, Night 20–23. Vehicle
+timestamps do not select them; only the separate Debug background preview overrides
+the period. Variants retain scene geometry and celestial disk sizes; Midnight has
+dark city windows/reflections with road lights on.
 
-Home follows [home.svg](ui/shell/home.svg). Its menu overlays the same scene.
-The animated time phrase replaces the SVG subtitle. Availability notices must not
-move the main action; enlarged-text layouts remain scrollable.
+Home follows [home.svg](ui/shell/home.svg): preserve its centered original artwork
+crop so changing content height does not move the horizon. Store crops within its
+cards. Background/tint crossfade for one second; controls remain untinted. The
+animated time phrase replaces the SVG subtitle. Notices must not move the main
+action; enlarged-text layouts remain scrollable.
 
 ## Screens and navigation
 
-The [export index](ui/README.md#screen-index) owns the screen inventory. Back closes
-the keyboard, then dialog/menu, then destination. Menu destinations return Home;
-connection returns to its entry route. Purchase cancellation returns to its preview.
-Explicit Home always opens Home.
+The [export index](ui/README.md#screen-index) owns screen inventory. Back closes
+keyboard, then dialog/menu, then destination. Menu destinations return Home;
+connection returns to its entry route. Explicit Home always opens Home.
+Menu closes through close, backdrop, Back or selection; show equipped friend/version
+and keep its footer above system UI.
 
-The menu closes through its close control, backdrop, Back or destination selection.
-It shows the equipped friend and app version, with its footer above the system bar.
-Preserve the SVG layout at AAOS compatibility density, centering minimum touch
-bounds around each row. Reflow only when those bounds overlap or enlarged text
-needs more room.
-
-Home's menu control and the menu bell show the current alert count when positive.
-The bell opens a popup over the menu. Selected Vehicle cards with a current
-`CAUTION` status appear before claimable quests; quest alerts remain until their
-rewards are received. The popup has an empty state and a three-card viewport that
-scrolls for additional alerts. Each card opens its owning screen. The
-[notification references](ui/README.md#screen-index) define the popup geometry.
-
-Unavailable services explain the limitation and recovery. Pending actions block
-duplicates; uncertain writes offer reconciliation before retry.
+Home/menu counts reflect selected Vehicle card cautions followed by claimable
+quests. The bell popup has empty state and a three-card scrolling viewport; each
+card opens its owning screen. Quest alerts remain until reward receipt.
+Unavailable services explain recovery. Pending actions block duplicates; uncertain
+writes reconcile before retry.
 
 ## Quests and points
 
-Show catalog values and actual repeat eligibility, never SVG sample rewards or a
-universal daily reset. Celebrate only a committed award and its returned amount.
-An unknown wallet is not zero.
-Use the same committed balance throughout the app, labelled Points or `1,200 P`.
-Repeated claims reconcile without another celebration. Later repository updates,
-including resets, replace temporary claim confirmations.
-The completed quest detail shows the persisted completion date when available;
-never substitute the date shown in the SVG example.
-At reference size, align the Quest and Store point balance beside the parking
-badge like Home: the same 36px bold font, a 48px horizontal gap and a text center
-7px below the badge center. The compact Quest list keeps the balance beside its
-section heading when the header cannot fit both statuses.
+Use catalog rewards and actual repeat eligibility, never SVG sample values or an
+assumed daily reset. Show one committed balance as Points or `1,200 P`; unknown is
+not zero. Celebrate only committed amounts; duplicate claims do not celebrate
+again. Later repository updates replace temporary confirmations. Use persisted
+completion dates. Quest/Store point headers align with Home's parking badge;
+compact Quest may place balance beside its section heading.
 
 ## Customization
 
-Friends, accessories and backgrounds are independent. Preserve equipment per friend.
-Preview stays local until Apply commits; purchase confirms ownership only. Show
-compatibility, price and wallet balance before purchase; cancellation spends nothing.
-On entry, reuse the committed appearance already shown on Home while the Store
-refreshes its inventory and catalog. Keep the header, preview, tabs and card bounds
-in place. If a read lasts beyond a brief transition, show still card placeholders
-in the catalog area; reveal the cards with a short fade when ready. The in-app
-character motion preference does not affect Store cards. Show errors and retry inline.
+Friends, accessories and backgrounds are independent; equipment persists per friend.
+Preview stays local until Apply. Purchase confirms ownership, not equipment. Show
+compatibility, price and balance; cancellation spends nothing. Owned items Apply
+without another purchase; applied items have no redundant action. Insufficient
+points show the shortfall and quests. Pending/uncertain writes block duplicates
+and preserve selection during recovery. No cash purchase, top-up or conversion.
 
-| State | Action |
-| --- | --- |
-| Unowned | Preview and purchase with explicit price |
-| Insufficient points | Show shortfall and offer quests |
-| Owned | Apply without another purchase |
-| Applied | Mark active; no redundant action |
-| Pending/unconfirmed | Block duplicates and reconcile or retry while preserving selection |
-
-No cash purchases, top-ups or conversion.
+Reuse committed Home appearance while inventory loads. Keep header, preview, tabs
+and cards stable; delayed reads use still placeholders followed by a short card
+fade. Show read/save failures inline with Retry.
 
 ## Conversation
 
-Use the V5 split panels, empty state, suggestions and composer. Keep the companion
-and chat visible together, with a compact New conversation action at the right edge
-above the composer. Omit the change-of-pace follow-up suggestion. Suggestions fill
-the draft without sending. Home/menu Chat opens connection settings when signed out
-and chat when authenticated; the Settings account card opens connection management.
-Follow the [session and provider contract](ARCHITECTURE.md#keyboard-conversation-ui).
+Use V5 split panels, suggestions and composer; companion/chat stay visible together.
+New conversation sits above the composer at the right. Suggestions fill without
+sending; omit the change-of-pace suggestion. Signed-out Chat opens connection
+settings; authenticated Chat opens conversation. Follow the
+[session/provider contract](ARCHITECTURE.md#keyboard-conversation-ui).
 
-Use the system keyboard and keep the composer visible above it. The
-[keyboard export](ui/conversation/keyboard-input.svg) shows the resized layout.
-Enlarged text prioritizes chat and hides secondary content. Controls retain usable
-touch bounds at AAOS density. Use soft rounded message bubbles and animate new
-bubbles and the pending dots when motion is enabled. Existing messages and reduced
-motion remain still.
+Use the system keyboard and [resized layout](ui/conversation/keyboard-input.svg).
+Enlarged text prioritizes chat over secondary content. Animate new rounded bubbles
+and pending dots only when motion is enabled; existing messages remain still.
+Keep attempted turns during recovery. Edit removes only the unanswered turn while
+preserving draft/history. Selection/IME composition alone do not dismiss failures.
 
-Keep the attempted user turn during recovery. After a network or timeout dialog
-closes, show its inline failure until Edit or Retry. Align the single-line warning
-and actions with the [failed-reply export](ui/conversation/reply-failed.svg). Edit
-removes the unanswered user bubble while preserving the draft and completed
-history; selection and IME composition changes do not dismiss the failure.
+Show “Copilot 연결됨” only with verified readiness and no active problem; otherwise
+“Copilot 확인 중”. Keep chat visible during loading and disable Send until ready.
+Network/timeout failures use the existing dialogs, then one inline failure row.
+Recheck never resends. Account errors offer connection guidance; access/usage errors
+explain GitHub account action and offer Home. Unverified parking shows the
+[parking dialog](ui/conversation/parking-required.svg), disables editing and hides
+IME; Home/Back retain the draft. AAOS restrictions remove the screen.
 
-When Park and AAOS allow chat, show Copilot readiness and disable Send until the
-connection is verified. Keep the destination visible during initial loading. An
-in-chat connection badge shows “Copilot 연결됨” only when readiness is verified
-without an active problem; every other state shows “Copilot 확인 중”. The detailed
-problem remains in the dialog or inline notice. An
-offline failure shows the [network dialog](ui/conversation/network-error.svg)
-promptly. Recheck uses the [checking dialog](ui/conversation/network-checking.svg)
-and never resends the draft. Account errors open connection guidance; access and
-usage errors explain what to change in GitHub and offer Home without an immediate
-recheck. Online timeouts explain the delayed response. Show one failure notice at a
-time: the inline failure appears after the dialog closes. Preserve the draft;
-a deliberate Retry may consume additional usage.
+Use [recording](ui/conversation/voice-listening.svg) and
+[review](ui/conversation/voice-review.svg) geometry. Microphone/Stop and Send are
+separate; recording retains Cancel, live waveform and disabled Send. Preserve
+26px draft text, the 18px transmission/AI footer and nonoverlapping 76dp touch bounds.
+No listening timer or extra review/rerecord caption is shown. No-match/silence
+leaves the draft and normal footer in place; actionable permission/service failures
+retain recovery guidance.
 
-Unverified parking shows the [parking dialog](ui/conversation/parking-required.svg),
-disables editing and hides the IME. Home and Back preserve the draft. Verified
-parking removes the dialog; AAOS restrictions remove the screen.
+Permission is requested on microphone activation. Stop combines recognized phrases
+into an editable draft; only explicit Send submits. Review permits another recording.
+Cancel, Back, background or restrictions stop capture and preserve the previous
+draft. Voice can remain usable during Copilot network failure while Send stays
+blocked. Hide microphone if no system service exists. The waveform stays flat
+before speech detection. Timing/service limits live in Architecture.
 
-Use the updated [recording](ui/conversation/voice-listening.svg) and
-[review](ui/conversation/voice-review.svg) geometry. The composer contains separate
-microphone and Send actions; recording replaces the microphone with Stop and keeps
-Send disabled. Cancel, the live 64-bar waveform, Stop and Send retain their exported
-positions. Keep the existing 18px transmission/AI disclaimer below the composer during
-recording, without a visible listening timer. Preserve 26px draft text at reference scale; native touch bounds
-remain at least 76dp without overlap at AAOS density.
-
-Ask microphone permission on explicit activation. Stop finishes recognition into an
-editable draft; only explicit Send submits. Review retains the microphone for another
-recording. Wait up to 12 seconds between phrases and combine recognized sentences;
-Stop closes capture and finishes the draft after inference. Allow up to 20 seconds
-for startup, 60 seconds of recording after readiness, and 20 seconds for finalization. The waveform stays
-flat before speech detection and ignores low background RMS. Cancel, Back, background and restrictions stop recording and preserve the
-previous draft. Copilot network failures use the existing inline Recheck/Home
-recovery row while keeping local dictation available; Send stays blocked until
-connection readiness returns. Account/access restrictions retain their blocking dialog.
-Denied permission, unavailable models, silence and errors
-offer keyboard input and a recoverable explanation. Hide the microphone when no
-bundled model is available. Review guidance is exposed to accessibility without adding a
-second visible caption. Playback remains planned; it must yield to calls/navigation.
-
-Use the existing footer to name GitHub Copilot, disclose dialogue/companion-name
-transmission and warn about AI accuracy. Provider retention/training policies and
-account limits apply; local clearing does not promise provider deletion.
+The footer names GitHub Copilot, discloses dialogue/companion-name transmission and
+warns about AI accuracy. Local clearing does not promise provider deletion.
+Spoken replies remain planned and must yield to calls/navigation.
 
 ## Vehicle information
 
-| Observed condition | Presentation |
-| --- | --- |
-| Low battery / charging required | Hungry expression, actual charge and charging guidance |
-| Vehicle issue | Sick expression, affected item and specific warning |
-| Current checked items without warnings | Default expression; describe only checked items as normal |
-| Missing/stale data | Unavailable, with last update; never imply normality |
+Six default cards cover charge, charging, tires, washer, environment and assistance.
+Long press opens the 30-card gallery, excluding assigned cards. Highlight active
+slot/selection; Confirm saves only a selected alternative locally. Keep gallery
+cards the same size and scroll additional choices. Debug fallback values/edits are
+simulated, never real vehicle verification.
 
-Specific warnings take priority; partial data stays partial. See
-[current support](ARCHITECTURE.md#current-foundation) before using condition expressions.
-
-The v5 vehicle screen shows six cards by default: battery charge, charging,
-tire pressure, washer fluid, outside environment and driver assistance. Long
-pressing any card opens a scrollable gallery drawn from 30 VSS-mapped cards at
-the same size as the displayed cards. Cards already assigned to any slot are
-omitted from the gallery. The active slot and selected alternative are
-highlighted; Confirm becomes available after choosing an alternative and saves
-that slot's choice locally. The hint below the six cards explains the gesture.
-Unavailable or stale signals show missing data
-instead of sample values. In the Debug app with no adapter, the screen uses
-simulated defaults; the Settings-enabled Debugger can edit every card signal.
-The character panel uses the normal, hungry and sick Mobi artwork for the
-corresponding observed conditions.
-
-Each vehicle card has an upper-right badge. Current information-only readings
-show **Info**; verified condition readings show **Normal** or **Caution**.
-Missing, stale or invalid readings show **Unavailable**, never Normal. The same
-badge appears in the card selector. Card selection changes layout only; the
-companion condition uses all current evidence, including unselected cards.
-
-| Companion response to Caution | Cards and evidence |
-| --- | --- |
-| Hungry | `battery` below 20%, `washer` below 20%, `washer-low` asserted |
-| Sick | `battery-error` with codes, `service-due`, `brake-fluid`, `low-beam`, `brake-light`, `tire-low`, `pad-warning`, `abs`, or `breakdown` asserted; `tire` low; `assist` with an interpreted warning |
-| No expression change (Info) | `battery-health`, `battery-range`, `battery-time`, `driver-door`, `charging-time`, `service-distance`, `service-time`, `parking-brake`, `driver-belt`, `pad-wear`, `hood`, `trunk`, `air-temperature`, `rain-intensity`, `cabin-temperature`, `distance`, `dtc-count`, `fatigue`, `distraction`, `charging`, `environment` |
-
-The Info values alone do not establish a warning; existing interpreted engine
-and driver-assist warnings still make the companion Sick. One confirmed wheel
-warning suffices for Caution, while Normal for four-wheel VSS cards requires
-all four wheel readings. An interpreted tire status can also classify the
-default tire card.
-Sick takes priority over Hungry. Expressions reflect signals, not a diagnosis.
+Badges distinguish Info, Normal, Caution and Unavailable. Missing/stale/invalid is
+never Normal. Four-wheel Normal needs all readings; one confirmed warning suffices
+for Caution. Specific warnings take priority and partial data stays partial.
+Low battery/washer maps to Hungry; vehicle/assistance warnings map to Sick, which
+takes precedence. Information-only readings do not imply a fault. Companion
+condition uses all evidence, including unselected cards; expressions are not diagnosis.
 
 ## AI connection and settings
 
-Settings expose save failures. Debug controls are Debug-only and off by default.
-Spoken replies and vehicle-home display remain unavailable; Do Not Disturb is omitted.
+Show save failures. Debug controls default off; production behavior must follow the
+[vehicle integration boundary](ARCHITECTURE.md#vehicle-interaction-authorization).
+Spoken replies/vehicle-home display are unavailable; omit Do Not Disturb.
 
 ### Copilot connection UI
 
-Configured builds show GitHub's approval URL as a QR with a separate user code and
-address help. Update approval status automatically and hide expired codes. Apply the
-[authentication lifecycle rules](ARCHITECTURE.md#copilot-connection-ui).
-
-Authentication success uses [connected.svg](ui/connection/connected.svg) geometry,
-with “모비와 대화하기” (using the equipped friend's name) opening chat and Settings
-secondary. Show the verified account, local persistence and a note that Copilot access
-is checked on Send. Successful restoration replaces prior sign-in errors.
-Loading/failures offer retry or local clearing; companion failures retain appearance
-with Retry.
-
-Account-row Disconnect opens confirmation and explains that only the local connection
-is removed; preserve points/cosmetics. Offer approval again for revoked/expired
-credentials. Unconfigured builds disable sign-in.
-
-Loading and failure states have no v5 export; reuse panel typography and controls.
+Configured builds show GitHub's approval QR, separate code and address help;
+automatically update status and hide expired codes. Follow the
+[authentication lifecycle](ARCHITECTURE.md#copilot-connection-ui).
+Verified success uses [connected.svg](ui/connection/connected.svg), the verified
+account and “모비와 대화하기” with the equipped friend's name, plus Settings.
+Explain local persistence and separate Copilot access checking. Restoration clears
+stale errors; failures offer retry/local clearing while retaining committed appearance.
+Disconnect requires confirmation and explains local-only removal. Unconfigured
+builds disable sign-in. Loading/failure states reuse shared panels where exports
+are absent.
 
 ## Motion
 
-Motion preserves context and focus; outgoing/restricted controls lose input
-immediately. Animation never authorizes or commits a command. The Settings motion
-switch stops the floating companion's autonomous movement on vehicle Home; dragging
-and idle breathing remain. It does not change in-app scene or navigation motion.
-Unknown or failed preference reads keep the floating companion stationary.
+Motion preserves context/focus; outgoing or restricted controls lose input immediately.
+Animation never authorizes a command. The Settings motion switch stops only floating
+companion wandering; dragging/idle breathing remain. Unknown/failed preference reads
+keep it stationary; in-app scenes/navigation are independent.
 
-Home's conversation action reveals the destination from the activated button's
-rounded bounds over 300ms, with Home stationary underneath. Back closes it toward
-the same bounds over 220ms. Sample the button after scrolling and respect runtime
-insets. Destination touch targets follow the visible reveal bounds.
-
-The Home speech bubble enters from its tail on entry, pet tap and periodic
-reappearance; data updates do not replay it. Other shell/drawer transitions use
-220ms. Connection panels fade in over 180ms and out over 120ms; expiry/restrictions
-replace content immediately, and countdown ticks keep panel identity. Prototype
-delays are not success signals.
+Chat reveals from the activated button over stationary Home (300ms), returning to
+that bound on Back (220ms). Sample bounds after scroll/insets and constrain touch
+bounds to the visible reveal. Shell/drawer transitions use 220ms; connection panels
+fade in/out over 180/120ms. Restrictions/expiry replace content immediately. Home
+speech bubbles replay on entry/tap/periodic reappearance, not data updates.
 
 ## Vehicle launcher
 
-The floating companion can be shown outside the app with explicit opt-in and
-overlay permission. Its intended location is vehicle Home; verify placement and
-lifecycle on the target vehicle under the
+Outside-app companion requires explicit opt-in and overlay permission. Intended
+placement is vehicle Home; verify actual placement/lifecycle under the
 [platform contract](ARCHITECTURE.md#shared-vehicle-condition-and-overlay).

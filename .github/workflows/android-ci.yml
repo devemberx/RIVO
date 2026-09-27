@@ -36,7 +36,6 @@ jobs:
       - name: Check and build
         run: |
           ./gradlew --no-daemon --stacktrace \
-            :app:testSpeechModelProvisioning \
             verifyModuleBoundaries \
             ktlintCheck \
             lintDebug \
