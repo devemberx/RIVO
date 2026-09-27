@@ -64,7 +64,9 @@ survive navigation; menu state and animation geometry are transient.
 Read failures retain committed values with explicit retry. Store can preview shared
 appearance while loading, but purchase/equip wait for its inventory. Notifications
 are read-only summaries of selected-card cautions and claimable quests; the shell
-routes them, and repositories remain responsible for reward writes.
+routes them, and repositories remain responsible for reward writes. The current
+shell uses counts and a three-card scrolling popup; the newer left-panel
+[design references](DESIGN.md#screens-and-navigation) are not yet implemented.
 
 [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
 owns rendering only. Shared freshness-filtered condition includes warnings from
@@ -146,8 +148,9 @@ authenticated, authorized chat but remains usable during Copilot network failure
 The app captures mono 16kHz PCM continuously with `AudioRecord` and supplies it
 through `EXTRA_AUDIO_SOURCE` in one segmented recognition request. A bounded memory
 queue separates capture from pipe delivery; slow writes never overwrite queued
-samples. Stop drains the microphone tail and queued PCM, then closes the stream rather than
-calling `stopListening` early. Cancel releases capture/pipe and clears queued audio.
+samples. Stop drains the microphone tail and queued PCM, then closes the stream
+instead of calling `stopListening` early. Cancel releases capture/pipe and clears
+queued audio.
 Nothing is written to disk. Overflow or premature service termination ends with an
 error, without a silent fallback to microphone sessions with capture gaps.
 
@@ -159,13 +162,11 @@ Only Send submits. Reject callbacks after session cancellation. Startup/capture/
 finalization remain bounded at 20/60/20 seconds; the 12-second pause timer is suspended
 during speech. Ambient RMS and empty segments cannot extend silence.
 
-External PCM input and stream-close completion were verified on the local AAOS 34-ext9
-GoogleTTSRecognitionService with the microphone disabled and network disconnected.
-That does not establish support on other services/OEMs; verify those before rollout.
-The app does not replay unconfirmed audio after a service failure, and temporary
-capture buffers cannot survive process death. Never claim universal loss-free speech
-or store/log user audio; OS/driver capture overruns remain possible under overload.
-Physical-device accuracy and microphone behavior still need verification.
+External PCM support and stream-close completion depend on the service/OEM;
+verify each target before rollout. The app does not replay unconfirmed audio after
+a failure; capture buffers cannot survive process death. Never store/log user audio
+or claim universal loss-free speech; OS/driver overruns remain possible. Physical-device accuracy and microphone
+behavior remain unverified; record actual checks in the PR.
 
 ### Vehicle interaction authorization
 

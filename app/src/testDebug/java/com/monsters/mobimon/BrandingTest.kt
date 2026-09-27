@@ -2,6 +2,7 @@ package com.monsters.mobimon
 
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -37,6 +38,18 @@ class BrandingTest {
         val label = context.packageManager.getApplicationLabel(context.applicationInfo)
 
         assertEquals("MobiMon Demo", label.toString())
+    }
+
+    @Test
+    fun debugInstallExposesOnlyTheMainLauncher() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val intent =
+            Intent(Intent.ACTION_MAIN)
+                .addCategory(Intent.CATEGORY_LAUNCHER)
+                .setPackage(context.packageName)
+        val activities = context.packageManager.queryIntentActivities(intent, 0)
+
+        assertEquals(listOf("com.monsters.mobimon.MainActivity"), activities.map { it.activityInfo.name })
     }
 
     @Test

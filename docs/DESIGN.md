@@ -47,9 +47,7 @@ icons with feature prefixes; share fonts/artwork in `core-ui` and retain license
 
 | Asset | Location |
 | --- | --- |
-| Mobi/Luna idle | `core/core-ui/src/main/assets/characters/{mobi,luna}/idle_breath/` |
-| Mobi warning sprite | `core/core-ui/src/main/assets/characters/mobi/unhealthy/` |
-| Luna expressions | `core/core-ui/src/main/assets/characters/luna/{hungry,sick}/` |
+| Character animation frames/sprites | `core/core-ui/src/main/assets/characters/<friend>/<variant>/<action>/` |
 | Mobi warning masters | `art/characters/mobi/unhealthy/` (not packaged) |
 | Shared artwork/accessories/backgrounds | `core/core-ui/src/main/res/drawable-nodpi/` |
 | Feature artwork/icons | Owning module's `res/drawable[-nodpi]/` |
@@ -58,17 +56,19 @@ icons with feature prefixes; share fonts/artwork in `core-ui` and retain license
 Generate variants from approved masters. Preserve identity, proportions, style,
 scene geometry, canvas, framing, subject scale/anchor and transparency; change only
 requested properties. Check dimensions and compare visually before accepting.
-Use replaceable [PetAvatar](ARCHITECTURE.md#state-and-lifecycle) rendering. Mobi normal
-and warning idle use sprite atlases with fixed ground anchors; warning crossfades
-must not shift layout. Equipped Mobi uses base warning artwork and restores equipment
-on recovery. Reduced animation stops frame cycling; source artwork stays unmodified.
+Variants are `normal` or the equipped accessory; actions include `idle_breath`,
+`hungry`, `sick` and Luna `run`. Use replaceable
+[PetAvatar](ARCHITECTURE.md#state-and-lifecycle) rendering. Mobi normal and warning idle use sprite atlases with fixed ground anchors; warning crossfades
+must not shift layout. Mobi headphones/goggles retain their artwork in idle, hungry
+and sick states. Reduced warning motion uses a still frame; source artwork stays
+unmodified.
 
 #### Luna generation references
 
 Inspect and provide both approved references for every Luna generation/edit,
 including poses, expressions, frames and accessories:
 
-- Front: [luna_idle_breath_01.png](../core/core-ui/src/main/assets/characters/luna/idle_breath/luna_idle_breath_01.png).
+- Front: [luna_idle_breath_normal_01.png](../core/core-ui/src/main/assets/characters/luna/normal/idle_breath/luna_idle_breath_normal_01.png).
 - Side/back: [Luna_Side_Back.png](../art/characters/luna/references/Luna_Side_Back.png).
 
 Preserve head/body ratio, head/ears, limbs, tail and facial feature proportions
@@ -98,9 +98,17 @@ connection returns to its entry route. Explicit Home always opens Home.
 Menu closes through close, backdrop, Back or selection; show equipped friend/version
 and keep its footer above system UI.
 
-Home/menu counts reflect selected Vehicle card cautions followed by claimable
-quests. The bell popup has empty state and a three-card scrolling viewport; each
-card opens its owning screen. Quest alerts remain until reward receipt.
+The [shell references](ui/README.md#shell) use a mint Home notification indicator,
+a positive-only count on the menu notification row, and an opaque navy panel
+opening from the left. Back returns to the menu; Close/backdrop returns Home.
+Keep its header fixed and scroll one list of selected-card cautions, then claimable
+quest rewards, grouped by section. Rows open their owning screens; quest alerts
+remain until reward receipt.
+The empty state has a bell illustration and short message. Reference outlines,
+dividers and close-control geometry live in the SVGs. Current Android popup
+behavior is described in [Architecture](ARCHITECTURE.md#state-and-lifecycle);
+updated references do not establish implementation parity.
+
 Unavailable services explain recovery. Pending actions block duplicates; uncertain
 writes reconcile before retry.
 

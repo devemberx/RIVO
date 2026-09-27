@@ -6,14 +6,5 @@
         android:exported="true"
         android:windowSoftInputMode="adjustResize"
         android:label="MobiMon conversation UI preview" />
-    <activity
-        android:name="com.monsters.mobimon.feature.auth.preview.CopilotPreviewActivity"
-        android:exported="true"
-        android:label="@string/copilot_preview_name">
-      <intent-filter>
-        <action android:name="android.intent.action.MAIN" />
-        <category android:name="android.intent.category.LAUNCHER" />
-      </intent-filter>
-    </activity>
   </application>
 </manifest>

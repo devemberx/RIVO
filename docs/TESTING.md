@@ -10,7 +10,8 @@ Tests belong in the subject module's `src/test`, device tests in `src/androidTes
 and Debug-only tests in `src/testDebug`. Explicitly shared source sets are
 `app/src/journeyTest` and `core-database/src/migrationTest`; other directories are
 not automatically shared. Review images exist; golden comparison and system-UI
-automation are not configured.
+automation are not configured. Debug installs expose only MainActivity in the
+launcher; Compose previews and the isolated conversation test Activity remain.
 
 Match the [fixed-display scope](DESIGN.md#visual-language): reference content
 2560 × 1184, compatibility-density content 1792 × 829, and reference IME content
@@ -72,7 +73,8 @@ identify the owning suites; individual test names define detailed cases.
 | Committed data on failure, independent settings/catalog retry and appearance | [Presentation](../core/core-presentation/src/test/java/com/monsters/mobimon/core/presentation), [customization](../feature/feature-customization/src/test/java/com/monsters/mobimon/feature/customization), [pet](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet) and database suites |
 | Quest claims, duplicates, committed amount/date and reset reconciliation | [Quest suites](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest) and point repository tests |
 | Shared condition, unselected warnings, card availability/selection/persistence | [Vehicle suites](../feature/feature-vehicle-info/src/test/java/com/monsters/mobimon/feature/vehicle), `VehicleConditionTest`, [selection preferences](../app/src/test/java/com/monsters/mobimon/di/features/VehicleCardSelectionPreferencesTest.kt), [Debug signal tests](../app/src/testDebug/java/com/monsters/mobimon/debug) |
-| Parking badges, sprites, ground anchors, backgrounds, motion and shared bounds | [Core UI suites](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui), presentation and owning feature review tests |
+| Parking badges, accessory/state sprites, ground anchors, backgrounds, motion and shared bounds | [Core UI suites](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui), presentation and owning feature review tests |
+| One Debug launcher entry, app identity and branding | [BrandingTest](../app/src/testDebug/java/com/monsters/mobimon/BrandingTest.kt) |
 | Navigation/restoration, alert counts/popup, reveal input, safe insets and enlarged text | [Shell suites](../app/src/test/java/com/monsters/mobimon/ui), connection journey, owning Home/Quest/Vehicle suites |
 | Overlay clamping, resize/drag and independent motion preference | [OverlayMovementBoundsTest](../app/src/test/java/com/monsters/mobimon/service/OverlayMovementBoundsTest.kt), [DebugOverlayPlacementTest](../app/src/testDebug/java/com/monsters/mobimon/ui/DebugOverlayPlacementTest.kt), shell motion tests |
 | Chat draft/ownership, failed turns, network/parking recovery, guarded Send and deadlines | [Conversation feature suites](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth), connection journey, [network status tests](../app/src/test/java/com/monsters/mobimon/network/AndroidConversationNetworkStatusTest.kt) |
@@ -112,10 +114,9 @@ Use an installed Korean system model, disconnect network and feed synthetic
 `THIRD_PHRASE_READY_FOR_FIXTURE`. The test includes a six-second pause, stops after
 the third greeting, checks the full review and then explicit Send/cancellation.
 The production path uses continuous `AudioRecord` capture and an external PCM pipe.
-Account/vehicle/Copilot dependencies remain fakes. A separate muted-microphone probe
-verified external-source support and EOF finalization on GoogleTTSRecognitionService.
-A successful run proves neither all OEM audio-source support nor offline use when
-network is available. Never put real-user audio or transcripts in production logs.
+Account/vehicle/Copilot dependencies remain fakes. Verify external-source support
+and EOF finalization for each target recognition service. A successful run proves
+neither all OEM audio-source support nor offline use when network is available. Never put real-user audio or transcripts in production logs.
 
 ### CI AAOS environment
 

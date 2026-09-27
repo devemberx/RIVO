@@ -266,7 +266,7 @@ class DecorativeMotionTest {
         val context =
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
-        assertTrue(context.assets.list("characters/mobi/unhealthy")!!.none { "transition" in it })
+        assertTrue(context.assets.list("characters/mobi/normal/sick")!!.none { "transition" in it })
         val sprite = requireNotNull(MobiCollapsedSpriteCache.getOrLoad(context))
         assertTrue(sprite === MobiCollapsedSpriteCache.getOrLoad(context))
         assertTrue(
