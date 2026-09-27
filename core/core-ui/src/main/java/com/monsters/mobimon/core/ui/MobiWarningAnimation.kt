@@ -98,26 +98,51 @@ internal class MobiHungryBlend(
 internal object MobiCollapsedSpriteCache {
     const val CELL = 408
     const val LOGICAL_CELL = 256
-    const val ASSET_PATH = "characters/mobi/unhealthy/mobi_collapsed_sprite.png"
+    const val DEFAULT_ASSET_PATH = "characters/mobi/normal/sick/mobi_collapsed_normal_sprite.png"
+
+    private fun assetPathFor(accessoryId: String?): String =
+        when (accessoryId) {
+            "accessory:mobi_headphones" ->
+                "characters/mobi/headphones/sick/mobi_collapsed_headphones_sprite.png"
+            "accessory:mobi_goggles" ->
+                "characters/mobi/goggles/sick/mobi_collapsed_goggles_sprite.png"
+            else -> DEFAULT_ASSET_PATH
+        }
 
     @Volatile private var cached: ImageBitmap? = null
 
-    fun peek(): ImageBitmap? = cached
+    @Volatile private var cachedAccessoryId: String? = null
 
-    fun getOrLoad(context: Context): ImageBitmap? {
-        cached?.let { return it }
+    fun peek(accessoryId: String? = null): ImageBitmap? = if (cachedAccessoryId == accessoryId) cached else null
+
+    fun clear() {
+        cached = null
+        cachedAccessoryId = null
+    }
+
+    fun getOrLoad(
+        context: Context,
+        accessoryId: String? = null,
+    ): ImageBitmap? {
+        val current = cached
+        if (current != null && cachedAccessoryId == accessoryId) return current
         return synchronized(this) {
-            cached?.let { return it }
+            val syncCurrent = cached
+            if (syncCurrent != null && cachedAccessoryId == accessoryId) return syncCurrent
             val assets = context.applicationContext.assets
+            val assetPath = assetPathFor(accessoryId)
             val options = BitmapFactory.Options().apply { inScaled = false }
             try {
-                assets.open(ASSET_PATH).use { stream ->
+                assets.open(assetPath).use { stream ->
                     val bitmap = requireNotNull(BitmapFactory.decodeStream(stream, null, options))
                     require(
                         bitmap.width == CELL * MobiCollapsedTimeline.COLUMNS &&
                             bitmap.height == CELL * MobiCollapsedTimeline.ROWS,
                     )
-                    bitmap.asImageBitmap().also { cached = it }
+                    bitmap.asImageBitmap().also {
+                        cachedAccessoryId = accessoryId
+                        cached = it
+                    }
                 }
             } catch (_: java.io.IOException) {
                 null
@@ -128,7 +153,7 @@ internal object MobiCollapsedSpriteCache {
 
 internal object MobiDizzyStarsSpriteCache {
     const val CELL = 408
-    const val ASSET_PATH = "characters/mobi/unhealthy/mobi_dizzy_stars_sprite.png"
+    const val ASSET_PATH = "characters/mobi/normal/sick/mobi_dizzy_stars_sprite.png"
 
     @Volatile private var cached: ImageBitmap? = null
 
@@ -172,11 +197,14 @@ fun MobiIdleBreathAnimation(
     val blend = remember { MobiWarningBlend() }
     val hungryBlend = remember { MobiHungryBlend(if (vehicleHungry) 1f else 0f) }
     val enabled = motionEnabled && LocalMobiMonMotionEnabled.current
-    val sprite by produceState<ImageBitmap?>(initialValue = MobiCollapsedSpriteCache.peek(), context, vehicleWarning) {
-        if (vehicleWarning &&
-            value == null
-        ) {
-            value = withContext(Dispatchers.IO) { MobiCollapsedSpriteCache.getOrLoad(context) }
+    val sprite by produceState<ImageBitmap?>(
+        initialValue = MobiCollapsedSpriteCache.peek(accessoryId),
+        context,
+        vehicleWarning,
+        accessoryId,
+    ) {
+        if (vehicleWarning) {
+            value = withContext(Dispatchers.IO) { MobiCollapsedSpriteCache.getOrLoad(context, accessoryId) }
         }
     }
     val starsSprite by produceState<ImageBitmap?>(
@@ -226,11 +254,12 @@ fun MobiIdleBreathAnimation(
                             NormalMobiHungryAnimation(
                                 modifier = Modifier.matchParentSize(),
                                 contentDescription = null,
-                                fallbackAsset = CharacterArtwork.hungry("friend:mobi"),
+                                accessoryId = accessoryId,
+                                fallbackAsset = CharacterArtwork.hungry("friend:mobi", accessoryId),
                             )
                         } else {
                             CharacterAssetImage(
-                                CharacterArtwork.hungry("friend:mobi"),
+                                CharacterArtwork.hungry("friend:mobi", accessoryId),
                                 Modifier.matchParentSize(),
                                 null,
                             )

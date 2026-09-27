@@ -68,8 +68,8 @@ Do not package full-screen references or generation drafts as runtime UI.
 
 | Asset | Location |
 | --- | --- |
-| Mobi idle sprite / Luna frames | `core/core-ui/src/main/assets/characters/{mobi,luna}/idle_breath/` |
-| Luna hungry / sick frames | `core/core-ui/src/main/assets/characters/luna/{hungry,sick}/` |
+| Mobi idle sprite / Luna frames | `core/core-ui/src/main/assets/characters/{mobi,luna}/normal/idle_breath/` |
+| Luna hungry / sick frames | `core/core-ui/src/main/assets/characters/luna/normal/{hungry,sick}/` |
 | Original Mobi warning artwork | `art/characters/mobi/unhealthy/` (not packaged) |
 | Luna side/back master reference | [Luna_Side_Back.png](../art/characters/luna/references/Luna_Side_Back.png) (not packaged) |
 | Shared artwork, accessories and backgrounds | `core/core-ui/src/main/res/drawable-nodpi/` |
@@ -86,7 +86,7 @@ only requested properties. Check dimensions and compare visually before use.
 Always inspect and provide both approved references as image inputs when generating
 or editing any Luna image, including expressions, poses, animation frames and accessories:
 
-- Front: [luna_idle_breath_01.png](../core/core-ui/src/main/assets/characters/luna/idle_breath/luna_idle_breath_01.png).
+- Front: [luna_idle_breath_normal_01.png](../core/core-ui/src/main/assets/characters/luna/normal/idle_breath/luna_idle_breath_normal_01.png).
 - Side and back: [Luna_Side_Back.png](../art/characters/luna/references/Luna_Side_Back.png).
 
 Keep Luna's character proportions consistent in every view and frame: head-to-body
@@ -107,7 +107,7 @@ remain strongest at 08-to-09, 13-to-14 and 14-to-15; alpha-correct adjacent-cell
 Breathing adds up to 1.2% width/2.4% height; a separate 6.6-second bob adds tiny
 settle and lift. All transforms share the seated pivot and preserve layout.
 
-Mobi's collapsed idle uses a lossless 24-frame sprite atlas `mobi_collapsed_sprite.png` (6 x 4 grid of 408px RGBA cells) under `core/core-ui/src/main/assets/characters/mobi/unhealthy/`.
+Mobi's collapsed idle uses a lossless 24-frame sprite atlas `mobi_collapsed_normal_sprite.png` (6 x 4 grid of 408px RGBA cells) under `core/core-ui/src/main/assets/characters/mobi/normal/sick/`.
 Original collapsed and transition artwork remains under `art/characters/mobi/unhealthy/` for future edits; it is not packaged.
 The 200ms normal/warning crossfade is unchanged. The 24-frame animation loop plays continuously over 4.05 seconds with smooth frame interpolation, capturing shivering, sweating, eye movements, and dizziness.
 Reduced motion snaps to frame 0 and disables frame cycling.
@@ -150,12 +150,31 @@ Preserve the SVG layout at AAOS compatibility density, centering minimum touch
 bounds around each row. Reflow only when those bounds overlap or enlarged text
 needs more room.
 
-Home's menu control and the menu bell show the current alert count when positive.
-The bell opens a popup over the menu. Selected Vehicle cards with a current
-`CAUTION` status appear before claimable quests; quest alerts remain until their
-rewards are received. The popup has an empty state and a three-card viewport that
-scrolls for additional alerts. Each card opens its owning screen. The
-[notification references](ui/README.md#screen-index) define the popup geometry.
+The Figma shell references place a small mint indicator inside Home's menu control
+when notifications are present. The menu's second row opens notifications and
+shows a count badge only when positive; Home retains its primary conversation
+action. The notification panel shares the menu's opaque navy surface and rounded
+outline, expanding from the left. Back returns to the menu; Close or the
+backdrop returns Home.
+
+At SVG reference size, both panel outlines and the menu footer divider use a 1px
+`#526E88` stroke at 35% opacity. The notification header divider uses the same
+color at full opacity and 2px width. Both panels use a background-free 32 × 32px
+close icon with a 3.5px `#E2EDF7` stroke, centered in an invisible 88 × 88px control
+inset 43px from the panel top and 55px from its right edge. The menu brand block
+is vertically centered with this control. These reference bounds do not replace
+the minimum AAOS touch target requirement.
+
+Vehicle checks appear before quest rewards in one list, with section headings
+rather than tabs. Selected Vehicle cards with a current `CAUTION` status appear
+before claimable quests; quest alerts remain until their rewards are received.
+Each full row opens its owning screen and uses an icon, short title, supporting
+text and chevron. The header stays fixed while longer lists scroll. The empty
+state centers a circular bell illustration and short message without an extra
+Home button. The [notification references](ui/README.md#screen-index) define the
+geometry; SVGs preserve static states, not scrolling or unread-state transitions.
+These updated references do not establish Android implementation parity; current
+shell support is described in [ARCHITECTURE.md](ARCHITECTURE.md#state-and-lifecycle).
 
 Unavailable services explain the limitation and recovery. Pending actions block
 duplicates; uncertain writes offer reconciliation before retry.
