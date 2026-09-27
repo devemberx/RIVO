@@ -20,9 +20,11 @@ import com.monsters.mobimon.core.navigation.FeatureNavigator
 import com.monsters.mobimon.core.navigation.VehicleRoute
 import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
 import com.monsters.mobimon.core.presentation.VehiclePresentation
+import com.monsters.mobimon.core.presentation.parkedVerified
 import com.monsters.mobimon.core.ui.MobiMonButton
 import com.monsters.mobimon.core.ui.MobiMonDimensions
 import com.monsters.mobimon.core.ui.MobiMonMessage
+import com.monsters.mobimon.core.ui.rememberParkingInterruption
 
 class VehicleFeature(
     private val vehicle: VehiclePresentation,
@@ -38,6 +40,7 @@ class VehicleFeature(
         modifier: Modifier,
     ) {
         val snapshot = vehicle.snapshot()
+        val parkingRequired = rememberParkingInterruption(snapshot.parkedVerified)
         val appearanceModel = appearance.model()
         val equipped by appearanceModel.state.collectAsStateWithLifecycle()
         val selectedCards by cardSelectionStore.selectedCards.collectAsStateWithLifecycle()
@@ -47,7 +50,7 @@ class VehicleFeature(
                     .fillMaxSize()
                     .background(VehicleScreenBackground),
         ) {
-            if (equipped.failed) {
+            if (equipped.failed && !parkingRequired) {
                 Row(
                     Modifier.fillMaxWidth().padding(MobiMonDimensions.contentPadding),
                     horizontalArrangement = Arrangement.spacedBy(MobiMonDimensions.contentGap),
@@ -77,7 +80,8 @@ class VehicleFeature(
                 backgroundId = equipped.backgroundId,
                 outfitId = equipped.outfitId,
                 selectedCards = selectedCards,
-                onCardSelectionConfirmed = cardSelectionStore::save,
+                onCardSelectionConfirmed = { if (snapshot.parkedVerified) cardSelectionStore.save(it) },
+                parkingRequired = parkingRequired,
             )
         }
     }

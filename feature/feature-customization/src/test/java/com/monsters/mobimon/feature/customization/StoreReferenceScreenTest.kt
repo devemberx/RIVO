@@ -48,6 +48,37 @@ import java.io.File
 class StoreReferenceScreenTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun parkingLossShowsCustomizationPopupWithHomeAction() {
+        var parkingRequired by mutableStateOf(false)
+        var home = false
+        compose.setContent {
+            MobiMonTheme {
+                CustomizationScreen(
+                    inventory = CosmeticInventory(setOf("friend:mobi"), mapOf(CosmeticSlot.FRIEND to "friend:mobi")),
+                    catalog = emptyList(),
+                    selectedItemId = null,
+                    purchasing = false,
+                    purchaseFailed = false,
+                    onSelectItem = {},
+                    onPurchaseItem = { _, _ -> },
+                    onEquipItem = {},
+                    onEquipFriend = {},
+                    pointBalance = 1200,
+                    pointLoadFailed = false,
+                    parkingRequired = parkingRequired,
+                    onHome = { home = true },
+                )
+            }
+        }
+
+        compose.runOnIdle { parkingRequired = true }
+        compose.onNodeWithText("주차 후 꾸미기를 이어가요").assertIsDisplayed()
+        compose.onNodeWithTag("parking-interruption-home").performClick()
+        assertTrue(home)
+        compose.runOnIdle { parkingRequired = false }
+        compose.onNodeWithTag("parking-interruption-dialog").assertDoesNotExist()
+    }
+
     @Test fun sharedAppearanceDoesNotEnableActionsBeforeStoreInventoryLoads() {
         compose.mainClock.autoAdvance = false
         var storeInventoryReady by mutableStateOf(false)

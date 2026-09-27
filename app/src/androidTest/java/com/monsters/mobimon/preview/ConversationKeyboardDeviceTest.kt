@@ -3,13 +3,17 @@ package com.monsters.mobimon.preview
 import android.content.Intent
 import android.graphics.Bitmap
 import android.provider.Settings
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
@@ -26,6 +30,48 @@ import java.io.File
 @RunWith(AndroidJUnit4::class)
 class ConversationKeyboardDeviceTest {
     @get:Rule val compose = createEmptyComposeRule()
+
+    @Test
+    fun voicePreviewHasSeparateActionsAndNativeInsets() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val context = instrumentation.targetContext
+        for (sample in listOf("voice-listening", "voice-review")) {
+            val intent = Intent(context, ConversationPreviewActivity::class.java).putExtra("state", sample)
+            ActivityScenario.launch<ConversationPreviewActivity>(intent).use {
+                val panel = compose.onNodeWithTag("chat-panel").fetchSemanticsNode().boundsInRoot
+                val send = compose.onNodeWithTag("chat-send").fetchSemanticsNode().boundsInRoot
+                val left =
+                    compose
+                        .onNodeWithContentDescription(
+                            if (sample == "voice-listening") "녹음 마치고 내용 확인" else "음성으로 입력",
+                        ).fetchSemanticsNode()
+                        .boundsInRoot
+                assertTrue("Adjacent actions must have separate touch bounds", left.right <= send.left + 1f)
+                assertTrue("Actions must stay above the system navigation", send.bottom <= panel.bottom)
+                if (sample == "voice-listening") compose.onNodeWithTag("chat-send").assertIsNotEnabled()
+                val output = File(context.filesDir, "test-screenshots").apply { mkdirs() }
+                compose.waitForIdle()
+                instrumentation.uiAutomation.waitForIdle(500, 5_000)
+                val image = checkNotNull(instrumentation.uiAutomation.takeScreenshot())
+                File(output, "conversation-native-$sample.png").outputStream().use { stream ->
+                    assertTrue(image.compress(Bitmap.CompressFormat.PNG, 100, stream))
+                }
+                image.recycle()
+                if (sample == "voice-review") {
+                    compose
+                        .onNodeWithContentDescription("음성으로 입력")
+                        .performSemanticsAction(SemanticsActions.RequestFocus) { assertTrue(it()) }
+                    compose.onNodeWithContentDescription("음성으로 입력").assertIsFocused()
+                    compose.waitForIdle()
+                    val focused = checkNotNull(instrumentation.uiAutomation.takeScreenshot())
+                    File(output, "conversation-native-voice-focus.png").outputStream().use { stream ->
+                        assertTrue(focused.compress(Bitmap.CompressFormat.PNG, 100, stream))
+                    }
+                    focused.recycle()
+                }
+            }
+        }
+    }
 
     @Test
     fun editingFailedPreviewRemovesUnansweredBubble() {

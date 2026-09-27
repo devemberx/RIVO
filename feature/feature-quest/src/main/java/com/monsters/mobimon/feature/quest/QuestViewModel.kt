@@ -54,6 +54,8 @@ class QuestViewModel(
     private val mutableState = MutableStateFlow(QuestUiState())
     val state = mutableState.asStateFlow()
     private var observation: Job? = null
+    private var claimJob: Job? = null
+    private var claimGeneration = 0
     private var observedQuestIds = emptySet<String>()
     private val unobservedConfirmedQuestIds = mutableSetOf<String>()
     private var pendingClaimObserved = false
@@ -121,6 +123,13 @@ class QuestViewModel(
         mutableState.update { it.copy(rewardSuccess = null) }
     }
 
+    fun onParkingInterrupted() {
+        claimGeneration++
+        claimJob?.cancel()
+        pendingClaimObserved = false
+        mutableState.update { it.copy(pendingQuestId = null, message = null, rewardSuccess = null) }
+    }
+
     fun claimPointQuest(
         questId: String,
         displayedSnapshot: VehicleSnapshot,
@@ -128,34 +137,38 @@ class QuestViewModel(
         if (state.value.isBusy || state.value.isLoading || state.value.observationFailed) return
         pendingClaimObserved = questId in observedQuestIds
         mutableState.update { it.copy(pendingQuestId = questId, message = null, rewardSuccess = null) }
-        viewModelScope.launch {
-            try {
-                when (val result = economy.awardQuest(questId, displayedSnapshot)) {
-                    is PointAwardResult.Awarded ->
-                        confirm(
-                            questId,
-                            QuestRewardSuccess(
-                                questId = questId,
-                                points = result.points,
-                                basePoints = result.basePoints,
-                                weatherMultiplier = result.weatherMultiplier,
-                            ),
-                        )
-                    PointAwardResult.AlreadyAwarded -> confirm(questId, null)
-                    PointAwardResult.EvidenceChanged -> show(QuestMessage.REFRESH_REQUIRED)
-                    PointAwardResult.ConditionNotMet -> show(QuestMessage.CONDITION_NOT_MET)
-                    PointAwardResult.InteractionRestricted -> show(QuestMessage.INTERACTION_RESTRICTED)
-                    PointAwardResult.QuestUnavailable -> show(QuestMessage.UNSUPPORTED)
-                    PointAwardResult.StorageFailure -> show(QuestMessage.STORAGE_FAILURE)
+        val generation = claimGeneration
+        claimJob =
+            viewModelScope.launch {
+                try {
+                    val result = economy.awardQuest(questId, displayedSnapshot)
+                    if (generation != claimGeneration) return@launch
+                    when (result) {
+                        is PointAwardResult.Awarded ->
+                            confirm(
+                                questId,
+                                QuestRewardSuccess(
+                                    questId = questId,
+                                    points = result.points,
+                                    basePoints = result.basePoints,
+                                    weatherMultiplier = result.weatherMultiplier,
+                                ),
+                            )
+                        PointAwardResult.AlreadyAwarded -> confirm(questId, null)
+                        PointAwardResult.EvidenceChanged -> show(QuestMessage.REFRESH_REQUIRED)
+                        PointAwardResult.ConditionNotMet -> show(QuestMessage.CONDITION_NOT_MET)
+                        PointAwardResult.InteractionRestricted -> show(QuestMessage.INTERACTION_RESTRICTED)
+                        PointAwardResult.QuestUnavailable -> show(QuestMessage.UNSUPPORTED)
+                        PointAwardResult.StorageFailure -> show(QuestMessage.STORAGE_FAILURE)
+                    }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    if (generation == claimGeneration) show(QuestMessage.STORAGE_FAILURE)
+                } finally {
+                    if (generation == claimGeneration) mutableState.update { it.copy(pendingQuestId = null) }
                 }
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (_: Exception) {
-                show(QuestMessage.STORAGE_FAILURE)
-            } finally {
-                mutableState.update { it.copy(pendingQuestId = null) }
             }
-        }
     }
 
     private fun confirm(

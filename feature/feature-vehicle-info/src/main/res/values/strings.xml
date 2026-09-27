@@ -1,4 +1,8 @@
 <resources>
+  <string name="vehicle_parking_popup_title">주차 후 차량 상태를 확인해요</string>
+  <string name="vehicle_parking_popup_body">차량 상태 확인과 카드 변경은 주차 상태에서만 할 수 있어요.</string>
+  <string name="vehicle_parking_popup_instruction">안전한 곳에 주차한 뒤 다시 들어와 주세요.</string>
+  <string name="vehicle_parking_popup_preserved">홈으로 돌아가도 카드 설정은 유지돼요.</string>
   <string name="vehicle_quality_valid">주차 상태를 확인했어요</string>
   <string name="vehicle_quality_stale">새로운 차량 정보가 필요해요</string>
   <string name="vehicle_last_checked_seconds">마지막 확인: %1$d초 전</string>

@@ -6,14 +6,9 @@ The index links each export to its source frame. They are visual references, not
 Android assets or evidence that a feature is implemented. See [DESIGN.md](../DESIGN.md)
 for behavior and [ARCHITECTURE.md](../ARCHITECTURE.md) for current support.
 
-The shell references include home and menu states with zero, three, or five
-unconfirmed notifications, plus empty, three-alert, and scrolling notification
-panels. All are direct SVG exports from the linked v5 Figma frames. Every SVG
-export has a 2560 × 1440 viewBox.
-Menu and notification exports include subtle panel outlines, background-free
-close controls, and the restored notification header divider. Their visual and
-navigation rules are defined in [DESIGN.md](../DESIGN.md#screens-and-navigation).
-Standard frames show system bars at y=0–96
+Every SVG has a 2560 × 1440 viewBox. The screen index lists shell notification
+counts and conversation states; [Design](../DESIGN.md#screens-and-navigation)
+owns their visual/navigation rules. Standard frames show system bars at y=0–96
 and y=1280–1440, leaving 2560 × 1184 app content. The keyboard-input frame shows
 a keyboard in place of the bottom bar. Compare app content using actual device insets.
 

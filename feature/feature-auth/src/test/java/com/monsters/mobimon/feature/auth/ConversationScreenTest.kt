@@ -70,7 +70,73 @@ class ConversationScreenTest {
     private var checks = 0
     private var retries = 0
     private var connectionOpens = 0
+    private var voiceStarts = 0
+    private var voiceStops = 0
+    private var voiceCancellations = 0
     private lateinit var view: View
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun voiceInputBlocksSuggestionsUntilCancellationRestoresEditing() {
+        state = state.copy(voice = VoiceInputState(available = true))
+        draft = TextFieldValue("original draft")
+        show()
+        val chooseSuggestion =
+            compose
+                .onNodeWithText("오늘 하루 이야기할래")
+                .fetchSemanticsNode()
+                .config[SemanticsActions.OnClick]
+                .action!!
+        for (phase in listOf(
+            VoiceInputPhase.PERMISSION,
+            VoiceInputPhase.STARTING,
+            VoiceInputPhase.LISTENING,
+            VoiceInputPhase.STOPPING,
+        )) {
+            compose.runOnIdle { state = state.copy(voice = state.voice.copy(phase = phase)) }
+            compose.onNodeWithText("오늘 하루 이야기할래").assertDoesNotExist()
+            compose.onNodeWithText("기분 좋아지는 얘기 해줘").assertDoesNotExist()
+            compose.runOnIdle {
+                chooseSuggestion()
+                assertEquals("original draft", draft.text)
+                assertEquals(0, sends)
+            }
+        }
+        compose.runOnIdle { state = state.copy(voice = state.voice.copy(phase = VoiceInputPhase.LISTENING)) }
+        capture("empty-voice-recording")
+        compose.onNodeWithContentDescription("음성 입력 취소").performClick()
+        compose.onNodeWithTag("chat-input").assertIsDisplayed()
+        compose.runOnIdle {
+            assertEquals("original draft", draft.text)
+            assertEquals(1, voiceCancellations)
+        }
+        capture("empty-voice-cancelled")
+        compose.onNodeWithText("오늘 하루 이야기할래").performClick()
+        compose.onNodeWithTag("chat-input").assertIsFocused()
+        compose.runOnIdle {
+            assertEquals("오늘 하루 이야기할래", draft.text)
+            assertEquals(0, sends)
+        }
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun enlargedVoiceInputRestoresSuggestionsAfterCancellationAtAaosDensity() {
+        state = state.copy(voice = VoiceInputState(available = true, phase = VoiceInputPhase.PERMISSION))
+        draft = TextFieldValue("original draft")
+        show(fontScale = 1.6f, density = 10f / 7f)
+        compose.onNodeWithText("오늘 하루 이야기할래").assertDoesNotExist()
+        compose.runOnIdle { state = state.copy(voice = state.voice.copy(phase = VoiceInputPhase.LISTENING)) }
+        compose.onNodeWithText("오늘 하루 이야기할래").assertDoesNotExist()
+        capture("empty-voice-recording-enlarged-aaos")
+        compose.onNodeWithContentDescription("음성 입력 취소").performClick()
+        compose.onNodeWithText("오늘 하루 이야기할래").assertIsDisplayed().performClick()
+        compose.onNodeWithTag("chat-input").assertIsFocused()
+        compose.runOnIdle {
+            assertEquals("오늘 하루 이야기할래", draft.text)
+            assertEquals(0, sends)
+        }
+    }
 
     @Test
     fun restrictedConversationShowsParkingNoticeInHeader() {
@@ -470,6 +536,17 @@ class ConversationScreenTest {
         assertEquals(51f, parking.top, 1f)
         assertEquals(258f, parking.width, 1f)
         assertEquals(60f, parking.height, 1f)
+        val parkingIcon =
+            compose
+                .onNodeWithTag(
+                    "chat-parking-icon",
+                    useUnmergedTree = true,
+                ).fetchSemanticsNode()
+                .boundsInRoot
+        val parkingText = compose.onNodeWithText("주차 확인됨", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        assertEquals(parking.center.x, (parkingIcon.left + parkingText.right) / 2f, 1f)
+        assertEquals(parking.center.y, parkingIcon.center.y, 1f)
+        assertEquals(parking.center.y, parkingText.center.y, 1f)
         val auth = compose.onNodeWithTag("chat-auth-badge").fetchSemanticsNode().boundsInRoot
         compose.onNodeWithTag("chat-auth-badge").assertContentDescriptionEquals("Copilot 연결됨")
         assertEquals(1887f, auth.left, 1f)
@@ -676,7 +753,7 @@ class ConversationScreenTest {
         assertEquals(34f, panel.top, 1f)
         assertEquals(1126f, panel.height, 1f)
         val send = compose.onNodeWithTag("chat-send-visual", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
-        assertEquals(72f, send.width, 1f)
+        assertEquals(68.53f, send.width, 1f)
         compose.runOnIdle {
             height = 940.dp
             state =
@@ -714,6 +791,235 @@ class ConversationScreenTest {
         assertEquals(1096f, panel.bottom, 1f)
         assertEquals(440f, avatar.width, 1f)
         compose.onNodeWithTag("chat-composer").assertIsDisplayed()
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun voiceListeningAndReviewMatchTheReferenceTypographyAndButtonBounds() {
+        state =
+            state.copy(
+                messages = referenceMessages,
+                voice =
+                    VoiceInputState(
+                        true,
+                        VoiceInputPhase.LISTENING,
+                        levels = referenceVoiceLevels,
+                    ),
+            )
+        draft = TextFieldValue("original draft")
+        show()
+        capture("voice-listening")
+        val bar = compose.onNodeWithTag("chat-voice-control").fetchSemanticsNode().boundsInRoot
+        assertEquals(853.5f, bar.left, 1f)
+        assertEquals(1020.5f, bar.top, 1f)
+        assertEquals(1577f, bar.width, 1f)
+        assertEquals(87f, bar.height, 1f)
+        val cancel =
+            compose
+                .onNodeWithTag(
+                    "chat-voice-cancel-visual",
+                    useUnmergedTree = true,
+                ).fetchSemanticsNode()
+                .boundsInRoot
+        val stop =
+            compose
+                .onNodeWithTag(
+                    "chat-voice-stop-visual",
+                    useUnmergedTree = true,
+                ).fetchSemanticsNode()
+                .boundsInRoot
+        assertEquals(872.87f, cancel.left, 1f)
+        assertEquals(1029.1f, cancel.top, 1f)
+        assertEquals(70f, cancel.width, 1f)
+        assertEquals(69.8f, cancel.height, 1f)
+        assertEquals(2250f, stop.left, 1f)
+        assertEquals(1028f, stop.top, 1f)
+        assertEquals(72f, stop.width, 1f)
+        compose.onNodeWithTag("chat-send").assertIsNotEnabled()
+        compose.onNodeWithTag("chat-new-action").assertDoesNotExist()
+        compose.onNodeWithText("듣고 있어요", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("대화는 GitHub Copilot으로 전송돼요. AI 답변은 부정확할 수 있어요.").assertIsDisplayed()
+        compose.onNodeWithContentDescription("녹음 마치고 내용 확인").performClick()
+        compose.runOnIdle {
+            assertEquals(1, voiceStops)
+            assertEquals(0, sends)
+            assertEquals("original draft", draft.text)
+            state = state.copy(voice = state.voice.copy(phase = VoiceInputPhase.REVIEW))
+            draft = TextFieldValue("모비는 뭐가 좋았어?", TextRange("모비는 뭐가 좋았어?".length))
+        }
+        compose.runOnIdle { state = state.copy(voice = state.voice.copy(problem = VoiceInputProblem.NO_MATCH)) }
+        capture("voice-review")
+        compose.onNodeWithTag("chat-voice-hint").assertDoesNotExist()
+        compose.onNodeWithText("대화는 GitHub Copilot으로 전송돼요. AI 답변은 부정확할 수 있어요.").assertIsDisplayed()
+        compose.onNodeWithTag("chat-input").assertIsDisplayed()
+        compose.onNodeWithContentDescription("음성으로 입력").assertIsDisplayed()
+        val composer = compose.onNodeWithTag("chat-composer").fetchSemanticsNode().boundsInRoot
+        val send = compose.onNodeWithTag("chat-send-visual", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        assertEquals(853.5f, composer.left, 1f)
+        assertEquals(1020.5f, composer.top, 1f)
+        assertEquals(1577f, composer.width, 1f)
+        assertEquals(87f, composer.height, 1f)
+        assertEquals(2343.1f, send.left, 1f)
+        assertEquals(1028f, send.top, 1f)
+        assertEquals(68.53f, send.width, 1f)
+        assertEquals(72f, send.height, 1f)
+        compose.onNodeWithTag("chat-input").performTextInput(" 수정")
+        compose.runOnIdle { assertEquals(0, sends) }
+        compose.onNodeWithTag("chat-send").performClick()
+        compose.runOnIdle {
+            assertEquals(1, sends)
+            assertEquals("모비는 뭐가 좋았어? 수정", state.messages.single().text)
+        }
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun voiceControlsRetainMinimumTouchBoundsAtAaosDensityAndEnlargedText() {
+        state = state.copy(messages = referenceMessages, voice = VoiceInputState(true, VoiceInputPhase.LISTENING))
+        show(density = 10f / 7f)
+        capture("voice-listening-aaos")
+        compose.onNodeWithContentDescription("음성 입력 취소").assertHeightIsAtLeast(76.dp)
+        compose.onNodeWithContentDescription("녹음 마치고 내용 확인").assertHeightIsAtLeast(76.dp)
+        val bar = compose.onNodeWithTag("chat-voice-control").fetchSemanticsNode().boundsInRoot
+        assertEquals(853.5f, bar.left, 1f)
+        assertEquals(1020.5f, bar.top, 1f)
+        compose.onNodeWithContentDescription("음성 입력 취소").performClick()
+        compose.runOnIdle {
+            assertEquals(1, voiceCancellations)
+            assertEquals(0, sends)
+        }
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun enlargedVoiceReviewIsEditableAndUnavailableReadinessBlocksSend() {
+        draft = TextFieldValue("모비는 뭐가 좋았어?")
+        state =
+            state.copy(
+                connection = ConversationConnection.UNAVAILABLE,
+                voice = VoiceInputState(true, VoiceInputPhase.REVIEW),
+            )
+        show(fontScale = 1.6f, density = 10f / 7f)
+        capture("voice-review-enlarged")
+        compose.onNodeWithTag("chat-input").assertIsDisplayed().performTextInput(" 수정")
+        compose.onNodeWithTag("chat-send").assertIsNotEnabled()
+        compose.runOnIdle { assertEquals(0, sends) }
+        compose.runOnIdle { allowed = false }
+        compose.onNodeWithTag("chat-parking-dialog").assertIsDisplayed()
+        compose.onNodeWithTag("chat-input").assertDoesNotExist()
+        compose.runOnIdle { assertTrue(draft.text.contains("수정")) }
+    }
+
+    @Test
+    fun voiceStartAndCancellationNeverSubmitAndTheOriginalDraftSurvives() {
+        state = state.copy(voice = VoiceInputState(available = true))
+        draft = TextFieldValue("original")
+        show()
+        compose.onNodeWithContentDescription("음성으로 입력").performClick()
+        compose.onNodeWithTag("chat-voice-control").assertIsDisplayed()
+        compose.onNodeWithContentDescription("음성 입력 취소").performClick()
+        compose.onNodeWithTag("chat-input").assertIsDisplayed()
+        compose.runOnIdle {
+            assertEquals(1, voiceStarts)
+            assertEquals(1, voiceCancellations)
+            assertEquals("original", draft.text)
+            assertEquals(0, sends)
+        }
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun offlineVoiceInputKeepsRecoveryActionsReachableWithoutEnablingSend() {
+        state =
+            state.copy(
+                connection = ConversationConnection.UNAVAILABLE,
+                connectionProblem = ConversationProblem.NETWORK,
+                voice = VoiceInputState(available = true),
+            )
+        draft = TextFieldValue("오프라인 초안")
+        show()
+        compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+        compose.onNodeWithTag("chat-inline-failure").assertIsDisplayed()
+        capture("offline-voice-recovery")
+        compose.onNodeWithContentDescription("음성으로 입력").assertIsEnabled().performClick()
+        compose.runOnIdle { state = state.copy(voice = state.voice.copy(levels = referenceVoiceLevels)) }
+        compose.onNodeWithTag("chat-voice-control").assertIsDisplayed()
+        capture("offline-voice-listening-recovery")
+        compose.onNodeWithText("다시 확인").performClick()
+        compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+        compose.onNodeWithTag("chat-voice-control").assertIsDisplayed()
+        compose.onNodeWithText("확인 중…").assertIsNotEnabled()
+        compose.onNodeWithText("홈으로").assertIsEnabled()
+        capture("offline-voice-checking-recovery")
+        compose.runOnIdle {
+            assertEquals(1, checks)
+            assertEquals(1, voiceStarts)
+            assertEquals(0, voiceCancellations)
+            state =
+                state.copy(
+                    connection = ConversationConnection.UNAVAILABLE,
+                    connectionProblem = ConversationProblem.NETWORK,
+                    connectionRetrying = false,
+                )
+        }
+        compose.onNodeWithContentDescription("음성 입력 취소").performClick()
+        compose.onNodeWithTag("chat-send").assertIsNotEnabled()
+        compose.onNodeWithTag("chat-input").performTextInput(" 수정")
+        compose.onNodeWithText("홈으로").performClick()
+        compose.runOnIdle {
+            assertEquals(1, homeReturns)
+            assertEquals(0, sends)
+            assertTrue(draft.text.contains("수정"))
+        }
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun offlineVoiceRecoveryRemainsReachableWithEnlargedTextAtAaosDensity() {
+        state =
+            state.copy(
+                connection = ConversationConnection.UNAVAILABLE,
+                connectionProblem = ConversationProblem.NETWORK,
+                voice = VoiceInputState(true, VoiceInputPhase.REVIEW),
+            )
+        draft = TextFieldValue("오프라인에서 작성한 내용을 확인하고 수정할 수 있어요")
+        show(fontScale = 1.6f, density = 10f / 7f)
+        compose.onNodeWithTag("chat-inline-failure").assertIsDisplayed()
+        compose.onNodeWithTag("chat-input").assertIsDisplayed()
+        compose.onNodeWithTag("chat-send").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("음성으로 입력").assertIsEnabled().assertHeightIsAtLeast(76.dp)
+        compose.onNodeWithText("다시 확인").assertIsDisplayed().assertIsEnabled()
+        compose.onNodeWithText("홈으로").assertIsDisplayed().assertIsEnabled()
+        capture("offline-voice-review-enlarged-recovery")
+    }
+
+    @Test
+    fun networkLossKeepsVoiceStopReachableButAccountAndParkingStillBlock() {
+        state = state.copy(voice = VoiceInputState(true, VoiceInputPhase.LISTENING))
+        show()
+        compose.runOnIdle {
+            state =
+                state.copy(
+                    connection = ConversationConnection.UNAVAILABLE,
+                    connectionProblem = ConversationProblem.NETWORK,
+                )
+        }
+        compose.onNodeWithContentDescription("녹음 마치고 내용 확인").assertIsEnabled().performClick()
+        compose.runOnIdle {
+            assertEquals(1, voiceStops)
+            assertEquals(0, voiceCancellations)
+            state = state.copy(connectionProblem = ConversationProblem.ACCOUNT)
+        }
+        compose.onNodeWithTag("chat-network-dialog").assertIsDisplayed()
+        compose.onNodeWithContentDescription("음성으로 입력").assertDoesNotExist()
+        compose.runOnIdle {
+            assertEquals(1, voiceCancellations)
+            state = state.copy(connectionProblem = ConversationProblem.NETWORK)
+            allowed = false
+        }
+        compose.onNodeWithTag("chat-parking-dialog").assertIsDisplayed()
+        compose.onNodeWithContentDescription("음성으로 입력").assertDoesNotExist()
+        compose.runOnIdle { assertEquals(0, sends) }
     }
 
     private fun show(
@@ -765,6 +1071,22 @@ class ConversationScreenTest {
                             state = state.copy(messages = state.messages.dropLast(1), failed = false)
                         },
                         onNewConversation = { state = state.copy(messages = emptyList()) },
+                        onStartVoice = {
+                            voiceStarts++
+                            state = state.copy(voice = state.voice.copy(phase = VoiceInputPhase.LISTENING))
+                        },
+                        onStopVoice = {
+                            voiceStops++
+                            state = state.copy(voice = state.voice.copy(phase = VoiceInputPhase.STOPPING))
+                        },
+                        onCancelVoice = {
+                            if (state.voice.capturing) voiceCancellations++
+                            state = state.copy(voice = state.voice.copy(phase = VoiceInputPhase.IDLE))
+                        },
+                        onFinishVoiceReview = {
+                            state =
+                                state.copy(voice = state.voice.copy(phase = VoiceInputPhase.IDLE))
+                        },
                     )
                 }
             }
@@ -817,6 +1139,80 @@ class ConversationScreenTest {
             ConversationMessage("user", "오늘은 조금 피곤한 하루였어.", true),
             ConversationMessage("reply", "오늘 하루도 수고했어요.\n지금은 잠깐 쉬어 가도 괜찮아요.\n어떤 일이 있었는지 들려줄래요?", false),
         )
+
+    private val referenceVoiceLevels =
+        listOf(
+            8f,
+            9f,
+            11f,
+            14f,
+            18f,
+            22f,
+            25f,
+            28f,
+            29f,
+            28f,
+            25f,
+            20f,
+            16f,
+            12f,
+            9f,
+            8f,
+            10f,
+            14f,
+            20f,
+            27f,
+            34f,
+            40f,
+            44f,
+            46f,
+            44f,
+            39f,
+            32f,
+            25f,
+            18f,
+            12f,
+            9f,
+            8f,
+            11f,
+            17f,
+            24f,
+            32f,
+            39f,
+            44f,
+            46f,
+            46f,
+            42f,
+            36f,
+            29f,
+            22f,
+            15f,
+            10f,
+            8f,
+            9f,
+            11f,
+            16f,
+            21f,
+            26f,
+            29f,
+            31f,
+            31f,
+            29f,
+            25f,
+            21f,
+            16f,
+            13f,
+            10f,
+            8f,
+            8f,
+            8f,
+        ).map {
+            (
+                it -
+                    8f
+            ) /
+                38f
+        }
 
     private val referenceMessages =
         listOf(

@@ -78,7 +78,9 @@ import com.monsters.mobimon.core.ui.LocalMobiMonNotificationCount
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import com.monsters.mobimon.feature.auth.AssumedOnlineConversationNetworkStatus
 import com.monsters.mobimon.feature.auth.ConversationNetworkStatus
+import com.monsters.mobimon.feature.auth.ConversationSpeechInput
 import com.monsters.mobimon.feature.auth.ConversationViewModel
+import com.monsters.mobimon.feature.auth.UnavailableConversationSpeechInput
 import com.monsters.mobimon.feature.quest.QuestViewModel
 import com.monsters.mobimon.feature.quest.claimableQuestAlerts
 import com.monsters.mobimon.feature.vehicle.VehicleCardSelectionStore
@@ -110,6 +112,7 @@ fun MobiMonApp(
     conversation: ConversationProvider,
     vehicle: VehiclePresentation,
     networkStatus: ConversationNetworkStatus = AssumedOnlineConversationNetworkStatus,
+    speechInput: ConversationSpeechInput = UnavailableConversationSpeechInput,
     points: PointEconomy? = null,
     questCatalog: PointQuestCatalog? = null,
     vehicleCards: VehicleCardSelectionStore? = null,
@@ -117,8 +120,17 @@ fun MobiMonApp(
     val state by appUse.states.collectAsStateWithLifecycle()
     val session by authentication.session.collectAsStateWithLifecycle()
     val conversationFactory =
-        remember(authentication, conversation, networkStatus) {
-            viewModelFactory { initializer { ConversationViewModel(authentication, conversation, networkStatus) } }
+        remember(authentication, conversation, networkStatus, speechInput) {
+            viewModelFactory {
+                initializer {
+                    ConversationViewModel(
+                        authentication,
+                        conversation,
+                        networkStatus,
+                        speechInput,
+                    )
+                }
+            }
         }
     val conversationModel: ConversationViewModel = viewModel(factory = conversationFactory)
     val snapshot = vehicle.snapshot()

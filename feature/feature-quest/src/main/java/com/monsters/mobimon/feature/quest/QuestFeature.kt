@@ -21,6 +21,7 @@ import com.monsters.mobimon.core.presentation.PointPresentation
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.core.presentation.parkedVerified
 import com.monsters.mobimon.core.presentation.parkingBadgeConfirmed
+import com.monsters.mobimon.core.ui.rememberParkingInterruption
 
 class QuestFeature(
     private val vehicle: VehiclePresentation,
@@ -57,6 +58,10 @@ class QuestFeature(
         val equipped by appearanceModel.state.collectAsStateWithLifecycle()
         val reading = vehicle.reading()
         val snapshot = reading.snapshot
+        val parkingRequired = rememberParkingInterruption(snapshot.parkedVerified)
+        LaunchedEffect(parkingRequired) {
+            if (parkingRequired) model.onParkingInterrupted()
+        }
         val context = LocalContext.current
         val screenState =
             catalog.present(
@@ -70,7 +75,7 @@ class QuestFeature(
         QuestScreen(
             state = screenState,
             onClaimReward = { questId ->
-                if (screenState.canClaim) model.claimPointQuest(questId, reading.evidence)
+                if (!parkingRequired && screenState.canClaim) model.claimPointQuest(questId, reading.evidence)
             },
             onDismissHiddenQuest = model::dismissHiddenQuest,
             onDismissRewardSuccess = model::dismissRewardSuccess,
@@ -82,6 +87,7 @@ class QuestFeature(
             onHome = navigator.returnHome,
             modifier = modifier,
             parkingBadgeConfirmed = snapshot.parkingBadgeConfirmed,
+            parkingRequired = parkingRequired,
         )
     }
 }
