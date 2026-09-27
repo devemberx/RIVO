@@ -144,7 +144,34 @@ class PetAvatarTest {
         assertEquals(2508, sprite.height)
         assertTrue(sprite === MobiRunSpriteCache.getOrLoad(context))
         assertTrue(context.assets.list("characters/mobi/normal/run")!!.contains("mobi_run_left_normal_sprite.png"))
+
+        val headphonesSprite = requireNotNull(MobiRunSpriteCache.getOrLoad(context, "accessory:mobi_headphones"))
+        assertEquals(3762, headphonesSprite.width)
+        assertEquals(2508, headphonesSprite.height)
+        assertTrue(headphonesSprite === MobiRunSpriteCache.getOrLoad(context, "accessory:mobi_headphones"))
+        assertTrue(
+            context.assets.list("characters/mobi/headphones/run")!!.contains("mobi_run_left_headphones_sprite.png"),
+        )
+
+        val gogglesSprite = requireNotNull(MobiRunSpriteCache.getOrLoad(context, "accessory:mobi_goggles"))
+        assertEquals(3762, gogglesSprite.width)
+        assertEquals(2508, gogglesSprite.height)
+        assertTrue(gogglesSprite === MobiRunSpriteCache.getOrLoad(context, "accessory:mobi_goggles"))
+        assertTrue(context.assets.list("characters/mobi/goggles/run")!!.contains("mobi_run_left_goggles_sprite.png"))
     }
+
+    @Test
+    fun preloadPetRunSpriteWarmsUpCachesForMobiAndLuna() =
+        kotlinx.coroutines.test.runTest {
+            val context =
+                androidx.test.core.app.ApplicationProvider
+                    .getApplicationContext<android.content.Context>()
+            preloadPetRunSprite(context, "friend:mobi", "accessory:mobi_headphones")
+            assertNotNull(MobiRunSpriteCache.peek("accessory:mobi_headphones"))
+
+            preloadPetRunSprite(context, "friend:luna", "accessory:luna_cap")
+            assertNotNull(LunaRunAnimationCache.peek())
+        }
 
     @Test
     fun lunaAnimationCacheLoadsTwentyFourFramesFromAssets() {
