@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -34,7 +35,7 @@ import java.util.Locale
 private val IDLE_BREATH_FRAME_DURATIONS_MS =
     IntArray(24) { if (it == 23) 130 else 90 }
 
-private val RUN_FRAME_DURATIONS_MS =
+internal val RUN_FRAME_DURATIONS_MS =
     IntArray(24) { 50 }
 
 internal object LunaAnimationCache {
@@ -341,15 +342,49 @@ fun PetAvatar(
                         equippedAccessory == "accessory:mobi_headphones" ||
                         equippedAccessory == "accessory:mobi_goggles"
 
-                MobiIdleBreathAnimation(
-                    modifier = Modifier.fillMaxSize(),
-                    accessoryId = equippedAccessory,
-                    fallbackAsset = CharacterArtwork.preview(friendId, equippedAccessory),
-                    vehicleWarning = isSick,
-                    vehicleHungry = isHungry,
-                    animateNormal = isAnimated && hasMobiIdleSprite,
-                    motionEnabled = motionEnabled,
-                )
+                var mobiHopCompleting by remember { mutableStateOf(false) }
+
+                LaunchedEffect(runEnabled) {
+                    if (runEnabled) {
+                        mobiHopCompleting = true
+                    }
+                }
+
+                val showMobiRun = (runEnabled || mobiHopCompleting) && isAnimated
+
+                when {
+                    isSick || isHungry ->
+                        MobiIdleBreathAnimation(
+                            modifier = Modifier.fillMaxSize(),
+                            accessoryId = equippedAccessory,
+                            fallbackAsset = CharacterArtwork.preview(friendId, equippedAccessory),
+                            vehicleWarning = isSick,
+                            vehicleHungry = isHungry,
+                            animateNormal = isAnimated && hasMobiIdleSprite,
+                            motionEnabled = motionEnabled,
+                        )
+                    showMobiRun ->
+                        MobiRunAnimation(
+                            modifier = Modifier.fillMaxSize(),
+                            movingLeft = movingLeft,
+                            isMoving = runEnabled,
+                            accessoryId = equippedAccessory,
+                            fallbackAsset = CharacterArtwork.preview(friendId, equippedAccessory),
+                            onHopFinished = {
+                                mobiHopCompleting = false
+                            },
+                        )
+                    else ->
+                        MobiIdleBreathAnimation(
+                            modifier = Modifier.fillMaxSize(),
+                            accessoryId = equippedAccessory,
+                            fallbackAsset = CharacterArtwork.preview(friendId, equippedAccessory),
+                            vehicleWarning = isSick,
+                            vehicleHungry = isHungry,
+                            animateNormal = isAnimated && hasMobiIdleSprite,
+                            motionEnabled = motionEnabled,
+                        )
+                }
             } else if (isAnimated && (friendId == "friend:luna") && (equippedLook == null || hasLunaHat)) {
                 when {
                     isSick ->
