@@ -855,13 +855,33 @@ class ConversationViewModelTest {
             assertEquals(64, model.state.value.voice.levels.size)
             advanceTimeBy(8_001)
             runCurrent()
-            assertEquals(8, model.state.value.voice.elapsedSeconds)
             model.stopVoice()
             advanceTimeBy(5_001)
             runCurrent()
             assertEquals(VoiceInputProblem.TIMEOUT, model.state.value.voice.problem)
             assertFalse(model.state.value.voice.capturing)
             assertEquals("preserved", model.draft.text)
+            assertTrue(provider.requests.isEmpty())
+        }
+
+    @Test fun totalVoiceBoundStopsForReviewInsteadOfDiscardingRecognizedPhrases() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val speech = FakeSpeech()
+            val model = model(speech)
+            runCurrent()
+            model.setVoiceResumed(true)
+            model.requestVoice(true)
+            val listener = requireNotNull(speech.listener)
+            listener.onReady()
+            listener.onPartial("첫 문장 다음 문장")
+            advanceTimeBy(60_001)
+            runCurrent()
+            assertEquals(VoiceInputPhase.STOPPING, model.state.value.voice.phase)
+            assertEquals(1, speech.stops)
+            listener.onResult("첫 문장 다음 문장")
+            assertEquals("첫 문장 다음 문장", model.draft.text)
+            assertEquals(VoiceInputPhase.REVIEW, model.state.value.voice.phase)
             assertTrue(provider.requests.isEmpty())
         }
 

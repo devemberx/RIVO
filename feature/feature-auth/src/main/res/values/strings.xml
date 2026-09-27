@@ -163,7 +163,6 @@
   <string name="chat_voice_recording">음성 입력 중</string>
   <string name="chat_voice_cancel">음성 입력 취소</string>
   <string name="chat_voice_stop">녹음 마치고 내용 확인</string>
-  <string name="chat_voice_listening">듣고 있어요 · %1$02d:%2$02d</string>
   <string name="chat_voice_review">음성을 확인한 뒤 보내 주세요. 내용을 눌러 수정할 수 있어요.</string>
   <string name="chat_voice_starting">마이크를 준비하고 있어요</string>
   <string name="chat_voice_stopping">음성을 글자로 바꾸고 있어요</string>

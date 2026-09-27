@@ -53,7 +53,6 @@ class ConversationViewModel(
     private var authenticationRetry: Job? = null
     private var history = emptyList<ConversationMessage>()
     private var voiceGeneration = 0L
-    private var voiceTimer: Job? = null
     private var voiceTimeout: Job? = null
 
     // RESUMED is independent of Park-driven activation restarts; only the lifecycle owner changes it.
@@ -321,7 +320,6 @@ class ConversationViewModel(
         val wasCapturing = state.value.voice.capturing
         voiceGeneration++
         voicePermissionGranted = false
-        voiceTimer?.cancel()
         voiceTimeout?.cancel()
         if (wasCapturing) speechInput.cancel()
         updateVoice(
@@ -356,27 +354,19 @@ class ConversationViewModel(
         voiceTimeout =
             viewModelScope.launch {
                 delay(60_000)
-                if (voiceCurrent(session)) finishVoice(problem = VoiceInputProblem.TIMEOUT)
+                if (voiceCurrent(session)) {
+                    if (state.value.voice.phase == VoiceInputPhase.LISTENING) {
+                        stopVoice()
+                    } else {
+                        finishVoice(problem = VoiceInputProblem.TIMEOUT)
+                    }
+                }
             }
         speechInput.start(
             object : ConversationSpeechInput.Listener {
                 override fun onReady() {
                     if (!voiceCurrent(session) || state.value.voice.phase != VoiceInputPhase.STARTING) return
                     updateVoice(state.value.voice.copy(phase = VoiceInputPhase.LISTENING))
-                    voiceTimer =
-                        viewModelScope.launch {
-                            while (voiceCurrent(session) && state.value.voice.phase == VoiceInputPhase.LISTENING) {
-                                delay(1_000)
-                                if (voiceCurrent(session) && state.value.voice.phase == VoiceInputPhase.LISTENING) {
-                                    updateVoice(
-                                        state.value.voice.copy(
-                                            elapsedSeconds =
-                                                state.value.voice.elapsedSeconds + 1,
-                                        ),
-                                    )
-                                }
-                            }
-                        }
                 }
 
                 override fun onLevel(level: Float) {
@@ -426,7 +416,6 @@ class ConversationViewModel(
     }
 
     private fun waitForVoiceResult(session: Long) {
-        voiceTimer?.cancel()
         updateVoice(state.value.voice.copy(phase = VoiceInputPhase.STOPPING))
         voiceTimeout?.cancel()
         voiceTimeout =

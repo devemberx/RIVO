@@ -3,6 +3,9 @@ package com.monsters.mobimon
 import android.Manifest
 import android.graphics.Bitmap
 import android.util.Log
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
@@ -101,16 +104,27 @@ class ConversationVoiceDeviceTest {
             compose.waitUntil(15_000) {
                 compose
                     .onAllNodes(
-                        hasText("듣고 있어요", substring = true),
+                        hasContentDescription("녹음 마치고 내용 확인") and isEnabled(),
                     ).fetchSemanticsNodes(atLeastOneRootRequired = false)
                     .isNotEmpty()
             }
             compose.onNodeWithTag("chat-send").assertIsNotEnabled()
             Log.i("MobiMonVoiceDeviceTest", "MICROPHONE_READY_FOR_FIXTURE")
+            compose.waitUntil(20_000) {
+                compose
+                    .onAllNodes(
+                        SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "안녕하세요 오늘 날씨가 좋습니다"),
+                    ).fetchSemanticsNodes(atLeastOneRootRequired = false)
+                    .isNotEmpty()
+            }
+            Thread.sleep(6_000)
+            compose.onNodeWithContentDescription("녹음 마치고 내용 확인").assertIsEnabled()
+            compose.onNodeWithTag("chat-send").assertIsNotEnabled()
+            Log.i("MobiMonVoiceDeviceTest", "NEXT_PHRASE_READY_FOR_FIXTURE")
             compose.waitUntil(45_000) {
                 compose
                     .onAllNodes(
-                        hasText("안녕하세요 오늘 날씨가 좋습니다"),
+                        hasText("안녕하세요 오늘 날씨가 좋습니다 안녕하세요 오늘 날씨가 좋습니다"),
                     ).fetchSemanticsNodes(atLeastOneRootRequired = false)
                     .isNotEmpty()
             }
@@ -134,7 +148,7 @@ class ConversationVoiceDeviceTest {
             compose.waitUntil(15_000) {
                 compose
                     .onAllNodes(
-                        hasText("듣고 있어요", substring = true),
+                        hasContentDescription("녹음 마치고 내용 확인") and isEnabled(),
                     ).fetchSemanticsNodes(atLeastOneRootRequired = false)
                     .isNotEmpty()
             }
@@ -150,7 +164,7 @@ class ConversationVoiceDeviceTest {
             compose.waitUntil(10_000) {
                 compose.onAllNodesWithTag("chat-input").fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty()
             }
-            compose.onNodeWithText("안녕하세요 오늘 날씨가 좋습니다 수정").assertExists()
+            compose.onNodeWithText("안녕하세요 오늘 날씨가 좋습니다 안녕하세요 오늘 날씨가 좋습니다 수정").assertExists()
             compose.waitUntil(15_000) {
                 compose
                     .onAllNodes(
@@ -162,7 +176,7 @@ class ConversationVoiceDeviceTest {
             compose.waitUntil(10_000) {
                 compose
                     .onAllNodes(
-                        hasText("듣고 있어요", substring = true),
+                        hasContentDescription("녹음 마치고 내용 확인") and isEnabled(),
                     ).fetchSemanticsNodes(atLeastOneRootRequired = false)
                     .isNotEmpty()
             }
@@ -171,7 +185,7 @@ class ConversationVoiceDeviceTest {
             compose.waitUntil(10_000) {
                 compose.onAllNodesWithTag("chat-input").fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty()
             }
-            compose.onNodeWithText("안녕하세요 오늘 날씨가 좋습니다 수정").assertExists()
+            compose.onNodeWithText("안녕하세요 오늘 날씨가 좋습니다 안녕하세요 오늘 날씨가 좋습니다 수정").assertExists()
             assertEquals(0, conversations.replies)
             compose.onNodeWithTag("chat-send").performClick()
             compose.waitUntil(10_000) { conversations.replies == 1 }

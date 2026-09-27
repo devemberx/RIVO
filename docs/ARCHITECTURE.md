@@ -183,9 +183,11 @@ Other OEM images, absent models and physical vehicle microphones need verificati
 
 Voice starts only from an explicit microphone action on a resumed, permitted
 conversation. Request microphone permission before opening the recognizer. Keep
-partial results separate from the draft; a final nonempty, bounded result becomes
-an editable review draft. Stop waits at most five seconds for a final result and
-never sends; recording has a sixty-second total bound. Cancellation, background,
+partial results separate from the draft. A voice session joins final utterances and
+restarts only after each recognizer result/error, waiting up to twelve seconds for
+the next phrase. Ambient RMS stays flat until speech is detected; silence does not
+extend the wait. Stop or the sixty-second total bound finalizes the combined draft,
+waiting at most five seconds for a final result, and never sends. Cancellation, background,
 navigation, restriction or ownership changes release the recognizer and invalidate
 late callbacks. Cancellation and errors preserve the previous draft; account/profile
 changes follow the existing clearing contract. The app neither stores nor logs audio.

@@ -2,7 +2,8 @@
 
 These full-screen SVGs come from the
 [v5 Figma page](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-2).
-The conversation exports were refreshed from section 03 on 2026-09-26.
+The conversation exports were refreshed from section 03 on 2026-09-26; the recording
+footer was refreshed on 2026-09-27 to use the AI accuracy notice without a listening timer.
 The index links each export to its source frame. They are visual references, not
 Android assets or evidence that a feature is implemented. See [DESIGN.md](../DESIGN.md)
 for behavior and [ARCHITECTURE.md](../ARCHITECTURE.md) for current support.

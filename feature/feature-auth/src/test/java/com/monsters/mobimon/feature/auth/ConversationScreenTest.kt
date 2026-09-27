@@ -729,7 +729,6 @@ class ConversationScreenTest {
                     VoiceInputState(
                         true,
                         VoiceInputPhase.LISTENING,
-                        elapsedSeconds = 8,
                         levels = referenceVoiceLevels,
                     ),
             )
@@ -764,7 +763,8 @@ class ConversationScreenTest {
         assertEquals(72f, stop.width, 1f)
         compose.onNodeWithTag("chat-send").assertIsNotEnabled()
         compose.onNodeWithTag("chat-new-action").assertDoesNotExist()
-        compose.onNodeWithText("듣고 있어요 · 00:08").assertIsDisplayed()
+        compose.onNodeWithText("듣고 있어요", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("대화는 GitHub Copilot으로 전송돼요. AI 답변은 부정확할 수 있어요.").assertIsDisplayed()
         compose.onNodeWithContentDescription("녹음 마치고 내용 확인").performClick()
         compose.runOnIdle {
             assertEquals(1, voiceStops)

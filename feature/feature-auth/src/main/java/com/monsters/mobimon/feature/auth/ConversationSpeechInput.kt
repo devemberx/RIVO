@@ -56,7 +56,6 @@ data class VoiceInputState(
     val available: Boolean = false,
     val phase: VoiceInputPhase = VoiceInputPhase.IDLE,
     val sessionId: Long = 0,
-    val elapsedSeconds: Int = 0,
     val levels: List<Float> = emptyList(),
     val partial: String = "",
     val problem: VoiceInputProblem? = null,

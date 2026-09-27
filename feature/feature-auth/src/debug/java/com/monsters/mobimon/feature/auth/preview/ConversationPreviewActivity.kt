@@ -159,7 +159,6 @@ class ConversationPreviewActivity : ComponentActivity() {
                                     } else {
                                         VoiceInputPhase.IDLE
                                     },
-                                elapsedSeconds = 8,
                                 levels = voiceLevels,
                             ),
                         messages =

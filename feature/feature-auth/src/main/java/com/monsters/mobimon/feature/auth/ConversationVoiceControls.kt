@@ -44,7 +44,7 @@ internal fun ConversationRecordingControl(
     scale: Float,
     modifier: Modifier = Modifier,
 ) {
-    val description = stringResource(R.string.chat_voice_recording)
+    val description = voiceHintText(voice)
     Box(
         modifier
             .drawBehind {
@@ -177,13 +177,8 @@ internal fun voiceHint(voice: VoiceInputState): Int =
         VoiceInputPhase.STARTING -> R.string.chat_voice_starting
         VoiceInputPhase.STOPPING -> R.string.chat_voice_stopping
         VoiceInputPhase.REVIEW -> R.string.chat_voice_review
-        else -> R.string.chat_voice_listening
+        else -> R.string.chat_voice_recording
     }
 
 @Composable
-internal fun voiceHintText(voice: VoiceInputState): String =
-    if (voice.phase == VoiceInputPhase.LISTENING && voice.problem == null) {
-        stringResource(R.string.chat_voice_listening, voice.elapsedSeconds / 60, voice.elapsedSeconds % 60)
-    } else {
-        stringResource(voiceHint(voice))
-    }
+internal fun voiceHintText(voice: VoiceInputState): String = stringResource(voiceHint(voice))

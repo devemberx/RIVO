@@ -215,13 +215,15 @@ Use the updated [recording](ui/conversation/voice-listening.svg) and
 [review](ui/conversation/voice-review.svg) geometry. The composer contains separate
 microphone and Send actions; recording replaces the microphone with Stop and keeps
 Send disabled. Cancel, the live 64-bar waveform, Stop and Send retain their exported
-positions. Put the recording timer below the composer. Preserve 26px draft text,
-24px recording guidance and 18px footer text at reference scale; native touch bounds
+positions. Keep the existing 18px transmission/AI disclaimer below the composer during
+recording, without a visible listening timer. Preserve 26px draft text at reference scale; native touch bounds
 remain at least 76dp without overlap at AAOS density.
 
 Ask microphone permission on explicit activation. Stop finishes recognition into an
 editable draft; only explicit Send submits. Review retains the microphone for another
-recording. Cancel, Back, background and restrictions stop recording and preserve the
+recording. Wait up to 12 seconds between phrases and combine recognized sentences;
+Stop ends the draft immediately, with a 60-second overall bound. The waveform stays
+flat before speech detection and ignores low background RMS. Cancel, Back, background and restrictions stop recording and preserve the
 previous draft. Denied permission, unavailable models/services, silence and errors
 offer keyboard input and a recoverable explanation. Hide the microphone when no
 recognizer exists. Review guidance is exposed to accessibility without adding a
