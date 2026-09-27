@@ -29,9 +29,9 @@ only with a new export from its linked frame. The connected screen includes a
 | [menu.svg](shell/menu.svg) | [Menu with notification row; three alerts](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-3844) |
 | [menu-no-notifications.svg](shell/menu-no-notifications.svg) | [Menu without notification count badge](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=783-1025) |
 | [menu-many-notifications.svg](shell/menu-many-notifications.svg) | [Menu with notification row; five alerts](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=783-1164) |
-| [notifications-empty.svg](shell/notifications-empty.svg) | [Empty notification panel](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=777-350) |
-| [notifications-three.svg](shell/notifications-three.svg) | [Three alerts grouped by vehicle checks and quest rewards](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=777-203) |
-| [notifications-many.svg](shell/notifications-many.svg) | [Five alerts with a scrolling list and fixed header](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=777-470) |
+| [notifications-empty.svg](shell/notifications-empty.svg) | [Compact header with centered bell empty state](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=777-350) |
+| [notifications-three.svg](shell/notifications-three.svg) | [Three grouped alerts with compact spacing and gift reward icon](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=777-203) |
+| [notifications-many.svg](shell/notifications-many.svg) | [Five grouped alerts with gift icons, fixed header and scrolling list](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=777-470) |
 | [settings.svg](shell/settings.svg) | [Settings](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-3641) |
 
 ### Connection
