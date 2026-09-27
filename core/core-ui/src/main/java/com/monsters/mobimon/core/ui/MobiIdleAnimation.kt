@@ -434,7 +434,7 @@ fun MobiRunAnimation(
             currentFrameIndex = nextFrame
         }
     }
-    val baseAsset = CharacterArtwork.preview("friend:mobi", accessoryId)
+    val baseAsset = CharacterArtwork.characters.getValue("friend:mobi")
     Box(
         modifier =
             modifier
