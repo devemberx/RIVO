@@ -10,6 +10,7 @@ import com.monsters.mobimon.core.domain.PointEconomy
 import com.monsters.mobimon.core.domain.PointWallet
 import com.monsters.mobimon.core.domain.PurchaseResult
 import com.monsters.mobimon.core.domain.VehicleSnapshot
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -255,6 +256,39 @@ class CosmeticInventoryViewModelTest {
             assertEquals(refreshed, model.state.value.catalog)
         }
 
+    @Test fun parkingInterruptionClearsSelectionAndCancelsPendingPurchase() =
+        runTest(dispatcher) {
+            val gate = CompletableDeferred<PurchaseResult>()
+            var cancelled = false
+            val points =
+                object : FakePoints(flowOf(CosmeticInventory(emptySet(), emptyMap()))) {
+                    override suspend fun purchase(
+                        itemId: String,
+                        expectedPrice: Long,
+                    ): PurchaseResult =
+                        try {
+                            gate.await()
+                        } catch (error: CancellationException) {
+                            cancelled = true
+                            throw error
+                        }
+                }
+            val model = CosmeticInventoryViewModel(points).also { store.put("inventory", it) }
+            runCurrent()
+            model.selectItem("friend:luna")
+            model.purchaseItem("friend:luna", 100)
+            runCurrent()
+            assertEquals(true, model.state.value.purchasing)
+
+            model.onParkingInterrupted()
+            runCurrent()
+
+            assertEquals(true, cancelled)
+            assertEquals(null, model.state.value.selectedItemId)
+            assertEquals(false, model.state.value.purchasing)
+            assertEquals(false, model.state.value.purchaseFailed)
+        }
+
     private open class FakePoints(
         override val inventory: Flow<CosmeticInventory>,
         override val catalog: Flow<List<CosmeticItem>> = flowOf(emptyList()),
@@ -264,7 +298,7 @@ class CosmeticInventoryViewModelTest {
         override suspend fun purchase(
             itemId: String,
             expectedPrice: Long,
-        ) = PurchaseResult.ItemUnavailable
+        ): PurchaseResult = PurchaseResult.ItemUnavailable
 
         override suspend fun equip(itemId: String): EquipResult = EquipResult.ItemUnavailable
 

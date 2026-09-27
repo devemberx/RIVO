@@ -59,6 +59,26 @@ class QuestFeatureTest {
     private lateinit var contentView: View
 
     @Test
+    fun parkedRouteShowsInterruptionWhenVehicleBecomesMovingAndClearsWhenParkReturns() {
+        show()
+        compose.onNodeWithTag("parking-interruption-dialog").assertDoesNotExist()
+
+        compose.runOnIdle {
+            vehicle.snapshots.value =
+                vehicle.initial.copy(
+                    id = "moving",
+                    sequence = 2,
+                    drivingState = DrivingState.MOVING,
+                    speed = 12,
+                    gear = "D",
+                )
+        }
+        compose.onNodeWithText("주차 후 퀘스트를 이어가요").assertIsDisplayed()
+        compose.runOnIdle { vehicle.snapshots.value = vehicle.initial.copy(id = "reparked", sequence = 3) }
+        compose.onNodeWithTag("parking-interruption-dialog").assertDoesNotExist()
+    }
+
+    @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun productionRouteProducesReviewImage() {
         show()

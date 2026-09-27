@@ -31,6 +31,16 @@ vehicles or replace warnings.
 - Conversation retains its own badge beside connection status: 258 × 60 confirmed,
   272 × 60 restricted. Enlarged text expands it without overlapping icon/label.
 
+- On an active Vehicle, Store, or Quest route, losing verified Park shows a
+  blocking, route-specific parking interruption dialog over the current screen.
+  The restricted badge, pause icon, explanation, preserved-progress note and
+  Home action follow the `수정본_v5` Figma frames (Vehicle `770:2`, Store
+  `770:155`, Quest `770:282`). Hide any underlying selector or reward dialog;
+  restore the route when verified Park returns if the user has not gone Home.
+  Initial unavailable vehicle data stays in each route's ordinary unavailable
+  state. Pending writes receive no success presentation after interruption;
+  committed inventory and rewards continue to come from repository observation.
+
 ### Launcher icon and native splash
 
 Use shared Mobi artwork on Night, no wordmark, with adaptive-mask clearance.
