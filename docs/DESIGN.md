@@ -68,8 +68,8 @@ Do not package full-screen references or generation drafts as runtime UI.
 
 | Asset | Location |
 | --- | --- |
-| Mobi idle sprite / Luna frames | `core/core-ui/src/main/assets/characters/{mobi,luna}/idle_breath/` |
-| Luna hungry / sick frames | `core/core-ui/src/main/assets/characters/luna/{hungry,sick}/` |
+| Mobi idle sprite / Luna frames | `core/core-ui/src/main/assets/characters/{mobi,luna}/normal/idle_breath/` |
+| Luna hungry / sick frames | `core/core-ui/src/main/assets/characters/luna/normal/{hungry,sick}/` |
 | Original Mobi warning artwork | `art/characters/mobi/unhealthy/` (not packaged) |
 | Luna side/back master reference | [Luna_Side_Back.png](../art/characters/luna/references/Luna_Side_Back.png) (not packaged) |
 | Shared artwork, accessories and backgrounds | `core/core-ui/src/main/res/drawable-nodpi/` |
@@ -86,7 +86,7 @@ only requested properties. Check dimensions and compare visually before use.
 Always inspect and provide both approved references as image inputs when generating
 or editing any Luna image, including expressions, poses, animation frames and accessories:
 
-- Front: [luna_idle_breath_01.png](../core/core-ui/src/main/assets/characters/luna/idle_breath/luna_idle_breath_01.png).
+- Front: [luna_idle_breath_normal_01.png](../core/core-ui/src/main/assets/characters/luna/normal/idle_breath/luna_idle_breath_normal_01.png).
 - Side and back: [Luna_Side_Back.png](../art/characters/luna/references/Luna_Side_Back.png).
 
 Keep Luna's character proportions consistent in every view and frame: head-to-body
@@ -107,7 +107,7 @@ remain strongest at 08-to-09, 13-to-14 and 14-to-15; alpha-correct adjacent-cell
 Breathing adds up to 1.2% width/2.4% height; a separate 6.6-second bob adds tiny
 settle and lift. All transforms share the seated pivot and preserve layout.
 
-Mobi's collapsed idle uses a lossless 24-frame sprite atlas `mobi_collapsed_sprite.png` (6 x 4 grid of 408px RGBA cells) under `core/core-ui/src/main/assets/characters/mobi/unhealthy/`.
+Mobi's collapsed idle uses a lossless 24-frame sprite atlas `mobi_collapsed_normal_sprite.png` (6 x 4 grid of 408px RGBA cells) under `core/core-ui/src/main/assets/characters/mobi/normal/sick/`.
 Original collapsed and transition artwork remains under `art/characters/mobi/unhealthy/` for future edits; it is not packaged.
 The 200ms normal/warning crossfade is unchanged. The 24-frame animation loop plays continuously over 4.05 seconds with smooth frame interpolation, capturing shivering, sweating, eye movements, and dizziness.
 Reduced motion snaps to frame 0 and disables frame cycling.

@@ -67,7 +67,7 @@ internal object LunaAnimationCache {
                     if (hasHat) {
                         "characters/luna/hat/idle_breath/luna_idle_breath_hat_%02d.png"
                     } else {
-                        "characters/luna/idle_breath/luna_idle_breath_%02d.png"
+                        "characters/luna/normal/idle_breath/luna_idle_breath_normal_%02d.png"
                     }
                 val frames =
                     (1..24).map { i ->
@@ -116,7 +116,7 @@ internal object LunaRunAnimationCache {
                     if (hasHat) {
                         "characters/luna/hat/run/luna_run_left_hat_%02d.png"
                     } else {
-                        "characters/luna/run/luna_run_left_%02d.png"
+                        "characters/luna/normal/run/luna_run_left_normal_%02d.png"
                     }
                 val frames =
                     (1..24).map { i ->
@@ -165,7 +165,7 @@ internal object LunaHungryAnimationCache {
                     if (hasHat) {
                         "characters/luna/hat/hungry/luna_hungry_hat_%02d.png"
                     } else {
-                        "characters/luna/hungry/luna_hungry_%02d.png"
+                        "characters/luna/normal/hungry/luna_hungry_normal_%02d.png"
                     }
                 val frames =
                     (1..24).map { i ->
@@ -214,7 +214,7 @@ internal object LunaSickAnimationCache {
                     if (hasHat) {
                         "characters/luna/hat/sick/luna_sick_hat_%02d.png"
                     } else {
-                        "characters/luna/sick/luna_sick_%02d.png"
+                        "characters/luna/normal/sick/luna_sick_normal_%02d.png"
                     }
                 val frames =
                     (1..24).map { i ->
