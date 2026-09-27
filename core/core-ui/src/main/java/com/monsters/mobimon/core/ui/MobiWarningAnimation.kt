@@ -98,14 +98,14 @@ internal class MobiHungryBlend(
 internal object MobiCollapsedSpriteCache {
     const val CELL = 408
     const val LOGICAL_CELL = 256
-    const val DEFAULT_ASSET_PATH = "characters/mobi/unhealthy/mobi_collapsed_sprite.png"
+    const val DEFAULT_ASSET_PATH = "characters/mobi/normal/sick/mobi_collapsed_normal_sprite.png"
 
     private fun assetPathFor(accessoryId: String?): String =
         when (accessoryId) {
             "accessory:mobi_headphones" ->
-                "characters/mobi/headphones/unhealthy/mobi_collapsed_headphones_sprite.png"
+                "characters/mobi/headphones/sick/mobi_collapsed_headphones_sprite.png"
             "accessory:mobi_goggles" ->
-                "characters/mobi/goggles/unhealthy/mobi_collapsed_goggles_sprite.png"
+                "characters/mobi/goggles/sick/mobi_collapsed_goggles_sprite.png"
             else -> DEFAULT_ASSET_PATH
         }
 
@@ -153,7 +153,7 @@ internal object MobiCollapsedSpriteCache {
 
 internal object MobiDizzyStarsSpriteCache {
     const val CELL = 408
-    const val ASSET_PATH = "characters/mobi/unhealthy/mobi_dizzy_stars_sprite.png"
+    const val ASSET_PATH = "characters/mobi/normal/sick/mobi_dizzy_stars_sprite.png"
 
     @Volatile private var cached: ImageBitmap? = null
 

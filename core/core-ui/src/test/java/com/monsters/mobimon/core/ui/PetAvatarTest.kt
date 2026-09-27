@@ -104,8 +104,8 @@ class PetAvatarTest {
         assertEquals(627 * 4, sprite.height)
         assertTrue(sprite === MobiSpriteCache.getOrLoad(context))
         assertEquals(
-            listOf("mobi_idle_breath_sprite.png"),
-            context.assets.list("characters/mobi/idle_breath")!!.toList(),
+            listOf("mobi_idle_breath_normal_sprite.png"),
+            context.assets.list("characters/mobi/normal/idle_breath")!!.toList(),
         )
 
         val headphonesSprite = requireNotNull(MobiSpriteCache.getOrLoad(context, "accessory:mobi_headphones"))
@@ -129,8 +129,8 @@ class PetAvatarTest {
         assertEquals(256 * 4, sprite.height)
         assertTrue(sprite === MobiHungrySpriteCache.getOrLoad(context))
         assertEquals(
-            listOf("mobi_hungry_sprite.png"),
-            context.assets.list("characters/mobi/hungry")!!.toList(),
+            listOf("mobi_hungry_normal_sprite.png"),
+            context.assets.list("characters/mobi/normal/hungry")!!.toList(),
         )
     }
 

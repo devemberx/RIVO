@@ -114,7 +114,7 @@ internal object MobiIdleTimeline {
 }
 
 internal object MobiSpriteCache {
-    const val DEFAULT_ASSET_PATH = "characters/mobi/idle_breath/mobi_idle_breath_sprite.png"
+    const val DEFAULT_ASSET_PATH = "characters/mobi/normal/idle_breath/mobi_idle_breath_normal_sprite.png"
 
     private fun assetPathFor(accessoryId: String?): String =
         when (accessoryId) {
@@ -217,7 +217,7 @@ internal fun NormalMobiIdleAnimation(
 }
 
 internal object MobiHungrySpriteCache {
-    const val DEFAULT_ASSET_PATH = "characters/mobi/hungry/mobi_hungry_sprite.png"
+    const val DEFAULT_ASSET_PATH = "characters/mobi/normal/hungry/mobi_hungry_normal_sprite.png"
 
     private fun assetPathFor(accessoryId: String?): String =
         when (accessoryId) {
