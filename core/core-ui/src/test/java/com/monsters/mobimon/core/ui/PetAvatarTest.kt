@@ -135,6 +135,18 @@ class PetAvatarTest {
     }
 
     @Test
+    fun mobiRunSpriteCacheLoadsSheetFromAssets() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        val sprite = requireNotNull(MobiRunSpriteCache.getOrLoad(context))
+        assertEquals(3762, sprite.width)
+        assertEquals(2508, sprite.height)
+        assertTrue(sprite === MobiRunSpriteCache.getOrLoad(context))
+        assertTrue(context.assets.list("characters/mobi/normal/run")!!.contains("mobi_run_left_normal_sprite.png"))
+    }
+
+    @Test
     fun lunaAnimationCacheLoadsTwentyFourFramesFromAssets() {
         val context =
             androidx.test.core.app.ApplicationProvider

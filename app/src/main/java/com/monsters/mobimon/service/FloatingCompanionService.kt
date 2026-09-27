@@ -41,6 +41,7 @@ import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
 import com.monsters.mobimon.core.presentation.VehicleCondition
 import com.monsters.mobimon.core.presentation.vehicleCondition
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
+import com.monsters.mobimon.core.ui.MOBI_RUN_FRAME_DURATION_MS
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import com.monsters.mobimon.core.ui.PetAvatar
 import dagger.hilt.android.AndroidEntryPoint
@@ -56,6 +57,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.math.abs
 import kotlin.math.hypot
+import kotlin.math.roundToInt
 import kotlin.random.Random
 
 private const val NOTIFICATION_CHANNEL_ID = "mobimon_floating_companion"
@@ -86,6 +88,7 @@ class FloatingCompanionService : Service() {
     private var movingLeft by mutableStateOf(true)
     private var vehicleWarning by mutableStateOf(false)
     private var vehicleHungry by mutableStateOf(false)
+    private var currentFriendId by mutableStateOf("friend:mobi")
 
     // Unknown until the first preference read, so stay in place like the in-app shell.
     private var reducedMotion by mutableStateOf(true)
@@ -213,6 +216,7 @@ class FloatingCompanionService : Service() {
                     ) {
                         MobiMonTheme {
                             val appearanceState = companionAppearance.state()
+                            currentFriendId = appearanceState.friendId
                             Box(
                                 modifier =
                                     Modifier
@@ -354,7 +358,10 @@ class FloatingCompanionService : Service() {
 
                     val preferRight = currentX <= minX + 250
                     val preferLeft = currentX >= maxX - 250
-                    val distance = Random.nextInt(150, 450)
+                    val isMobi = currentFriendId == "friend:mobi"
+                    val minStep = if (isMobi) 300 else 150
+                    val maxStep = if (isMobi) 600 else 450
+                    val distance = Random.nextInt(minStep, maxStep)
                     val dy = Random.nextInt(-100, 101)
 
                     val (targetX, targetY) =
@@ -381,7 +388,19 @@ class FloatingCompanionService : Service() {
                     isMoving = true
 
                     val moveDistance = hypot(actualDx.toDouble(), (targetY - currentY).toDouble()).toFloat()
-                    val moveDurationMs = ((moveDistance / 250f) * 1000).toLong().coerceIn(800L, 3000L)
+                    val hopCycleMs = (24 * MOBI_RUN_FRAME_DURATION_MS).toLong()
+                    val numHops = (moveDistance / 380f).roundToInt().coerceAtLeast(1)
+                    val moveDurationMs =
+                        if (isMobi) {
+                            (numHops * hopCycleMs)
+                        } else {
+                            ((moveDistance / 250f) * 1000)
+                                .toLong()
+                                .coerceIn(
+                                    800L,
+                                    3000L,
+                                )
+                        }
                     val startTime = SystemClock.uptimeMillis()
                     val startX = currentX
                     val startY = currentY
