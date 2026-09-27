@@ -226,11 +226,12 @@ fun MobiIdleBreathAnimation(
                             NormalMobiHungryAnimation(
                                 modifier = Modifier.matchParentSize(),
                                 contentDescription = null,
-                                fallbackAsset = CharacterArtwork.hungry("friend:mobi"),
+                                accessoryId = accessoryId,
+                                fallbackAsset = CharacterArtwork.hungry("friend:mobi", accessoryId),
                             )
                         } else {
                             CharacterAssetImage(
-                                CharacterArtwork.hungry("friend:mobi"),
+                                CharacterArtwork.hungry("friend:mobi", accessoryId),
                                 Modifier.matchParentSize(),
                                 null,
                             )

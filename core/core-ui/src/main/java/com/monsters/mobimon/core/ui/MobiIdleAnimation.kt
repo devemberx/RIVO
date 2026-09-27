@@ -217,32 +217,53 @@ internal fun NormalMobiIdleAnimation(
 }
 
 internal object MobiHungrySpriteCache {
-    const val ASSET_PATH = "characters/mobi/hungry/mobi_hungry_sprite.png"
+    const val DEFAULT_ASSET_PATH = "characters/mobi/hungry/mobi_hungry_sprite.png"
+
+    private fun assetPathFor(accessoryId: String?): String =
+        when (accessoryId) {
+            "accessory:mobi_headphones" ->
+                "characters/mobi/headphones/hungry/mobi_hungry_headphones_sprite.png"
+            "accessory:mobi_goggles" ->
+                "characters/mobi/goggles/hungry/mobi_hungry_goggles_sprite.png"
+            else -> DEFAULT_ASSET_PATH
+        }
 
     @Volatile private var cached: ImageBitmap? = null
 
-    fun peek(): ImageBitmap? = cached
+    @Volatile private var cachedAccessoryId: String? = null
+
+    fun peek(accessoryId: String? = null): ImageBitmap? = if (cachedAccessoryId == accessoryId) cached else null
 
     fun clear() {
         cached = null
+        cachedAccessoryId = null
     }
 
-    fun getOrLoad(context: Context): ImageBitmap? {
-        cached?.let { return it }
+    fun getOrLoad(
+        context: Context,
+        accessoryId: String? = null,
+    ): ImageBitmap? {
+        val current = cached
+        if (current != null && cachedAccessoryId == accessoryId) return current
         return synchronized(this) {
-            cached?.let { return it }
+            val syncCurrent = cached
+            if (syncCurrent != null && cachedAccessoryId == accessoryId) return syncCurrent
             val assets = context.applicationContext.assets
+            val assetPath = assetPathFor(accessoryId)
             val options =
                 BitmapFactory.Options().apply {
                     inScaled = false
                 }
             try {
-                assets.open(ASSET_PATH).use { stream ->
+                assets.open(assetPath).use { stream ->
                     val bitmap = requireNotNull(BitmapFactory.decodeStream(stream, null, options))
                     require(
                         bitmap.width == 256 * MobiIdleTimeline.COLUMNS && bitmap.height == 256 * MobiIdleTimeline.ROWS,
                     )
-                    bitmap.asImageBitmap().also { cached = it }
+                    bitmap.asImageBitmap().also {
+                        cachedAccessoryId = accessoryId
+                        cached = it
+                    }
                 }
             } catch (_: java.io.IOException) {
                 null
@@ -255,11 +276,16 @@ internal object MobiHungrySpriteCache {
 internal fun NormalMobiHungryAnimation(
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
-    fallbackAsset: CharacterAsset = CharacterArtwork.hungry("friend:mobi"),
+    accessoryId: String? = null,
+    fallbackAsset: CharacterAsset = CharacterArtwork.hungry("friend:mobi", accessoryId),
 ) {
     val context = LocalContext.current.applicationContext
-    val sprite by produceState<ImageBitmap?>(initialValue = MobiHungrySpriteCache.peek(), context) {
-        value = withContext(Dispatchers.IO) { MobiHungrySpriteCache.getOrLoad(context) }
+    val sprite by produceState<ImageBitmap?>(
+        initialValue = MobiHungrySpriteCache.peek(accessoryId),
+        context,
+        accessoryId,
+    ) {
+        value = withContext(Dispatchers.IO) { MobiHungrySpriteCache.getOrLoad(context, accessoryId) }
     }
     val sheet = sprite
     if (sheet == null) {
