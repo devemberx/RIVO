@@ -1,4 +1,8 @@
 <resources>
+    <string name="customization_parking_popup_title">주차 후 꾸미기를 이어가요</string>
+    <string name="customization_parking_popup_body">아이템 선택과 구매·적용은 주차 상태에서만 할 수 있어요.</string>
+    <string name="customization_parking_popup_instruction">안전한 곳에 주차한 뒤 다시 들어와 주세요.</string>
+    <string name="customization_parking_popup_preserved">보유한 아이템과 포인트는 그대로 유지돼요.</string>
     <string name="customization_retry">다시 시도</string>
     <string name="pet_customization_tab_friend">친구</string>
     <string name="pet_customization_tab_accessory">옷과 소품</string>

@@ -4,8 +4,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyDescendant
@@ -20,6 +22,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.SignalQuality
@@ -41,6 +44,38 @@ import org.robolectric.annotation.Config
 class VehicleInfoScreenTest {
     @get:Rule
     val compose = createComposeRule()
+
+    @Test
+    fun parkingLossClosesCardSelectorAndShowsVehiclePopup() {
+        var parkingRequired by mutableStateOf(false)
+        var saved = false
+        var home = false
+        compose.setContent {
+            MaterialTheme {
+                VehicleInfoScreen(
+                    snapshot = snapshot(),
+                    parkingRequired = parkingRequired,
+                    onHome = { home = true },
+                    onCardSelectionConfirmed = { saved = true },
+                )
+            }
+        }
+
+        compose.onNodeWithTag("vehicle-card-slot-1").performTouchInput { longClick() }
+        compose.onNodeWithTag("vehicle-card-selector").assertIsDisplayed()
+        compose.runOnIdle { parkingRequired = true }
+        compose.onNodeWithTag("vehicle-card-selector").assertDoesNotExist()
+        compose.onNodeWithText("주차 후 차량 상태를 확인해요").assertIsDisplayed()
+        compose
+            .onNodeWithTag("vehicle-header-back-button")
+            .performSemanticsAction(SemanticsActions.RequestFocus)
+            .assertIsNotFocused()
+        compose.onNodeWithTag("parking-interruption-home").performClick()
+        assertTrue(home)
+        assertEquals(false, saved)
+        compose.runOnIdle { parkingRequired = false }
+        compose.onNodeWithTag("parking-interruption-dialog").assertDoesNotExist()
+    }
 
     @Test
     fun unavailableSnapshotDoesNotInventParkedStateOrBattery() {

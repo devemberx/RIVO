@@ -59,6 +59,37 @@ class QuestScreenTest {
     private val catalog = QuestCatalog(DefaultPointQuestCatalog())
 
     @Test
+    fun parkingLossShowsQuestPopupInsteadOfRewardSuccess() {
+        var parkingRequired by mutableStateOf(false)
+        var home = false
+        val state = presentation(QuestUiState(isLoading = false, rewardSuccess = QuestRewardSuccess("quest", 20)))
+        compose.setContent {
+            MobiMonTheme {
+                QuestScreen(
+                    state,
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    parkingRequired = parkingRequired,
+                    onHome = { home = true },
+                )
+            }
+        }
+
+        compose.runOnIdle { parkingRequired = true }
+        compose.onNodeWithText("주차 후 퀘스트를 이어가요").assertIsDisplayed()
+        compose.onNodeWithTag("quest-reward-success-modal").assertDoesNotExist()
+        compose.onNodeWithTag("parking-interruption-home").performClick()
+        assertTrue(home)
+        compose.runOnIdle { parkingRequired = false }
+        compose.onNodeWithTag("parking-interruption-dialog").assertDoesNotExist()
+    }
+
+    @Test
     fun unavailableParkingShowsSharedRestrictedBadge() {
         render(presentation().copy(parkedVerified = false))
         compose.onNodeWithText("주차 후 이용").assertIsDisplayed()

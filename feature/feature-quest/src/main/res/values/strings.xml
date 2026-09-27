@@ -1,4 +1,8 @@
 <resources>
+    <string name="quest_parking_popup_title">주차 후 퀘스트를 이어가요</string>
+    <string name="quest_parking_popup_body">퀘스트 확인과 보상 받기는 주차 상태에서만 할 수 있어요.</string>
+    <string name="quest_parking_popup_instruction">안전한 곳에 주차한 뒤 다시 들어와 주세요.</string>
+    <string name="quest_parking_popup_preserved">완료한 퀘스트와 포인트는 그대로 유지돼요.</string>
     <string name="quest_saving">진행 상황을 저장하고 있어요.</string>
     <string name="quest_refresh_required">차량 상태나 퀘스트가 바뀌었어요. 최신 내용을 확인하고 다시 눌러 주세요.</string>
     <string name="quest_condition_not_met">아직 완료 조건을 충족하지 못했어요. 주행 기록을 확인해 주세요.</string>

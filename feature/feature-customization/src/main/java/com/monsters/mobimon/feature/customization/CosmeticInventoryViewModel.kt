@@ -38,6 +38,9 @@ class CosmeticInventoryViewModel(
     val state = mutableState.asStateFlow()
     private var observer: Job? = null
     private var catalogObserver: Job? = null
+    private var purchaseJob: Job? = null
+    private var equipJob: Job? = null
+    private var operationGeneration = 0
 
     init {
         retry()
@@ -84,26 +87,43 @@ class CosmeticInventoryViewModel(
         mutableState.update { it.copy(selectedItemId = itemId, purchaseFailed = false, saveFailed = false) }
     }
 
+    fun onParkingInterrupted() {
+        operationGeneration++
+        purchaseJob?.cancel()
+        equipJob?.cancel()
+        mutableState.update {
+            it.copy(
+                selectedItemId = null,
+                purchasing = false,
+                purchaseFailed = false,
+                saving = false,
+                saveFailed = false,
+            )
+        }
+    }
+
     fun purchaseItem(
         itemId: String,
         price: Long,
     ) {
         if (state.value.purchasing) return
         mutableState.update { it.copy(purchasing = true, purchaseFailed = false) }
-        viewModelScope.launch {
-            try {
-                val result = points.purchase(itemId, price)
-                mutableState.update {
-                    it.copy(purchaseFailed = result !is PurchaseResult.Purchased)
+        val generation = operationGeneration
+        purchaseJob =
+            viewModelScope.launch {
+                try {
+                    val result = points.purchase(itemId, price)
+                    if (generation == operationGeneration) {
+                        mutableState.update { it.copy(purchaseFailed = result !is PurchaseResult.Purchased) }
+                    }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    if (generation == operationGeneration) mutableState.update { it.copy(purchaseFailed = true) }
+                } finally {
+                    if (generation == operationGeneration) mutableState.update { it.copy(purchasing = false) }
                 }
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (_: Exception) {
-                mutableState.update { it.copy(purchaseFailed = true) }
-            } finally {
-                mutableState.update { it.copy(purchasing = false) }
             }
-        }
     }
 
     fun equipItem(itemId: String) {
@@ -117,20 +137,27 @@ class CosmeticInventoryViewModel(
             return
         }
         mutableState.update { it.copy(saving = true, saveFailed = false) }
-        viewModelScope.launch {
-            try {
-                val result = points.equip(itemId)
-                mutableState.update {
-                    it.copy(saveFailed = result != EquipResult.Applied && result != EquipResult.AlreadyApplied)
+        val generation = operationGeneration
+        equipJob =
+            viewModelScope.launch {
+                try {
+                    val result = points.equip(itemId)
+                    if (generation == operationGeneration) {
+                        mutableState.update {
+                            it.copy(
+                                saveFailed =
+                                    result != EquipResult.Applied && result != EquipResult.AlreadyApplied,
+                            )
+                        }
+                    }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    if (generation == operationGeneration) mutableState.update { it.copy(saveFailed = true) }
+                } finally {
+                    if (generation == operationGeneration) mutableState.update { it.copy(saving = false) }
                 }
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (_: Exception) {
-                mutableState.update { it.copy(saveFailed = true) }
-            } finally {
-                mutableState.update { it.copy(saving = false) }
             }
-        }
     }
 
     fun equipFriend(itemId: String) {

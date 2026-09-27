@@ -41,6 +41,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -73,6 +75,7 @@ import com.monsters.mobimon.core.domain.WarningSeverity
 import com.monsters.mobimon.core.presentation.parkingBadgeConfirmed
 import com.monsters.mobimon.core.ui.MobiMonColors
 import com.monsters.mobimon.core.ui.MobiMonDimensions
+import com.monsters.mobimon.core.ui.MobiMonParkingInterruption
 import com.monsters.mobimon.core.ui.MobiMonParkingStatusBadge
 import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.R as CoreUiR
@@ -92,6 +95,7 @@ fun VehicleInfoScreen(
     backgroundId: String? = null,
     selectedCards: List<String> = VehicleCardCatalog.defaultSlots.map { it.id },
     onCardSelectionConfirmed: (List<String>) -> Unit = {},
+    parkingRequired: Boolean = false,
 ) {
     val readings = snapshot.toVehicleInfoUiState()
     val mood =
@@ -117,52 +121,132 @@ fun VehicleInfoScreen(
     }
     var dialogSlot by remember { mutableStateOf<Int?>(null) }
     var draftCardId by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(parkingRequired) {
+        if (parkingRequired) {
+            dialogSlot = null
+            draftCardId = null
+        }
+    }
 
     fun openSelector(slot: Int) {
+        if (parkingRequired) return
         dialogSlot = slot
         draftCardId = null
     }
 
-    BoxWithConstraints(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .background(VehicleScreenBackground)
-                .semantics { paneTitle = title },
-    ) {
-        val fontScale = LocalDensity.current.fontScale
-        val reference = maxWidth >= 1400.dp && maxHeight >= 760.dp && fontScale <= 1.2f
-        val scale = if (reference) maxWidth.value / 2560f else 0.75f
-        val contentHeight = maxHeight
+    Box(Modifier.fillMaxSize()) {
+        BoxWithConstraints(
+            modifier =
+                modifier
+                    .fillMaxSize()
+                    .background(VehicleScreenBackground)
+                    .focusProperties { canFocus = !parkingRequired }
+                    .semantics { paneTitle = title },
+        ) {
+            val fontScale = LocalDensity.current.fontScale
+            val reference = maxWidth >= 1400.dp && maxHeight >= 760.dp && fontScale <= 1.2f
+            val scale = if (reference) maxWidth.value / 2560f else 0.75f
+            val contentHeight = maxHeight
 
-        if (reference) {
-            CompositionLocalProvider(LocalVehicleDesignScale provides scale) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Box(Modifier.fillMaxSize().testTag("vehicle-reference")) {
-                        VehicleHeader(
-                            snapshot = snapshot,
-                            friendId = friendId,
-                            onBack = onBack,
-                            onHome = onHome,
-                            scale = scale,
-                            modifier =
-                                Modifier
-                                    .offset(72.dp * scale, 36.dp * scale)
-                                    .size(2416.dp * scale, 104.dp * scale),
-                        )
-                        Column(
-                            modifier =
-                                Modifier
-                                    .offset(72.dp * scale, 156.dp * scale)
-                                    .size(2416.dp * scale, contentHeight - 172.dp * scale)
-                                    .verticalScroll(rememberScrollState()),
-                            verticalArrangement = Arrangement.spacedBy(28.dp * scale),
-                        ) {
-                            val metricsPanelHeight = 872.dp * scale
-                            VehicleStatusBanner(snapshot, mood, friendId)
+            if (reference) {
+                CompositionLocalProvider(LocalVehicleDesignScale provides scale) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Box(Modifier.fillMaxSize().testTag("vehicle-reference")) {
+                            VehicleHeader(
+                                snapshot = snapshot,
+                                friendId = friendId,
+                                onBack = onBack,
+                                onHome = onHome,
+                                scale = scale,
+                                modifier =
+                                    Modifier
+                                        .offset(72.dp * scale, 36.dp * scale)
+                                        .size(2416.dp * scale, 104.dp * scale),
+                            )
+                            Column(
+                                modifier =
+                                    Modifier
+                                        .offset(72.dp * scale, 156.dp * scale)
+                                        .size(2416.dp * scale, contentHeight - 172.dp * scale)
+                                        .verticalScroll(rememberScrollState()),
+                                verticalArrangement = Arrangement.spacedBy(28.dp * scale),
+                            ) {
+                                val metricsPanelHeight = 872.dp * scale
+                                VehicleStatusBanner(snapshot, mood, friendId)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().height(metricsPanelHeight),
+                                    horizontalArrangement = Arrangement.spacedBy(28.dp * scale),
+                                    verticalAlignment = Alignment.Top,
+                                ) {
+                                    CompanionStatusPanel(
+                                        mood = mood,
+                                        friendId = friendId,
+                                        accessoryId = accessoryId,
+                                        outfitId = outfitId,
+                                        backgroundId = backgroundId,
+                                        tireWarning =
+                                            VehicleCardCatalog.status("tire", snapshot) == VehicleCardStatus.CAUTION,
+                                        modifier = Modifier.weight(0.4f).fillMaxHeight(),
+                                        panelHeight = metricsPanelHeight,
+                                    )
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        VehicleCardGrid(
+                                            snapshot = snapshot,
+                                            readings = readings,
+                                            cards = currentCards,
+                                            onLongPress = ::openSelector,
+                                            modifier = Modifier.fillMaxWidth(),
+                                            targetHeight = 800.dp * scale,
+                                        )
+                                        Spacer(Modifier.height(30.dp * scale))
+                                        Text(
+                                            text = stringResource(R.string.vehicle_card_change_hint),
+                                            color = MobiMonColors.muted,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            modifier =
+                                                Modifier
+                                                    .align(
+                                                        Alignment.End,
+                                                    ).testTag("vehicle-card-change-hint"),
+                                        )
+                                    }
+                                }
+                                if (snapshot.warnings.isNotEmpty()) WarningList(snapshot.warnings)
+                            }
+                        }
+                    }
+                }
+            } else {
+                val compactScale = (maxWidth.value / 1400f).coerceIn(0.55f, 0.9f)
+                val isWide = maxWidth >= 980.dp
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 24.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(24.dp),
+                ) {
+                    VehicleHeader(
+                        snapshot = snapshot,
+                        friendId = friendId,
+                        onBack = onBack,
+                        onHome = onHome,
+                        scale = compactScale,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Column(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(24.dp),
+                    ) {
+                        VehicleStatusBanner(snapshot, mood, friendId)
+                        if (isWide) {
                             Row(
-                                modifier = Modifier.fillMaxWidth().height(metricsPanelHeight),
-                                horizontalArrangement = Arrangement.spacedBy(28.dp * scale),
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(28.dp),
                                 verticalAlignment = Alignment.Top,
                             ) {
                                 CompanionStatusPanel(
@@ -173,65 +257,17 @@ fun VehicleInfoScreen(
                                     backgroundId = backgroundId,
                                     tireWarning =
                                         VehicleCardCatalog.status("tire", snapshot) == VehicleCardStatus.CAUTION,
-                                    modifier = Modifier.weight(0.4f).fillMaxHeight(),
-                                    panelHeight = metricsPanelHeight,
+                                    modifier = Modifier.weight(0.4f),
                                 )
-                                Column(modifier = Modifier.weight(1f)) {
-                                    VehicleCardGrid(
-                                        snapshot = snapshot,
-                                        readings = readings,
-                                        cards = currentCards,
-                                        onLongPress = ::openSelector,
-                                        modifier = Modifier.fillMaxWidth(),
-                                        targetHeight = 800.dp * scale,
-                                    )
-                                    Spacer(Modifier.height(30.dp * scale))
-                                    Text(
-                                        text = stringResource(R.string.vehicle_card_change_hint),
-                                        color = MobiMonColors.muted,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        modifier = Modifier.align(Alignment.End).testTag("vehicle-card-change-hint"),
-                                    )
-                                }
+                                VehicleCardGrid(
+                                    snapshot = snapshot,
+                                    readings = readings,
+                                    cards = currentCards,
+                                    onLongPress = ::openSelector,
+                                    modifier = Modifier.weight(1f),
+                                )
                             }
-                            if (snapshot.warnings.isNotEmpty()) WarningList(snapshot.warnings)
-                        }
-                    }
-                }
-            }
-        } else {
-            val compactScale = (maxWidth.value / 1400f).coerceIn(0.55f, 0.9f)
-            val isWide = maxWidth >= 980.dp
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 24.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp),
-            ) {
-                VehicleHeader(
-                    snapshot = snapshot,
-                    friendId = friendId,
-                    onBack = onBack,
-                    onHome = onHome,
-                    scale = compactScale,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Column(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                            .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(24.dp),
-                ) {
-                    VehicleStatusBanner(snapshot, mood, friendId)
-                    if (isWide) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(28.dp),
-                            verticalAlignment = Alignment.Top,
-                        ) {
+                        } else {
                             CompanionStatusPanel(
                                 mood = mood,
                                 friendId = friendId,
@@ -239,70 +275,65 @@ fun VehicleInfoScreen(
                                 outfitId = outfitId,
                                 backgroundId = backgroundId,
                                 tireWarning = VehicleCardCatalog.status("tire", snapshot) == VehicleCardStatus.CAUTION,
-                                modifier = Modifier.weight(0.4f),
+                                modifier = Modifier.fillMaxWidth(),
                             )
                             VehicleCardGrid(
                                 snapshot = snapshot,
                                 readings = readings,
                                 cards = currentCards,
                                 onLongPress = ::openSelector,
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.fillMaxWidth(),
                             )
                         }
-                    } else {
-                        CompanionStatusPanel(
-                            mood = mood,
-                            friendId = friendId,
-                            accessoryId = accessoryId,
-                            outfitId = outfitId,
-                            backgroundId = backgroundId,
-                            tireWarning = VehicleCardCatalog.status("tire", snapshot) == VehicleCardStatus.CAUTION,
-                            modifier = Modifier.fillMaxWidth(),
+                        Text(
+                            text = stringResource(R.string.vehicle_card_change_hint),
+                            color = MobiMonColors.muted,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.fillMaxWidth().testTag("vehicle-card-change-hint"),
                         )
-                        VehicleCardGrid(
+                        if (snapshot.warnings.isNotEmpty()) WarningList(snapshot.warnings)
+                    }
+                }
+            }
+            if (!parkingRequired) {
+                dialogSlot?.let { slot ->
+                    CompositionLocalProvider(LocalVehicleDesignScale provides if (reference) scale else 1f) {
+                        VehicleCardSelector(
                             snapshot = snapshot,
-                            readings = readings,
                             cards = currentCards,
-                            onLongPress = ::openSelector,
-                            modifier = Modifier.fillMaxWidth(),
+                            selectedSlot = slot,
+                            selectedCardId = draftCardId,
+                            onSlotSelected = { next ->
+                                dialogSlot = next
+                                draftCardId = null
+                            },
+                            onCardSelected = { draftCardId = it },
+                            onDismiss = { dialogSlot = null },
+                            onConfirm = {
+                                val chosen = draftCardId
+                                if (!parkingRequired &&
+                                    chosen != null &&
+                                    chosen !in currentCards &&
+                                    VehicleCardCatalog.cards.any { it.id == chosen }
+                                ) {
+                                    currentCards = currentCards.toMutableList().also { it[slot] = chosen }
+                                    onCardSelectionConfirmed(currentCards)
+                                }
+                                dialogSlot = null
+                            },
                         )
                     }
-                    Text(
-                        text = stringResource(R.string.vehicle_card_change_hint),
-                        color = MobiMonColors.muted,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.fillMaxWidth().testTag("vehicle-card-change-hint"),
-                    )
-                    if (snapshot.warnings.isNotEmpty()) WarningList(snapshot.warnings)
                 }
             }
         }
-        dialogSlot?.let { slot ->
-            CompositionLocalProvider(LocalVehicleDesignScale provides if (reference) scale else 1f) {
-                VehicleCardSelector(
-                    snapshot = snapshot,
-                    cards = currentCards,
-                    selectedSlot = slot,
-                    selectedCardId = draftCardId,
-                    onSlotSelected = { next ->
-                        dialogSlot = next
-                        draftCardId = null
-                    },
-                    onCardSelected = { draftCardId = it },
-                    onDismiss = { dialogSlot = null },
-                    onConfirm = {
-                        val chosen = draftCardId
-                        if (chosen != null &&
-                            chosen !in currentCards &&
-                            VehicleCardCatalog.cards.any { it.id == chosen }
-                        ) {
-                            currentCards = currentCards.toMutableList().also { it[slot] = chosen }
-                            onCardSelectionConfirmed(currentCards)
-                        }
-                        dialogSlot = null
-                    },
-                )
-            }
+        if (parkingRequired) {
+            MobiMonParkingInterruption(
+                title = stringResource(R.string.vehicle_parking_popup_title),
+                body = stringResource(R.string.vehicle_parking_popup_body),
+                instruction = stringResource(R.string.vehicle_parking_popup_instruction),
+                preserved = stringResource(R.string.vehicle_parking_popup_preserved),
+                onHome = onHome ?: onBack,
+            )
         }
     }
 }
