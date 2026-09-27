@@ -29,6 +29,10 @@ Debug-only behavior uses `src/testDebug`. Two shared source sets need explicit w
 - `core-database/src/migrationTest`: populated V3 migration contracts use local and
   device wrappers. Other test directories are not automatically shared.
 
+Debug installs expose only MainActivity in the launcher. IDE component/connection
+previews and the conversation device-test Activity remain available without extra
+launcher entries. Shared connection samples and QR artwork support screen tests.
+
 ## Writing tests
 
 - Test behavior in the owning module/package. Construct subjects directly; use
@@ -113,7 +117,7 @@ Related suites share the linked module/package; test names define individual cas
 | Chat draft/composition lifetime, ownership clearing, first-entry loading without a screen flash, input guards/actions, parking and connection dialogs, reference ring and failed-action geometry, failed-turn editing, compact New Chat and navigation/IME resizing | [Conversation and feature suites](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth), [CopilotConnectionJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/CopilotConnectionJourneyTest.kt); native review images |
 | Foreground Copilot model and identity recheck, provisional draft retention, Send readiness, persistent failed turns, validated Android internet detection, immediate offline send/recheck, disconnect cancellation, usage blocking and later reentry, one visible failure notice, account guidance and access/usage Home actions, recheck without replay, 30-second wait bounds, duplicate/retry guards and limits | [AndroidConversationNetworkStatusTest](../app/src/test/java/com/monsters/mobimon/network/AndroidConversationNetworkStatusTest.kt), [ConversationViewModelTest](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth/ConversationViewModelTest.kt), [ConversationScreenTest](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth/ConversationScreenTest.kt), [CopilotConnectionJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/CopilotConnectionJourneyTest.kt); platform shadow and fake transport |
 | Native keyboard resizing, Back/draft retention, short exchange visibility, failed-turn Edit and reply network-dialog recheck | [ConversationKeyboardDeviceTest](../app/src/androidTest/java/com/monsters/mobimon/preview/ConversationKeyboardDeviceTest.kt); AAOS device |
-| Isolated Debug rehearsal and branding | [CopilotPreviewJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/preview/CopilotPreviewJourneyTest.kt), [BrandingTest](../app/src/testDebug/java/com/monsters/mobimon/BrandingTest.kt) |
+| One Debug launcher entry, app identity and branding | [BrandingTest](../app/src/testDebug/java/com/monsters/mobimon/BrandingTest.kt) |
 
 ## Integration boundaries
 
