@@ -68,6 +68,59 @@ class VehicleFeatureTest {
 
     private var visible by mutableStateOf(true)
     private lateinit var view: View
+    private val vehicleSnapshots =
+        MutableStateFlow(
+            VehicleSnapshot(
+                "unavailable",
+                "test",
+                0,
+                0,
+                SignalSource.REAL,
+                DrivingState.UNKNOWN,
+                SignalQuality.UNAVAILABLE,
+            ),
+        )
+
+    @Test
+    fun parkedRouteShowsVehiclePopupAfterParkingLoss() {
+        vehicleSnapshots.value =
+            VehicleSnapshot(
+                "parked",
+                "test",
+                1,
+                1_000,
+                SignalSource.REAL,
+                DrivingState.PARKED,
+                SignalQuality.VALID,
+                speed = 0,
+                gear = "P",
+            )
+        show(FakePoints())
+        compose.onNodeWithText("주차 후 차량 상태를 확인해요").assertDoesNotExist()
+
+        compose.runOnIdle {
+            vehicleSnapshots.value =
+                vehicleSnapshots.value.copy(
+                    id = "moving",
+                    sequence = 2,
+                    drivingState = DrivingState.MOVING,
+                    speed = 8,
+                    gear = "D",
+                )
+        }
+        compose.onNodeWithText("주차 후 차량 상태를 확인해요").assertIsDisplayed()
+        compose.runOnIdle {
+            vehicleSnapshots.value =
+                vehicleSnapshots.value.copy(
+                    id = "reparked",
+                    sequence = 3,
+                    drivingState = DrivingState.PARKED,
+                    speed = 0,
+                    gear = "P",
+                )
+        }
+        compose.onNodeWithText("주차 후 차량 상태를 확인해요").assertDoesNotExist()
+    }
 
     @Test
     fun initialAppearanceFailureExposesRetryWithoutHidingVehicleInformation() {
@@ -138,18 +191,7 @@ class VehicleFeatureTest {
     ) {
         val vehicle =
             object : VehicleRepository {
-                override val snapshots =
-                    MutableStateFlow(
-                        VehicleSnapshot(
-                            "unavailable",
-                            "test",
-                            0,
-                            0,
-                            SignalSource.REAL,
-                            DrivingState.UNKNOWN,
-                            SignalQuality.UNAVAILABLE,
-                        ),
-                    )
+                override val snapshots = vehicleSnapshots
 
                 override fun start() = error("Feature must not start a provider")
 
@@ -160,7 +202,7 @@ class VehicleFeatureTest {
                 VehiclePresentation(
                     vehicle,
                     ProgressionIdentity("saved", SignalSource.REAL),
-                    Clock { 0 },
+                    Clock { 2_000 },
                     VehicleFreshnessPolicy(15_000),
                     UtcClock { 0L },
                 ),

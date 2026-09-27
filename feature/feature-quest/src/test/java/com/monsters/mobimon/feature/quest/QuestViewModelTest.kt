@@ -322,6 +322,25 @@ class QuestViewModelTest {
         }
 
     @Test
+    fun parkingInterruptionClearsPendingClaimAndCancelsItsWork() =
+        runModelTest {
+            economy.gate = CompletableDeferred()
+            val vm = subject()
+            runCurrent()
+            vm.claimPointQuest(DrivingQuestIds.SEATBELT, displayedSnapshot)
+            runCurrent()
+            assertTrue(vm.state.value.isBusy)
+
+            vm.onParkingInterrupted()
+            runCurrent()
+
+            assertTrue(economy.cancelled)
+            assertFalse(vm.state.value.isBusy)
+            assertNull(vm.state.value.rewardSuccess)
+            assertNull(vm.state.value.message)
+        }
+
+    @Test
     fun drivingEvaluationUpdatesEligibilityWithoutVehicleObservation() =
         runModelTest {
             val vm = subject()

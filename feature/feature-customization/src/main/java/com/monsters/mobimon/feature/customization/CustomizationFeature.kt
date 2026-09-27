@@ -1,6 +1,7 @@
 package com.monsters.mobimon.feature.customization
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -19,6 +20,7 @@ import com.monsters.mobimon.core.presentation.PointPresentation
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.core.presentation.parkedVerified
 import com.monsters.mobimon.core.presentation.parkingBadgeConfirmed
+import com.monsters.mobimon.core.ui.rememberParkingInterruption
 
 class CustomizationFeature(
     private val points: PointEconomy,
@@ -48,6 +50,10 @@ class CustomizationFeature(
         val vehicleReading = vehicle.reading()
         val vehicleSnapshot = vehicleReading.snapshot
         val interactionAllowed = vehicleSnapshot.parkedVerified
+        val parkingRequired = rememberParkingInterruption(interactionAllowed)
+        LaunchedEffect(parkingRequired) {
+            if (parkingRequired) inventoryModel.onParkingInterrupted()
+        }
 
         CustomizationScreen(
             inventory = inventoryState.inventory ?: appearanceState.inventory,
@@ -56,17 +62,20 @@ class CustomizationFeature(
             selectedItemId = inventoryState.selectedItemId,
             purchasing = inventoryState.purchasing,
             purchaseFailed = inventoryState.purchaseFailed,
-            onSelectItem = inventoryModel::selectItem,
+            onSelectItem = { if (!parkingRequired) inventoryModel.selectItem(it) },
             onPurchaseItem = { itemId, price ->
-                if (interactionAllowed && inventoryModel.state.value.inventory != null) {
+                if (interactionAllowed && !parkingRequired && inventoryModel.state.value.inventory != null) {
                     inventoryModel.purchaseItem(itemId, price)
                 }
             },
             onEquipItem = { itemId ->
-                if (interactionAllowed && inventoryModel.state.value.inventory != null) inventoryModel.equipItem(itemId)
+                if (interactionAllowed && !parkingRequired && inventoryModel.state.value.inventory != null) {
+                    inventoryModel.equipItem(itemId)
+                }
             },
             onEquipFriend = { itemId ->
                 if (interactionAllowed &&
+                    !parkingRequired &&
                     inventoryModel.state.value.inventory != null
                 ) {
                     inventoryModel.equipFriend(itemId)
@@ -87,6 +96,8 @@ class CustomizationFeature(
             timeOfDay = vehicleReading.backgroundTimeOfDay,
             interactionAllowed = interactionAllowed,
             parkingBadgeConfirmed = vehicleSnapshot.parkingBadgeConfirmed,
+            parkingRequired = parkingRequired,
+            onHome = navigator.returnHome,
         )
     }
 }
