@@ -37,8 +37,9 @@ Expressions supplement vehicle facts; they never diagnose a vehicle or replace w
 - Place the shared parking badge at the top right of standard routes, 72px from
   the content edge and 36px from the content top in the reference layout. It
   moves with its screen during navigation. The initial profile loading screen
-  omits it. The 344 × 76 capsule retains the Figma parking icon, text placement,
-  dark blue surface and cyan text for confirmed Park. The restricted state keeps
+  omits it. The 344 × 76 capsule retains the Figma parking icon,
+  dark blue surface and cyan text for confirmed Park. Center the icon and label
+  together horizontally and vertically in both parking states. The restricted state keeps
   this geometry and centers its visible 20 × 24 pause icon and label together,
   separated by 24px without transparent icon padding. It uses the same
   dark blue surface and border, with the conversation parking dialog's red
@@ -47,8 +48,8 @@ Expressions supplement vehicle facts; they never diagnose a vehicle or replace w
   every other state shows “주차 후 이용”. Conversation retains its separate Figma
   badge at 258 × 60 when confirmed and 272 × 60 when restricted at reference
   text size, positioned beside its connection badge. Enlarged text expands the
-  badge so its icon and label stay separate. Its restricted icon and label are
-  also centered together. Vehicle details may describe the specific signal
+  badge so its icon and label stay separate. Its icon and label are
+  also centered together in both states. Vehicle details may describe the specific signal
   or data gap separately.
 
 ### Launcher icon and native splash

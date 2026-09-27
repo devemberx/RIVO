@@ -56,68 +56,45 @@ internal fun ConversationParkingBadge(
             .testTag("chat-parking-badge")
             .semantics(mergeDescendants = true) { contentDescription = status },
     ) {
-        if (confirmed && !enlargedText) {
+        val rowModifier =
+            if (enlargedText) {
+                Modifier.align(Alignment.Center).padding(horizontal = 12.dp * scale, vertical = 8.dp * scale)
+            } else {
+                Modifier.fillMaxSize()
+            }
+        Row(
+            rowModifier,
+            horizontalArrangement =
+                Arrangement.spacedBy(
+                    (if (confirmed) 16.dp else 24.dp) * scale,
+                    Alignment.CenterHorizontally,
+                ),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Icon(
-                painterResource(CoreUiR.drawable.mobimon_parking),
+                painterResource(
+                    if (confirmed) {
+                        CoreUiR.drawable.mobimon_parking
+                    } else {
+                        CoreUiR.drawable.mobimon_parking_unconfirmed
+                    },
+                ),
                 contentDescription = null,
                 modifier =
                     Modifier
-                        .offset(
-                            37.dp * scale,
-                            10.dp * scale,
-                        ).size(40.dp * scale)
-                        .testTag("chat-parking-icon"),
-                tint = Colors.accent,
+                        .size(
+                            (if (confirmed) 40.dp else 20.dp) * scale,
+                            (if (confirmed) 40.dp else 24.dp) * scale,
+                        ).testTag("chat-parking-icon"),
+                tint = if (confirmed) Colors.accent else Colors.destructive,
             )
             Text(
                 status,
-                Modifier.align(Alignment.CenterEnd).offset(x = -40.dp * scale, y = -1.dp * scale),
-                style = mobiMonReferenceTextStyle(26f, scale),
-                color = Colors.accent,
+                style = mobiMonReferenceTextStyle(if (confirmed) 26f else 24f, scale),
+                color = if (confirmed) Colors.accent else Colors.destructive,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-        } else {
-            val rowModifier =
-                if (enlargedText) {
-                    Modifier.align(Alignment.Center).padding(horizontal = 12.dp * scale, vertical = 8.dp * scale)
-                } else {
-                    Modifier.fillMaxSize()
-                }
-            Row(
-                rowModifier,
-                horizontalArrangement =
-                    Arrangement.spacedBy(
-                        (if (confirmed) 16.dp else 24.dp) * scale,
-                        Alignment.CenterHorizontally,
-                    ),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    painterResource(
-                        if (confirmed) {
-                            CoreUiR.drawable.mobimon_parking
-                        } else {
-                            CoreUiR.drawable.mobimon_parking_unconfirmed
-                        },
-                    ),
-                    contentDescription = null,
-                    modifier =
-                        Modifier
-                            .size(
-                                (if (confirmed) 40.dp else 20.dp) * scale,
-                                (if (confirmed) 40.dp else 24.dp) * scale,
-                            ).testTag("chat-parking-icon"),
-                    tint = if (confirmed) Colors.accent else Colors.destructive,
-                )
-                Text(
-                    status,
-                    style = mobiMonReferenceTextStyle(if (confirmed) 26f else 24f, scale),
-                    color = if (confirmed) Colors.accent else Colors.destructive,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
         }
     }
 }

@@ -473,6 +473,17 @@ class ConversationScreenTest {
         assertEquals(51f, parking.top, 1f)
         assertEquals(258f, parking.width, 1f)
         assertEquals(60f, parking.height, 1f)
+        val parkingIcon =
+            compose
+                .onNodeWithTag(
+                    "chat-parking-icon",
+                    useUnmergedTree = true,
+                ).fetchSemanticsNode()
+                .boundsInRoot
+        val parkingText = compose.onNodeWithText("주차 확인됨", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        assertEquals(parking.center.x, (parkingIcon.left + parkingText.right) / 2f, 1f)
+        assertEquals(parking.center.y, parkingIcon.center.y, 1f)
+        assertEquals(parking.center.y, parkingText.center.y, 1f)
         val auth = compose.onNodeWithTag("chat-auth-badge").fetchSemanticsNode().boundsInRoot
         compose.onNodeWithTag("chat-auth-badge").assertContentDescriptionEquals("Copilot 연결됨")
         assertEquals(1887f, auth.left, 1f)
