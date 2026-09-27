@@ -144,6 +144,13 @@ Reuse committed Home appearance while inventory loads. Keep header, preview, tab
 and cards stable; delayed reads use still placeholders followed by a short card
 fade. Show read/save failures inline with Retry.
 
+The 200-point `background:star_hanger` (별빛 모빌) uses the supplied body and glow
+canvases on one continuous mesh, suspended from the top center. Chain joints between
+the ribbon, star, moon and tip swing with increasing phase delay; solid ornaments
+retain their shape. Glow follows the same joints and fades in/out independently.
+It occupies the background slot, is shared by both friends, and appears on Home and
+in Store previews; reduced motion shows a still hanger.
+
 ## Conversation
 
 Use V5 split panels, suggestions and composer; companion/chat stay visible together.

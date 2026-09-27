@@ -10,6 +10,29 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CustomizationCatalogTest {
+    @Test fun starHangerPreviewDoesNotEquipUntilAppliedAndIsAvailableToBothFriends() {
+        val item = CosmeticItem("background:star_hanger", CosmeticSlot.BACKGROUND, 200)
+        for (friend in listOf("friend:mobi", "friend:luna")) {
+            val inventory = CosmeticInventory(setOf(friend), mapOf(CosmeticSlot.FRIEND to friend))
+            val preview = customizationCatalog(inventory, listOf(item), CosmeticSlot.BACKGROUND, item.id)
+            assertTrue(item in preview.items)
+            assertEquals(item.id, preview.preview.backgroundId)
+            assertFalse(preview.selectedOwned)
+            assertFalse(preview.selectedEquipped)
+            assertNull(inventory.equippedItemIds[CosmeticSlot.BACKGROUND])
+            val equipped =
+                inventory.copy(
+                    ownedItemIds = inventory.ownedItemIds + item.id,
+                    equippedItemIds = inventory.equippedItemIds + (CosmeticSlot.BACKGROUND to item.id),
+                )
+            val applied = customizationCatalog(equipped, listOf(item), CosmeticSlot.BACKGROUND, item.id)
+            assertTrue(applied.selectedOwned)
+            assertTrue(applied.selectedEquipped)
+            val removal = customizationCatalog(equipped, listOf(item), CosmeticSlot.BACKGROUND, "none:background")
+            assertNull(removal.preview.backgroundId)
+        }
+    }
+
     @Test fun friendPreviewUsesThatFriendsEquipmentWithoutChangingCommittedAppearance() {
         val inventory =
             CosmeticInventory(

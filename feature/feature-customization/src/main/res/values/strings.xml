@@ -43,4 +43,6 @@
     <string name="pet_inventory_save_failed">친구를 적용하지 못했어요. 다시 시도해 주세요.</string>
     <string name="pet_appearance_apply">이 모습 적용</string>
     <string name="customization_catalog_failed">아이템 목록을 불러오지 못했어요.</string>
+    <string name="pet_item_star_hanger">별빛 모빌</string>
+    <string name="pet_preview_desc_star_hanger">살랑살랑 흔들리며 반짝이는 별빛 모빌</string>
 </resources>
