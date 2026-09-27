@@ -86,17 +86,9 @@ fun ConversationScreen(
     val focus = LocalFocusManager.current
     val view = LocalView.current
     val imeVisible = WindowInsets.isImeVisible
-    val messageFailure =
-        state.failed &&
-            state.problem in
-            setOf(ConversationProblem.NETWORK, ConversationProblem.SERVICE, ConversationProblem.TIMEOUT)
     val connectionFailure = state.connectionProblem != null
     val networkChecking = state.connection == ConversationConnection.CHECKING && state.connectionRetrying
-    val localNetworkRecovery =
-        state.voice.available &&
-            state.connection != ConversationConnection.SIGNED_OUT &&
-            (state.connectionProblem == ConversationProblem.NETWORK || networkChecking)
-    val connectionDialog = interactionAllowed && (connectionFailure || networkChecking) && !localNetworkRecovery
+    val connectionDialog = interactionAllowed && (connectionFailure || networkChecking)
     val panelState = if (connectionDialog && state.failed) state.copy(failed = false) else state
     val back = {
         // adjustResize can consume Compose's IME bounds; check the window at the time of the action.
@@ -190,17 +182,16 @@ fun ConversationScreen(
                             .offset(796.dp * scale, 34.dp * scale)
                             .size(1692.dp * scale, (panelBottom - 34.dp * scale).coerceAtLeast(0.dp)),
                         onNewConversation,
-                        if (localNetworkRecovery) onRecheckConnection else onRetry,
-                        if (localNetworkRecovery) onReturnHome else onDismissFailure,
+                        onRetry,
+                        onDismissFailure,
                         onStartVoice,
                         onStopVoice,
                         onCancelVoice,
                         onDismissVoiceProblem,
-                        connectionRecovery = localNetworkRecovery,
                     )
                     ConversationAuthBadge(
                         connection = state.connection,
-                        problem = if (messageFailure) state.problem else state.connectionProblem,
+                        problem = state.connectionProblem,
                         scale = scale,
                         modifier = Modifier.offset(1887.dp * scale, 51.dp * scale),
                     )
@@ -235,13 +226,12 @@ fun ConversationScreen(
                         false,
                         Modifier.weight(1f),
                         onNewConversation,
-                        if (localNetworkRecovery) onRecheckConnection else onRetry,
-                        if (localNetworkRecovery) onReturnHome else onDismissFailure,
+                        onRetry,
+                        onDismissFailure,
                         onStartVoice,
                         onStopVoice,
                         onCancelVoice,
                         onDismissVoiceProblem,
-                        connectionRecovery = localNetworkRecovery,
                     )
                 }
             }

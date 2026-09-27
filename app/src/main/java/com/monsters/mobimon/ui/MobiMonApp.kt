@@ -31,6 +31,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
@@ -204,6 +205,7 @@ fun MobiMonApp(
                 else -> false
             }
         },
+        onHomeEntered = conversationModel::clearDisplay,
         onReleaseDebuggerUnlocked = {
             debugResetScope.launch {
                 settings.setDebugModeEnabled(false)
@@ -249,11 +251,16 @@ fun MobiMonContent(
     debugOverlay: @Composable () -> Unit = { DebugOverlay() },
     debugSettingsAvailableByDefault: Boolean = BuildConfig.DEBUG,
     onReleaseDebuggerUnlocked: () -> Unit = {},
+    onHomeEntered: () -> Unit = {},
 ) {
     val registry = remember(entries) { FeatureRegistry(entries) }
     var savedShell by rememberSaveable(stateSaver = ShellSaver) { mutableStateOf(ShellState()) }
     val authenticated = currentConversationAuthentication()
     val shell = savedShell.requireConversationAccount(authenticated)
+    val currentOnHomeEntered by rememberUpdatedState(onHomeEntered)
+    LaunchedEffect(shell.route) {
+        if (shell.route == CompanionRoute.HOME) currentOnHomeEntered()
+    }
     var returning by remember { mutableStateOf(false) }
     var reveal by remember { mutableStateOf<DestinationReveal?>(null) }
     var contentCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }

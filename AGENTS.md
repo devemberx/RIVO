@@ -20,11 +20,11 @@
 
 ## Documentation
 
-- Write briefly and plainly; omit unnecessary implementation detail, repetition and stale content. Keep AGENTS.md limited to essential repository-wide rules and link to detailed guidance.
-- Keep one authoritative home per topic: CONTRIBUTING for workflow, ARCHITECTURE for technical contracts, DESIGN for UX, TESTING for coverage, `docs/ui/README.md` for exports, and AGENTS for essential agent rules. Link instead of repeating content; keep safety reminders brief.
-- When code changes make documentation or AGENTS.md inaccurate or incomplete, update the affected files in the same change. Keep current implementation separate from planned work, and update the test requirement map for changed critical behavior.
-- Revise existing sections instead of adding overlapping ones. Keep assignments, plans and run logs in issues/PRs; local `docs/superpowers/` plans remain ignored.
-- Before committing docs, check relative links and anchors; preserve safety contracts and verification limits when shortening.
+- Keep one home per topic: ARCHITECTURE for technical contracts, DESIGN for UX/assets, TESTING for critical coverage/limits, CONTRIBUTING for workflow, and `docs/ui/README.md` for exports. AGENTS contains only essential repository-wide rules.
+- Update reference docs only when a contract, user-visible behavior, integration limit or critical coverage changes, or existing guidance becomes wrong. Do not append a feature recap for every change; revise the affected section in the same change.
+- Use one short paragraph (usually 2–3 sentences) or table row per changed contract. Keep algorithms, callbacks, tunable constants and detailed cases in code/tests; link instead of copying. Retain values needed to enforce safety or UX requirements.
+- Remove repeated/stale text before adding more. Keep assignments, plans, experiments, reproduction procedures, execution results and environment snapshots in issues/PRs. Local `docs/superpowers/` plans remain ignored; separate current behavior from planned work.
+- Before finishing doc changes, review the added detail for necessity and check links/anchors. Preserve safety contracts and verification limits when shortening.
 - Update CONTRIBUTING and CI together when required checks change. For shared skill changes, edit `.agents/skills/` and copy the entire affected folder, including references/licenses, to `.claude/skills/` in the same commit.
 
 ## Verification

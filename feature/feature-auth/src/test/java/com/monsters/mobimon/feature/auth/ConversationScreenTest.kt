@@ -224,6 +224,8 @@ class ConversationScreenTest {
             problem = ConversationProblem.NETWORK
         }
         badge.assertContentDescriptionEquals("Copilot 확인 중")
+        compose.runOnIdle { problem = ConversationProblem.TIMEOUT }
+        badge.assertContentDescriptionEquals("Copilot 확인 중")
         compose.runOnIdle { problem = null }
         badge.assertContentDescriptionEquals("Copilot 연결됨")
     }
@@ -266,6 +268,76 @@ class ConversationScreenTest {
 
     @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun communicationTimeoutUsesNetworkRecoveryAtReferenceSize() {
+        showTimeoutRecovery(1f)
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun communicationTimeoutUsesNetworkRecoveryWithEnlargedText() {
+        showTimeoutRecovery(1.6f)
+    }
+
+    private fun showTimeoutRecovery(fontScale: Float) {
+        state = ConversationUiState(ConversationConnection.UNAVAILABLE, connectionProblem = ConversationProblem.TIMEOUT)
+        draft = TextFieldValue("대기 중인 초안")
+        show(fontScale = fontScale)
+        compose.onNodeWithText("네트워크 연결을 확인해 주세요").assertIsDisplayed()
+        compose.onNodeWithText("Copilot 답변이 지연됐어요").assertDoesNotExist()
+        capture(if (fontScale == 1f) "network-timeout" else "network-timeout-enlarged")
+        compose.onNodeWithTag("chat-network-retry").performClick()
+        compose.onNodeWithText("Copilot 연결을 다시 확인하는 중").assertIsDisplayed()
+        compose.runOnIdle {
+            assertEquals(1, checks)
+            assertEquals(0, sends)
+            assertEquals("대기 중인 초안", draft.text)
+        }
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun voiceAvailabilityDoesNotBypassNetworkPopup() {
+        showVoiceNetworkPopup(1f, ConversationProblem.NETWORK)
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun voiceAvailabilityDoesNotBypassTimeoutPopupWithEnlargedText() {
+        showVoiceNetworkPopup(1.6f, ConversationProblem.TIMEOUT)
+    }
+
+    private fun showVoiceNetworkPopup(
+        fontScale: Float,
+        problem: ConversationProblem,
+    ) {
+        state =
+            state.copy(
+                connection = ConversationConnection.UNAVAILABLE,
+                connectionProblem = problem,
+                voice = VoiceInputState(available = true),
+            )
+        draft = TextFieldValue("보존할 초안")
+        show(fontScale = fontScale)
+        compose.onNodeWithTag("chat-network-dialog").assertIsDisplayed()
+        compose.onNodeWithTag("chat-inline-failure").assertDoesNotExist()
+        compose.onNodeWithContentDescription("음성으로 입력").assertDoesNotExist()
+        capture(if (fontScale == 1f) "voice-network-popup" else "voice-timeout-popup-enlarged")
+        compose.onNodeWithTag("chat-network-retry").performClick()
+        compose.onNodeWithTag("chat-network-dialog").assertIsDisplayed()
+        compose.onNodeWithTag("chat-network-retry").assertIsNotEnabled()
+        compose.runOnIdle {
+            assertEquals(1, checks)
+            assertEquals(0, sends)
+            assertEquals("보존할 초안", draft.text)
+            state = state.copy(connection = ConversationConnection.READY, connectionRetrying = false)
+        }
+        compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+        compose.onNodeWithText("Copilot 연결됨").assertIsDisplayed()
+        compose.onNodeWithTag("chat-input").assertIsDisplayed()
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun failedMessageNetworkErrorShowsDialogThenKeepsRetryAndEditReachable() {
         state =
             ConversationUiState(
@@ -274,6 +346,7 @@ class ConversationScreenTest {
                 failed = true,
                 problem = ConversationProblem.NETWORK,
                 connectionProblem = ConversationProblem.NETWORK,
+                voice = VoiceInputState(available = true),
             )
         draft = TextFieldValue("다시 보낼 내용")
         show()
@@ -286,6 +359,8 @@ class ConversationScreenTest {
         compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
         compose.onNodeWithTag("chat-user-bubble").assertIsDisplayed()
         compose.onNodeWithTag("chat-inline-failure").assertIsDisplayed()
+        compose.onNodeWithText("Copilot 연결됨").assertIsDisplayed()
+        capture("message-network-recovered")
         compose.runOnIdle { draft = draft.copy(selection = TextRange(0)) }
         compose.onNodeWithTag("chat-inline-failure").assertIsDisplayed()
         compose.onNodeWithText("다시 보내기").performClick()
@@ -319,15 +394,6 @@ class ConversationScreenTest {
             assertEquals(0, checks)
             assertEquals(0, sends)
         }
-    }
-
-    @Test fun onlineTimeoutExplainsDelayedCopilotResponse() {
-        state = ConversationUiState(ConversationConnection.UNAVAILABLE, connectionProblem = ConversationProblem.TIMEOUT)
-        show()
-
-        compose.onNodeWithText("Copilot 답변이 지연됐어요").assertIsDisplayed()
-        compose.onNodeWithTag("chat-network-retry").performClick()
-        compose.runOnIdle { assertEquals(1, checks) }
     }
 
     @Test
@@ -795,10 +861,30 @@ class ConversationScreenTest {
 
     @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun hiddenHistoryKeepsNewConversationReachableAtReferenceSize() {
+        assertHiddenHistoryCanBeReset(fontScale = 1f)
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun hiddenHistoryKeepsNewConversationReachableWithEnlargedText() {
+        assertHiddenHistoryCanBeReset(fontScale = 1.6f)
+    }
+
+    private fun assertHiddenHistoryCanBeReset(fontScale: Float) {
+        state = state.copy(hasConversationHistory = true)
+        show(fontScale = fontScale)
+        capture(if (fontScale == 1f) "hidden-history" else "hidden-history-enlarged")
+        compose.onNodeWithTag("chat-new-action").assertIsDisplayed().performClick()
+        compose.onNodeWithTag("chat-new-action").assertDoesNotExist()
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun voiceListeningAndReviewMatchTheReferenceTypographyAndButtonBounds() {
         state =
             state.copy(
-                messages = referenceMessages,
+                messages = emptyList(),
                 voice =
                     VoiceInputState(
                         true,
@@ -875,7 +961,7 @@ class ConversationScreenTest {
     @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun voiceControlsRetainMinimumTouchBoundsAtAaosDensityAndEnlargedText() {
-        state = state.copy(messages = referenceMessages, voice = VoiceInputState(true, VoiceInputPhase.LISTENING))
+        state = state.copy(messages = emptyList(), voice = VoiceInputState(true, VoiceInputPhase.LISTENING))
         show(density = 10f / 7f)
         capture("voice-listening-aaos")
         compose.onNodeWithContentDescription("음성 입력 취소").assertHeightIsAtLeast(76.dp)
@@ -928,73 +1014,7 @@ class ConversationScreenTest {
     }
 
     @Test
-    @GraphicsMode(GraphicsMode.Mode.NATIVE)
-    fun offlineVoiceInputKeepsRecoveryActionsReachableWithoutEnablingSend() {
-        state =
-            state.copy(
-                connection = ConversationConnection.UNAVAILABLE,
-                connectionProblem = ConversationProblem.NETWORK,
-                voice = VoiceInputState(available = true),
-            )
-        draft = TextFieldValue("오프라인 초안")
-        show()
-        compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
-        compose.onNodeWithTag("chat-inline-failure").assertIsDisplayed()
-        capture("offline-voice-recovery")
-        compose.onNodeWithContentDescription("음성으로 입력").assertIsEnabled().performClick()
-        compose.runOnIdle { state = state.copy(voice = state.voice.copy(levels = referenceVoiceLevels)) }
-        compose.onNodeWithTag("chat-voice-control").assertIsDisplayed()
-        capture("offline-voice-listening-recovery")
-        compose.onNodeWithText("다시 확인").performClick()
-        compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
-        compose.onNodeWithTag("chat-voice-control").assertIsDisplayed()
-        compose.onNodeWithText("확인 중…").assertIsNotEnabled()
-        compose.onNodeWithText("홈으로").assertIsEnabled()
-        capture("offline-voice-checking-recovery")
-        compose.runOnIdle {
-            assertEquals(1, checks)
-            assertEquals(1, voiceStarts)
-            assertEquals(0, voiceCancellations)
-            state =
-                state.copy(
-                    connection = ConversationConnection.UNAVAILABLE,
-                    connectionProblem = ConversationProblem.NETWORK,
-                    connectionRetrying = false,
-                )
-        }
-        compose.onNodeWithContentDescription("음성 입력 취소").performClick()
-        compose.onNodeWithTag("chat-send").assertIsNotEnabled()
-        compose.onNodeWithTag("chat-input").performTextInput(" 수정")
-        compose.onNodeWithText("홈으로").performClick()
-        compose.runOnIdle {
-            assertEquals(1, homeReturns)
-            assertEquals(0, sends)
-            assertTrue(draft.text.contains("수정"))
-        }
-    }
-
-    @Test
-    @GraphicsMode(GraphicsMode.Mode.NATIVE)
-    fun offlineVoiceRecoveryRemainsReachableWithEnlargedTextAtAaosDensity() {
-        state =
-            state.copy(
-                connection = ConversationConnection.UNAVAILABLE,
-                connectionProblem = ConversationProblem.NETWORK,
-                voice = VoiceInputState(true, VoiceInputPhase.REVIEW),
-            )
-        draft = TextFieldValue("오프라인에서 작성한 내용을 확인하고 수정할 수 있어요")
-        show(fontScale = 1.6f, density = 10f / 7f)
-        compose.onNodeWithTag("chat-inline-failure").assertIsDisplayed()
-        compose.onNodeWithTag("chat-input").assertIsDisplayed()
-        compose.onNodeWithTag("chat-send").assertIsNotEnabled()
-        compose.onNodeWithContentDescription("음성으로 입력").assertIsEnabled().assertHeightIsAtLeast(76.dp)
-        compose.onNodeWithText("다시 확인").assertIsDisplayed().assertIsEnabled()
-        compose.onNodeWithText("홈으로").assertIsDisplayed().assertIsEnabled()
-        capture("offline-voice-review-enlarged-recovery")
-    }
-
-    @Test
-    fun networkLossKeepsVoiceStopReachableButAccountAndParkingStillBlock() {
+    fun networkLossDuringRecordingOpensPopupAndReleasesMicrophone() {
         state = state.copy(voice = VoiceInputState(true, VoiceInputPhase.LISTENING))
         show()
         compose.runOnIdle {
@@ -1004,22 +1024,14 @@ class ConversationScreenTest {
                     connectionProblem = ConversationProblem.NETWORK,
                 )
         }
-        compose.onNodeWithContentDescription("녹음 마치고 내용 확인").assertIsEnabled().performClick()
-        compose.runOnIdle {
-            assertEquals(1, voiceStops)
-            assertEquals(0, voiceCancellations)
-            state = state.copy(connectionProblem = ConversationProblem.ACCOUNT)
-        }
         compose.onNodeWithTag("chat-network-dialog").assertIsDisplayed()
-        compose.onNodeWithContentDescription("음성으로 입력").assertDoesNotExist()
+        compose.onNodeWithContentDescription("녹음 마치고 내용 확인").assertDoesNotExist()
         compose.runOnIdle {
             assertEquals(1, voiceCancellations)
-            state = state.copy(connectionProblem = ConversationProblem.NETWORK)
+            assertEquals(0, sends)
             allowed = false
         }
         compose.onNodeWithTag("chat-parking-dialog").assertIsDisplayed()
-        compose.onNodeWithContentDescription("음성으로 입력").assertDoesNotExist()
-        compose.runOnIdle { assertEquals(0, sends) }
     }
 
     private fun show(
@@ -1070,7 +1082,13 @@ class ConversationScreenTest {
                         onDismissFailure = {
                             state = state.copy(messages = state.messages.dropLast(1), failed = false)
                         },
-                        onNewConversation = { state = state.copy(messages = emptyList()) },
+                        onNewConversation = {
+                            state =
+                                state.copy(
+                                    messages = emptyList(),
+                                    hasConversationHistory = false,
+                                )
+                        },
                         onStartVoice = {
                             voiceStarts++
                             state = state.copy(voice = state.voice.copy(phase = VoiceInputPhase.LISTENING))
