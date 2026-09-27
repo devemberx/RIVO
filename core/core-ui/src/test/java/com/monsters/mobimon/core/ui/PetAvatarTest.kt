@@ -107,6 +107,16 @@ class PetAvatarTest {
             listOf("mobi_idle_breath_sprite.png"),
             context.assets.list("characters/mobi/idle_breath")!!.toList(),
         )
+
+        val headphonesSprite = requireNotNull(MobiSpriteCache.getOrLoad(context, "accessory:mobi_headphones"))
+        assertEquals(627 * 6, headphonesSprite.width)
+        assertEquals(627 * 4, headphonesSprite.height)
+        assertTrue(headphonesSprite === MobiSpriteCache.getOrLoad(context, "accessory:mobi_headphones"))
+
+        val gogglesSprite = requireNotNull(MobiSpriteCache.getOrLoad(context, "accessory:mobi_goggles"))
+        assertEquals(627 * 6, gogglesSprite.width)
+        assertEquals(627 * 4, gogglesSprite.height)
+        assertTrue(gogglesSprite === MobiSpriteCache.getOrLoad(context, "accessory:mobi_goggles"))
     }
 
     @Test

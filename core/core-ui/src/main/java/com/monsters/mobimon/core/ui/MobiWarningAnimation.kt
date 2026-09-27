@@ -147,6 +147,7 @@ internal object MobiDizzyStarsSpriteCache {
 fun MobiIdleBreathAnimation(
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
+    accessoryId: String? = null,
     fallbackAsset: CharacterAsset = CharacterArtwork.characters.getValue("friend:mobi"),
     vehicleWarning: Boolean = false,
     vehicleHungry: Boolean = false,
@@ -197,7 +198,12 @@ fun MobiIdleBreathAnimation(
                     }
                 } else {
                     if (animateNormal) {
-                        NormalMobiIdleAnimation(Modifier.matchParentSize(), null, fallbackAsset)
+                        NormalMobiIdleAnimation(
+                            modifier = Modifier.matchParentSize(),
+                            contentDescription = null,
+                            accessoryId = accessoryId,
+                            fallbackAsset = fallbackAsset,
+                        )
                     } else {
                         CharacterAssetImage(fallbackAsset, Modifier.matchParentSize(), null)
                     }

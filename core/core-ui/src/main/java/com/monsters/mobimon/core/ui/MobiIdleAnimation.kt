@@ -114,31 +114,54 @@ internal object MobiIdleTimeline {
 }
 
 internal object MobiSpriteCache {
-    const val ASSET_PATH = "characters/mobi/idle_breath/mobi_idle_breath_sprite.png"
+    const val DEFAULT_ASSET_PATH = "characters/mobi/idle_breath/mobi_idle_breath_sprite.png"
+
+    private fun assetPathFor(accessoryId: String?): String =
+        when (accessoryId) {
+            "accessory:mobi_headphones" ->
+                "characters/mobi/headphones/idle_breath/mobi_idle_breath_headphones_sprite.png"
+            "accessory:mobi_goggles" ->
+                "characters/mobi/goggles/idle_breath/mobi_idle_breath_goggles_sprite.png"
+            else -> DEFAULT_ASSET_PATH
+        }
 
     @Volatile private var cached: ImageBitmap? = null
 
-    fun peek(): ImageBitmap? = cached
+    @Volatile private var cachedAccessoryId: String? = null
 
-    fun getOrLoad(context: Context): ImageBitmap? {
-        cached?.let { return it }
+    fun peek(accessoryId: String? = null): ImageBitmap? = if (cachedAccessoryId == accessoryId) cached else null
+
+    fun clear() {
+        cached = null
+        cachedAccessoryId = null
+    }
+
+    fun getOrLoad(
+        context: Context,
+        accessoryId: String? = null,
+    ): ImageBitmap? {
+        val current = cached
+        if (current != null && cachedAccessoryId == accessoryId) return current
         return synchronized(this) {
-            cached?.let { return it }
+            val syncCurrent = cached
+            if (syncCurrent != null && cachedAccessoryId == accessoryId) return syncCurrent
             val assets = context.applicationContext.assets
-            // Retain the previous renderer's 627px decoded cells. The shipped atlas is lossless/full resolution.
-            // Full software decode would exceed Android's 100MiB Canvas bitmap limit (144MiB).
+            val assetPath = assetPathFor(accessoryId)
             val options =
                 BitmapFactory.Options().apply {
                     inSampleSize = 2
                     inScaled = false
                 }
             try {
-                assets.open(ASSET_PATH).use { stream ->
+                assets.open(assetPath).use { stream ->
                     val bitmap = requireNotNull(BitmapFactory.decodeStream(stream, null, options))
                     require(
                         bitmap.width == 627 * MobiIdleTimeline.COLUMNS && bitmap.height == 627 * MobiIdleTimeline.ROWS,
                     )
-                    bitmap.asImageBitmap().also { cached = it }
+                    bitmap.asImageBitmap().also {
+                        cachedAccessoryId = accessoryId
+                        cached = it
+                    }
                 }
             } catch (_: java.io.IOException) {
                 null
@@ -152,11 +175,12 @@ internal object MobiSpriteCache {
 internal fun NormalMobiIdleAnimation(
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
-    fallbackAsset: CharacterAsset = CharacterArtwork.characters.getValue("friend:mobi"),
+    accessoryId: String? = null,
+    fallbackAsset: CharacterAsset = CharacterArtwork.preview("friend:mobi", accessoryId),
 ) {
     val context = LocalContext.current.applicationContext
-    val sprite by produceState<ImageBitmap?>(initialValue = MobiSpriteCache.peek(), context) {
-        value = withContext(Dispatchers.IO) { MobiSpriteCache.getOrLoad(context) }
+    val sprite by produceState<ImageBitmap?>(initialValue = MobiSpriteCache.peek(accessoryId), context, accessoryId) {
+        value = withContext(Dispatchers.IO) { MobiSpriteCache.getOrLoad(context, accessoryId) }
     }
     val sheet = sprite
     if (sheet == null) {
