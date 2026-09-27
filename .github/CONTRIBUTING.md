@@ -6,9 +6,8 @@ more context.
 
 ## Quick start
 
-Install Android Studio with JDK 17, Android SDK Platform 34, SDK Build Tools
-34.0.0, and Python 3.9 or newer. Use the repository's Gradle Wrapper; do not
-install a separate Gradle.
+Install Android Studio with JDK 17, Android SDK Platform 34, and SDK Build Tools
+34.0.0. Use the repository's Gradle Wrapper; do not install a separate Gradle.
 
 1. Point Android Studio's **Gradle JDK** and your terminal's `JAVA_HOME` to JDK 17.
 2. Set the SDK path in the ignored `local.properties` file or with `ANDROID_HOME`.
@@ -47,7 +46,8 @@ binaries, even when the checkout is under `/mnt/c`.
 - Confirm the module, dependency, task, or integration in source and build files;
   design documents may describe work that is not implemented yet.
 
-Validate an issue locally with Python 3.9 or newer:
+The issue and PR validators use Python 3 and only its standard library.
+Validate an issue locally:
 
 ```bash
 python3 scripts/github/validate_issue.py --title 'Restore the session on startup' --body-file /tmp/issue.md
