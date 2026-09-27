@@ -76,6 +76,69 @@ class ConversationScreenTest {
     private lateinit var view: View
 
     @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun voiceInputBlocksSuggestionsUntilCancellationRestoresEditing() {
+        state = state.copy(voice = VoiceInputState(available = true))
+        draft = TextFieldValue("original draft")
+        show()
+        val chooseSuggestion =
+            compose
+                .onNodeWithText("오늘 하루 이야기할래")
+                .fetchSemanticsNode()
+                .config[SemanticsActions.OnClick]
+                .action!!
+        for (phase in listOf(
+            VoiceInputPhase.PERMISSION,
+            VoiceInputPhase.STARTING,
+            VoiceInputPhase.LISTENING,
+            VoiceInputPhase.STOPPING,
+        )) {
+            compose.runOnIdle { state = state.copy(voice = state.voice.copy(phase = phase)) }
+            compose.onNodeWithText("오늘 하루 이야기할래").assertDoesNotExist()
+            compose.onNodeWithText("기분 좋아지는 얘기 해줘").assertDoesNotExist()
+            compose.runOnIdle {
+                chooseSuggestion()
+                assertEquals("original draft", draft.text)
+                assertEquals(0, sends)
+            }
+        }
+        compose.runOnIdle { state = state.copy(voice = state.voice.copy(phase = VoiceInputPhase.LISTENING)) }
+        capture("empty-voice-recording")
+        compose.onNodeWithContentDescription("음성 입력 취소").performClick()
+        compose.onNodeWithTag("chat-input").assertIsDisplayed()
+        compose.runOnIdle {
+            assertEquals("original draft", draft.text)
+            assertEquals(1, voiceCancellations)
+        }
+        capture("empty-voice-cancelled")
+        compose.onNodeWithText("오늘 하루 이야기할래").performClick()
+        compose.onNodeWithTag("chat-input").assertIsFocused()
+        compose.runOnIdle {
+            assertEquals("오늘 하루 이야기할래", draft.text)
+            assertEquals(0, sends)
+        }
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun enlargedVoiceInputRestoresSuggestionsAfterCancellationAtAaosDensity() {
+        state = state.copy(voice = VoiceInputState(available = true, phase = VoiceInputPhase.PERMISSION))
+        draft = TextFieldValue("original draft")
+        show(fontScale = 1.6f, density = 10f / 7f)
+        compose.onNodeWithText("오늘 하루 이야기할래").assertDoesNotExist()
+        compose.runOnIdle { state = state.copy(voice = state.voice.copy(phase = VoiceInputPhase.LISTENING)) }
+        compose.onNodeWithText("오늘 하루 이야기할래").assertDoesNotExist()
+        capture("empty-voice-recording-enlarged-aaos")
+        compose.onNodeWithContentDescription("음성 입력 취소").performClick()
+        compose.onNodeWithText("오늘 하루 이야기할래").assertIsDisplayed().performClick()
+        compose.onNodeWithTag("chat-input").assertIsFocused()
+        compose.runOnIdle {
+            assertEquals("오늘 하루 이야기할래", draft.text)
+            assertEquals(0, sends)
+        }
+    }
+
+    @Test
     fun restrictedConversationShowsParkingNoticeInHeader() {
         allowed = false
         show()

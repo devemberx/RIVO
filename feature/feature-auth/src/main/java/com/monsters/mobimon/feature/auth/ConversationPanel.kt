@@ -50,6 +50,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -117,8 +118,15 @@ internal fun ConversationPanel(
     val focusRequester = remember { FocusRequester() }
     val seenMessageIds = remember { mutableStateListOf<String>().apply { addAll(state.messages.map { it.id }) } }
     val keyboard = LocalSoftwareKeyboardController.current
+    val suggestionInputAllowed by rememberUpdatedState(
+        allowed &&
+            !state.replyPending &&
+            !state.failed &&
+            !state.voice.capturing &&
+            state.voice.phase != VoiceInputPhase.PERMISSION,
+    )
     val chooseSuggestion: (String) -> Unit = { text ->
-        if (allowed && !state.replyPending) {
+        if (suggestionInputAllowed) {
             onDraftChange(TextFieldValue(text, TextRange(text.length)))
             focusRequester.requestFocus()
             keyboard?.show()
@@ -217,6 +225,7 @@ internal fun ConversationPanel(
             !state.replyPending &&
             !showFailure &&
             !state.voice.capturing &&
+            state.voice.phase != VoiceInputPhase.PERMISSION &&
             state.voice.phase != VoiceInputPhase.REVIEW
         ) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
@@ -458,7 +467,7 @@ private fun ReferenceConversationPanel(
                     textAlign = TextAlign.Center,
                 )
             }
-            if (!shortened) {
+            if (!shortened && !state.voice.capturing && state.voice.phase != VoiceInputPhase.PERMISSION) {
                 ReferenceSuggestion(
                     stringResource(R.string.chat_suggestion_mood),
                     372f,

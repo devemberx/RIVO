@@ -152,6 +152,8 @@ Use [recording](ui/conversation/voice-listening.svg) and
 [review](ui/conversation/voice-review.svg) geometry. Microphone/Stop and Send are
 separate; recording retains Cancel, live waveform and disabled Send. Preserve
 26px draft text, the 18px transmission/AI footer and nonoverlapping 76dp touch bounds.
+Hide suggestions while microphone permission or capture is pending; cancellation
+restores suggestions and the previous draft without sending.
 No listening timer or extra review/rerecord caption is shown. No-match/silence
 leaves the draft and normal footer in place. On failure, keep any confirmed text
 for review and show actionable recovery guidance.
