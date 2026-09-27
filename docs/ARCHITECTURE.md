@@ -65,6 +65,10 @@ state/callbacks to screens. `MobiMonApp` owns navigation; `FeatureRegistry` reje
 missing/duplicate destinations and duplicate saved names. Route ViewModels use
 the Activity store; local UI uses a saveable-state holder. The shell saves route
 and connection origin; menu state and animation geometry remain transient.
+The app shell derives transient notification summaries from the selected Vehicle
+card statuses and the shared Quest ViewModel's claimable state. Features expose
+read-only summaries; the shell owns the count, popup and routes. Reward writes
+remain in the Quest feature's atomic repository transaction.
 
 Conversation navigation carries the activated button's bounds to the shell;
 [DESIGN.md](DESIGN.md#motion) owns reveal and return behavior.

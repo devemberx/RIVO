@@ -1,12 +1,15 @@
 # UI reference exports
 
-These full-screen SVGs come from the
+The existing full-screen SVGs come from the
 [v5 Figma page](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-2).
 The index links each export to its source frame. They are visual references, not
 Android assets or evidence that a feature is implemented. See [DESIGN.md](../DESIGN.md)
 for behavior and [ARCHITECTURE.md](../ARCHITECTURE.md) for current support.
 
-Every export has a 2560 × 1440 viewBox. Standard frames show system bars at y=0–96
+The three notification references are full-resolution PNGs from the current local
+Figma Bridge frames; their source file has not yet been synced to the linked Figma
+file. Every SVG export has a 2560 × 1440 viewBox, and the PNGs are 2560 × 1440.
+Standard frames show system bars at y=0–96
 and y=1280–1440, leaving 2560 × 1184 app content. The keyboard-input frame shows
 a keyboard in place of the bottom bar. Compare app content using actual device insets.
 
@@ -23,6 +26,9 @@ only with a new export from its linked frame. The connected screen includes a
 | --- | --- |
 | [home.svg](shell/home.svg) | [Home](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-3973) |
 | [menu.svg](shell/menu.svg) | [Home menu overlay](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-3844) |
+| [notifications-empty.png](shell/notifications-empty.png) | Empty popup; local Figma Bridge frame `757:173` |
+| [notifications-three.png](shell/notifications-three.png) | Three alerts; local Figma Bridge frame `757:2` |
+| [notifications-many.png](shell/notifications-many.png) | Scrolling alerts; local Figma Bridge frame `757:335` |
 | [settings.svg](shell/settings.svg) | [Settings](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-3641) |
 
 ### Connection

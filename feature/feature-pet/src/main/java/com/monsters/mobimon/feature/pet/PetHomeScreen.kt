@@ -65,10 +65,12 @@ import com.monsters.mobimon.core.presentation.VehicleCondition
 import com.monsters.mobimon.core.presentation.vehicleCondition
 import com.monsters.mobimon.core.ui.FallingParticlesEffect
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
+import com.monsters.mobimon.core.ui.LocalMobiMonNotificationCount
 import com.monsters.mobimon.core.ui.MobiMonButton
 import com.monsters.mobimon.core.ui.MobiMonColors
 import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonNavigationButton
+import com.monsters.mobimon.core.ui.MobiMonNotificationBadge
 import com.monsters.mobimon.core.ui.MobiMonParkingStatusBadge
 import com.monsters.mobimon.core.ui.MobiMonPointSummary
 import com.monsters.mobimon.core.ui.ParticleType
@@ -437,20 +439,33 @@ private fun HomeHeader(
     textShadow: Shadow? = null,
 ) {
     BoxWithConstraints(modifier.fillMaxWidth()) {
+        val notificationCount = LocalMobiMonNotificationCount.current
         val wide = maxWidth / LocalDensity.current.fontScale >= 1100.dp
         val brand: @Composable () -> Unit = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy((34 * scale).dp),
             ) {
-                MobiMonNavigationButton(
-                    painterResource(R.drawable.pet_menu_icon),
-                    stringResource(R.string.pet_open_menu),
-                    onOpenMenu,
-                    visualSize = (104 * scale).dp,
-                    iconSize = (32 * scale).dp,
-                    borderWidth = (2 * scale).dp,
-                )
+                Box {
+                    MobiMonNavigationButton(
+                        painterResource(R.drawable.pet_menu_icon),
+                        if (notificationCount > 0) {
+                            stringResource(R.string.pet_open_menu_notifications, notificationCount)
+                        } else {
+                            stringResource(R.string.pet_open_menu)
+                        },
+                        onOpenMenu,
+                        visualSize = (104 * scale).dp,
+                        iconSize = (32 * scale).dp,
+                        borderWidth = (2 * scale).dp,
+                    )
+                    MobiMonNotificationBadge(
+                        notificationCount,
+                        (48 * scale).dp,
+                        (27 * scale).sp,
+                        Modifier.offset((73 * scale).dp, (-19 * scale).dp),
+                    )
+                }
                 Column(Modifier.offset(x = (-2 * scale).dp, y = (-10 * scale).dp)) {
                     Text(
                         stringResource(R.string.pet_brand),

@@ -150,6 +150,13 @@ Preserve the SVG layout at AAOS compatibility density, centering minimum touch
 bounds around each row. Reflow only when those bounds overlap or enlarged text
 needs more room.
 
+Home's menu control and the menu bell show the current alert count when positive.
+The bell opens a popup over the menu. Selected Vehicle cards with a current
+`CAUTION` status appear before claimable quests; quest alerts remain until their
+rewards are received. The popup has an empty state and a three-card viewport that
+scrolls for additional alerts. Each card opens its owning screen. The
+[notification references](ui/README.md#screen-index) define the popup geometry.
+
 Unavailable services explain the limitation and recovery. Pending actions block
 duplicates; uncertain writes offer reconciliation before retry.
 
