@@ -68,6 +68,27 @@ class MobiMonContentTest {
     }
 
     @Test
+    fun notificationCardClosesMenuAndNavigatesToQuest() {
+        show(notificationItems = listOf(NotificationItem("first", "첫 퀘스트 완료", NotificationKind.QUEST)))
+        compose.onNodeWithText("Open menu").performClick()
+        compose.onNodeWithContentDescription("알림 1건 열기").performClick()
+        compose.onNodeWithTag("notification-quest-first").performClick()
+        compose.onNodeWithTag("notification-popup").assertDoesNotExist()
+        compose.onNodeWithText("Route QUESTS").assertExists()
+    }
+
+    @Test
+    fun notificationPopupReturnsFocusToBell() {
+        show()
+        compose.onNodeWithText("Open menu").performClick()
+        compose.onNodeWithText("홈").assertIsFocused()
+        compose.onNodeWithContentDescription("알림 열기").performClick()
+        compose.onNodeWithTag("notification-close").assertIsFocused()
+        compose.onNodeWithContentDescription("알림 닫기").performClick()
+        compose.onNodeWithTag("menu-notifications").assertIsFocused()
+    }
+
+    @Test
     fun menuRoutesConversationAndDismissesFromBackdrop() {
         show()
         compose.onNodeWithText("Open menu").performClick()
@@ -437,10 +458,12 @@ class MobiMonContentTest {
         debugSettingsAvailableByDefault: Boolean = true,
         reducedMotion: Boolean = false,
         onReleaseDebuggerUnlocked: () -> Unit = {},
+        notificationItems: List<NotificationItem> = emptyList(),
     ) {
         compose.setContent {
             MobiMonContent(
                 entries,
+                notificationItems = notificationItems,
                 appUseState = appUseState,
                 reducedMotion = reducedMotion,
                 debugSettingsAvailableByDefault = debugSettingsAvailableByDefault,

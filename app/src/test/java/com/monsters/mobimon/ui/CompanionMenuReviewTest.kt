@@ -15,6 +15,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotDisplayed
+import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -27,6 +29,8 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.CompanionRoute
+import com.monsters.mobimon.core.navigation.QuestRoute
+import com.monsters.mobimon.core.navigation.VehicleRoute
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import org.junit.Assert.assertEquals
@@ -60,6 +64,58 @@ class CompanionMenuReviewTest {
         assertEquals(244f, name.left, 1f)
         compose.onNodeWithText("v0.1.0").assertIsDisplayed()
         capture("menu")
+    }
+
+    @Test fun emptyNotificationPopupMatchesReferenceBounds() {
+        show()
+        compose.onNodeWithContentDescription("알림 열기").performClick()
+        val popup = compose.onNodeWithTag("notification-popup").fetchSemanticsNode().boundsInRoot
+        assertEquals(825f, popup.left, 1f)
+        assertEquals(224f, popup.top, 1f)
+        assertEquals(1480f, popup.width, 1f)
+        assertEquals(720f, popup.height, 1f)
+        compose.onNodeWithText("새 알림이 없어요").assertIsDisplayed()
+        capture("notifications-empty")
+        compose.onNodeWithContentDescription("알림 닫기").performClick()
+        compose.onNodeWithTag("notification-popup").assertDoesNotExist()
+    }
+
+    @Test fun manyNotificationsKeepThreeVisibleAndScrollToMore() {
+        var selected: AppRoute? = null
+        val alerts =
+            referenceAlerts() +
+                listOf(
+                    NotificationItem("washer", "워셔액 확인이 필요해요", NotificationKind.VEHICLE),
+                    NotificationItem("quest-2", "안전 운전 완료", NotificationKind.QUEST),
+                )
+        show(onNavigate = { selected = it }, notifications = alerts)
+        compose.onNodeWithContentDescription("알림 5건 열기").performClick()
+        compose.onNodeWithText("알림(5)").assertIsDisplayed()
+        val list = compose.onNodeWithTag("notification-list").fetchSemanticsNode().boundsInRoot
+        assertEquals(612f, list.height, 1f)
+        compose.onNodeWithTag("notification-quest-quest-2").assertIsNotDisplayed()
+        capture("notifications-many")
+        compose.onNodeWithTag("notification-quest-quest-2").performScrollTo().performClick()
+        assertEquals(QuestRoute.QUESTS, selected)
+    }
+
+    @Test fun threeNotificationPopupShowsVehicleAndQuestCards() {
+        show(notifications = referenceAlerts())
+        compose.onNodeWithContentDescription("알림 3건 열기").performClick()
+        compose.onNodeWithText("알림(3)").assertIsDisplayed()
+        compose.onNodeWithTag("notification-quest-pre-drive").assertIsDisplayed()
+        capture("notifications-three")
+    }
+
+    @Test fun vehicleNotificationRoutesToVehicle() {
+        var selected: AppRoute? = null
+        show(
+            onNavigate = { selected = it },
+            notifications = listOf(NotificationItem("battery", "배터리 잔량을 확인해 주세요", NotificationKind.VEHICLE)),
+        )
+        compose.onNodeWithContentDescription("알림 1건 열기").performClick()
+        compose.onNodeWithTag("notification-vehicle-battery").performClick()
+        assertEquals(VehicleRoute.VEHICLE_INFO, selected)
     }
 
     @Test
@@ -99,6 +155,17 @@ class CompanionMenuReviewTest {
 
     @Test
     @Config(qualifiers = "ko-rKR-w1792dp-h829dp-mdpi")
+    fun notificationPopupKeepsTargetsReachableAtEnlargedText() {
+        show(fontScale = 1.5f, notifications = referenceAlerts())
+        compose.onNodeWithTag("menu-notifications").assertWidthIsAtLeast(76.dp).assertHeightIsAtLeast(76.dp)
+        compose.onNodeWithContentDescription("알림 3건 열기").performClick()
+        compose.onNodeWithTag("notification-close").assertWidthIsAtLeast(76.dp).assertHeightIsAtLeast(76.dp)
+        compose.onNodeWithTag("notification-quest-pre-drive").assertIsDisplayed()
+        capture("notifications-aaos-enlarged")
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w1792dp-h829dp-mdpi")
     fun aaosMenuKeepsFooterAndSettingsReachableAtEnlargedText() {
         show(fontScale = 1.5f)
         capture("menu-aaos-enlarged-text")
@@ -134,6 +201,7 @@ class CompanionMenuReviewTest {
     private fun show(
         fontScale: Float = 1f,
         onNavigate: (AppRoute) -> Unit = {},
+        notifications: List<NotificationItem> = emptyList(),
     ) {
         val visible = mutableStateOf(true)
         compose.setContent {
@@ -149,6 +217,7 @@ class CompanionMenuReviewTest {
                             CompanionRoute.HOME,
                             { visible.value = false },
                             onNavigate,
+                            notifications = notifications,
                             activeFriendId = "friend:mobi",
                         )
                     }
@@ -157,6 +226,13 @@ class CompanionMenuReviewTest {
         }
         compose.waitForIdle()
     }
+
+    private fun referenceAlerts() =
+        listOf(
+            NotificationItem("battery", "배터리 잔량을 확인해 주세요", NotificationKind.VEHICLE),
+            NotificationItem("tire", "타이어 상태를 확인해 주세요", NotificationKind.VEHICLE),
+            NotificationItem("pre-drive", "출발 전 차 살피기 완료", NotificationKind.QUEST),
+        )
 
     private fun capture(name: String) {
         compose.runOnIdle {
