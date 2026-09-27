@@ -114,31 +114,54 @@ internal object MobiIdleTimeline {
 }
 
 internal object MobiSpriteCache {
-    const val ASSET_PATH = "characters/mobi/idle_breath/mobi_idle_breath_sprite.png"
+    const val DEFAULT_ASSET_PATH = "characters/mobi/idle_breath/mobi_idle_breath_sprite.png"
+
+    private fun assetPathFor(accessoryId: String?): String =
+        when (accessoryId) {
+            "accessory:mobi_headphones" ->
+                "characters/mobi/headphones/idle_breath/mobi_idle_breath_headphones_sprite.png"
+            "accessory:mobi_goggles" ->
+                "characters/mobi/goggles/idle_breath/mobi_idle_breath_goggles_sprite.png"
+            else -> DEFAULT_ASSET_PATH
+        }
 
     @Volatile private var cached: ImageBitmap? = null
 
-    fun peek(): ImageBitmap? = cached
+    @Volatile private var cachedAccessoryId: String? = null
 
-    fun getOrLoad(context: Context): ImageBitmap? {
-        cached?.let { return it }
+    fun peek(accessoryId: String? = null): ImageBitmap? = if (cachedAccessoryId == accessoryId) cached else null
+
+    fun clear() {
+        cached = null
+        cachedAccessoryId = null
+    }
+
+    fun getOrLoad(
+        context: Context,
+        accessoryId: String? = null,
+    ): ImageBitmap? {
+        val current = cached
+        if (current != null && cachedAccessoryId == accessoryId) return current
         return synchronized(this) {
-            cached?.let { return it }
+            val syncCurrent = cached
+            if (syncCurrent != null && cachedAccessoryId == accessoryId) return syncCurrent
             val assets = context.applicationContext.assets
-            // Retain the previous renderer's 627px decoded cells. The shipped atlas is lossless/full resolution.
-            // Full software decode would exceed Android's 100MiB Canvas bitmap limit (144MiB).
+            val assetPath = assetPathFor(accessoryId)
             val options =
                 BitmapFactory.Options().apply {
                     inSampleSize = 2
                     inScaled = false
                 }
             try {
-                assets.open(ASSET_PATH).use { stream ->
+                assets.open(assetPath).use { stream ->
                     val bitmap = requireNotNull(BitmapFactory.decodeStream(stream, null, options))
                     require(
                         bitmap.width == 627 * MobiIdleTimeline.COLUMNS && bitmap.height == 627 * MobiIdleTimeline.ROWS,
                     )
-                    bitmap.asImageBitmap().also { cached = it }
+                    bitmap.asImageBitmap().also {
+                        cachedAccessoryId = accessoryId
+                        cached = it
+                    }
                 }
             } catch (_: java.io.IOException) {
                 null
@@ -152,11 +175,12 @@ internal object MobiSpriteCache {
 internal fun NormalMobiIdleAnimation(
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
-    fallbackAsset: CharacterAsset = CharacterArtwork.characters.getValue("friend:mobi"),
+    accessoryId: String? = null,
+    fallbackAsset: CharacterAsset = CharacterArtwork.preview("friend:mobi", accessoryId),
 ) {
     val context = LocalContext.current.applicationContext
-    val sprite by produceState<ImageBitmap?>(initialValue = MobiSpriteCache.peek(), context) {
-        value = withContext(Dispatchers.IO) { MobiSpriteCache.getOrLoad(context) }
+    val sprite by produceState<ImageBitmap?>(initialValue = MobiSpriteCache.peek(accessoryId), context, accessoryId) {
+        value = withContext(Dispatchers.IO) { MobiSpriteCache.getOrLoad(context, accessoryId) }
     }
     val sheet = sprite
     if (sheet == null) {
@@ -181,6 +205,82 @@ internal fun NormalMobiIdleAnimation(
                 translationY =
                     size.minDimension * (MobiIdleTimeline.liftFractionAt(time) + fallbackAsset.translationYFraction)
                 // Isolate premultiplied interpolation from the Home background; keep body/hands/wheel together.
+                compositingStrategy = CompositingStrategy.Offscreen
+                transformOrigin = TransformOrigin(0.5f, 0.9f)
+                clip = false
+            }.mobiSpriteFrames(sheet, MobiIdleTimeline.COLUMNS, MobiIdleTimeline.ROWS) {
+                val time = elapsed.longValue
+                val frame = MobiIdleTimeline.frameAt(time)
+                frame + MobiIdleTimeline.blendAt(time, frame)
+            },
+    )
+}
+
+internal object MobiHungrySpriteCache {
+    const val ASSET_PATH = "characters/mobi/hungry/mobi_hungry_sprite.png"
+
+    @Volatile private var cached: ImageBitmap? = null
+
+    fun peek(): ImageBitmap? = cached
+
+    fun clear() {
+        cached = null
+    }
+
+    fun getOrLoad(context: Context): ImageBitmap? {
+        cached?.let { return it }
+        return synchronized(this) {
+            cached?.let { return it }
+            val assets = context.applicationContext.assets
+            val options =
+                BitmapFactory.Options().apply {
+                    inScaled = false
+                }
+            try {
+                assets.open(ASSET_PATH).use { stream ->
+                    val bitmap = requireNotNull(BitmapFactory.decodeStream(stream, null, options))
+                    require(
+                        bitmap.width == 256 * MobiIdleTimeline.COLUMNS && bitmap.height == 256 * MobiIdleTimeline.ROWS,
+                    )
+                    bitmap.asImageBitmap().also { cached = it }
+                }
+            } catch (_: java.io.IOException) {
+                null
+            }
+        }
+    }
+}
+
+@Composable
+internal fun NormalMobiHungryAnimation(
+    modifier: Modifier = Modifier,
+    contentDescription: String? = null,
+    fallbackAsset: CharacterAsset = CharacterArtwork.hungry("friend:mobi"),
+) {
+    val context = LocalContext.current.applicationContext
+    val sprite by produceState<ImageBitmap?>(initialValue = MobiHungrySpriteCache.peek(), context) {
+        value = withContext(Dispatchers.IO) { MobiHungrySpriteCache.getOrLoad(context) }
+    }
+    val sheet = sprite
+    if (sheet == null) {
+        CharacterAssetImage(fallbackAsset, modifier, contentDescription)
+        return
+    }
+    val elapsed = remember { mutableLongStateOf(0L) }
+    LaunchedEffect(sheet) {
+        val origin = withInfiniteAnimationFrameNanos { it }
+        while (isActive) {
+            elapsed.longValue = withInfiniteAnimationFrameNanos { it } - origin
+        }
+    }
+    Box(
+        modifier
+            .semantics { if (contentDescription != null) this.contentDescription = contentDescription }
+            .graphicsLayer {
+                // Hungry motion is authored in the atlas; do not add idle sway or breathing.
+                scaleX = MobiIdleTimeline.scaleXAt(0L)
+                scaleY = MobiIdleTimeline.scaleYAt(0L)
+                translationY = size.minDimension * fallbackAsset.translationYFraction
                 compositingStrategy = CompositingStrategy.Offscreen
                 transformOrigin = TransformOrigin(0.5f, 0.9f)
                 clip = false

@@ -86,4 +86,32 @@ class VehicleConditionTest {
             normal.copy(isEngineWarning = true, isFuelLevelLow = true).vehicleCondition(),
         )
     }
+
+    @Test
+    fun cardCautionsChangeTheSharedConditionWithoutDependingOnVisibleSlots() {
+        val washerLow = "Vehicle.Body.Windshield.Front.WasherFluid.IsLevelLow"
+        val serviceDue = "Vehicle.Service.IsServiceDue"
+
+        assertEquals(VehicleCondition.LOW_BATTERY, normal.copy(washerFluidLevel = 10).vehicleCondition())
+        assertEquals(
+            VehicleCondition.LOW_BATTERY,
+            normal.copy(vssCardSignals = mapOf(washerLow to "true")).vehicleCondition(),
+        )
+        assertEquals(
+            VehicleCondition.WARNING,
+            normal.copy(vssCardSignals = mapOf(serviceDue to "true")).vehicleCondition(),
+        )
+        assertEquals(
+            VehicleCondition.WARNING,
+            normal.copy(vssCardSignals = mapOf(washerLow to "true", serviceDue to "true")).vehicleCondition(),
+        )
+        assertEquals(
+            VehicleCondition.CHECKED,
+            normal.copy(vssCardSignals = mapOf(serviceDue to "false")).vehicleCondition(),
+        )
+        assertEquals(
+            VehicleCondition.STALE,
+            normal.copy(quality = SignalQuality.STALE, vssCardSignals = mapOf(serviceDue to "true")).vehicleCondition(),
+        )
+    }
 }

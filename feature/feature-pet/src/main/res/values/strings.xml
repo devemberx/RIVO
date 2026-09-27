@@ -16,6 +16,7 @@
   <string name="pet_home_load_failed">친구를 불러오지 못했어요. 다시 시도해 주세요.</string>
   <string name="pet_retry">다시 시도</string>
   <string name="pet_open_menu">메뉴 열기</string>
+  <string name="pet_open_menu_notifications">메뉴 열기, 알림 %1$d건</string>
   <string name="pet_interaction_restricted">주행 중에는 상호작용이 제한돼요.</string>
   <string name="pet_inventory_loading">소유한 아이템을 확인하고 있어요.</string>
   <string name="pet_inventory_failed">소유한 아이템을 확인할 수 없어요.</string>

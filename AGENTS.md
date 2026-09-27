@@ -16,7 +16,7 @@
 - Example accounts/codes and rendered connection success are not provider verification. Follow the [connection boundary](docs/ARCHITECTURE.md#copilot-connection-ui).
 - Reward writes must use atomic repository transactions with evidence, ownership/revision and occurrence-uniqueness checks. UI/AI must not grant rewards directly.
 - Use the current [visual specification](docs/DESIGN.md), shared `core-ui` primitives and replaceable [PetAvatar](core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt). Keep rewards, equipment and authorization outside the renderer. Do not restore obsolete XP/progression UI.
-- Generate asset variants from the approved master. Follow the [variant constraints](docs/DESIGN.md#image-asset-locations), change only requested properties and reject unintended drift.
+- Generate asset variants from the approved master. Follow the [variant constraints](docs/DESIGN.md#image-asset-locations), change only requested properties and reject unintended drift. Every Luna generation/edit must use the [front, side and back references](docs/DESIGN.md#luna-generation-references) and preserve character proportions.
 
 ## Documentation
 

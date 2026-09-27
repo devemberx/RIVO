@@ -6,8 +6,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithText
@@ -20,6 +24,7 @@ import androidx.compose.ui.test.performTouchInput
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
+import com.monsters.mobimon.core.domain.VehicleCardVssDefaults
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.domain.VehicleWarning
 import com.monsters.mobimon.core.domain.WarningSeverity
@@ -79,6 +84,84 @@ class VehicleInfoScreenTest {
     }
 
     @Test
+    fun defaultCardsDistinguishInformationNormalAndCaution() {
+        render(
+            snapshot().copy(
+                tirePressureStatus = "NG",
+                isCharging = false,
+                washerFluidLevel = 15,
+                outsideTemperature = 20,
+                isRaining = false,
+                attentionLevel = 90,
+                isEmergencyBraking = false,
+                isDrowsy = false,
+                isDistracted = false,
+            ),
+        )
+
+        assertCardBadge("battery", "정상")
+        assertCardBadge("charging", "정보")
+        assertCardBadge("tire", "주의")
+        assertCardBadge("washer", "주의")
+        assertCardBadge("environment", "정보")
+        assertCardBadge("assist", "정상")
+    }
+
+    @Test
+    fun confirmedWheelLowOverridesNormalInterpretedTireReading() {
+        val signals =
+            VehicleCardVssDefaults.values +
+                ("Vehicle.Chassis.Axle.Row1.Wheel.Left.Tire.IsPressureLow" to "true")
+        render(snapshot().copy(tirePressureStatus = "OK", vssCardSignals = signals))
+
+        assertCardBadge("tire", "주의")
+        compose.onNodeWithTag("vehicle-card-slot-3").performScrollTo().assertTextContains("저압 경고")
+        assertTrue(compose.onAllNodesWithText("타이어 공기압 확인이 필요해요").fetchSemanticsNodes().isNotEmpty())
+    }
+
+    @Test
+    fun tireNoticeDoesNotReplaceAnUnrelatedSickExplanation() {
+        val notice =
+            VehicleWarning(
+                item = "타이어",
+                severity = WarningSeverity.NOTICE,
+                description = "타이어 기록 알림",
+                nextAction = "기록 확인",
+                observedAtMillis = 200,
+            )
+        render(
+            snapshot().copy(
+                tirePressureStatus = "OK",
+                warnings = listOf(notice),
+                vssCardSignals = VehicleCardVssDefaults.values + ("Vehicle.Service.IsServiceDue" to "true"),
+            ),
+        )
+
+        assertCardBadge("tire", "정상")
+        compose.onNodeWithText("차량 경고를 살펴봐 주세요").assertIsDisplayed()
+    }
+
+    @Test
+    fun staleDefaultCardsShowUnavailableBadges() {
+        render(snapshot(quality = SignalQuality.STALE, battery = 67))
+
+        listOf("battery", "charging", "tire", "washer", "environment", "assist").forEach {
+            assertCardBadge(it, "확인 불가")
+        }
+    }
+
+    @Test
+    fun cardSelectorPreviewUsesTheSameCautionBadge() {
+        val signals = VehicleCardVssDefaults.values + ("Vehicle.Service.IsServiceDue" to "true")
+        render(snapshot().copy(vssCardSignals = signals))
+
+        compose.onNodeWithTag("vehicle-card-slot-1").performTouchInput { longClick() }
+        compose.onNodeWithTag("vehicle-dialog-option-service-due").performScrollTo()
+
+        assertCardBadge("service-due", "주의")
+    }
+
+    @Test
     fun partialAssistReadingsDoNotEstablishNoWarnings() {
         render(snapshot().copy(isEmergencyBraking = false, isDrowsy = false))
 
@@ -129,7 +212,7 @@ class VehicleInfoScreenTest {
             ),
         )
 
-        compose.onNodeWithText("정상").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("vehicle-card-slot-3").performScrollTo().assertTextContains("정상")
         compose.onNodeWithText("주의 경고 없음").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("18°").performScrollTo().assertIsDisplayed()
     }
@@ -199,6 +282,23 @@ class VehicleInfoScreenTest {
         )
         assertEquals(36f, movingBadges.single().boundsInRoot.top, 1f)
         assertEquals(2488f, movingBadges.single().boundsInRoot.right, 1f)
+    }
+
+    @Test
+    fun headerSubtitleTracksSelectedCompanion() {
+        var friendId by mutableStateOf("friend:mobi")
+        compose.setContent {
+            MaterialTheme {
+                VehicleInfoScreen(snapshot = snapshot(), friendId = friendId)
+            }
+        }
+
+        compose.onNodeWithText("모비의 상태로 내 차를 한눈에").assertIsDisplayed()
+
+        compose.runOnIdle { friendId = "friend:luna" }
+
+        compose.onNodeWithText("루나의 상태로 내 차를 한눈에").assertIsDisplayed()
+        compose.onNodeWithText("모비의 상태로 내 차를 한눈에").assertDoesNotExist()
     }
 
     @Test
@@ -370,6 +470,49 @@ class VehicleInfoScreenTest {
         compose.onNodeWithText("루나가 배고파요").assertIsDisplayed()
     }
 
+    @Test
+    fun unselectedCardCautionsUpdateLunaAndRecoverWhenCleared() {
+        val baseline =
+            snapshot().copy(
+                tirePressureStatus = "OK",
+                isCharging = false,
+                washerFluidLevel = 100,
+                outsideTemperature = 20,
+                isRaining = false,
+                attentionLevel = 90,
+                isEmergencyBraking = false,
+                isDrowsy = false,
+                isDistracted = false,
+                vssCardSignals = VehicleCardVssDefaults.values,
+            )
+        var current by mutableStateOf(baseline)
+        compose.setContent {
+            MaterialTheme {
+                VehicleInfoScreen(snapshot = current, friendId = "friend:luna")
+            }
+        }
+
+        compose.onNodeWithText("루나가 건강해요").assertIsDisplayed()
+        compose.runOnIdle {
+            current =
+                baseline.copy(
+                    vssCardSignals =
+                        baseline.vssCardSignals +
+                            ("Vehicle.Body.Windshield.Front.WasherFluid.IsLevelLow" to "true"),
+                )
+        }
+        compose.onNodeWithText("루나가 배고파요").assertIsDisplayed()
+        compose.onNodeWithText("부족한 항목을 확인해 주세요").assertIsDisplayed()
+
+        compose.runOnIdle {
+            current = current.copy(vssCardSignals = current.vssCardSignals + ("Vehicle.Service.IsServiceDue" to "true"))
+        }
+        compose.onNodeWithText("루나가 아파요").assertIsDisplayed()
+
+        compose.runOnIdle { current = baseline }
+        compose.onNodeWithText("루나가 건강해요").assertIsDisplayed()
+    }
+
     private fun render(snapshot: VehicleSnapshot) {
         compose.setContent {
             MaterialTheme {
@@ -378,6 +521,17 @@ class VehicleInfoScreenTest {
                 )
             }
         }
+    }
+
+    private fun assertCardBadge(
+        cardId: String,
+        label: String,
+    ) {
+        compose
+            .onNode(
+                hasTestTag("vehicle-card-$cardId-status") and hasAnyDescendant(hasText(label)),
+                useUnmergedTree = true,
+            ).assertIsDisplayed()
     }
 
     private fun snapshot(

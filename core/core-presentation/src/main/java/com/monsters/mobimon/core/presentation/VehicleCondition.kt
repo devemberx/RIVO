@@ -9,6 +9,7 @@ enum class VehicleCondition { CHECKED, PARTIAL, LOW_BATTERY, WARNING, STALE, UNA
 
 fun VehicleSnapshot.vehicleCondition(): VehicleCondition {
     val battery = batteryPercent?.takeIf { (batteryQuality ?: quality) == SignalQuality.VALID && it in 0..100 }
+    val cardConcerns = vssCardSignals.keys.mapNotNull { VehicleSignalConcern.assess(this, it) }
     return when {
         quality == SignalQuality.UNAVAILABLE -> VehicleCondition.UNAVAILABLE
         quality == SignalQuality.STALE -> VehicleCondition.STALE
@@ -19,10 +20,14 @@ fun VehicleSnapshot.vehicleCondition(): VehicleCondition {
             isEngineWarning == true ||
             warnings.any {
                 it.quality == SignalQuality.VALID && it.severity != WarningSeverity.NOTICE
-            } -> VehicleCondition.WARNING
+            } ||
+            cardConcerns.any { it.status == VehicleSignalStatus.CAUTION && it.concern == VehicleConcern.SICK } ->
+            VehicleCondition.WARNING
         (battery != null && battery < 20) ||
+            washerFluidLevel?.let { it in 0..19 } == true ||
             isFuelLevelLow == true ||
-            vssCardSignals["Vehicle.Powertrain.FuelSystem.IsFuelLevelLow"]?.toBoolean() == true ->
+            vssCardSignals["Vehicle.Powertrain.FuelSystem.IsFuelLevelLow"]?.toBoolean() == true ||
+            cardConcerns.any { it.status == VehicleSignalStatus.CAUTION && it.concern == VehicleConcern.HUNGRY } ->
             VehicleCondition.LOW_BATTERY
         battery == null ||
             tirePressureStatus.isNullOrBlank() ||

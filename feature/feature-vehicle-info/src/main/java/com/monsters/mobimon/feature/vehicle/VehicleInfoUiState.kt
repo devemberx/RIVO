@@ -3,6 +3,7 @@ package com.monsters.mobimon.feature.vehicle
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.domain.VehicleWarning
+import com.monsters.mobimon.core.domain.WarningSeverity
 import com.monsters.mobimon.core.presentation.vehicleCondition
 
 internal typealias VehicleCondition = com.monsters.mobimon.core.presentation.VehicleCondition
@@ -28,8 +29,10 @@ internal fun VehicleSnapshot.toVehicleInfoUiState(): VehicleInfoUiState {
     val current = takeIf { quality == SignalQuality.VALID }
     val tire = current?.tirePressureStatus?.takeIf(String::isNotBlank)
     val tireWarning =
-        warnings.firstOrNull {
-            it.quality == SignalQuality.VALID && (it.item.contains("타이어") || it.item.contains("바퀴"))
+        current?.warnings?.firstOrNull {
+            it.quality == SignalQuality.VALID &&
+                it.severity != WarningSeverity.NOTICE &&
+                (it.item.contains("타이어") || it.item.contains("바퀴"))
         }
     val assistWarning =
         when {

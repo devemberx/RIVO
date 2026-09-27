@@ -2,6 +2,11 @@ package com.monsters.mobimon.feature.vehicle
 
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.VehicleSnapshot
+import com.monsters.mobimon.core.domain.WarningSeverity
+import com.monsters.mobimon.core.presentation.VehicleSignalConcern
+import com.monsters.mobimon.core.presentation.VehicleSignalStatus
+
+internal enum class VehicleCardStatus { INFO, NORMAL, CAUTION, UNAVAILABLE }
 
 internal data class VehicleCardSpec(
     val id: String,
@@ -94,6 +99,112 @@ internal object VehicleCardCatalog {
 
     fun find(id: String): VehicleCardSpec? = (cards + initialOnly).firstOrNull { it.id == id }
 
+    fun status(
+        id: String,
+        snapshot: VehicleSnapshot,
+    ): VehicleCardStatus? {
+        val spec = find(id) ?: return null
+        val current = snapshot.quality == SignalQuality.VALID
+        return when (id) {
+            "battery" -> {
+                val battery =
+                    snapshot.batteryPercent?.takeIf {
+                        (snapshot.batteryQuality ?: snapshot.quality) == SignalQuality.VALID && it in 0..100
+                    }
+                when {
+                    battery == null -> VehicleCardStatus.UNAVAILABLE
+                    battery < 20 -> VehicleCardStatus.CAUTION
+                    else -> VehicleCardStatus.NORMAL
+                }
+            }
+            "washer" -> {
+                val level = snapshot.washerFluidLevel?.takeIf { current && it in 0..100 }
+                when {
+                    level == null -> VehicleCardStatus.UNAVAILABLE
+                    level < 20 -> VehicleCardStatus.CAUTION
+                    else -> VehicleCardStatus.NORMAL
+                }
+            }
+            "tire" -> {
+                val wheelWarning =
+                    spec.vssPaths.any {
+                        VehicleSignalConcern.assess(snapshot, it)?.status == VehicleSignalStatus.CAUTION
+                    }
+                when {
+                    !current -> VehicleCardStatus.UNAVAILABLE
+                    wheelWarning ||
+                        snapshot.tirePressureStatus == "NG" ||
+                        snapshot.warnings.any {
+                            it.quality == SignalQuality.VALID &&
+                                it.severity != WarningSeverity.NOTICE &&
+                                (it.item.contains("타이어") || it.item.contains("바퀴"))
+                        } -> VehicleCardStatus.CAUTION
+                    snapshot.tirePressureStatus == "OK" || snapshot.tirePressureStatus == "정상" ->
+                        VehicleCardStatus.NORMAL
+                    else -> VehicleCardStatus.UNAVAILABLE
+                }
+            }
+            "tire-low" -> {
+                if (snapshot.vssCardSignals.isEmpty()) {
+                    when {
+                        !current -> VehicleCardStatus.UNAVAILABLE
+                        snapshot.tirePressureStatus == "NG" -> VehicleCardStatus.CAUTION
+                        snapshot.tirePressureStatus == "OK" -> VehicleCardStatus.NORMAL
+                        else -> VehicleCardStatus.UNAVAILABLE
+                    }
+                } else {
+                    signalStatus(spec, snapshot)
+                }
+            }
+            "assist" -> {
+                when {
+                    !current -> VehicleCardStatus.UNAVAILABLE
+                    snapshot.isEmergencyBraking == true || snapshot.isDrowsy == true || snapshot.isDistracted == true ->
+                        VehicleCardStatus.CAUTION
+                    snapshot.isEmergencyBraking != null && snapshot.isDrowsy != null && snapshot.isDistracted != null ->
+                        VehicleCardStatus.NORMAL
+                    else -> VehicleCardStatus.UNAVAILABLE
+                }
+            }
+            "charging" ->
+                if (current &&
+                    snapshot.isCharging != null
+                ) {
+                    VehicleCardStatus.INFO
+                } else {
+                    VehicleCardStatus.UNAVAILABLE
+                }
+            "environment" ->
+                if (current && (snapshot.outsideTemperature != null || snapshot.isRaining != null)) {
+                    VehicleCardStatus.INFO
+                } else {
+                    VehicleCardStatus.UNAVAILABLE
+                }
+            else -> signalStatus(spec, snapshot)
+        }
+    }
+
+    private fun signalStatus(
+        spec: VehicleCardSpec,
+        snapshot: VehicleSnapshot,
+    ): VehicleCardStatus {
+        val assessments = spec.vssPaths.map { VehicleSignalConcern.assess(snapshot, it) }
+        if (assessments.all { it == null }) {
+            return if (reading(spec.id, snapshot)?.value !=
+                null
+            ) {
+                VehicleCardStatus.INFO
+            } else {
+                VehicleCardStatus.UNAVAILABLE
+            }
+        }
+        return when {
+            assessments.any { it?.status == VehicleSignalStatus.CAUTION } -> VehicleCardStatus.CAUTION
+            assessments.all { it?.status == VehicleSignalStatus.NORMAL } -> VehicleCardStatus.NORMAL
+            else -> VehicleCardStatus.UNAVAILABLE
+        }
+    }
+
     fun reading(
         id: String,
         snapshot: VehicleSnapshot,
@@ -150,10 +261,10 @@ internal object VehicleCardCatalog {
 
         fun anyWheelWarning(): String? {
             val values = spec.vssPaths.map { boolean(it) }
-            return if (values.any { it == null }) {
-                null
-            } else if (values.any { it == true }) {
+            return if (values.any { it == true }) {
                 "경고 있음"
+            } else if (values.any { it == null }) {
+                null
             } else {
                 "경고 없음"
             }

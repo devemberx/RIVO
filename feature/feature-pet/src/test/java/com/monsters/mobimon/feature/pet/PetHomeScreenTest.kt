@@ -26,6 +26,7 @@ import com.monsters.mobimon.core.domain.PetProfile
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleSnapshot
+import com.monsters.mobimon.core.ui.LocalMobiMonNotificationCount
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -48,6 +49,12 @@ class PetHomeScreenTest {
         val bounds = compose.onNodeWithContentDescription("주차 확인됨").fetchSemanticsNode().boundsInRoot
         assertEquals(36f, bounds.top, 1f)
         assertEquals(2488f, bounds.right, 1f)
+    }
+
+    @Test
+    fun menuButtonAnnouncesNotificationCount() {
+        render(snapshot = parkedSnapshot(), notificationCount = 3)
+        compose.onNodeWithContentDescription("메뉴 열기, 알림 3건").assertIsDisplayed()
     }
 
     @Test
@@ -417,10 +424,14 @@ class PetHomeScreenTest {
         snapshotSource: (() -> VehicleSnapshot)? = null,
         onRetry: () -> Unit = {},
         onMenu: () -> Unit = {},
+        notificationCount: Int = 0,
     ) {
         compose.setContent {
             val density = LocalDensity.current.density
-            CompositionLocalProvider(LocalDensity provides Density(density, fontScale)) {
+            CompositionLocalProvider(
+                LocalDensity provides Density(density, fontScale),
+                LocalMobiMonNotificationCount provides notificationCount,
+            ) {
                 MobiMonTheme {
                     PetHomeScreen(
                         profile = PetProfile("profile"),

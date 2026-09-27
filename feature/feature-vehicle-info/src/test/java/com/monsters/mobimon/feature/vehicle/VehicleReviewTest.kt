@@ -58,9 +58,8 @@ class VehicleReviewTest {
         show({ samples().first().second }, fontScale = 1.5f)
 
         listOf(
-            "충분함",
+            "정상",
             "확인된 공기압 상태",
-            "경고 없음",
             "주의 경고 없음",
             "앞유리 워셔액 잔량",
         ).forEach(::assertTextFullyVisible)

@@ -60,6 +60,8 @@ import com.monsters.mobimon.core.domain.ConversationProvider
 import com.monsters.mobimon.core.domain.CosmeticSlot
 import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.core.domain.GitHubSession
+import com.monsters.mobimon.core.domain.PointEconomy
+import com.monsters.mobimon.core.domain.PointQuestCatalog
 import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.navigation.AiRoute
 import com.monsters.mobimon.core.navigation.AppRoute
@@ -72,12 +74,17 @@ import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.core.presentation.parkedVerified
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
+import com.monsters.mobimon.core.ui.LocalMobiMonNotificationCount
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import com.monsters.mobimon.feature.auth.AssumedOnlineConversationNetworkStatus
 import com.monsters.mobimon.feature.auth.ConversationNetworkStatus
 import com.monsters.mobimon.feature.auth.ConversationSpeechInput
 import com.monsters.mobimon.feature.auth.ConversationViewModel
 import com.monsters.mobimon.feature.auth.UnavailableConversationSpeechInput
+import com.monsters.mobimon.feature.quest.QuestViewModel
+import com.monsters.mobimon.feature.quest.claimableQuestAlerts
+import com.monsters.mobimon.feature.vehicle.VehicleCardSelectionStore
+import com.monsters.mobimon.feature.vehicle.vehicleCautionAlerts
 import com.monsters.mobimon.runtime.AppUseStateSource
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
@@ -106,6 +113,9 @@ fun MobiMonApp(
     vehicle: VehiclePresentation,
     networkStatus: ConversationNetworkStatus = AssumedOnlineConversationNetworkStatus,
     speechInput: ConversationSpeechInput = UnavailableConversationSpeechInput,
+    points: PointEconomy? = null,
+    questCatalog: PointQuestCatalog? = null,
+    vehicleCards: VehicleCardSelectionStore? = null,
 ) {
     val state by appUse.states.collectAsStateWithLifecycle()
     val session by authentication.session.collectAsStateWithLifecycle()
@@ -123,7 +133,8 @@ fun MobiMonApp(
             }
         }
     val conversationModel: ConversationViewModel = viewModel(factory = conversationFactory)
-    val parked = vehicle.snapshot().parkedVerified
+    val snapshot = vehicle.snapshot()
+    val parked = snapshot.parkedVerified
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val canCheck = parked && state == AppUseState.ALLOWED
     LaunchedEffect(conversationModel, lifecycle, canCheck) {
@@ -137,11 +148,36 @@ fun MobiMonApp(
         }
     }
     val appearance = companion.state()
+    val selectedCards =
+        vehicleCards
+            ?.selectedCards
+            ?.collectAsStateWithLifecycle()
+            ?.value
+            .orEmpty()
+    val questModel =
+        if (points != null && questCatalog != null) {
+            val factory = remember(points) { viewModelFactory { initializer { QuestViewModel(points) } } }
+            viewModel<QuestViewModel>(factory = factory)
+        } else {
+            null
+        }
+    val questState = questModel?.state?.collectAsStateWithLifecycle()?.value
+    val context = LocalContext.current
+    val alerts =
+        notificationItems(
+            if (vehicleCards != null) vehicleCautionAlerts(snapshot, selectedCards) else emptyList(),
+            if (questState != null && questCatalog != null) {
+                claimableQuestAlerts(questState, appearance, questCatalog, context::getString)
+            } else {
+                emptyList()
+            },
+        )
     val currentSession = session
     val activeFriendId = appearance.inventory?.equippedItemIds?.get(CosmeticSlot.FRIEND)
     val debugResetScope = rememberCoroutineScope()
     MobiMonContent(
         entries = entries,
+        notificationItems = alerts,
         appUseState = state,
         activeFriendId = activeFriendId,
         activeAccessoryId = appearance.accessoryId,
@@ -200,6 +236,7 @@ internal val ShellSaver =
 fun MobiMonContent(
     entries: Set<FeatureEntry>,
     modifier: Modifier = Modifier,
+    notificationItems: List<NotificationItem> = emptyList(),
     appUseState: AppUseState = AppUseState.UNAVAILABLE,
     activeFriendId: String? = null,
     activeAccessoryId: String? = null,
@@ -290,6 +327,7 @@ fun MobiMonContent(
         )
     CompositionLocalProvider(
         LocalMobiMonMotionEnabled provides !reducedMotion,
+        LocalMobiMonNotificationCount provides notificationItems.size,
         LocalDebugSettingsAvailable provides debuggerSettingsAvailable,
     ) {
         MobiMonTheme {
@@ -398,6 +436,7 @@ fun MobiMonContent(
                     CompanionMenu(
                         visible = shell.menuOpen,
                         currentRoute = shell.route,
+                        notifications = notificationItems,
                         onClose = navigator.back,
                         onNavigate = navigator.navigate,
                         onVersionClick = {

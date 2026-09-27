@@ -81,6 +81,20 @@ internal class MobiWarningBlend {
     }
 }
 
+internal class MobiHungryBlend(
+    initialValue: Float = 0f,
+) {
+    val opacity = Animatable(initialValue)
+
+    suspend fun target(
+        hungry: Boolean,
+        motionEnabled: Boolean,
+    ) {
+        val end = if (hungry) 1f else 0f
+        if (motionEnabled) opacity.animateTo(end, tween(200, easing = LinearEasing)) else opacity.snapTo(end)
+    }
+}
+
 internal object MobiCollapsedSpriteCache {
     const val CELL = 408
     const val LOGICAL_CELL = 256
@@ -147,13 +161,16 @@ internal object MobiDizzyStarsSpriteCache {
 fun MobiIdleBreathAnimation(
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
+    accessoryId: String? = null,
     fallbackAsset: CharacterAsset = CharacterArtwork.characters.getValue("friend:mobi"),
     vehicleWarning: Boolean = false,
+    vehicleHungry: Boolean = false,
     animateNormal: Boolean = true,
     motionEnabled: Boolean = LocalMobiMonMotionEnabled.current,
 ) {
     val context = LocalContext.current.applicationContext
     val blend = remember { MobiWarningBlend() }
+    val hungryBlend = remember { MobiHungryBlend(if (vehicleHungry) 1f else 0f) }
     val enabled = motionEnabled && LocalMobiMonMotionEnabled.current
     val sprite by produceState<ImageBitmap?>(initialValue = MobiCollapsedSpriteCache.peek(), context, vehicleWarning) {
         if (vehicleWarning &&
@@ -176,18 +193,49 @@ fun MobiIdleBreathAnimation(
     LaunchedEffect(vehicleWarning, enabled, sprite) {
         if (sprite != null) blend.target(vehicleWarning, enabled)
     }
+    LaunchedEffect(vehicleHungry, enabled) {
+        hungryBlend.target(vehicleHungry, enabled)
+    }
     val showNormal by remember { derivedStateOf { blend.opacity.value < 1f } }
     val showCollapsed by remember { derivedStateOf { blend.opacity.value > 0f } }
+    val showIdle by remember { derivedStateOf { hungryBlend.opacity.value < 1f } }
+    val showHungry by remember { derivedStateOf { hungryBlend.opacity.value > 0f } }
     BoxWithConstraints(
         modifier.semantics { if (contentDescription != null) this.contentDescription = contentDescription },
         contentAlignment = Alignment.Center,
     ) {
         if (showNormal) {
             Box(Modifier.matchParentSize().graphicsLayer { alpha = 1f - blend.opacity.value }) {
-                if (animateNormal) {
-                    NormalMobiIdleAnimation(Modifier.matchParentSize(), null, fallbackAsset)
-                } else {
-                    CharacterAssetImage(fallbackAsset, Modifier.matchParentSize(), null)
+                if (showIdle) {
+                    Box(Modifier.matchParentSize().graphicsLayer { alpha = 1f - hungryBlend.opacity.value }) {
+                        if (animateNormal) {
+                            NormalMobiIdleAnimation(
+                                modifier = Modifier.matchParentSize(),
+                                contentDescription = null,
+                                accessoryId = accessoryId,
+                                fallbackAsset = fallbackAsset,
+                            )
+                        } else {
+                            CharacterAssetImage(fallbackAsset, Modifier.matchParentSize(), null)
+                        }
+                    }
+                }
+                if (showHungry) {
+                    Box(Modifier.matchParentSize().graphicsLayer { alpha = hungryBlend.opacity.value }) {
+                        if (animateNormal) {
+                            NormalMobiHungryAnimation(
+                                modifier = Modifier.matchParentSize(),
+                                contentDescription = null,
+                                fallbackAsset = CharacterArtwork.hungry("friend:mobi"),
+                            )
+                        } else {
+                            CharacterAssetImage(
+                                CharacterArtwork.hungry("friend:mobi"),
+                                Modifier.matchParentSize(),
+                                null,
+                            )
+                        }
+                    }
                 }
             }
         }

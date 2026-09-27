@@ -65,6 +65,10 @@ state/callbacks to screens. `MobiMonApp` owns navigation; `FeatureRegistry` reje
 missing/duplicate destinations and duplicate saved names. Route ViewModels use
 the Activity store; local UI uses a saveable-state holder. The shell saves route
 and connection origin; menu state and animation geometry remain transient.
+The app shell derives transient notification summaries from the selected Vehicle
+card statuses and the shared Quest ViewModel's claimable state. Features expose
+read-only summaries; the shell owns the count, popup and routes. Reward writes
+remain in the Quest feature's atomic repository transaction.
 
 Conversation navigation carries the activated button's bounds to the shell;
 [DESIGN.md](DESIGN.md#motion) owns reveal and return behavior.
@@ -96,6 +100,11 @@ breath, sway and bob use separate periods; hands and wheel transform together.
 The 7524 x 5016 asset retains every source pixel; runtime keeps the prior 2x decode
 sampling (627px cells, about 36MiB) to fit a 4096px texture without a 144MiB bitmap.
 Home and Vehicle Info share `core-presentation`'s `vehicleCondition()` classification of the freshness-filtered snapshot.
+The shared display classification also considers current, explicit card warning
+signals and washer depletion independently of the six selected Vehicle cards.
+`VehicleSignalConcern` owns the VSS warning-path interpretation used by both
+card badges and companion conditions. Card-only Debug readings remain display
+evidence; they never authorize commands or rewards.
 Only `WARNING` selects Mobi's collapsed idle. A 200ms opacity crossfade switches between normal and collapsed idle;
 there are no falling/recovery states or transition frames. Interruptions continue from the current opacity.
 Two canonical collapsed bitmaps load once off thread. A cached bitmap mesh deforms only the torso inside a fixed

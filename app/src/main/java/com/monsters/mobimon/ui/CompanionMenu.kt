@@ -69,6 +69,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.monsters.mobimon.BuildConfig
@@ -80,6 +81,7 @@ import com.monsters.mobimon.core.navigation.QuestRoute
 import com.monsters.mobimon.core.navigation.VehicleRoute
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonColors
+import com.monsters.mobimon.core.ui.MobiMonNotificationBadge
 import com.monsters.mobimon.core.ui.MobiMonReferenceText
 import com.monsters.mobimon.core.ui.mobiMonReferenceTextStyle
 
@@ -110,11 +112,56 @@ private fun drawerProfileName(friendId: String?): Int =
     }
 
 @Composable
+private fun NotificationBell(
+    count: Int,
+    onClick: () -> Unit,
+    size: androidx.compose.ui.unit.Dp,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    focusRequester: FocusRequester? = null,
+) {
+    val targetSize = size.coerceAtLeast(76.dp)
+    val inset = (targetSize - size) / 2
+    Box(modifier.size(targetSize)) {
+        IconButton(
+            onClick,
+            Modifier
+                .size(targetSize)
+                .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
+                .testTag("menu-notifications"),
+            enabled = enabled,
+        ) {
+            Box(
+                Modifier
+                    .size(size)
+                    .background(Color(0xFF203C58), CircleShape)
+                    .border(1.dp, Color(0xFF64839F), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painterResource(R.drawable.drawer_notification_bell),
+                    if (count == 0) "알림 열기" else "알림 ${count}건 열기",
+                    Modifier.size(size * 0.45f),
+                    tint = Color(0xFFF4F7FC),
+                )
+            }
+        }
+        MobiMonNotificationBadge(
+            count,
+            size * (43f / 82f),
+            (25 * size.value / 82f).sp,
+            Modifier.offset(x = inset + size * (57f / 82f), y = inset - size * (15f / 82f)),
+        )
+    }
+}
+
+@Composable
 fun CompanionMenu(
     visible: Boolean,
     currentRoute: AppRoute,
     onClose: () -> Unit,
     onNavigate: (AppRoute) -> Unit,
+    notifications: List<NotificationItem> = emptyList(),
     onVersionClick: () -> Unit = {},
     activeFriendId: String? = null,
     accessoryId: String? = null,
@@ -123,22 +170,40 @@ fun CompanionMenu(
 ) {
     val duration = if (LocalMobiMonMotionEnabled.current) NAVIGATION_MOTION_DURATION_MILLIS else 0
     val first = remember { FocusRequester() }
+    val bellFocus = remember { FocusRequester() }
     val drawer = remember { MutableTransitionState(false) }
+    var notificationsOpen by remember { mutableStateOf(false) }
+    var openedNotificationsOnce by remember { mutableStateOf(false) }
     LaunchedEffect(visible) {
         drawer.targetState = visible
+        if (!visible) {
+            notificationsOpen = false
+            openedNotificationsOnce = false
+        }
+    }
+    LaunchedEffect(notificationsOpen, visible) {
+        if (visible && !notificationsOpen && openedNotificationsOnce) bellFocus.requestFocus()
     }
     if (!drawer.currentState && !drawer.targetState) return
     BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding().testTag("menu-host")) {
         val windowWidth = maxWidth
         val windowHeight = maxHeight
-        Popup(onDismissRequest = { if (visible) onClose() }, properties = PopupProperties(focusable = true)) {
+        Popup(onDismissRequest = {
+            if (notificationsOpen) {
+                notificationsOpen = false
+            } else if (visible) {
+                onClose()
+            }
+        }, properties = PopupProperties(focusable = true)) {
             // AAOS Popup constraints may exceed the app compatibility-density window.
             Box(Modifier.size(windowWidth, windowHeight)) {
                 Box(
                     Modifier
                         .fillMaxSize()
                         .background(Color.Transparent)
-                        .clickable(enabled = visible, onClick = onClose)
+                        .clickable(enabled = visible, onClick = {
+                            if (notificationsOpen) notificationsOpen = false else onClose()
+                        })
                         .testTag("menu-backdrop"),
                 )
                 AnimatedVisibility(
@@ -157,7 +222,7 @@ fun CompanionMenu(
                     MenuPanel(
                         windowWidth.value,
                         windowHeight.value,
-                        visible,
+                        visible && !notificationsOpen,
                         currentRoute,
                         onClose,
                         onNavigate,
@@ -167,6 +232,21 @@ fun CompanionMenu(
                         outfitId,
                         backgroundId,
                         first,
+                        notifications.size,
+                        {
+                            openedNotificationsOnce = true
+                            notificationsOpen = true
+                        },
+                        bellFocus,
+                    )
+                }
+                if (notificationsOpen && visible) {
+                    NotificationPopup(
+                        notifications = notifications,
+                        windowWidth = windowWidth,
+                        windowHeight = windowHeight,
+                        onClose = { notificationsOpen = false },
+                        onNavigate = onNavigate,
                     )
                 }
             }
@@ -192,6 +272,9 @@ private fun MenuPanel(
     outfitId: String?,
     backgroundId: String?,
     first: FocusRequester,
+    notificationCount: Int,
+    onOpenNotifications: () -> Unit,
+    bellFocus: FocusRequester,
 ) {
     val referenceScale = windowWidth / 2560f
     val reference =
@@ -200,6 +283,8 @@ private fun MenuPanel(
             LocalDensity.current.fontScale <= 1f &&
             referenceScale >= MIN_REFERENCE_MENU_SCALE
     val scale = if (reference) referenceScale else 1f
+    val bellVisualSize = (82 * scale).dp
+    val bellInset = (bellVisualSize.coerceAtLeast(76.dp) - bellVisualSize) / 2
     val width = if (reference) 690 * scale else minOf(520f, windowWidth)
     val shape =
         remember(scale) {
@@ -298,6 +383,14 @@ private fun MenuPanel(
                 )
                 close(Modifier.offset((586 * scale).dp - 38.dp, (58 * scale).dp - 38.dp))
                 portrait(Modifier.offset((63 * scale).dp, (153 * scale).dp))
+                NotificationBell(
+                    notificationCount,
+                    onOpenNotifications,
+                    bellVisualSize,
+                    Modifier.offset((533 * scale).dp - bellInset, (180 * scale).dp - bellInset),
+                    enabled = visible,
+                    focusRequester = bellFocus,
+                )
                 MobiMonReferenceText(
                     stringResource(drawerProfileName(friendId)),
                     244f,
@@ -363,7 +456,7 @@ private fun MenuPanel(
                     horizontalArrangement = Arrangement.spacedBy(24.dp),
                 ) {
                     portrait(Modifier)
-                    Column {
+                    Column(Modifier.weight(1f)) {
                         Text(
                             stringResource(drawerProfileName(friendId)),
                             Modifier.semantics {
@@ -374,6 +467,13 @@ private fun MenuPanel(
                         )
                         Text(stringResource(R.string.drawer_profile_subtitle), color = Color(0xFF9FB2CE))
                     }
+                    NotificationBell(
+                        notificationCount,
+                        onOpenNotifications,
+                        82.dp,
+                        enabled = visible,
+                        focusRequester = bellFocus,
+                    )
                 }
                 destinations.forEachIndexed { index, item ->
                     MenuDestination(

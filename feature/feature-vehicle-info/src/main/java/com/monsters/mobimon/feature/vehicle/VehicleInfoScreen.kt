@@ -141,6 +141,7 @@ fun VehicleInfoScreen(
                     Box(Modifier.fillMaxSize().testTag("vehicle-reference")) {
                         VehicleHeader(
                             snapshot = snapshot,
+                            friendId = friendId,
                             onBack = onBack,
                             onHome = onHome,
                             scale = scale,
@@ -170,7 +171,8 @@ fun VehicleInfoScreen(
                                     accessoryId = accessoryId,
                                     outfitId = outfitId,
                                     backgroundId = backgroundId,
-                                    tireWarning = readings.tireWarning != null || readings.tireStatus == "NG",
+                                    tireWarning =
+                                        VehicleCardCatalog.status("tire", snapshot) == VehicleCardStatus.CAUTION,
                                     modifier = Modifier.weight(0.4f).fillMaxHeight(),
                                     panelHeight = metricsPanelHeight,
                                 )
@@ -209,6 +211,7 @@ fun VehicleInfoScreen(
             ) {
                 VehicleHeader(
                     snapshot = snapshot,
+                    friendId = friendId,
                     onBack = onBack,
                     onHome = onHome,
                     scale = compactScale,
@@ -235,7 +238,7 @@ fun VehicleInfoScreen(
                                 accessoryId = accessoryId,
                                 outfitId = outfitId,
                                 backgroundId = backgroundId,
-                                tireWarning = readings.tireWarning != null || readings.tireStatus == "NG",
+                                tireWarning = VehicleCardCatalog.status("tire", snapshot) == VehicleCardStatus.CAUTION,
                                 modifier = Modifier.weight(0.4f),
                             )
                             VehicleCardGrid(
@@ -253,7 +256,7 @@ fun VehicleInfoScreen(
                             accessoryId = accessoryId,
                             outfitId = outfitId,
                             backgroundId = backgroundId,
-                            tireWarning = readings.tireWarning != null || readings.tireStatus == "NG",
+                            tireWarning = VehicleCardCatalog.status("tire", snapshot) == VehicleCardStatus.CAUTION,
                             modifier = Modifier.fillMaxWidth(),
                         )
                         VehicleCardGrid(
@@ -307,6 +310,7 @@ fun VehicleInfoScreen(
 @Composable
 internal fun VehicleHeader(
     snapshot: VehicleSnapshot,
+    friendId: String,
     onBack: () -> Unit,
     onHome: (() -> Unit)?,
     scale: Float,
@@ -345,7 +349,17 @@ internal fun VehicleHeader(
                 modifier = Modifier.semantics { heading() },
             )
             Text(
-                text = stringResource(R.string.vehicle_header_subtitle),
+                text =
+                    stringResource(
+                        R.string.vehicle_header_subtitle,
+                        stringResource(
+                            if (friendId == "friend:luna") {
+                                R.string.vehicle_companion_luna
+                            } else {
+                                R.string.vehicle_companion_mobi
+                            },
+                        ),
+                    ),
                 color = MobiMonColors.muted,
                 fontSize = if (scale >= 0.7f) (28f * scale).sp else 14.sp,
             )
@@ -376,12 +390,7 @@ private fun VehicleStatusBanner(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (mood == VehicleMood.WARNING &&
-                (
-                    snapshot.tirePressureStatus == "NG" ||
-                        snapshot.warnings.any {
-                            it.quality == SignalQuality.VALID && (it.item.contains("타이어") || it.item.contains("바퀴"))
-                        }
-                )
+                VehicleCardCatalog.status("tire", snapshot) == VehicleCardStatus.CAUTION
             ) {
                 BannerText(
                     title =
@@ -398,7 +407,10 @@ private fun VehicleStatusBanner(
                     description = stringResource(R.string.vehicle_banner_sick_tire_desc),
                     accent = mood.accent,
                 )
-            } else if (mood == VehicleMood.ATTENTION && snapshot.batteryPercent != null) {
+            } else if (mood == VehicleMood.ATTENTION &&
+                (snapshot.batteryQuality ?: snapshot.quality) == SignalQuality.VALID &&
+                snapshot.batteryPercent?.let { it in 0..19 } == true
+            ) {
                 BannerText(
                     title =
                         stringResource(R.string.vehicle_banner_low_battery_title).replace(
@@ -514,7 +526,6 @@ private fun CompanionStatusPanel(
                         "friend:mobi" ->
                             when (mood) {
                                 VehicleMood.GOOD -> R.drawable.mobi_vehicle_normal
-                                VehicleMood.ATTENTION -> R.drawable.mobi_vehicle_hungry
                                 else -> null
                             }
                         "friend:luna" ->
@@ -614,11 +625,12 @@ private fun VehicleCard(
     readings: VehicleInfoUiState,
     modifier: Modifier = Modifier,
 ) {
+    val status = VehicleCardCatalog.status(cardId, snapshot) ?: return
     when (cardId) {
-        "battery" -> BatteryCard(snapshot, readings.batteryPercent, modifier)
-        "tire" -> TireCard(readings, modifier)
-        "environment" -> EnvironmentCard(readings, modifier)
-        "assist" -> DriverAssistCard(readings, modifier)
+        "battery" -> BatteryCard(snapshot, readings.batteryPercent, status, modifier)
+        "tire" -> TireCard(readings, status, modifier)
+        "environment" -> EnvironmentCard(readings, status, modifier)
+        "assist" -> DriverAssistCard(readings, status, modifier)
         "charging" -> {
             val current = snapshot.takeIf { it.quality == SignalQuality.VALID }?.isCharging
             MetricCard(
@@ -646,13 +658,8 @@ private fun VehicleCard(
                             },
                         )
                     },
-                badge =
-                    current?.let {
-                        stringResource(
-                            if (it) R.string.vehicle_charging_active_badge else R.string.vehicle_charging_idle_badge,
-                        )
-                    },
-                badgeTone = if (current == true) VehicleTone.SUCCESS else VehicleTone.NEUTRAL,
+                badge = stringResource(status.labelRes),
+                badgeTone = status.tone,
                 modifier = modifier,
                 testTag = "vehicle-card-charging",
             )
@@ -668,19 +675,8 @@ private fun VehicleCard(
                     } else {
                         stringResource(R.string.vehicle_washer_unavailable)
                     },
-                badge =
-                    level?.let {
-                        stringResource(
-                            if (it <
-                                20
-                            ) {
-                                R.string.vehicle_battery_badge_low
-                            } else {
-                                R.string.vehicle_battery_badge_ok
-                            },
-                        )
-                    },
-                badgeTone = if (level != null && level < 20) VehicleTone.WARNING else VehicleTone.SUCCESS,
+                badge = stringResource(status.labelRes),
+                badgeTone = status.tone,
                 modifier = modifier,
                 testTag = "vehicle-card-washer",
             )
@@ -699,6 +695,8 @@ private fun VehicleCard(
                     } else {
                         reading.supporting
                     },
+                badge = stringResource(status.labelRes),
+                badgeTone = status.tone,
                 modifier = modifier,
                 testTag = "vehicle-card-$cardId",
             )
@@ -951,6 +949,7 @@ private fun VehicleCardSelector(
 private fun BatteryCard(
     snapshot: VehicleSnapshot,
     battery: Int?,
+    status: VehicleCardStatus,
     modifier: Modifier = Modifier,
 ) {
     val quality = snapshot.batteryQuality ?: snapshot.quality
@@ -962,8 +961,8 @@ private fun BatteryCard(
         supporting = battery?.let { stringResource(R.string.vehicle_battery, it) } ?: statusText,
         modifier = modifier,
         testTag = "vehicle-card-battery",
-        badge = if (battery != null) batteryBadgeText(battery) else null,
-        badgeTone = if (warning) VehicleTone.WARNING else VehicleTone.SUCCESS,
+        badge = stringResource(status.labelRes),
+        badgeTone = status.tone,
     ) {
         if (quality == SignalQuality.STALE) {
             snapshot.batteryAgeMillis?.let {
@@ -1017,16 +1016,17 @@ private fun DrivingCard(
 @Composable
 private fun TireCard(
     readings: VehicleInfoUiState,
+    status: VehicleCardStatus,
     modifier: Modifier = Modifier,
 ) {
     val warning = readings.tireWarning
-    val low = readings.tireStatus == "NG"
+    val low = status == VehicleCardStatus.CAUTION
     MetricCard(
         title = stringResource(R.string.vehicle_tire_card_title),
         value =
-            when (readings.tireStatus) {
-                "OK" -> stringResource(R.string.vehicle_tire_normal)
-                "NG" -> stringResource(R.string.vehicle_tire_low)
+            when {
+                low -> stringResource(R.string.vehicle_tire_low)
+                readings.tireStatus == "OK" -> stringResource(R.string.vehicle_tire_normal)
                 else -> readings.tireStatus ?: stringResource(R.string.vehicle_unknown_short)
             },
         supporting =
@@ -1043,19 +1043,15 @@ private fun TireCard(
             ),
         modifier = modifier,
         testTag = "vehicle-card-tire",
-        badge =
-            when {
-                warning != null || low -> stringResource(R.string.vehicle_warning_caution)
-                readings.tireStatus != null -> stringResource(R.string.vehicle_checked_badge)
-                else -> null
-            },
-        badgeTone = if (warning == null && !low) VehicleTone.NEUTRAL else VehicleTone.WARNING,
+        badge = stringResource(status.labelRes),
+        badgeTone = status.tone,
     )
 }
 
 @Composable
 private fun EnvironmentCard(
     readings: VehicleInfoUiState,
+    status: VehicleCardStatus,
     modifier: Modifier = Modifier,
 ) {
     val temperature = readings.outsideTemperature?.let { stringResource(R.string.vehicle_temperature_value, it) }
@@ -1069,6 +1065,8 @@ private fun EnvironmentCard(
         title = stringResource(R.string.vehicle_environment_card_title),
         value = temperature ?: stringResource(R.string.vehicle_unknown_short),
         supporting = rainText,
+        badge = stringResource(status.labelRes),
+        badgeTone = status.tone,
         modifier = modifier,
         testTag = "vehicle-card-environment",
     )
@@ -1077,6 +1075,7 @@ private fun EnvironmentCard(
 @Composable
 private fun DriverAssistCard(
     readings: VehicleInfoUiState,
+    status: VehicleCardStatus,
     modifier: Modifier = Modifier,
 ) {
     val issue =
@@ -1102,18 +1101,8 @@ private fun DriverAssistCard(
         supporting = issue,
         modifier = modifier,
         testTag = "vehicle-card-assist",
-        badge =
-            when {
-                readings.assistWarning != null -> stringResource(R.string.vehicle_attention_needed)
-                readings.assistChecked -> stringResource(R.string.vehicle_no_warning_badge)
-                else -> null
-            },
-        badgeTone =
-            when {
-                readings.assistWarning != null -> VehicleTone.WARNING
-                readings.assistChecked -> VehicleTone.SUCCESS
-                else -> VehicleTone.NEUTRAL
-            },
+        badge = stringResource(status.labelRes),
+        badgeTone = status.tone,
     )
 }
 
@@ -1249,7 +1238,11 @@ private fun MetricCard(
                         foreground = badgeTone.foreground,
                         background = badgeTone.background,
                         border = badgeTone.border,
-                        modifier = Modifier.align(Alignment.TopEnd).offset(y = (-4).dp * designScale),
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopEnd)
+                                .offset(y = (-4).dp * designScale)
+                                .then(if (testTag != null) Modifier.testTag("$testTag-status") else Modifier),
                     )
                 }
                 if (valueContent != null) {
@@ -1296,6 +1289,7 @@ private fun MetricCard(
                                 foreground = badgeTone.foreground,
                                 background = badgeTone.background,
                                 border = badgeTone.border,
+                                modifier = if (testTag != null) Modifier.testTag("$testTag-status") else Modifier,
                             )
                         }
                     }
@@ -1424,16 +1418,6 @@ private fun batteryStatusText(snapshot: VehicleSnapshot): String =
     }
 
 @Composable
-private fun batteryBadgeText(battery: Int): String =
-    stringResource(
-        when {
-            battery < 20 -> R.string.vehicle_battery_badge_low
-            battery < 50 -> R.string.vehicle_battery_badge_watch
-            else -> R.string.vehicle_battery_badge_ok
-        },
-    )
-
-@Composable
 private fun parkingSupportingText(snapshot: VehicleSnapshot): String =
     when {
         snapshot.quality == SignalQuality.VALID -> stringResource(R.string.vehicle_quality_valid)
@@ -1494,7 +1478,7 @@ private enum class VehicleMood(
         R.string.vehicle_mood_hungry_badge,
         R.string.vehicle_mood_hungry_companion,
         R.string.vehicle_banner_low_battery_title,
-        R.string.vehicle_banner_low_battery_desc,
+        R.string.vehicle_banner_hungry_desc,
         WarningAccent,
         WarningBackground,
         WarningBadgeBackground,
@@ -1537,6 +1521,23 @@ private enum class VehicleTone(
     WARNING(WarningAccent, WarningBadgeBackground, WarningAccent),
     NEUTRAL(MobiMonColors.accent, NeutralBadgeBackground, MobiMonColors.border),
 }
+
+private val VehicleCardStatus.labelRes: Int
+    get() =
+        when (this) {
+            VehicleCardStatus.INFO -> R.string.vehicle_card_status_info
+            VehicleCardStatus.NORMAL -> R.string.vehicle_card_status_normal
+            VehicleCardStatus.CAUTION -> R.string.vehicle_card_status_caution
+            VehicleCardStatus.UNAVAILABLE -> R.string.vehicle_card_status_unavailable
+        }
+
+private val VehicleCardStatus.tone: VehicleTone
+    get() =
+        when (this) {
+            VehicleCardStatus.INFO, VehicleCardStatus.UNAVAILABLE -> VehicleTone.NEUTRAL
+            VehicleCardStatus.NORMAL -> VehicleTone.SUCCESS
+            VehicleCardStatus.CAUTION -> VehicleTone.WARNING
+        }
 
 private val SuccessAccent = Color(0xFF71E5C5)
 private val SuccessBackground = Color(0xFF102B28)

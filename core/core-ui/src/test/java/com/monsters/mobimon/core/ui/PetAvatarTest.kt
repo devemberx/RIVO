@@ -107,6 +107,31 @@ class PetAvatarTest {
             listOf("mobi_idle_breath_sprite.png"),
             context.assets.list("characters/mobi/idle_breath")!!.toList(),
         )
+
+        val headphonesSprite = requireNotNull(MobiSpriteCache.getOrLoad(context, "accessory:mobi_headphones"))
+        assertEquals(627 * 6, headphonesSprite.width)
+        assertEquals(627 * 4, headphonesSprite.height)
+        assertTrue(headphonesSprite === MobiSpriteCache.getOrLoad(context, "accessory:mobi_headphones"))
+
+        val gogglesSprite = requireNotNull(MobiSpriteCache.getOrLoad(context, "accessory:mobi_goggles"))
+        assertEquals(627 * 6, gogglesSprite.width)
+        assertEquals(627 * 4, gogglesSprite.height)
+        assertTrue(gogglesSprite === MobiSpriteCache.getOrLoad(context, "accessory:mobi_goggles"))
+    }
+
+    @Test
+    fun mobiHungryAnimationCacheLoadsOneSheetAndReusesIt() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        val sprite = requireNotNull(MobiHungrySpriteCache.getOrLoad(context))
+        assertEquals(256 * 6, sprite.width)
+        assertEquals(256 * 4, sprite.height)
+        assertTrue(sprite === MobiHungrySpriteCache.getOrLoad(context))
+        assertEquals(
+            listOf("mobi_hungry_sprite.png"),
+            context.assets.list("characters/mobi/hungry")!!.toList(),
+        )
     }
 
     @Test
@@ -115,7 +140,7 @@ class PetAvatarTest {
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
         val frames = LunaAnimationCache.getOrLoadFrames(context)
-        org.junit.Assert.assertEquals(24, frames.size)
+        assertEquals(24, frames.size)
     }
 
     @Test
@@ -143,6 +168,17 @@ class PetAvatarTest {
                 .getApplicationContext<android.content.Context>()
         val frames = LunaSickAnimationCache.getOrLoadFrames(context)
         assertEquals(24, frames.size)
+    }
+
+    @Test
+    fun lunaHatAnimationCachesLoadTwentyFourFramesFromAssets() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        assertEquals(24, LunaAnimationCache.getOrLoadFrames(context, hasHat = true).size)
+        assertEquals(24, LunaRunAnimationCache.getOrLoadFrames(context, hasHat = true).size)
+        assertEquals(24, LunaHungryAnimationCache.getOrLoadFrames(context, hasHat = true).size)
+        assertEquals(24, LunaSickAnimationCache.getOrLoadFrames(context, hasHat = true).size)
     }
 
     @Test
@@ -232,9 +268,11 @@ class PetAvatarTest {
     }
 
     @Test
-    fun hungryAndSickArtworkAreDefinedForLuna() {
+    fun hungryAndSickArtworkAreDefinedForMobiAndLuna() {
+        val mobiHungry = CharacterArtwork.hungry("friend:mobi")
         val lunaHungry = CharacterArtwork.hungry("friend:luna")
         val lunaSick = CharacterArtwork.sick("friend:luna")
+        assertNotNull(mobiHungry)
         assertNotNull(lunaHungry)
         assertNotNull(lunaSick)
         assertEquals(0.87f, lunaHungry.visualScale)
@@ -258,6 +296,22 @@ class PetAvatarTest {
         assertNotNull(LunaSickAnimationCache.peek())
         assertNotNull(LunaRunAnimationCache.peek())
 
+        LunaAnimationManager.retainOnly(LunaActiveAnimation.IDLE)
+        assertNotNull(LunaAnimationCache.peek())
+        assertNotNull(LunaRunAnimationCache.peek())
+        assertNull(LunaHungryAnimationCache.peek())
+        assertNull(LunaSickAnimationCache.peek())
+
+        LunaHungryAnimationCache.getOrLoadFrames(context)
+        LunaSickAnimationCache.getOrLoadFrames(context)
+        LunaAnimationManager.retainOnly(LunaActiveAnimation.RUN)
+        assertNotNull(LunaAnimationCache.peek())
+        assertNotNull(LunaRunAnimationCache.peek())
+        assertNull(LunaHungryAnimationCache.peek())
+        assertNull(LunaSickAnimationCache.peek())
+
+        LunaHungryAnimationCache.getOrLoadFrames(context)
+        LunaSickAnimationCache.getOrLoadFrames(context)
         LunaAnimationManager.retainOnly(LunaActiveAnimation.HUNGRY)
         assertNull(LunaAnimationCache.peek())
         assertNotNull(LunaHungryAnimationCache.peek())

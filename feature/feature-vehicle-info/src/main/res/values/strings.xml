@@ -41,6 +41,10 @@
   <string name="vehicle_washer_detail">앞유리 워셔액 잔량</string>
   <string name="vehicle_washer_unavailable">워셔액 정보 없음</string>
   <string name="vehicle_card_signal_unavailable">이 차량에서 확인된 정보가 없어요</string>
+  <string name="vehicle_card_status_info">정보</string>
+  <string name="vehicle_card_status_normal">정상</string>
+  <string name="vehicle_card_status_caution">주의</string>
+  <string name="vehicle_card_status_unavailable">확인 불가</string>
   <string name="vehicle_card_change_hint">ⓘ  카드를 길게 누르면 다른 정보로 변경할 수 있어요</string>
   <string name="vehicle_card_selector_title">차량상태 카드 변경</string>
   <string name="vehicle_card_selector_description">%1$d번 카드에 표시할 정보를 선택하세요 · 확인을 누르면 적용됩니다</string>
@@ -101,6 +105,7 @@
   <string name="vehicle_banner_partial_desc">정보가 없는 항목의 상태는 알 수 없어요</string>
   <string name="vehicle_banner_low_battery_title">모비가 배고파요</string>
   <string name="vehicle_banner_low_battery_desc">배터리 충전이 필요해요</string>
+  <string name="vehicle_banner_hungry_desc">부족한 항목을 확인해 주세요</string>
   <string name="vehicle_banner_warning_title">모비가 아파요</string>
   <string name="vehicle_banner_warning_desc">차량 경고를 살펴봐 주세요</string>
   <string name="vehicle_banner_sick_title">모비가 아파요</string>
@@ -110,7 +115,9 @@
   <string name="vehicle_banner_unknown_title">차량을 확인할 수 없어요</string>
   <string name="vehicle_banner_unknown_desc">연결 또는 권한 상태를 확인해 주세요</string>
     <string name="vehicle_destination_title">차량 상태</string>
-    <string name="vehicle_header_subtitle">모비의 상태로 내 차를 한눈에</string>
+    <string name="vehicle_header_subtitle">%1$s의 상태로 내 차를 한눈에</string>
+    <string name="vehicle_companion_mobi">모비</string>
+    <string name="vehicle_companion_luna">루나</string>
     <string name="vehicle_appearance_load_failed">친구 정보를 불러오지 못했어요.</string>
     <string name="vehicle_appearance_update_failed">친구 정보를 갱신하지 못했어요.</string>
     <string name="vehicle_retry">다시 시도</string>

@@ -11,12 +11,15 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.monsters.mobimon.core.domain.ConversationProvider
 import com.monsters.mobimon.core.domain.GitHubAuthentication
+import com.monsters.mobimon.core.domain.PointEconomy
+import com.monsters.mobimon.core.domain.PointQuestCatalog
 import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.feature.auth.ConversationNetworkStatus
 import com.monsters.mobimon.feature.auth.ConversationSpeechInput
+import com.monsters.mobimon.feature.vehicle.VehicleCardSelectionStore
 import com.monsters.mobimon.runtime.AppUseStateSource
 import com.monsters.mobimon.service.FloatingCompanionService
 import com.monsters.mobimon.ui.MobiMonApp
@@ -45,6 +48,12 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var vehicle: VehiclePresentation
 
+    @Inject lateinit var points: PointEconomy
+
+    @Inject lateinit var questCatalog: PointQuestCatalog
+
+    @Inject lateinit var vehicleCards: VehicleCardSelectionStore
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         observeLauncherOverlay()
@@ -59,6 +68,9 @@ class MainActivity : ComponentActivity() {
                 vehicle,
                 networkStatus,
                 speechInput,
+                points,
+                questCatalog,
+                vehicleCards,
             )
         }
     }

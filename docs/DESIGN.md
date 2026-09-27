@@ -72,6 +72,7 @@ Do not package full-screen references or generation drafts as runtime UI.
 | Mobi idle sprite / Luna frames | `core/core-ui/src/main/assets/characters/{mobi,luna}/idle_breath/` |
 | Luna hungry / sick frames | `core/core-ui/src/main/assets/characters/luna/{hungry,sick}/` |
 | Original Mobi warning artwork | `art/characters/mobi/unhealthy/` (not packaged) |
+| Luna side/back master reference | [Luna_Side_Back.png](../art/characters/luna/references/Luna_Side_Back.png) (not packaged) |
 | Shared artwork, accessories and backgrounds | `core/core-ui/src/main/res/drawable-nodpi/` |
 | Feature icons/artwork | Owning module's `res/drawable/` or `res/drawable-nodpi/` |
 | References | [docs/ui](ui/README.md) |
@@ -80,6 +81,22 @@ Do not package full-screen references or generation drafts as runtime UI.
 Use approved master assets for variants. Preserve identity, proportions, style,
 scene geometry, canvas size, framing, subject scale/anchor and transparency; change
 only requested properties. Check dimensions and compare visually before use.
+
+#### Luna generation references
+
+Always inspect and provide both approved references as image inputs when generating
+or editing any Luna image, including expressions, poses, animation frames and accessories:
+
+- Front: [luna_idle_breath_01.png](../core/core-ui/src/main/assets/characters/luna/idle_breath/luna_idle_breath_01.png).
+- Side and back: [Luna_Side_Back.png](../art/characters/luna/references/Luna_Side_Back.png).
+
+Keep Luna's character proportions consistent in every view and frame: head-to-body
+ratio, head shape, ear size/spacing, limb length/thickness, tail length/thickness/curl
+and facial feature size/placement. Preserve these underlying proportions through
+perspective and pose changes; do not redesign or stretch anatomy to fit a canvas
+or accessory. Compare each result with both references before accepting it and
+reject unintended proportion drift. For variants, also supply the approved source
+image or frame and follow the preservation rules above.
 
 Mobi idle uses a lossless 6 x 4 atlas of all 24 original 1254px RGBA frames.
 The atlas retains every source frame pixel; separate frame PNGs are not kept.
@@ -133,6 +150,13 @@ It shows the equipped friend and app version, with its footer above the system b
 Preserve the SVG layout at AAOS compatibility density, centering minimum touch
 bounds around each row. Reflow only when those bounds overlap or enlarged text
 needs more room.
+
+Home's menu control and the menu bell show the current alert count when positive.
+The bell opens a popup over the menu. Selected Vehicle cards with a current
+`CAUTION` status appear before claimable quests; quest alerts remain until their
+rewards are received. The popup has an empty state and a three-card viewport that
+scrolls for additional alerts. Each card opens its owning screen. The
+[notification references](ui/README.md#screen-index) define the popup geometry.
 
 Unavailable services explain the limitation and recovery. Pending actions block
 duplicates; uncertain writes offer reconciliation before retry.
@@ -262,6 +286,25 @@ instead of sample values. In the Debug app with no adapter, the screen uses
 simulated defaults; the Settings-enabled Debugger can edit every card signal.
 The character panel uses the normal, hungry and sick Mobi artwork for the
 corresponding observed conditions.
+
+Each vehicle card has an upper-right badge. Current information-only readings
+show **Info**; verified condition readings show **Normal** or **Caution**.
+Missing, stale or invalid readings show **Unavailable**, never Normal. The same
+badge appears in the card selector. Card selection changes layout only; the
+companion condition uses all current evidence, including unselected cards.
+
+| Companion response to Caution | Cards and evidence |
+| --- | --- |
+| Hungry | `battery` below 20%, `washer` below 20%, `washer-low` asserted |
+| Sick | `battery-error` with codes, `service-due`, `brake-fluid`, `low-beam`, `brake-light`, `tire-low`, `pad-warning`, `abs`, or `breakdown` asserted; `tire` low; `assist` with an interpreted warning |
+| No expression change (Info) | `battery-health`, `battery-range`, `battery-time`, `driver-door`, `charging-time`, `service-distance`, `service-time`, `parking-brake`, `driver-belt`, `pad-wear`, `hood`, `trunk`, `air-temperature`, `rain-intensity`, `cabin-temperature`, `distance`, `dtc-count`, `fatigue`, `distraction`, `charging`, `environment` |
+
+The Info values alone do not establish a warning; existing interpreted engine
+and driver-assist warnings still make the companion Sick. One confirmed wheel
+warning suffices for Caution, while Normal for four-wheel VSS cards requires
+all four wheel readings. An interpreted tire status can also classify the
+default tire card.
+Sick takes priority over Hungry. Expressions reflect signals, not a diagnosis.
 
 ## AI connection and settings
 

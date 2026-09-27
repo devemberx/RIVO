@@ -97,6 +97,55 @@ class DecorativeMotionTest {
     }
 
     @Test
+    fun lunaWithHatAnimatesAcrossMotionStates() {
+        show {
+            Row {
+                PetAvatar(
+                    modifier = Modifier.size(180.dp).testTag("luna_hat_idle"),
+                    friendId = "friend:luna",
+                    accessoryId = "accessory:luna_cap",
+                )
+                PetAvatar(
+                    modifier = Modifier.size(180.dp).testTag("luna_hat_moving"),
+                    friendId = "friend:luna",
+                    accessoryId = "accessory:luna_cap",
+                    isMoving = true,
+                )
+                PetAvatar(
+                    modifier = Modifier.size(180.dp).testTag("luna_hat_hungry"),
+                    friendId = "friend:luna",
+                    accessoryId = "accessory:luna_cap",
+                    emotion = PetEmotion.HUNGRY,
+                )
+                PetAvatar(
+                    modifier = Modifier.size(180.dp).testTag("luna_hat_sick"),
+                    friendId = "friend:luna",
+                    accessoryId = "accessory:luna_cap",
+                    emotion = PetEmotion.SICK,
+                )
+                PetAvatar(
+                    modifier = Modifier.size(180.dp).testTag("luna_sunglasses_static"),
+                    friendId = "friend:luna",
+                    accessoryId = "accessory:luna_sunglasses",
+                )
+            }
+        }
+        val firstIdle = pixels("luna_hat_idle")
+        val firstMoving = pixels("luna_hat_moving")
+        val firstHungry = pixels("luna_hat_hungry")
+        val firstSick = pixels("luna_hat_sick")
+        val firstSunglasses = pixels("luna_sunglasses_static")
+
+        compose.mainClock.advanceTimeBy(320)
+
+        assertTrue("Luna with hat idle breathes over time", firstIdle != pixels("luna_hat_idle"))
+        assertTrue("Luna with hat moves/runs over time", firstMoving != pixels("luna_hat_moving"))
+        assertTrue("Luna with hat hungry animates over time", firstHungry != pixels("luna_hat_hungry"))
+        assertTrue("Luna with hat sick animates over time", firstSick != pixels("luna_hat_sick"))
+        assertTrue("Luna with sunglasses remains static", firstSunglasses == pixels("luna_sunglasses_static"))
+    }
+
+    @Test
     fun particlesStopWhenMotionPreferenceChanges() {
         var motionEnabled by mutableStateOf(true)
         show {
@@ -279,11 +328,41 @@ class DecorativeMotionTest {
         assertTrue("Collapsed sprite sheet animates frames over time", frameA != frameB)
     }
 
+    @Test
+    fun hungryThoughtHoldDoesNotInheritIdleSway() {
+        show { NormalMobiHungryAnimation(Modifier.size(256.dp).testTag("hungry")) }
+        pixels("hungry")
+        compose.mainClock.advanceTimeByFrame()
+        compose.mainClock.advanceTimeBy(1_450)
+        val thought = pixels("hungry")
+        compose.mainClock.advanceTimeBy(200)
+        val held = pixels("hungry")
+
+        fun visibleChannel(
+            pixel: Int,
+            shift: Int,
+        ): Int {
+            val alpha = pixel ushr 24
+            return if (shift == 24) alpha else ((pixel ushr shift) and 255) * alpha / 255
+        }
+        val maximumChannelChange =
+            thought.zip(held).maxOf { (first, second) ->
+                listOf(0, 8, 16, 24).maxOf { shift ->
+                    kotlin.math.abs(visibleChannel(first, shift) - visibleChannel(second, shift))
+                }
+            }
+        // Premultiplied frame blending can round an unchanged channel by one level.
+        assertTrue("Thought hold must not sway: channel change $maximumChannelChange", maximumChannelChange <= 2)
+        compose.mainClock.advanceTimeBy(1_000)
+        assertTrue("Authored hunger expressions still advance", thought != pixels("hungry"))
+    }
+
     private fun show(content: @Composable () -> Unit) {
         val context =
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
         requireNotNull(MobiSpriteCache.getOrLoad(context))
+        requireNotNull(MobiHungrySpriteCache.getOrLoad(context))
         compose.mainClock.autoAdvance = false
         compose.setContent {
             val currentView = LocalView.current
@@ -325,6 +404,11 @@ class DecorativeMotionTest {
         show {
             Row {
                 PetAvatar(
+                    Modifier.size(180.dp).testTag("mobi-hungry"),
+                    friendId = "friend:mobi",
+                    vehicleHungry = true,
+                )
+                PetAvatar(
                     Modifier.size(180.dp).testTag("luna-hungry"),
                     friendId = "friend:luna",
                     vehicleHungry = true,
@@ -336,9 +420,11 @@ class DecorativeMotionTest {
                 )
             }
         }
+        val firstMobiHungry = pixels("mobi-hungry")
         val firstHungry = pixels("luna-hungry")
         val firstSick = pixels("luna-sick")
         compose.mainClock.advanceTimeBy(320)
+        assertTrue("Mobi animates while hungry", firstMobiHungry != pixels("mobi-hungry"))
         assertTrue("Luna animates while hungry", firstHungry != pixels("luna-hungry"))
         assertTrue("Luna animates while sick", firstSick != pixels("luna-sick"))
     }
@@ -366,5 +452,45 @@ class DecorativeMotionTest {
         compose.mainClock.advanceTimeBy(320)
         assertTrue("Luna animates while moving hungry", firstHungry != pixels("luna-moving-hungry"))
         assertTrue("Luna animates while moving sick", firstSick != pixels("luna-moving-sick"))
+    }
+
+    @Test
+    fun lunaIdleBreathAnimationMaintainsConsistentDirectionRegardlessOfMovingLeft() {
+        var movingLeft by mutableStateOf(true)
+        show {
+            PetAvatar(
+                modifier = Modifier.size(180.dp).testTag("luna-idle"),
+                friendId = "friend:luna",
+                isMoving = false,
+                movingLeft = movingLeft,
+            )
+        }
+        val idleLeftPixels = pixels("luna-idle")
+        updateStateAndDraw { movingLeft = false }
+        val idleRightPixels = pixels("luna-idle")
+        assertTrue(
+            "Luna idle breath pixels must be identical regardless of movingLeft",
+            idleLeftPixels == idleRightPixels,
+        )
+    }
+
+    @Test
+    fun lunaRunAnimationMirrorsWhenMovingRight() {
+        var movingLeft by mutableStateOf(true)
+        show {
+            PetAvatar(
+                modifier = Modifier.size(180.dp).testTag("luna-run"),
+                friendId = "friend:luna",
+                isMoving = true,
+                movingLeft = movingLeft,
+            )
+        }
+        val runLeftPixels = pixels("luna-run")
+        updateStateAndDraw { movingLeft = false }
+        val runRightPixels = pixels("luna-run")
+        assertTrue(
+            "Luna running animation must mirror when moving right",
+            runLeftPixels != runRightPixels,
+        )
     }
 }
