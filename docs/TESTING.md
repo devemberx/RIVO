@@ -111,9 +111,12 @@ Related suites share the linked module/package; test names define individual cas
 | Floating companion motion preference leaves in-app scene motion enabled | [MobiMonAppMotionTest](../app/src/test/java/com/monsters/mobimon/ui/MobiMonAppMotionTest.kt); overlay movement remains covered by service tests and needs vehicle acceptance |
 | Chat draft/composition lifetime, ownership clearing, first-entry loading without a screen flash, input guards/actions, parking and connection dialogs, reference ring and failed-action geometry, failed-turn editing, compact New Chat and navigation/IME resizing | [Conversation and feature suites](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth), [CopilotConnectionJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/CopilotConnectionJourneyTest.kt); native review images |
 | Foreground Copilot model and identity recheck, provisional draft retention, Send readiness, persistent failed turns, validated Android internet detection, immediate offline send/recheck, disconnect cancellation, usage blocking and later reentry, one visible failure notice, account guidance and access/usage Home actions, recheck without replay, 30-second wait bounds, duplicate/retry guards and limits | [AndroidConversationNetworkStatusTest](../app/src/test/java/com/monsters/mobimon/network/AndroidConversationNetworkStatusTest.kt), [ConversationViewModelTest](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth/ConversationViewModelTest.kt), [ConversationScreenTest](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth/ConversationScreenTest.kt), [CopilotConnectionJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/CopilotConnectionJourneyTest.kt); platform shadow and fake transport |
-| Voice permission/lifecycle, speech-gated RMS, bounded phrase pauses and final wait, joined review, rerecord, stale callbacks, explicit Send and draft preservation | `ConversationViewModelTest`, `ConversationScreenTest`, [AndroidConversationSpeechInputTest](../app/src/test/java/com/monsters/mobimon/speech/AndroidConversationSpeechInputTest.kt) |
+| Voice permission/lifecycle, offline editing with guarded Send, 20/60/20-second deadlines, speech-gated RMS, joined review, rerecord, stale callbacks and draft preservation | `ConversationViewModelTest`, `ConversationScreenTest`, [AndroidConversationSpeechInputTest](../app/src/test/java/com/monsters/mobimon/speech/AndroidConversationSpeechInputTest.kt) |
+| Continuous capture during inference, cancellation, read errors, silence suppression, original speech context, partial-frame flush and bounded PCM | [AndroidConversationSpeechInputTest](../app/src/test/java/com/monsters/mobimon/speech/AndroidConversationSpeechInputTest.kt), [SpeechProcessorTest](../app/src/test/java/com/monsters/mobimon/speech/SpeechProcessorTest.kt) |
+| Pinned model cache reuse, corrupt archive/cache/member rejection, direct preparation, output repair and symlink rejection | [test_prepare_models.py](../scripts/stt/test_prepare_models.py), `:app:testSpeechModelProvisioning` |
+| Bundled native model loading, silence/noise rejection, repeated drafts and release/reload | [LocalSpeechModelDeviceTest](../app/src/androidTest/java/com/monsters/mobimon/speech/LocalSpeechModelDeviceTest.kt); opt-in `localSpeechModels=true`, external public/synthetic fixtures required |
 | Native voice action clearance, persistent disclaimer, insets and recording/review captures | `ConversationKeyboardDeviceTest.voicePreviewHasSeparateActionsAndNativeInsets`; isolated Debug preview, not speech recognition |
-| Actual offline Korean microphone recognition, pause between phrases, no automatic request, parking/background cancellation and explicit Send | [ConversationVoiceDeviceTest](../app/src/androidTest/java/com/monsters/mobimon/ConversationVoiceDeviceTest.kt); opt-in `voiceIntegration=true`, installed Korean service/model, network disconnected and a host-fed microphone fixture required; other dependencies use journey fakes |
+| Actual offline Korean microphone recognition, pause between phrases, no automatic request, parking/background cancellation and explicit Send | [ConversationVoiceDeviceTest](../app/src/androidTest/java/com/monsters/mobimon/ConversationVoiceDeviceTest.kt); opt-in `voiceIntegration=true`, bundled models, network disconnected and a host-fed microphone fixture required; other dependencies use journey fakes |
 | Native keyboard resizing, Back/draft retention, short exchange visibility, failed-turn Edit and reply network-dialog recheck | [ConversationKeyboardDeviceTest](../app/src/androidTest/java/com/monsters/mobimon/preview/ConversationKeyboardDeviceTest.kt); AAOS device |
 | Isolated Debug rehearsal and branding | [CopilotPreviewJourneyTest](../app/src/journeyTest/java/com/monsters/mobimon/preview/CopilotPreviewJourneyTest.kt), [BrandingTest](../app/src/testDebug/java/com/monsters/mobimon/BrandingTest.kt) |
 
@@ -143,6 +146,15 @@ Keep credentials and private logs out of reports.
 
 Use `--tests <qualified-name>` with the owning module's `testDebugUnitTest`, or
 `test` for plain Kotlin. Filtered tasks do not execute dependency suites or devices.
+For native STT validation, install both Debug APKs and opt in to
+`LocalSpeechModelDeviceTest` with instrumentation argument `localSpeechModels=true`.
+Place `fixtures.json` and its 16 kHz mono PCM16 WAV files in the target app's private
+`files/stt-fixtures/` directory using Debug `run-as` for the active Android user.
+The manifest is an array of `{ "file": "greeting.wav", "expected": "..." }` entries;
+include `greeting.wav` for repeated-draft checks and blank expected text for
+silence/noise fixtures. Results are written to `files/local-stt-results.json`.
+These public/synthetic test fixtures are not production audio persistence.
+
 Kover: `./gradlew :app:koverHtmlReportDebug :app:koverXmlReportDebug` (local JVM only; no percentage gate).
 [CI](../.github/workflows/android-ci.yml) owns artifact paths and retention.
 

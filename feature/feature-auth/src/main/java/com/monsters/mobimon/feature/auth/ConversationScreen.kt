@@ -92,7 +92,11 @@ fun ConversationScreen(
             setOf(ConversationProblem.NETWORK, ConversationProblem.SERVICE, ConversationProblem.TIMEOUT)
     val connectionFailure = state.connectionProblem != null
     val networkChecking = state.connection == ConversationConnection.CHECKING && state.connectionRetrying
-    val connectionDialog = interactionAllowed && (connectionFailure || networkChecking)
+    val localNetworkRecovery =
+        state.voice.available &&
+            state.connection != ConversationConnection.SIGNED_OUT &&
+            (state.connectionProblem == ConversationProblem.NETWORK || networkChecking)
+    val connectionDialog = interactionAllowed && (connectionFailure || networkChecking) && !localNetworkRecovery
     val panelState = if (connectionDialog && state.failed) state.copy(failed = false) else state
     val back = {
         // adjustResize can consume Compose's IME bounds; check the window at the time of the action.
@@ -186,12 +190,13 @@ fun ConversationScreen(
                             .offset(796.dp * scale, 34.dp * scale)
                             .size(1692.dp * scale, (panelBottom - 34.dp * scale).coerceAtLeast(0.dp)),
                         onNewConversation,
-                        onRetry,
-                        onDismissFailure,
+                        if (localNetworkRecovery) onRecheckConnection else onRetry,
+                        if (localNetworkRecovery) onReturnHome else onDismissFailure,
                         onStartVoice,
                         onStopVoice,
                         onCancelVoice,
                         onDismissVoiceProblem,
+                        connectionRecovery = localNetworkRecovery,
                     )
                     ConversationAuthBadge(
                         connection = state.connection,
@@ -230,12 +235,13 @@ fun ConversationScreen(
                         false,
                         Modifier.weight(1f),
                         onNewConversation,
-                        onRetry,
-                        onDismissFailure,
+                        if (localNetworkRecovery) onRecheckConnection else onRetry,
+                        if (localNetworkRecovery) onReturnHome else onDismissFailure,
                         onStartVoice,
                         onStopVoice,
                         onCancelVoice,
                         onDismissVoiceProblem,
+                        connectionRecovery = localNetworkRecovery,
                     )
                 }
             }

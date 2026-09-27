@@ -111,7 +111,9 @@ internal fun ConversationPanel(
     onStopVoice: () -> Unit = {},
     onCancelVoice: () -> Unit = {},
     onDismissVoiceProblem: () -> Unit = {},
+    connectionRecovery: Boolean = false,
 ) {
+    val showFailure = state.failed || connectionRecovery
     val focusRequester = remember { FocusRequester() }
     val seenMessageIds = remember { mutableStateListOf<String>().apply { addAll(state.messages.map { it.id }) } }
     val keyboard = LocalSoftwareKeyboardController.current
@@ -145,6 +147,7 @@ internal fun ConversationPanel(
             onStopVoice,
             onCancelVoice,
             onDismissVoiceProblem,
+            connectionRecovery,
         )
         return
     }
@@ -199,12 +202,20 @@ internal fun ConversationPanel(
                 ConversationMessages(state, friend, scale, shortened, seenMessageIds, Modifier.fillMaxSize())
             }
         }
-        if (state.failed) {
-            CompactConversationInlineFailure(state.problem, onRetry, onDismissFailure, allowed, scale)
+        if (showFailure) {
+            CompactConversationInlineFailure(
+                state.problem,
+                onRetry,
+                onDismissFailure,
+                allowed,
+                scale,
+                connectionRecovery,
+                state.connectionRetrying,
+            )
         }
         if (!shortened &&
             !state.replyPending &&
-            !state.failed &&
+            !showFailure &&
             !state.voice.capturing &&
             state.voice.phase != VoiceInputPhase.REVIEW
         ) {
@@ -305,6 +316,8 @@ private fun CompactConversationInlineFailure(
     onDismiss: () -> Unit,
     allowed: Boolean,
     scale: Float,
+    connectionRecovery: Boolean,
+    retrying: Boolean,
 ) {
     Column(
         Modifier
@@ -315,25 +328,37 @@ private fun CompactConversationInlineFailure(
         verticalArrangement = Arrangement.spacedBy(8.dp * scale),
     ) {
         Text(
-            stringResource(R.string.chat_inline_failure_title),
+            stringResource(if (connectionRecovery) R.string.chat_unavailable else R.string.chat_inline_failure_title),
             style = mobiMonReferenceTextStyle(24f, scale, true),
             color = Color(0xFFEAB8AA),
         )
         Text(
-            stringResource(problem?.let(::conversationFailureNote) ?: R.string.chat_inline_failure_note),
+            stringResource(
+                if (connectionRecovery) {
+                    if (retrying) R.string.chat_network_rechecking_body else R.string.chat_network_body
+                } else {
+                    problem?.let(::conversationFailureNote) ?: R.string.chat_inline_failure_note
+                },
+            ),
             style = mobiMonReferenceTextStyle(20f, scale),
             color = Color(0xFFB5C5D5),
         )
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp * scale)) {
             ConversationAction(
-                stringResource(conversationRetryLabel(problem)),
+                stringResource(
+                    if (connectionRecovery) {
+                        if (retrying) R.string.chat_network_rechecking_action else R.string.chat_network_recheck
+                    } else {
+                        conversationRetryLabel(problem)
+                    },
+                ),
                 onRetry,
-                allowed,
+                allowed && !retrying,
                 scale,
                 Modifier.weight(1f),
             )
             ConversationAction(
-                stringResource(R.string.chat_return),
+                stringResource(if (connectionRecovery) R.string.chat_parking_home else R.string.chat_return),
                 onDismiss,
                 true,
                 scale,
@@ -366,7 +391,9 @@ private fun ReferenceConversationPanel(
     onStopVoice: () -> Unit,
     onCancelVoice: () -> Unit,
     onDismissVoiceProblem: () -> Unit,
+    connectionRecovery: Boolean,
 ) {
+    val showFailure = state.failed || connectionRecovery
     BoxWithConstraints(
         modifier
             .background(Colors.panel, ConversationPanelShape(54.581f / 1692f))
@@ -377,7 +404,7 @@ private fun ReferenceConversationPanel(
         val bodyBottom =
             composerTop -
                 (
-                    if (state.failed ||
+                    if (showFailure ||
                         state.voice.capturing ||
                         state.voice.phase == VoiceInputPhase.REVIEW ||
                         state.voice.problem != null
@@ -411,7 +438,7 @@ private fun ReferenceConversationPanel(
                 .background(Colors.border),
         )
 
-        if (state.messages.isEmpty() && !state.replyPending && !state.failed) {
+        if (state.messages.isEmpty() && !state.replyPending && !showFailure) {
             val titleTop = if (shortened) (composerTop - 270.dp * scale) else 459.dp * scale
             Column(
                 Modifier.offset(y = titleTop).fillMaxWidth(),
@@ -469,7 +496,7 @@ private fun ReferenceConversationPanel(
                     reference = true,
                 )
             }
-            if (state.failed) {
+            if (showFailure) {
                 ConversationInlineFailure(
                     state.problem,
                     onRetry,
@@ -479,11 +506,13 @@ private fun ReferenceConversationPanel(
                     Modifier
                         .offset(56.dp * scale, composerTop - 91.dp * scale)
                         .size(1580.dp * scale, 70.dp * scale),
+                    connectionRecovery,
+                    state.connectionRetrying,
                 )
             }
             if (!shortened &&
                 !state.replyPending &&
-                !state.failed &&
+                !showFailure &&
                 state.messages.isNotEmpty() &&
                 onNewConversation != null &&
                 !state.voice.capturing &&
@@ -650,6 +679,8 @@ private fun ConversationInlineFailure(
     allowed: Boolean,
     scale: Float,
     modifier: Modifier = Modifier,
+    connectionRecovery: Boolean = false,
+    retrying: Boolean = false,
 ) {
     Box(modifier.testTag("chat-inline-failure")) {
         Icon(
@@ -659,7 +690,7 @@ private fun ConversationInlineFailure(
             tint = Color.Unspecified,
         )
         Text(
-            stringResource(R.string.chat_inline_failure_title),
+            stringResource(if (connectionRecovery) R.string.chat_unavailable else R.string.chat_inline_failure_title),
             Modifier.offset(48.dp * scale, -9.dp * scale).width(262.dp * scale),
             style = mobiMonReferenceTextStyle(30f, scale).copy(lineHeight = (36f * scale).sp),
             color = Color(0xFFEAB8AA),
@@ -668,9 +699,9 @@ private fun ConversationInlineFailure(
         )
         Text(
             stringResource(
-                if (problem ==
-                    null
-                ) {
+                if (connectionRecovery) {
+                    if (retrying) R.string.chat_network_rechecking_body else R.string.chat_network_body
+                } else if (problem == null) {
                     R.string.chat_inline_failure_note
                 } else {
                     conversationFailureNote(problem)
@@ -683,9 +714,15 @@ private fun ConversationInlineFailure(
             softWrap = false,
         )
         ReferenceFailureAction(
-            stringResource(conversationRetryLabel(problem)),
+            stringResource(
+                if (connectionRecovery) {
+                    if (retrying) R.string.chat_network_rechecking_action else R.string.chat_network_recheck
+                } else {
+                    conversationRetryLabel(problem)
+                },
+            ),
             onRetry,
-            allowed,
+            allowed && !retrying,
             scale,
             Modifier.offset(1122.dp * scale, 4.dp * scale).width(230.dp * scale),
             R.drawable.conversation_retry,
@@ -695,12 +732,12 @@ private fun ConversationInlineFailure(
             textColor = Color(0xFFD4F4F5),
         )
         ReferenceFailureAction(
-            stringResource(R.string.chat_return),
+            stringResource(if (connectionRecovery) R.string.chat_parking_home else R.string.chat_return),
             onDismiss,
             true,
             scale,
             Modifier.offset(1376.dp * scale, 4.dp * scale).width(206.dp * scale),
-            R.drawable.conversation_edit,
+            if (connectionRecovery) R.drawable.copilot_back else R.drawable.conversation_edit,
             "chat-inline-edit-visual",
             23f,
             backgroundColor = Color(0xFF22394E),
@@ -1237,8 +1274,7 @@ private fun ConversationComposer(
                 R.drawable.conversation_voice_mic,
                 onStartVoice,
                 allowed &&
-                    state.connection == ConversationConnection.READY &&
-                    !state.failed &&
+                    state.connection != ConversationConnection.SIGNED_OUT &&
                     !state.replyPending &&
                     !voicePermissionPending,
                 scale,

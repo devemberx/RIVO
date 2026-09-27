@@ -6,8 +6,9 @@ more context.
 
 ## Quick start
 
-Install Android Studio with JDK 17, Android SDK Platform 34, and SDK Build Tools
-34.0.0. Use the repository's Gradle Wrapper; do not install a separate Gradle.
+Install Android Studio with JDK 17, Android SDK Platform 34, SDK Build Tools
+34.0.0, and Python 3.9 or newer. Use the repository's Gradle Wrapper; do not
+install a separate Gradle.
 
 1. Point Android Studio's **Gradle JDK** and your terminal's `JAVA_HOME` to JDK 17.
 2. Set the SDK path in the ignored `local.properties` file or with `ANDROID_HOME`.
@@ -30,6 +31,26 @@ application.
 
 In WSL, use `./gradlew` with a Linux JDK and Android SDK instead of Windows
 binaries, even when the checkout is under `/mnt/c`.
+
+## Bundled speech models
+
+App builds run `:app:prepareSpeechModels` to download the pinned SenseVoice INT8
+archive and Silero VAD model (about 164 MB), verify SHA-256 values, and generate
+`app/build/generated/speechAssets/stt/`. The APK contains the models; recording
+never downloads them. Sources and hashes live in
+[models.json](../scripts/stt/models.json); packaged attribution lives in
+[NOTICE.txt](../app/src/main/assets/stt/NOTICE.txt).
+
+Downloads are cached under `GRADLE_USER_HOME/caches/mobimon-stt` and verified on
+every preparation. A corrupt cache fails the build; remove only the reported
+file and rerun the task. A populated cache permits offline model preparation.
+Neither CI nor local builds need the ignored research `.artifacts` directory.
+Set `-Pmobimon.python=python` if your Python 3 executable is named `python`.
+
+The official sherpa-onnx AAR is resolved from an exclusive GitHub-release Ivy
+repository and pinned by version, dependency locks and SHA-256 verification.
+The verification metadata currently checks this AAR only; existing Maven
+artifacts retain their prior trust policy.
 
 ## Before changing code
 
@@ -58,7 +79,7 @@ For code or build changes, format first and review the resulting diff:
 
 ```bash
 ./gradlew ktlintFormat
-./gradlew verifyModuleBoundaries ktlintCheck lintDebug testDebugUnitTest :core:core-domain:test :core:core-vss:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest :core:core-database:assembleDebugAndroidTest :core:core-auth:assembleDebugAndroidTest
+./gradlew :app:testSpeechModelProvisioning verifyModuleBoundaries ktlintCheck lintDebug testDebugUnitTest :core:core-domain:test :core:core-vss:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest :core:core-database:assembleDebugAndroidTest :core:core-auth:assembleDebugAndroidTest
 git diff --check
 ```
 

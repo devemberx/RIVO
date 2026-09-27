@@ -33,7 +33,7 @@ class ConversationViewModel(
     private val speechInput: ConversationSpeechInput = UnavailableConversationSpeechInput,
 ) : ViewModel() {
     private val mutableState =
-        MutableStateFlow(ConversationUiState(voice = VoiceInputState(available = speechInput.isAvailable())))
+        MutableStateFlow(ConversationUiState(voice = VoiceInputState(available = voiceAvailable())))
     val state = mutableState.asStateFlow()
     var draft by mutableStateOf(TextFieldValue())
         private set
@@ -71,7 +71,6 @@ class ConversationViewModel(
                     fail(ConversationProblem.NETWORK)
                 }
                 if (checkWork?.isActive == true || authenticationRetry?.isActive == true) {
-                    cancelVoice()
                     cancelCheck()
                     mutableState.value =
                         state.value.copy(
@@ -84,6 +83,7 @@ class ConversationViewModel(
         }
         viewModelScope.launch {
             authentication.session.collect { session ->
+                updateVoice(state.value.voice.copy(available = voiceAvailable()))
                 val retryingAuthentication = authenticationRetry?.isActive == true
                 val next =
                     when (session) {
@@ -258,7 +258,7 @@ class ConversationViewModel(
     fun setVoiceResumed(resumed: Boolean) {
         voiceResumed = resumed
         if (resumed && !state.value.voice.capturing) {
-            updateVoice(state.value.voice.copy(available = speechInput.isAvailable()))
+            updateVoice(state.value.voice.copy(available = voiceAvailable()))
         }
         if (!resumed && state.value.voice.capturing) {
             cancelVoice()
@@ -276,7 +276,7 @@ class ConversationViewModel(
         ) {
             return null
         }
-        val available = speechInput.isAvailable()
+        val available = voiceAvailable()
         if (!available) {
             updateVoice(state.value.voice.copy(available = false, problem = VoiceInputProblem.UNAVAILABLE))
             return null
@@ -353,20 +353,20 @@ class ConversationViewModel(
         voiceTimeout?.cancel()
         voiceTimeout =
             viewModelScope.launch {
-                delay(60_000)
-                if (voiceCurrent(session)) {
-                    if (state.value.voice.phase == VoiceInputPhase.LISTENING) {
-                        stopVoice()
-                    } else {
-                        finishVoice(problem = VoiceInputProblem.TIMEOUT)
-                    }
-                }
+                delay(20_000)
+                if (voiceCurrent(session)) finishVoice(problem = VoiceInputProblem.TIMEOUT)
             }
         speechInput.start(
             object : ConversationSpeechInput.Listener {
                 override fun onReady() {
                     if (!voiceCurrent(session) || state.value.voice.phase != VoiceInputPhase.STARTING) return
                     updateVoice(state.value.voice.copy(phase = VoiceInputPhase.LISTENING))
+                    voiceTimeout?.cancel()
+                    voiceTimeout =
+                        viewModelScope.launch {
+                            delay(60_000)
+                            if (voiceCurrent(session)) stopVoice()
+                        }
                 }
 
                 override fun onLevel(level: Float) {
@@ -401,6 +401,7 @@ class ConversationViewModel(
                                 problem = VoiceInputProblem.TOO_LONG,
                             )
                         else -> {
+                            if (state.value.failed) resumeEditing()
                             draft = TextFieldValue(text, TextRange(text.length))
                             returnToVoiceReview = true
                             finishVoice()
@@ -416,11 +417,12 @@ class ConversationViewModel(
     }
 
     private fun waitForVoiceResult(session: Long) {
+        if (state.value.voice.phase == VoiceInputPhase.STOPPING) return
         updateVoice(state.value.voice.copy(phase = VoiceInputPhase.STOPPING))
         voiceTimeout?.cancel()
         voiceTimeout =
             viewModelScope.launch {
-                delay(5_000)
+                delay(20_000)
                 if (voiceCurrent(session)) finishVoice(problem = VoiceInputProblem.TIMEOUT)
             }
     }
@@ -437,6 +439,9 @@ class ConversationViewModel(
     private fun voiceCurrent(session: Long) =
         session == voiceGeneration && state.value.voice.capturing && voiceResumed && canUseVoice()
 
+    private fun voiceAvailable() =
+        authentication.session.value is GitHubSession.Authenticated && speechInput.isAvailable()
+
     private fun canUseVoice() =
         active &&
             allowed &&
@@ -444,10 +449,8 @@ class ConversationViewModel(
             profileId != null &&
             accountId != null &&
             (authentication.session.value as? GitHubSession.Authenticated)?.account?.id == accountId &&
-            !state.value.replyPending &&
-            !state.value.failed &&
-            state.value.connectionProblem == null &&
-            !state.value.connectionRetrying
+            state.value.connectionProblem in setOf(null, ConversationProblem.NETWORK) &&
+            !state.value.replyPending
 
     fun send(text: String = draft.text) = sendInternal(text, retry = false)
 
@@ -527,7 +530,6 @@ class ConversationViewModel(
     fun retryConnection() {
         if (!interactionAvailable() || checkWork?.isActive == true || authenticationRetry?.isActive == true) return
         if (!networkStatus.isOnline()) {
-            cancelVoice()
             mutableState.value =
                 state.value.copy(
                     connection = ConversationConnection.UNAVAILABLE,
@@ -637,7 +639,7 @@ class ConversationViewModel(
         history = emptyList()
         conversationId = UUID.randomUUID().toString()
         draft = TextFieldValue()
-        mutableState.value = ConversationUiState(voice = VoiceInputState(available = speechInput.isAvailable()))
+        mutableState.value = ConversationUiState(voice = VoiceInputState(available = voiceAvailable()))
     }
 
     override fun onCleared() {
@@ -683,7 +685,6 @@ class ConversationViewModel(
         val account = (authentication.session.value as? GitHubSession.Authenticated)?.account?.id ?: return
         if (account != accountId) return
         if (!networkStatus.isOnline()) {
-            cancelVoice()
             mutableState.value =
                 state.value.copy(
                     connection = ConversationConnection.UNAVAILABLE,
@@ -704,7 +705,7 @@ class ConversationViewModel(
                 val result = safelyWithinWait { provider.connect(account) }
                 if (request != checkGeneration || !checkAllowed() || account != accountId) return@launch
                 checkWork = null
-                if (result is ConversationResult.Failure) cancelVoice()
+                if (result is ConversationResult.Failure && result.problem != ConversationProblem.NETWORK) cancelVoice()
                 mutableState.value =
                     when (result) {
                         is ConversationResult.Success -> {

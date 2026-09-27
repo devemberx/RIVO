@@ -86,7 +86,11 @@ internal fun ConversationParkingBadge(
                 }
             Row(
                 rowModifier,
-                horizontalArrangement = Arrangement.spacedBy(16.dp * scale, Alignment.CenterHorizontally),
+                horizontalArrangement =
+                    Arrangement.spacedBy(
+                        (if (confirmed) 16.dp else 24.dp) * scale,
+                        Alignment.CenterHorizontally,
+                    ),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
@@ -98,7 +102,12 @@ internal fun ConversationParkingBadge(
                         },
                     ),
                     contentDescription = null,
-                    modifier = Modifier.size(40.dp * scale).testTag("chat-parking-icon"),
+                    modifier =
+                        Modifier
+                            .size(
+                                (if (confirmed) 40.dp else 20.dp) * scale,
+                                (if (confirmed) 40.dp else 24.dp) * scale,
+                            ).testTag("chat-parking-icon"),
                     tint = if (confirmed) Colors.accent else Colors.destructive,
                 )
                 Text(

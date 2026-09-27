@@ -1,4 +1,5 @@
 [versions]
+sherpa-onnx = "1.13.8"
 agp = "8.5.2"
 kotlin = "2.0.21"
 compose-bom = "2024.06.00"
@@ -22,6 +23,7 @@ okhttp = "4.12.0"
 zxing = "3.5.3"
 
 [libraries]
+sherpa-onnx = { module = "com.k2fsa:sherpa-onnx", version.ref = "sherpa-onnx" }
 build-android = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 build-kotlin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 build-compose = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }

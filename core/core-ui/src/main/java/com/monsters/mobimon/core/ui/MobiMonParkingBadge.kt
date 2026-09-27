@@ -120,7 +120,7 @@ fun MobiMonParkingBadge(
                     ),
                 horizontalArrangement =
                     Arrangement.spacedBy(
-                        (if (restricted) 16.dp else 25.65.dp) * scale,
+                        (if (restricted) 24.dp else 25.65.dp) * scale,
                         Alignment.CenterHorizontally,
                     ),
                 verticalAlignment = Alignment.CenterVertically,
@@ -130,7 +130,12 @@ fun MobiMonParkingBadge(
                         if (restricted) R.drawable.mobimon_parking_unconfirmed else R.drawable.mobimon_parking,
                     ),
                     contentDescription = null,
-                    modifier = Modifier.size(40.dp * scale).testTag("parking-icon"),
+                    modifier =
+                        Modifier
+                            .size(
+                                (if (restricted) 20.dp else 40.dp) * scale,
+                                (if (restricted) 24.dp else 40.dp) * scale,
+                            ).testTag("parking-icon"),
                 )
                 Text(
                     status,

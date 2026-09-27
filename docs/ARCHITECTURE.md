@@ -8,7 +8,7 @@ This document owns technical contracts. [DESIGN.md](DESIGN.md) owns UX,
 
 Implemented: Home, menu, Settings, customization, Vehicle and Quest routes;
 Room storage, DataStore preferences; GitHub device authentication and encrypted
-session restoration; experimental Copilot text conversation and system-service Korean voice input; Mobi/Luna artwork and
+session restoration; experimental Copilot text conversation and bundled local Korean speech-to-text; Mobi/Luna artwork and
 breathing animation.
 
 Vehicle input and driving evaluation are Debug simulations. Release vehicle data
@@ -172,27 +172,36 @@ or companion changes cancel pending work; request generations reject late replie
 The conversation route displays a blocking parking dialog while parking is unverified;
 its Home action returns to Home, retaining the draft in Activity memory.
 
-`app` binds the feature-owned `ConversationSpeechInput` interface to Android
-`SpeechRecognizer`. The adapter prefers the dedicated on-device recognizer when
-available; otherwise it uses the configured service with `ko-KR`, free-form input
-and `EXTRA_PREFER_OFFLINE`. That flag is a [service-dependent preference](https://developer.android.com/reference/android/speech/RecognizerIntent#EXTRA_PREFER_OFFLINE),
-not a guarantee against cloud use while connected. The tested AAOS 14 image has
-GoogleTTSRecognitionService and an installed Korean model; its default microphone
-path supports offline recognition although the dedicated on-device API is unavailable.
-Other OEM images, absent models and physical vehicle microphones need verification.
+`app` binds the feature-owned `ConversationSpeechInput` interface to continuous
+16 kHz mono `AudioRecord` capture and bundled SenseVoice Small INT8 through
+sherpa-onnx. Silero VAD gates inference and retains 250 ms of original audio around
+speech boundaries. Korean transcription uses CPU execution with two inference
+threads. Pinned models, runtime checksums and licenses follow the
+[build provisioning contract](../.github/CONTRIBUTING.md#bundled-speech-models).
+No system recognition service, runtime download or remote STT request is used.
+The native implementation and Android dependencies stay in `app`; the feature
+owns only microphone state and the interface, and domain modules remain unchanged.
 
-Voice starts only from an explicit microphone action on a resumed, permitted
-conversation. Request microphone permission before opening the recognizer. Keep
-partial results separate from the draft. A voice session joins final utterances and
-restarts only after each recognizer result/error, waiting up to twelve seconds for
-the next phrase. Ambient RMS stays flat until speech is detected; silence does not
-extend the wait. Stop or the sixty-second total bound finalizes the combined draft,
-waiting at most five seconds for a final result, and never sends. Cancellation, background,
-navigation, restriction or ownership changes release the recognizer and invalidate
-late callbacks. Cancellation and errors preserve the previous draft; account/profile
-changes follow the existing clearing contract. The app neither stores nor logs audio.
-Explicit Send uses the existing guarded Copilot path; offline STT does not make
-Copilot conversation offline.
+Voice starts from an explicit microphone action on a resumed, authenticated,
+permitted conversation. Copilot network failure does not prevent local dictation;
+account, ownership, parking, AAOS restrictions and reply-in-progress guards still
+apply. Request microphone permission before capture. Native loading/inference run
+on one executor; a separate capture executor keeps recording during inference.
+A draft retains at most 60 seconds of PCM and a 16.4-second capture backlog.
+Backlog overflow fails the draft instead of dropping speech. Audio exists only in
+memory and is neither persisted nor logged. The reusable model is released on
+cancellation or after 60 seconds idle; native release never races inference.
+
+Partial transcripts remain separate from the draft. Allow 20 seconds for startup,
+then at most 60 seconds of capture, with 12 seconds of speech inactivity ending
+the session. Stop closes capture and allows up to 20 seconds for final inference.
+The speech-gated waveform stays flat for silence. Completed phrases form an editable
+draft; only explicit Send invokes the guarded Copilot path. Cancellation, background,
+navigation, restriction or ownership changes stop capture and invalidate late
+callbacks. Cancellation and errors preserve the previous draft; account/profile
+changes follow the existing clearing contract. Local STT does not make Copilot
+offline. Physical vehicle CPU, thermal behavior, microphone quality and Korean
+accuracy require target-device validation; emulator measurements do not establish them.
 
 On foreground entry, the Activity-scoped conversation ViewModel waits for an
 authenticated session and verified Park/AAOS allowance, then calls `connect` to

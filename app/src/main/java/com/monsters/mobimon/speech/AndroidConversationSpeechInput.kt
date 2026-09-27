@@ -2,272 +2,243 @@ package com.monsters.mobimon.speech
 
 import android.Manifest
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.speech.RecognitionListener
-import android.speech.RecognizerIntent
-import android.speech.SpeechRecognizer
 import androidx.core.content.ContextCompat
 import com.monsters.mobimon.feature.auth.ConversationSpeechInput
 import com.monsters.mobimon.feature.auth.VoiceInputProblem
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.sqrt
 
-/** A bounded voice draft can contain multiple recognizer utterances separated by pauses. */
+/** Continuous foreground capture, with all native inference confined to one worker. */
 @Singleton
-class AndroidConversationSpeechInput
+class AndroidConversationSpeechInput internal constructor(
+    private val permissionGranted: () -> Boolean,
+    private val modelsAvailable: () -> Boolean,
+    private val microphone: () -> MicrophoneSource,
+    private val loadEngine: () -> LocalSpeechEngine,
+    private val worker: ExecutorService = Executors.newSingleThreadExecutor(),
+    private val capture: ExecutorService = Executors.newSingleThreadExecutor(),
+    private val handler: Handler = Handler(Looper.getMainLooper()),
+) : ConversationSpeechInput {
     @Inject
     constructor(
-        @ApplicationContext private val context: Context,
-    ) : ConversationSpeechInput {
-        private var recognizer: SpeechRecognizer? = null
-        private var listener: ConversationSpeechInput.Listener? = null
-        private var generation = 0L
-        private val handler = Handler(Looper.getMainLooper())
-        private val phrases = mutableListOf<String>()
-        private var stopping = false
-        private var ready = false
-        private var restart: Runnable? = null
-        private var inactivity: Runnable? = null
-
-        override fun isAvailable(): Boolean =
-            try {
-                SpeechRecognizer.isOnDeviceRecognitionAvailable(context) ||
-                    SpeechRecognizer.isRecognitionAvailable(context)
-            } catch (_: RuntimeException) {
-                false
-            }
-
-        override fun start(listener: ConversationSpeechInput.Listener) {
-            requireMainThread()
-            cancel()
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) !=
+        @ApplicationContext context: Context,
+    ) : this(
+        permissionGranted = {
+            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
                 PackageManager.PERMISSION_GRANTED
-            ) {
-                listener.onFailure(VoiceInputProblem.PERMISSION)
-                return
-            }
-            if (!isAvailable()) {
-                listener.onFailure(VoiceInputProblem.UNAVAILABLE)
-                return
-            }
-            this.listener = listener
-            startUtterance(generation)
+        },
+        modelsAvailable = {
+            context.assets.list("stt").orEmpty().toSet().containsAll(
+                setOf("model.int8.onnx", "tokens.txt", "silero_vad.onnx"),
+            )
+        },
+        microphone = { MicrophoneAudioSource() },
+        loadEngine = { SherpaSpeechEngine(context.assets) },
+    )
+
+    private var active: Session? = null
+
+    // Accessed only by worker. Retained briefly between successful drafts, never during cancellation.
+    private var engine: LocalSpeechEngine? = null
+    private var release: Runnable? = null
+
+    override fun isAvailable(): Boolean =
+        try {
+            modelsAvailable()
+        } catch (_: Exception) {
+            false
         }
 
-        private fun startUtterance(session: Long) {
-            if (session != generation || stopping || listener == null) return
-            try {
-                val engine =
-                    if (SpeechRecognizer.isOnDeviceRecognitionAvailable(context)) {
-                        SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
-                    } else {
-                        SpeechRecognizer.createSpeechRecognizer(context)
-                    }
-                recognizer = engine
-                engine.setRecognitionListener(
-                    object : RecognitionListener {
-                        private var speechDetected = false
-                        private var partial = ""
+    override fun start(listener: ConversationSpeechInput.Listener) {
+        requireMainThread()
+        cancel()
+        release?.let(handler::removeCallbacks)
+        release = null
+        if (!permissionGranted()) {
+            listener.onFailure(VoiceInputProblem.PERMISSION)
+            return
+        }
+        if (!isAvailable()) {
+            listener.onFailure(VoiceInputProblem.UNAVAILABLE)
+            return
+        }
+        val session = Session(listener)
+        active = session
+        worker.execute { recognize(session) }
+    }
 
-                        private fun current() = session == generation && recognizer === engine
-
-                        override fun onReadyForSpeech(params: Bundle?) {
-                            if (!current()) return
-                            if (!ready) {
-                                ready = true
-                                listener?.onReady()
-                                waitForNextPhrase(session)
-                            }
-                            listener?.onLevel(0f)
-                        }
-
-                        override fun onBeginningOfSpeech() {
-                            if (!current() || stopping) return
-                            speechDetected = true
-                            waitForNextPhrase(session)
-                        }
-
-                        override fun onRmsChanged(rmsdB: Float) {
-                            if (current() && rmsdB.isFinite()) {
-                                // RMS includes ambient noise; speech detection gates the visual waveform.
-                                listener?.onLevel(if (speechDetected) ((rmsdB - 2f) / 10f).coerceIn(0f, 1f) else 0f)
-                            }
-                        }
-
-                        override fun onBufferReceived(buffer: ByteArray?) = Unit
-
-                        override fun onEndOfSpeech() {
-                            if (current()) {
-                                speechDetected = false
-                                listener?.onLevel(0f)
-                            }
-                        }
-
-                        override fun onError(error: Int) {
-                            if (!current()) return
-                            if (error == SpeechRecognizer.ERROR_NO_MATCH ||
-                                error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT
-                            ) {
-                                releaseUtterance()
-                                if (stopping) finishDraft(session) else continueListening(session)
+    private fun recognize(session: Session) {
+        try {
+            if (session.cancelled) return
+            val currentEngine = engine ?: loadEngine().also { engine = it }
+            if (session.cancelled) return
+            SpeechProcessor(currentEngine) { text -> deliver(session) { it.onPartial(text) } }.use { processor ->
+                capture.execute { record(session) }
+                while (!session.cancelled) {
+                    val frame = session.frames.poll(100, TimeUnit.MILLISECONDS)
+                    if (frame != null) {
+                        val speech = processor.accept(frame)
+                        val level =
+                            if (speech) {
+                                sqrt(
+                                    frame.sumOf { (it * it).toDouble() } / frame.size,
+                                ).toFloat() * 8
                             } else {
-                                finish(session) { it.onFailure(recognitionProblem(error)) }
+                                0f
                             }
-                        }
-
-                        override fun onResults(results: Bundle?) {
-                            if (!current()) return
-                            val text = transcript(results).trim()
-                            if (text.isNotEmpty()) phrases += text
-                            releaseUtterance()
-                            if (stopping) {
-                                finishDraft(session)
-                            } else {
-                                listener?.onPartial(combined())
-                                if (text.isNotEmpty()) waitForNextPhrase(session)
-                                continueListening(session)
-                            }
-                        }
-
-                        override fun onPartialResults(partialResults: Bundle?) {
-                            if (!current() || stopping) return
-                            val text = transcript(partialResults).trim()
-                            if (text.isNotEmpty() && text != partial) {
-                                speechDetected = true
-                                partial = text
-                                waitForNextPhrase(session)
-                            }
-                            listener?.onPartial(combined(text))
-                        }
-
-                        override fun onEvent(
-                            eventType: Int,
-                            params: Bundle?,
-                        ) = Unit
-                    },
-                )
-                engine.startListening(
-                    Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                        putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ko-KR")
-                        putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
-                        putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-                        putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
-                    },
-                )
-            } catch (_: SecurityException) {
-                finish(session) { it.onFailure(VoiceInputProblem.PERMISSION) }
-            } catch (_: RuntimeException) {
-                finish(session) { it.onFailure(VoiceInputProblem.SERVICE) }
-            }
-        }
-
-        private fun continueListening(session: Long) {
-            listener?.onLevel(0f)
-            restart = Runnable { startUtterance(session) }.also { handler.postDelayed(it, 300) }
-        }
-
-        private fun waitForNextPhrase(session: Long) {
-            inactivity?.let(handler::removeCallbacks)
-            inactivity =
-                Runnable {
-                    if (session == generation && !stopping && listener != null) {
-                        listener?.onEndOfSpeech()
-                        stop()
+                        deliver(session) { it.onLevel(level.coerceIn(0f, 1f)) }
+                        if (processor.samplesSinceSpeech >= SpeechAudio.INACTIVITY_SAMPLES) endCapture(session)
                     }
-                }.also { handler.postDelayed(it, 12_000) }
-        }
-
-        private fun combined(partial: String = "") = (phrases + partial).filter(String::isNotBlank).joinToString(" ")
-
-        private fun finishDraft(session: Long) {
-            val text = combined()
-            finish(session) {
-                if (text.isBlank()) it.onFailure(VoiceInputProblem.NO_MATCH) else it.onResult(text)
-            }
-        }
-
-        override fun stop() {
-            requireMainThread()
-            if (listener == null || stopping) return
-            val session = generation
-            stopping = true
-            clearWaits()
-            if (recognizer == null) {
-                finishDraft(session)
-                return
-            }
-            try {
-                recognizer?.stopListening()
-            } catch (_: RuntimeException) {
-                finish(session) { it.onFailure(VoiceInputProblem.SERVICE) }
-            }
-        }
-
-        override fun cancel() {
-            requireMainThread()
-            generation++
-            listener = null
-            clearWaits()
-            phrases.clear()
-            stopping = false
-            ready = false
-            val previous = recognizer
-            recognizer = null
-            if (previous != null) {
-                try {
-                    previous.cancel()
-                } catch (_: RuntimeException) {
-                    // A disconnected service still needs its local recognizer released.
-                } finally {
-                    previous.destroy()
+                    session.problem?.let { throw SpeechInputException(it) }
+                    if (session.recordingFinished && session.frames.isEmpty()) break
+                }
+                if (!session.cancelled) {
+                    val text = processor.finish()
+                    finish(session) {
+                        if (text.isBlank()) it.onFailure(VoiceInputProblem.NO_MATCH) else it.onResult(text)
+                    }
                 }
             }
+        } catch (failure: SpeechInputException) {
+            finish(session) { it.onFailure(failure.problem) }
+        } catch (_: SecurityException) {
+            finish(session) { it.onFailure(VoiceInputProblem.PERMISSION) }
+        } catch (_: LinkageError) {
+            finish(session) { it.onFailure(VoiceInputProblem.UNAVAILABLE) }
+        } catch (_: Exception) {
+            finish(session) { it.onFailure(VoiceInputProblem.SERVICE) }
+        } finally {
+            stopMicrophone(session)
+            session.frames.clear()
+            if (session.cancelled) releaseEngine()
         }
-
-        private fun clearWaits() {
-            restart?.let(handler::removeCallbacks)
-            inactivity?.let(handler::removeCallbacks)
-            restart = null
-            inactivity = null
-        }
-
-        private fun releaseUtterance() {
-            val previous = recognizer
-            recognizer = null
-            previous?.destroy()
-        }
-
-        private fun finish(
-            session: Long,
-            deliver: (ConversationSpeechInput.Listener) -> Unit,
-        ) {
-            if (session != generation) return
-            val recipient = listener ?: return
-            cancel()
-            deliver(recipient)
-        }
-
-        private fun requireMainThread() = check(Looper.myLooper() == Looper.getMainLooper())
-
-        private fun transcript(results: Bundle?) =
-            results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty()
     }
 
-internal fun recognitionProblem(error: Int): VoiceInputProblem =
-    when (error) {
-        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> VoiceInputProblem.PERMISSION
-        SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> VoiceInputProblem.NO_MATCH
-        SpeechRecognizer.ERROR_AUDIO -> VoiceInputProblem.AUDIO
-        SpeechRecognizer.ERROR_RECOGNIZER_BUSY, SpeechRecognizer.ERROR_TOO_MANY_REQUESTS -> VoiceInputProblem.BUSY
-        SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED,
-        SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE,
-        -> VoiceInputProblem.LANGUAGE
-        SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> VoiceInputProblem.NETWORK
-        else -> VoiceInputProblem.SERVICE
+    private fun record(session: Session) {
+        try {
+            val source = microphone()
+            session.source = source
+            if (session.stopping || session.cancelled) return
+            source.start()
+            if (session.stopping || session.cancelled) return
+            deliver(session) { it.onReady() }
+            val buffer = ShortArray(1024)
+            var samples = 0
+            while (!session.stopping && !session.cancelled) {
+                val count = source.read(buffer)
+                if (count < 0) {
+                    if (!session.stopping && !session.cancelled) throw SpeechInputException(VoiceInputProblem.AUDIO)
+                    break
+                }
+                if (count == 0) {
+                    if (!session.stopping && !session.cancelled) throw SpeechInputException(VoiceInputProblem.AUDIO)
+                    break
+                }
+                val accepted = minOf(count, SpeechAudio.MAX_SAMPLES - samples)
+                val frame = FloatArray(accepted) { buffer[it] / 32768f }
+                if (!session.frames.offer(frame)) throw SpeechInputException(VoiceInputProblem.AUDIO)
+                samples += accepted
+                if (samples == SpeechAudio.MAX_SAMPLES) endCapture(session)
+            }
+        } catch (failure: SpeechInputException) {
+            session.problem = failure.problem
+        } catch (_: SecurityException) {
+            session.problem = VoiceInputProblem.PERMISSION
+        } catch (_: Exception) {
+            session.problem = VoiceInputProblem.AUDIO
+        } finally {
+            try {
+                session.source?.close()
+            } catch (_: Exception) {
+                session.problem = VoiceInputProblem.AUDIO
+            }
+            session.recordingFinished = true
+        }
     }
+
+    private fun endCapture(session: Session) {
+        if (!session.stopping) {
+            stopMicrophone(session)
+            deliver(session) { it.onEndOfSpeech() }
+        }
+    }
+
+    override fun stop() {
+        requireMainThread()
+        active?.let(::stopMicrophone)
+    }
+
+    override fun cancel() {
+        requireMainThread()
+        val session = active ?: return
+        active = null
+        session.cancelled = true
+        stopMicrophone(session)
+        session.frames.clear()
+        worker.execute { releaseEngine() }
+    }
+
+    private fun stopMicrophone(session: Session) {
+        session.stopping = true
+        try {
+            session.source?.stop()
+        } catch (_: Exception) {
+            session.problem = VoiceInputProblem.AUDIO
+        }
+    }
+
+    private fun deliver(
+        session: Session,
+        callback: (ConversationSpeechInput.Listener) -> Unit,
+    ) {
+        handler.post { if (active === session && !session.cancelled) callback(session.listener) }
+    }
+
+    private fun finish(
+        session: Session,
+        callback: (ConversationSpeechInput.Listener) -> Unit,
+    ) {
+        stopMicrophone(session)
+        handler.post {
+            if (active === session && !session.cancelled) {
+                active = null
+                release = Runnable { worker.execute { releaseEngine() } }.also { handler.postDelayed(it, 60_000) }
+                callback(session.listener)
+            }
+        }
+    }
+
+    private fun releaseEngine() {
+        val previous = engine
+        engine = null
+        previous?.close()
+    }
+
+    private fun requireMainThread() = check(Looper.myLooper() == Looper.getMainLooper())
+
+    private class Session(
+        val listener: ConversationSpeechInput.Listener,
+    ) {
+        // At most 16.4 seconds of backlog. Overflow fails instead of silently losing speech.
+        val frames = LinkedBlockingQueue<FloatArray>(256)
+
+        @Volatile var cancelled = false
+
+        @Volatile var stopping = false
+
+        @Volatile var recordingFinished = false
+
+        @Volatile var source: MicrophoneSource? = null
+
+        @Volatile var problem: VoiceInputProblem? = null
+    }
+}

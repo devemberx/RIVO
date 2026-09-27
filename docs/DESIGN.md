@@ -39,7 +39,8 @@ Expressions supplement vehicle facts; they never diagnose a vehicle or replace w
   moves with its screen during navigation. The initial profile loading screen
   omits it. The 344 × 76 capsule retains the Figma parking icon, text placement,
   dark blue surface and cyan text for confirmed Park. The restricted state keeps
-  this geometry and centers its pause icon and label together. It uses the same
+  this geometry and centers its visible 20 × 24 pause icon and label together,
+  separated by 24px without transparent icon padding. It uses the same
   dark blue surface and border, with the conversation parking dialog's red
   status color for the icon and text. Fresh, valid nonmoving `P` at speed zero
   shows “주차 확인됨”;
@@ -222,11 +223,15 @@ remain at least 76dp without overlap at AAOS density.
 Ask microphone permission on explicit activation. Stop finishes recognition into an
 editable draft; only explicit Send submits. Review retains the microphone for another
 recording. Wait up to 12 seconds between phrases and combine recognized sentences;
-Stop ends the draft immediately, with a 60-second overall bound. The waveform stays
+Stop closes capture and finishes the draft after inference. Allow up to 20 seconds
+for startup, 60 seconds of recording after readiness, and 20 seconds for finalization. The waveform stays
 flat before speech detection and ignores low background RMS. Cancel, Back, background and restrictions stop recording and preserve the
-previous draft. Denied permission, unavailable models/services, silence and errors
+previous draft. Copilot network failures use the existing inline Recheck/Home
+recovery row while keeping local dictation available; Send stays blocked until
+connection readiness returns. Account/access restrictions retain their blocking dialog.
+Denied permission, unavailable models, silence and errors
 offer keyboard input and a recoverable explanation. Hide the microphone when no
-recognizer exists. Review guidance is exposed to accessibility without adding a
+bundled model is available. Review guidance is exposed to accessibility without adding a
 second visible caption. Playback remains planned; it must yield to calls/navigation.
 
 Use the existing footer to name GitHub Copilot, disclose dialogue/companion-name

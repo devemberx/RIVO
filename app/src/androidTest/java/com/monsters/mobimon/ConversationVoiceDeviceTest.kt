@@ -4,6 +4,7 @@ import android.Manifest
 import android.graphics.Bitmap
 import android.util.Log
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -41,7 +42,7 @@ import java.io.File
 import javax.inject.Inject
 import com.monsters.mobimon.feature.pet.R as PetR
 
-/** Real recognizer and app UI; authentication, vehicle and Copilot remain isolated journey fakes. */
+/** Bundled local STT and app UI; authentication, vehicle and Copilot remain isolated journey fakes. */
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
 class ConversationVoiceDeviceTest {
@@ -78,22 +79,41 @@ class ConversationVoiceDeviceTest {
         if (::storage.isInitialized) storage.close()
     }
 
+    private fun normalizedSpeech(
+        expected: String,
+        partial: Boolean = false,
+    ): SemanticsMatcher =
+        SemanticsMatcher("Korean transcript matches ignoring spaces and punctuation") { node ->
+            val text =
+                if (partial) {
+                    node.config.getOrNull(SemanticsProperties.StateDescription).orEmpty()
+                } else {
+                    node.config
+                        .getOrNull(SemanticsProperties.EditableText)
+                        ?.text
+                        .orEmpty()
+                }
+
+            fun normalize(value: String) = value.filter { it.isLetterOrDigit() }
+            normalize(text) == normalize(expected)
+        }
+
     @Test
     fun offlineKoreanMicrophoneReviewsBeforeExplicitSendAndReleasesOnInterruption() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             val context = InstrumentationRegistry.getInstrumentation().targetContext
-            compose.waitUntil(15_000) {
+            compose.waitUntil(30_000) {
                 compose
                     .onAllNodes(hasText(context.getString(PetR.string.pet_talk_action)) and isEnabled())
                     .fetchSemanticsNodes(atLeastOneRootRequired = false)
                     .isNotEmpty()
             }
             compose.onNodeWithText(context.getString(PetR.string.pet_talk_action)).performClick()
-            compose.waitUntil(15_000) {
+            compose.waitUntil(30_000) {
                 compose.onAllNodesWithTag("chat-input").fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty()
             }
             compose.onNodeWithTag("chat-input").performTextInput("보존할 초안")
-            compose.waitUntil(15_000) {
+            compose.waitUntil(30_000) {
                 compose
                     .onAllNodes(
                         hasContentDescription("음성으로 입력") and isEnabled(),
@@ -101,7 +121,7 @@ class ConversationVoiceDeviceTest {
                     .isNotEmpty()
             }
             compose.onNodeWithContentDescription("음성으로 입력").performClick()
-            compose.waitUntil(15_000) {
+            compose.waitUntil(30_000) {
                 compose
                     .onAllNodes(
                         hasContentDescription("녹음 마치고 내용 확인") and isEnabled(),
@@ -113,7 +133,7 @@ class ConversationVoiceDeviceTest {
             compose.waitUntil(20_000) {
                 compose
                     .onAllNodes(
-                        SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "안녕하세요 오늘 날씨가 좋습니다"),
+                        normalizedSpeech("안녕하세요 오늘 날씨가 좋습니다", partial = true),
                     ).fetchSemanticsNodes(atLeastOneRootRequired = false)
                     .isNotEmpty()
             }
@@ -124,7 +144,7 @@ class ConversationVoiceDeviceTest {
             compose.waitUntil(45_000) {
                 compose
                     .onAllNodes(
-                        hasText("안녕하세요 오늘 날씨가 좋습니다 안녕하세요 오늘 날씨가 좋습니다"),
+                        normalizedSpeech("안녕하세요 오늘 날씨가 좋습니다 안녕하세요 오늘 날씨가 좋습니다"),
                     ).fetchSemanticsNodes(atLeastOneRootRequired = false)
                     .isNotEmpty()
             }
@@ -137,7 +157,7 @@ class ConversationVoiceDeviceTest {
             image.recycle()
             compose.onNodeWithTag("chat-input").performTextInput(" 수정")
             assertEquals(0, conversations.replies)
-            compose.waitUntil(15_000) {
+            compose.waitUntil(30_000) {
                 compose
                     .onAllNodes(
                         hasContentDescription("음성으로 입력") and isEnabled(),
@@ -145,7 +165,7 @@ class ConversationVoiceDeviceTest {
                     .isNotEmpty()
             }
             compose.onNodeWithContentDescription("음성으로 입력").performClick()
-            compose.waitUntil(15_000) {
+            compose.waitUntil(30_000) {
                 compose
                     .onAllNodes(
                         hasContentDescription("녹음 마치고 내용 확인") and isEnabled(),
@@ -164,8 +184,8 @@ class ConversationVoiceDeviceTest {
             compose.waitUntil(10_000) {
                 compose.onAllNodesWithTag("chat-input").fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty()
             }
-            compose.onNodeWithText("안녕하세요 오늘 날씨가 좋습니다 안녕하세요 오늘 날씨가 좋습니다 수정").assertExists()
-            compose.waitUntil(15_000) {
+            compose.onNode(normalizedSpeech("안녕하세요 오늘 날씨가 좋습니다 안녕하세요 오늘 날씨가 좋습니다 수정")).assertExists()
+            compose.waitUntil(30_000) {
                 compose
                     .onAllNodes(
                         hasContentDescription("음성으로 입력") and isEnabled(),
@@ -185,7 +205,7 @@ class ConversationVoiceDeviceTest {
             compose.waitUntil(10_000) {
                 compose.onAllNodesWithTag("chat-input").fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty()
             }
-            compose.onNodeWithText("안녕하세요 오늘 날씨가 좋습니다 안녕하세요 오늘 날씨가 좋습니다 수정").assertExists()
+            compose.onNode(normalizedSpeech("안녕하세요 오늘 날씨가 좋습니다 안녕하세요 오늘 날씨가 좋습니다 수정")).assertExists()
             assertEquals(0, conversations.replies)
             compose.onNodeWithTag("chat-send").performClick()
             compose.waitUntil(10_000) { conversations.replies == 1 }

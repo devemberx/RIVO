@@ -856,7 +856,7 @@ class ConversationViewModelTest {
             advanceTimeBy(8_001)
             runCurrent()
             model.stopVoice()
-            advanceTimeBy(5_001)
+            advanceTimeBy(20_001)
             runCurrent()
             assertEquals(VoiceInputProblem.TIMEOUT, model.state.value.voice.problem)
             assertFalse(model.state.value.voice.capturing)
@@ -882,6 +882,292 @@ class ConversationViewModelTest {
             listener.onResult("첫 문장 다음 문장")
             assertEquals("첫 문장 다음 문장", model.draft.text)
             assertEquals(VoiceInputPhase.REVIEW, model.state.value.voice.phase)
+            assertTrue(provider.requests.isEmpty())
+        }
+
+    @Test fun slowStartupKeepsTheFullCaptureBudgetAndDuplicateReadyDoesNotExtendIt() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val speech = FakeSpeech()
+            val model = model(speech)
+            runCurrent()
+            model.setVoiceResumed(true)
+            model.requestVoice(true)
+            val listener = requireNotNull(speech.listener)
+            advanceTimeBy(19_000)
+            runCurrent()
+            assertEquals(VoiceInputPhase.STARTING, model.state.value.voice.phase)
+            listener.onReady()
+            advanceTimeBy(59_999)
+            runCurrent()
+            assertEquals(VoiceInputPhase.LISTENING, model.state.value.voice.phase)
+            assertEquals(0, speech.stops)
+            listener.onReady()
+            advanceTimeBy(1)
+            runCurrent()
+            assertEquals(VoiceInputPhase.STOPPING, model.state.value.voice.phase)
+            assertEquals(1, speech.stops)
+        }
+
+    @Test fun missingReadyTimesOutStartupAndRejectsLateReadyAndResults() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val speech = FakeSpeech()
+            val model = model(speech)
+            runCurrent()
+            model.setVoiceResumed(true)
+            model.edit(TextFieldValue("preserved"))
+            model.requestVoice(true)
+            val listener = requireNotNull(speech.listener)
+            advanceTimeBy(19_999)
+            runCurrent()
+            assertEquals(VoiceInputPhase.STARTING, model.state.value.voice.phase)
+            advanceTimeBy(1)
+            runCurrent()
+            assertEquals(VoiceInputProblem.TIMEOUT, model.state.value.voice.problem)
+            assertEquals(1, speech.cancellations)
+            listener.onReady()
+            listener.onResult("late result")
+            assertFalse(model.state.value.voice.capturing)
+            assertEquals("preserved", model.draft.text)
+            assertTrue(provider.requests.isEmpty())
+        }
+
+    @Test fun finalRecognitionCanFinishAfterFiveSecondsWithoutSending() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val speech = FakeSpeech()
+            val model = model(speech)
+            runCurrent()
+            model.setVoiceResumed(true)
+            model.requestVoice(true)
+            val listener = requireNotNull(speech.listener)
+            listener.onReady()
+            listener.onEndOfSpeech()
+            advanceTimeBy(19_999)
+            runCurrent()
+            assertEquals(VoiceInputPhase.STOPPING, model.state.value.voice.phase)
+            listener.onReady()
+            listener.onResult("긴 문장을 모두 인식했습니다")
+            assertEquals(VoiceInputPhase.REVIEW, model.state.value.voice.phase)
+            assertEquals("긴 문장을 모두 인식했습니다", model.draft.text)
+            assertTrue(provider.requests.isEmpty())
+        }
+
+    @Test fun duplicateEndCallbackCannotExtendTheFinalizationDeadline() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val speech = FakeSpeech()
+            val model = model(speech)
+            runCurrent()
+            model.setVoiceResumed(true)
+            model.edit(TextFieldValue("preserved"))
+            model.requestVoice(true)
+            val listener = requireNotNull(speech.listener)
+            listener.onReady()
+            model.stopVoice()
+            advanceTimeBy(10_000)
+            runCurrent()
+            assertEquals(VoiceInputPhase.STOPPING, model.state.value.voice.phase)
+            listener.onEndOfSpeech()
+            advanceTimeBy(10_000)
+            runCurrent()
+            assertEquals(VoiceInputProblem.TIMEOUT, model.state.value.voice.problem)
+            listener.onResult("too late")
+            assertEquals("preserved", model.draft.text)
+            assertFalse(model.state.value.voice.capturing)
+        }
+
+    @Test fun voiceAvailabilityRequiresAuthenticatedIdentityAndRefreshesWhenItChanges() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            authentication.session.value = GitHubSession.Failure(AuthenticationProblem.NETWORK)
+            val speech = FakeSpeech()
+            val model = model(speech)
+            runCurrent()
+            model.setVoiceResumed(true)
+            assertFalse(model.state.value.voice.available)
+            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
+            model.requestVoice(true)
+            assertEquals(0, speech.starts)
+            authentication.session.value = GitHubSession.Authenticated(GitHubAccount(1, "first"))
+            runCurrent()
+            assertTrue(model.state.value.voice.available)
+            model.requestVoice(true)
+            val listener = requireNotNull(speech.listener)
+            listener.onReady()
+            authentication.session.value = GitHubSession.Restoring
+            runCurrent()
+            listener.onResult("unverified")
+            assertFalse(model.state.value.voice.available)
+            assertFalse(model.state.value.voice.capturing)
+            assertEquals(1, speech.cancellations)
+            assertEquals("", model.draft.text)
+            model.setVoiceResumed(true)
+            assertFalse(model.state.value.voice.available)
+        }
+
+    @Test fun blockingCopilotFailuresImmediatelyCancelVoiceAndRejectFurtherStartsAndLateResults() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            for (problem in listOf(
+                ConversationProblem.ACCOUNT,
+                ConversationProblem.ACCESS,
+                ConversationProblem.SERVICE,
+            )) {
+                val check = CompletableDeferred<ConversationResult<String>>()
+                provider.connectionAnswer = { check.await() }
+                val speech = FakeSpeech()
+                val model = model(speech)
+                runCurrent()
+                model.setVoiceResumed(true)
+                model.edit(TextFieldValue("preserved"))
+                model.requestVoice(true)
+                val listener = requireNotNull(speech.listener)
+                listener.onReady()
+                check.complete(ConversationResult.Failure(problem))
+                runCurrent()
+                assertFalse("Blocking failure: $problem", model.state.value.voice.capturing)
+                assertEquals(1, speech.cancellations)
+                listener.onResult("late result")
+                model.requestVoice(true)
+                assertEquals(1, speech.starts)
+                assertEquals("preserved", model.draft.text)
+                assertTrue(provider.requests.isEmpty())
+            }
+        }
+
+    @Test fun offlineDraftRecognitionSurvivesConnectionRetryAndSendStaysBlocked() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            networkStatus.online.value = false
+            val speech = FakeSpeech()
+            val model = model(speech)
+            runCurrent()
+            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
+            model.setVoiceResumed(true)
+            model.requestVoice(true)
+            assertEquals(1, speech.starts)
+            val listener = requireNotNull(speech.listener)
+            listener.onReady()
+            model.retryConnection()
+            assertEquals(VoiceInputPhase.LISTENING, model.state.value.voice.phase)
+            listener.onResult("오프라인에서 작성한 초안")
+            assertEquals(VoiceInputPhase.REVIEW, model.state.value.voice.phase)
+            assertEquals("오프라인에서 작성한 초안", model.draft.text)
+            model.send()
+            model.retry()
+            runCurrent()
+            assertTrue(provider.requests.isEmpty())
+            assertFalse(model.state.value.replyPending)
+        }
+
+    @Test fun connectionCheckFailureAndNetworkLossDoNotCancelLocalRecording() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val check = CompletableDeferred<ConversationResult<String>>()
+            provider.connectionAnswer = { check.await() }
+            val speech = FakeSpeech()
+            val model = model(speech)
+            runCurrent()
+            model.setVoiceResumed(true)
+            model.requestVoice(true)
+            val listener = requireNotNull(speech.listener)
+            listener.onReady()
+            check.complete(ConversationResult.Failure(ConversationProblem.NETWORK))
+            runCurrent()
+            assertEquals(VoiceInputPhase.LISTENING, model.state.value.voice.phase)
+            val retry = CompletableDeferred<ConversationResult<String>>()
+            provider.connectionAnswer = { retry.await() }
+            model.retryConnection()
+            runCurrent()
+            assertTrue(model.state.value.connectionRetrying)
+            listener.onPartial("이어 말하기")
+            assertEquals("이어 말하기", model.state.value.voice.partial)
+            networkStatus.online.value = false
+            runCurrent()
+            assertEquals(VoiceInputPhase.LISTENING, model.state.value.voice.phase)
+            model.setForegroundAllowed(true, refresh = true)
+            assertEquals(VoiceInputPhase.LISTENING, model.state.value.voice.phase)
+            assertEquals(0, speech.cancellations)
+            listener.onResult("연결과 무관한 초안")
+            assertEquals("연결과 무관한 초안", model.draft.text)
+            model.send()
+            runCurrent()
+            assertTrue(provider.requests.isEmpty())
+        }
+
+    @Test fun successfulLocalDraftReplacesAFailedTurnAndRemainsEditableWithoutEnablingSend() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            provider.answer = { ConversationResult.Failure(ConversationProblem.NETWORK) }
+            val speech = FakeSpeech()
+            val model = model(speech)
+            runCurrent()
+            model.edit(TextFieldValue("failed attempt"))
+            model.send()
+            runCurrent()
+            assertTrue(model.state.value.failed)
+            model.setVoiceResumed(true)
+            model.requestVoice(true)
+            assertEquals(1, speech.starts)
+            val listener = requireNotNull(speech.listener)
+            listener.onReady()
+            listener.onResult("새로운 초안")
+            assertEquals("새로운 초안", model.draft.text)
+            assertFalse(model.state.value.failed)
+            assertTrue(
+                model.state.value.messages
+                    .isEmpty(),
+            )
+            model.edit(TextFieldValue("수정한 새 초안"))
+            assertEquals("수정한 새 초안", model.draft.text)
+            assertEquals(ConversationConnection.UNAVAILABLE, model.state.value.connection)
+            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
+            model.send()
+            model.retry()
+            runCurrent()
+            assertEquals(1, provider.requests.size)
+        }
+
+    @Test fun offlineStartupAndFinalizationStillCancelOnBackgroundParkingAndAuthenticationLoss() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            networkStatus.online.value = false
+            val speech = FakeSpeech()
+            val model = model(speech)
+            runCurrent()
+            model.setVoiceResumed(true)
+            model.edit(TextFieldValue("preserved"))
+            model.requestVoice(true)
+            assertEquals(1, speech.starts)
+            val startup = requireNotNull(speech.listener)
+            model.setVoiceResumed(false)
+            startup.onReady()
+            startup.onResult("discard background")
+            assertEquals("preserved", model.draft.text)
+            assertFalse(model.state.value.voice.capturing)
+            model.setVoiceResumed(true)
+            model.requestVoice(true)
+            val finalizing = requireNotNull(speech.listener)
+            finalizing.onReady()
+            model.stopVoice()
+            model.activate(false)
+            finalizing.onResult("discard parking")
+            assertEquals("preserved", model.draft.text)
+            assertFalse(model.state.value.voice.capturing)
+            model.activate(true)
+            model.requestVoice(true)
+            val unauthenticated = requireNotNull(speech.listener)
+            authentication.session.value = GitHubSession.Failure(AuthenticationProblem.NETWORK)
+            runCurrent()
+            unauthenticated.onReady()
+            unauthenticated.onResult("discard unverified identity")
+            model.requestVoice(true)
+            assertEquals(3, speech.starts)
+            assertEquals(3, speech.cancellations)
+            assertEquals("preserved", model.draft.text)
+            assertFalse(model.state.value.voice.capturing)
             assertTrue(provider.requests.isEmpty())
         }
 
