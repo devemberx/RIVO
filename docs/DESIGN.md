@@ -43,8 +43,7 @@ The splash ends on the first app frame; these are app adaptations, not SVG refer
 
 ## Reusable Compose library and asset handoff
 
-Use `core-ui` primitives first. Feature owners perform
-[final visual acceptance](TESTING.md#final-figma-visual-acceptance).
+Use `core-ui` primitives first.
 Full-screen SVGs remain references, not runtime assets. Import original feature
 icons with feature prefixes; share fonts/artwork in `core-ui` and retain licenses.
 

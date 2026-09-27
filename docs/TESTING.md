@@ -25,15 +25,6 @@ Debug previews are isolated and do not add launcher entries.
 - Exercise callbacks, Back, focus and enabled state through UI semantics. Screenshots
   verify layout, not persistence, authorization or providers.
 
-## Final Figma visual acceptance
-
-After the final UI edit, compare affected states against full-resolution
-[v5 exports](ui/README.md) with matched content/insets/font scale; exclude reference
-system bars and Debug controls. Inspect artwork, typography, geometry, colors, touch
-bounds, enlarged text, recovery and interrupted motion. Record references, images
-and unresolved/missing matches in the PR; builds do not prove visual parity.
-SVG-only renames require XML/render and byte-preservation checks.
-
 ## Current requirement map
 
 Keep one row per critical contract group; test sources own detailed cases.
@@ -65,8 +56,8 @@ Keep one row per critical contract group; test sources own detailed cases.
 | Committed data, independent retry and appearance | Presentation, [Store](../feature/feature-customization/src/test/java/com/monsters/mobimon/feature/customization), [Home/Settings](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet) |
 | Claims, duplicates and reward reconciliation | [Quests](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest), database suites |
 | Card availability/selection and unselected warnings | [Vehicle](../feature/feature-vehicle-info/src/test/java/com/monsters/mobimon/feature/vehicle), domain/presentation and Debug suites |
-| Shared artwork, badges, motion and geometry | [Core UI](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui), owning feature reviews |
-| Active Vehicle/Store/Quest Park-loss dialogs, blocked input and recovery | [Shared UI](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui/MobiMonParkingInterruptionTest.kt), owning feature suites and [visual acceptance](#final-figma-visual-acceptance) |
+| Shared artwork, badges, motion and geometry | [Core UI](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui), owning feature suites |
+| Active Vehicle/Store/Quest Park-loss dialogs, blocked input and recovery | [Shared UI](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui/MobiMonParkingInterruptionTest.kt), owning feature suites |
 | Shell routes, notifications, launcher identity and overlay bounds | [Shell](../app/src/test/java/com/monsters/mobimon/ui), [service](../app/src/test/java/com/monsters/mobimon/service), Debug and connection suites |
 | Chat display vs. retained history, reset, authorization, two-state badges and network popup/parking recovery | Auth feature/connection suites; [network status](../app/src/test/java/com/monsters/mobimon/network/AndroidConversationNetworkStatusTest.kt) |
 | Voice drafts, confirmed results, PCM integrity, cancellation and explicit Send | [Speech suites](../app/src/test/java/com/monsters/mobimon/speech), auth feature |

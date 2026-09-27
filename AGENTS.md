@@ -30,5 +30,4 @@
 ## Verification
 
 - Run the [canonical checks](.github/CONTRIBUTING.md#verification) for the change type. Place focused tests in the subject module/package; one test file per source file is unnecessary.
-- Complete [final visual acceptance](docs/TESTING.md#final-figma-visual-acceptance) after the final UI code change. Feature owners own screen acceptance; shared-component or build success is insufficient.
 - Report only checks actually executed. APK assembly and Robolectric do not prove device tests or real integrations ran.
