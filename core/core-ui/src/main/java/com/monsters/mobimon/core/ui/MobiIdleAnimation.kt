@@ -7,9 +7,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.BlendMode
@@ -316,6 +320,140 @@ internal fun NormalMobiHungryAnimation(
                 frame + MobiIdleTimeline.blendAt(time, frame)
             },
     )
+}
+
+internal object MobiRunSpriteCache {
+    const val DEFAULT_ASSET_PATH = "characters/mobi/normal/run/mobi_run_left_normal_sprite.png"
+
+    private fun assetPathFor(accessoryId: String?): String =
+        when (accessoryId) {
+            "accessory:mobi_headphones" ->
+                "characters/mobi/headphones/run/mobi_run_left_headphones_sprite.png"
+            "accessory:mobi_goggles" ->
+                "characters/mobi/goggles/run/mobi_run_left_goggles_sprite.png"
+            else -> DEFAULT_ASSET_PATH
+        }
+
+    @Volatile private var cached: ImageBitmap? = null
+
+    @Volatile private var cachedAccessoryId: String? = null
+
+    fun peek(accessoryId: String? = null): ImageBitmap? = if (cachedAccessoryId == accessoryId) cached else null
+
+    fun clear() {
+        cached = null
+        cachedAccessoryId = null
+    }
+
+    fun getOrLoad(
+        context: Context,
+        accessoryId: String? = null,
+    ): ImageBitmap? {
+        val current = cached
+        if (current != null && cachedAccessoryId == accessoryId) return current
+        return synchronized(this) {
+            val syncCurrent = cached
+            if (syncCurrent != null && cachedAccessoryId == accessoryId) return syncCurrent
+            val assets = context.applicationContext.assets
+            val assetPath = assetPathFor(accessoryId)
+            val options =
+                BitmapFactory.Options().apply {
+                    inSampleSize = 2
+                    inScaled = false
+                }
+            try {
+                assets.open(assetPath).use { stream ->
+                    val bitmap = requireNotNull(BitmapFactory.decodeStream(stream, null, options))
+                    require(
+                        bitmap.width % MobiIdleTimeline.COLUMNS == 0 && bitmap.height % MobiIdleTimeline.ROWS == 0,
+                    )
+                    bitmap.asImageBitmap().also {
+                        cachedAccessoryId = accessoryId
+                        cached = it
+                    }
+                }
+            } catch (_: Exception) {
+                null
+            }
+        }
+    }
+}
+
+const val MOBI_RUN_FRAME_DURATION_MS = 70
+
+@Composable
+fun MobiRunAnimation(
+    modifier: Modifier = Modifier,
+    movingLeft: Boolean = true,
+    isMoving: Boolean = true,
+    contentDescription: String? = null,
+    accessoryId: String? = null,
+    fallbackAsset: CharacterAsset = CharacterArtwork.characters.getValue("friend:mobi"),
+    frameDurationMs: Int = MOBI_RUN_FRAME_DURATION_MS,
+    onHopFinished: () -> Unit = {},
+) {
+    if (!LocalMobiMonMotionEnabled.current) {
+        CharacterAssetImage(fallbackAsset, modifier, contentDescription)
+        return
+    }
+    val context = LocalContext.current.applicationContext
+    val sprite by produceState<ImageBitmap?>(
+        initialValue = MobiRunSpriteCache.peek(accessoryId),
+        context,
+        accessoryId,
+    ) {
+        value = withContext(Dispatchers.IO) { MobiRunSpriteCache.getOrLoad(context, accessoryId) }
+    }
+    val sheet = sprite
+    if (sheet == null) {
+        CharacterAssetImage(fallbackAsset, modifier, contentDescription)
+        return
+    }
+    var currentFrameIndex by remember(sheet) { mutableIntStateOf(0) }
+    val currentIsMoving by rememberUpdatedState(isMoving)
+    val currentOnHopFinished by rememberUpdatedState(onHopFinished)
+
+    LaunchedEffect(sheet) {
+        var previousTime = withInfiniteAnimationFrameNanos { it }
+        var elapsedNanos = 0L
+        while (isActive) {
+            val time = withInfiniteAnimationFrameNanos { it }
+            elapsedNanos += (time - previousTime).coerceAtMost(100_000_000L)
+            previousTime = time
+            var nextFrame = currentFrameIndex
+            while (elapsedNanos >= frameDurationMs * 1_000_000L) {
+                elapsedNanos -= frameDurationMs * 1_000_000L
+                val updatedFrame = (nextFrame + 1) % 24
+                if (updatedFrame == 0) {
+                    if (!currentIsMoving) {
+                        currentOnHopFinished()
+                    }
+                }
+                nextFrame = updatedFrame
+            }
+            currentFrameIndex = nextFrame
+        }
+    }
+    val baseAsset = CharacterArtwork.preview("friend:mobi", accessoryId)
+    Box(
+        modifier =
+            modifier
+                .graphicsLayer {
+                    val flip = if (movingLeft) 1f else -1f
+                    scaleX = baseAsset.visualScale * flip
+                    scaleY = baseAsset.visualScale
+                    translationX = size.width * baseAsset.translationXFraction * flip
+                    translationY = size.height * baseAsset.translationYFraction
+                }.mobiSpriteFrames(
+                    sheet = sheet,
+                    columns = MobiIdleTimeline.COLUMNS,
+                    rows = MobiIdleTimeline.ROWS,
+                    loop = true,
+                    blendFrames = false,
+                    position = { currentFrameIndex.toFloat() },
+                ),
+        contentAlignment = Alignment.Center,
+    ) {}
 }
 
 /** Shared fixed-canvas atlas draw. Time/progress is read only in draw, never bitmap allocation. */
