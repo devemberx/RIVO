@@ -153,8 +153,8 @@ Use [recording](ui/conversation/voice-listening.svg) and
 separate; recording retains Cancel, live waveform and disabled Send. Preserve
 26px draft text, the 18px transmission/AI footer and nonoverlapping 76dp touch bounds.
 No listening timer or extra review/rerecord caption is shown. No-match/silence
-leaves the draft and normal footer in place; actionable permission/service failures
-retain recovery guidance.
+leaves the draft and normal footer in place. On failure, keep any confirmed text
+for review and show actionable recovery guidance.
 
 Permission is requested on microphone activation. Stop combines recognized phrases
 into an editable draft; only explicit Send submits. Review permits another recording.

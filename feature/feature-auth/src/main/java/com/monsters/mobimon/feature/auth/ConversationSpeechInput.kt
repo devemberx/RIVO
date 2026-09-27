@@ -19,6 +19,9 @@ interface ConversationSpeechInput {
 
         fun onPartial(text: String)
 
+        /** Latest confirmed transcript, separate from revisable partial hypotheses. */
+        fun onCommitted(text: String)
+
         fun onEndOfSpeech()
 
         fun onResult(text: String)

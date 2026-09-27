@@ -52,6 +52,7 @@ class ConversationViewModel(
     private var checkWork: Job? = null
     private var authenticationRetry: Job? = null
     private var history = emptyList<ConversationMessage>()
+    private var confirmedVoiceText = ""
     private var voiceGeneration = 0L
     private var voiceTimeout: Job? = null
 
@@ -283,6 +284,7 @@ class ConversationViewModel(
         }
         returnToVoiceReview = state.value.voice.phase == VoiceInputPhase.REVIEW
         voicePermissionGranted = permissionGranted
+        confirmedVoiceText = ""
         val session = ++voiceGeneration
         updateVoice(VoiceInputState(available = true, phase = VoiceInputPhase.PERMISSION, sessionId = session))
         if (permissionGranted) {
@@ -317,6 +319,7 @@ class ConversationViewModel(
     }
 
     fun cancelVoice() {
+        confirmedVoiceText = ""
         val wasCapturing = state.value.voice.capturing
         voiceGeneration++
         voicePermissionGranted = false
@@ -388,6 +391,10 @@ class ConversationViewModel(
                     }
                 }
 
+                override fun onCommitted(text: String) {
+                    if (voiceCurrent(session)) confirmedVoiceText = text
+                }
+
                 override fun onEndOfSpeech() {
                     if (voiceCurrent(session)) waitForVoiceResult(session)
                 }
@@ -428,6 +435,11 @@ class ConversationViewModel(
     }
 
     private fun finishVoice(problem: VoiceInputProblem? = null) {
+        if (problem != null && confirmedVoiceText.isNotBlank()) {
+            if (state.value.failed) resumeEditing()
+            draft = TextFieldValue(confirmedVoiceText, TextRange(confirmedVoiceText.length))
+            returnToVoiceReview = true
+        }
         cancelVoice()
         updateVoice(state.value.voice.copy(problem = problem))
     }

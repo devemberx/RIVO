@@ -5,8 +5,10 @@ import android.app.Application
 import android.content.Intent
 import android.content.pm.ResolveInfo
 import android.content.pm.ServiceInfo
+import android.media.AudioFormat
 import android.os.Bundle
 import android.os.Looper
+import android.os.ParcelFileDescriptor
 import android.speech.RecognitionListener
 import android.speech.RecognitionService
 import android.speech.RecognizerIntent
@@ -27,13 +29,15 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowSpeechRecognizer
 import org.robolectric.util.ReflectionHelpers
+import java.io.FileDescriptor
 import java.time.Duration
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class AndroidConversationSpeechInputTest {
     private val context = ApplicationProvider.getApplicationContext<Application>()
-    private val input = AndroidConversationSpeechInput(context)
+    private val streams = mutableListOf<FakeAudio>()
+    private val input = AndroidConversationSpeechInput(context) { FakeAudio().also(streams::add) }
 
     @Before
     fun setUp() {
@@ -55,169 +59,208 @@ class AndroidConversationSpeechInputTest {
     fun tearDown() = input.cancel()
 
     @Test
-    fun segmentedResultsAccumulateWithoutRestartAndKeepRepeatedSentences() {
+    fun externalPcmSourceKeepsOneRequestAndWaitsForMicrophoneAndServiceReadiness() {
         val listener = RecordingListener()
-        input.start(listener)
-        shadowOf(Looper.getMainLooper()).idle()
-        val engine = shadowOf(ShadowSpeechRecognizer.getLatestSpeechRecognizer())
+        val engine = start(listener)
         val request = engine.lastRecognizerIntent
         assertEquals(
-            RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS,
+            RecognizerIntent.EXTRA_AUDIO_SOURCE,
             request.getStringExtra(RecognizerIntent.EXTRA_SEGMENTED_SESSION),
         )
-        assertEquals(12_000, request.getIntExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 0))
-        val callbacks = callbacks(engine)
-        callbacks.onReadyForSpeech(Bundle())
-        callbacks.onPartialResults(results("첫"))
-        callbacks.onPartialResults(results("첫 문장"))
-        callbacks.onSegmentResults(results("첫 문장"))
-        callbacks.onPartialResults(results("두 번째"))
-        assertEquals("첫 문장 두 번째", listener.partials.last())
-        callbacks.onSegmentResults(results("첫 문장"))
-        assertEquals("첫 문장 첫 문장", listener.partials.last())
-        assertTrue(listener.results.isEmpty())
-        assertFalse(engine.isDestroyed)
-        assertTrue(request === engine.lastRecognizerIntent)
-        input.stop()
-        callbacks.onSegmentResults(results("마지막 문장"))
-        callbacks.onEndOfSegmentedSession()
-        callbacks.onEndOfSegmentedSession()
-        callbacks.onResults(results("늦은 결과"))
-        assertEquals(listOf("첫 문장 첫 문장 마지막 문장"), listener.results)
-        assertTrue(engine.isDestroyed)
-    }
-
-    @Test
-    fun ignoredSegmentedOptionReusesRecognizerAfterOneTerminalResult() {
-        val listener = RecordingListener()
-        input.start(listener)
-        shadowOf(Looper.getMainLooper()).idle()
-        val recognizer = ShadowSpeechRecognizer.getLatestSpeechRecognizer()
-        val engine = shadowOf(recognizer)
-        val old = callbacks(engine)
-        old.onReadyForSpeech(Bundle())
-        old.onResults(results("첫 문장"))
-        // Duplicate terminal callbacks before the queued restart are ignored.
-        old.onResults(results("중복 결과"))
-        old.onError(SpeechRecognizer.ERROR_CLIENT)
-        shadowOf(Looper.getMainLooper()).idle()
-        assertTrue(recognizer === ShadowSpeechRecognizer.getLatestSpeechRecognizer())
-        assertFalse(engine.isDestroyed)
-        assertFalse(engine.lastRecognizerIntent.hasExtra(RecognizerIntent.EXTRA_SEGMENTED_SESSION))
-        val next = callbacks(engine)
-        next.onReadyForSpeech(Bundle())
-        next.onResults(results("다음 문장"))
-        input.stop()
-        assertEquals(listOf("첫 문장 다음 문장"), listener.results)
+        assertTrue(request.hasExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE))
+        assertEquals(16_000, request.getIntExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_SAMPLING_RATE, 0))
+        assertEquals(1, request.getIntExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_CHANNEL_COUNT, 0))
+        assertEquals(
+            AudioFormat.ENCODING_PCM_16BIT,
+            request.getIntExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_ENCODING, 0),
+        )
+        assertEquals("ko-KR", request.getStringExtra(RecognizerIntent.EXTRA_LANGUAGE))
+        assertTrue(request.getBooleanExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, false))
+        callbacks(engine).onReadyForSpeech(Bundle())
+        assertEquals(0, listener.ready)
+        streams.single().ready()
         assertEquals(1, listener.ready)
-        assertTrue(listener.problems.isEmpty())
-    }
-
-    @Test
-    fun rejectedSegmentedRequestRetriesOnceWithPlainRecognition() {
-        val listener = RecordingListener()
-        input.start(listener)
-        shadowOf(Looper.getMainLooper()).idle()
-        val engine = shadowOf(ShadowSpeechRecognizer.getLatestSpeechRecognizer())
-        engine.triggerOnError(SpeechRecognizer.ERROR_CLIENT)
-        shadowOf(Looper.getMainLooper()).idle()
-        assertTrue(listener.problems.isEmpty())
-        assertFalse(engine.lastRecognizerIntent.hasExtra(RecognizerIntent.EXTRA_SEGMENTED_SESSION))
-        engine.triggerOnError(SpeechRecognizer.ERROR_CLIENT)
-        assertEquals(listOf(VoiceInputProblem.SERVICE), listener.problems)
+        repeat(3) {
+            callbacks(engine).onSegmentResults(results("안녕하세요"))
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(2))
+        }
+        assertEquals("안녕하세요 안녕하세요 안녕하세요", listener.committed.last())
+        assertTrue(request === engine.lastRecognizerIntent)
+        assertEquals(1, streams.size)
+        input.stop()
+        assertTrue(streams.single().stopped)
+        assertFalse(streams.single().cancelled)
+        assertTrue(listener.results.isEmpty())
+        callbacks(engine).onSegmentResults(results("마지막 문장"))
+        callbacks(engine).onEndOfSegmentedSession()
+        assertEquals(listOf("안녕하세요 안녕하세요 안녕하세요 마지막 문장"), listener.results)
+        assertTrue(streams.single().cancelled)
         assertTrue(engine.isDestroyed)
     }
 
     @Test
-    fun continuousSpeechWithoutPartialResultsIsNotCutOffByThePauseTimer() {
+    fun finalAggregateRetainsTheThirdRepeatedPhraseWithoutDuplicatingEarlierSegments() {
         val listener = RecordingListener()
-        input.start(listener)
-        shadowOf(Looper.getMainLooper()).idle()
-        val engine = shadowOf(ShadowSpeechRecognizer.getLatestSpeechRecognizer())
-        callbacks(engine).onReadyForSpeech(Bundle())
-        callbacks(engine).onBeginningOfSpeech()
-        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(13))
-        assertEquals(0, listener.ends)
-        assertFalse(engine.isDestroyed)
-        callbacks(engine).onEndOfSpeech()
-        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(12))
-        assertEquals(1, listener.ends)
-        callbacks(engine).onResults(results("긴 문장을 계속 말합니다"))
-        assertEquals(listOf("긴 문장을 계속 말합니다"), listener.results)
+        val engine = startReady(listener)
+        val callback = callbacks(engine)
+        callback.onSegmentResults(results("안녕하세요"))
+        callback.onSegmentResults(results("안녕하세요"))
+        input.stop()
+        callback.onResults(results("안녕하세요 안녕하세요 안녕하세요"))
+        callback.onResults(results("늦은 결과"))
+        callback.onEndOfSegmentedSession()
+        assertEquals(listOf("안녕하세요 안녕하세요 안녕하세요"), listener.results)
+        assertEquals("안녕하세요 안녕하세요 안녕하세요", listener.committed.last())
     }
 
     @Test
-    fun stoppingWithNoNewMatchKeepsCommittedSegmentsButNeverCommitsPartialGuesses() {
+    fun stopWithNoNewMatchKeepsConfirmedSegmentsAndNeverCommitsPartialGuesses() {
         val listener = RecordingListener()
-        input.start(listener)
-        shadowOf(Looper.getMainLooper()).idle()
-        val engine = shadowOf(ShadowSpeechRecognizer.getLatestSpeechRecognizer())
-        callbacks(engine).onReadyForSpeech(Bundle())
+        val engine = startReady(listener)
         callbacks(engine).onSegmentResults(results("확정 문장"))
         callbacks(engine).onPartialResults(results("미확정"))
         input.stop()
-        engine.triggerOnError(SpeechRecognizer.ERROR_NO_MATCH)
+        callbacks(engine).onError(SpeechRecognizer.ERROR_NO_MATCH)
         assertEquals(listOf("확정 문장"), listener.results)
         assertTrue(listener.problems.isEmpty())
     }
 
     @Test
-    fun aggregateFinalAfterSegmentsDoesNotDuplicateCommittedText() {
+    fun serviceFailurePublishesConfirmedTextBeforeReleasingAudio() {
         val listener = RecordingListener()
-        input.start(listener)
-        shadowOf(Looper.getMainLooper()).idle()
-        val engine = shadowOf(ShadowSpeechRecognizer.getLatestSpeechRecognizer())
-        callbacks(engine).onReadyForSpeech(Bundle())
-        callbacks(engine).onSegmentResults(results("첫 문장"))
-        input.stop()
-        callbacks(engine).onResults(results("첫 문장"))
-        assertEquals(listOf("첫 문장"), listener.results)
+        val engine = startReady(listener)
+        callbacks(engine).onSegmentResults(results("확정 문장"))
+        callbacks(engine).onError(SpeechRecognizer.ERROR_NETWORK)
+        assertEquals(listOf("확정 문장"), listener.committed)
+        assertEquals(listOf(VoiceInputProblem.NETWORK), listener.problems)
+        assertTrue(streams.single().cancelled)
+        assertTrue(engine.isDestroyed)
     }
 
     @Test
-    fun fullResultRetainsThirdRepeatedPhraseAfterTwoSegmentsAndEarlierUtterances() {
+    fun microphoneFailureReleasesTheRecognizerAndKeepsConfirmedTextAvailable() {
         val listener = RecordingListener()
-        input.start(listener)
-        shadowOf(Looper.getMainLooper()).idle()
-        val engine = shadowOf(ShadowSpeechRecognizer.getLatestSpeechRecognizer())
-        callbacks(engine).onReadyForSpeech(Bundle())
-        callbacks(engine).onResults(results("이전 문장"))
-        shadowOf(Looper.getMainLooper()).idle()
-        val current = callbacks(engine)
-        current.onReadyForSpeech(Bundle())
-        current.onSegmentResults(results("안녕하세요"))
-        current.onSegmentResults(results("안녕하세요"))
-        input.stop()
-        current.onResults(results("안녕하세요 안녕하세요 안녕하세요"))
-        assertEquals(listOf("이전 문장 안녕하세요 안녕하세요 안녕하세요"), listener.results)
+        val engine = startReady(listener)
+        callbacks(engine).onSegmentResults(results("확정 문장"))
+        streams.single().failure()
+        assertEquals(listOf("확정 문장"), listener.committed)
+        assertEquals(listOf(VoiceInputProblem.AUDIO), listener.problems)
+        assertTrue(streams.single().cancelled)
+        assertTrue(engine.isDestroyed)
     }
 
     @Test
-    fun sparsePartialDoesNotRestartThePauseTimerDuringContinuousSpeech() {
-        assertContinuousSpeechSurvivesResultCallback { it.onPartialResults(results("아직 말하는 중")) }
+    fun unsupportedOrPrematurelyEndedStreamDoesNotSilentlyRestartTheMicrophone() {
+        val listener = RecordingListener()
+        val engine = startReady(listener)
+        callbacks(engine).onResults(results("서비스가 먼저 끝낸 문장"))
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1))
+        assertEquals(listOf("서비스가 먼저 끝낸 문장"), listener.committed)
+        assertEquals(listOf(VoiceInputProblem.SERVICE), listener.problems)
+        assertEquals(1, streams.size)
+        assertTrue(streams.single().cancelled)
     }
 
     @Test
-    fun segmentDoesNotRestartThePauseTimerDuringContinuousSpeech() {
-        assertContinuousSpeechSurvivesResultCallback { it.onSegmentResults(results("확정된 첫 구간")) }
+    fun rejectedAudioSourceIsReportedWithoutAnUnverifiedMicrophoneFallback() {
+        val listener = RecordingListener()
+        val engine = start(listener)
+        callbacks(engine).onError(SpeechRecognizer.ERROR_CLIENT)
+        shadowOf(Looper.getMainLooper()).idle()
+        assertEquals(listOf(VoiceInputProblem.SERVICE), listener.problems)
+        assertEquals(1, streams.size)
+        assertTrue(streams.single().cancelled)
     }
 
-    private fun assertContinuousSpeechSurvivesResultCallback(deliver: (RecognitionListener) -> Unit) {
+    @Test
+    fun continuousSpeechAndSparseResultsDoNotRestartThePauseTimer() {
         val listener = RecordingListener()
-        input.start(listener)
-        shadowOf(Looper.getMainLooper()).idle()
-        val engine = shadowOf(ShadowSpeechRecognizer.getLatestSpeechRecognizer())
-        val callbacks = callbacks(engine)
-        callbacks.onReadyForSpeech(Bundle())
-        callbacks.onBeginningOfSpeech()
-        deliver(callbacks)
+        val engine = startReady(listener)
+        val callback = callbacks(engine)
+        callback.onBeginningOfSpeech()
+        callback.onPartialResults(results("말하는 중"))
+        callback.onSegmentResults(results("첫 문장"))
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(13))
-        assertEquals("Speech results are not silence evidence", 0, listener.ends)
-        assertTrue(listener.results.isEmpty())
-        callbacks.onEndOfSpeech()
+        assertEquals(0, listener.ends)
+        assertFalse(streams.single().stopped)
+        callback.onEndOfSpeech()
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(12))
         assertEquals(1, listener.ends)
+        assertTrue(streams.single().stopped)
     }
+
+    @Test
+    fun delayedMicrophoneReadinessDoesNotArmAPauseTimerOverAlreadyDetectedSpeech() {
+        val listener = RecordingListener()
+        val engine = start(listener)
+        callbacks(engine).onReadyForSpeech(Bundle())
+        callbacks(engine).onBeginningOfSpeech()
+        streams.single().ready()
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(13))
+        assertEquals(1, listener.ready)
+        assertEquals(0, listener.ends)
+        assertFalse(streams.single().stopped)
+    }
+
+    @Test
+    fun emptySegmentsDoNotExtendSilenceAndAmbientRmsCannotAnimateBeforeSpeech() {
+        val listener = RecordingListener()
+        val engine = startReady(listener)
+        repeat(12) {
+            callbacks(engine).onRmsChanged(8f)
+            callbacks(engine).onSegmentResults(results(""))
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1))
+        }
+        assertTrue(listener.levels.all { it == 0f })
+        assertEquals(1, listener.ends)
+        callbacks(engine).onEndOfSegmentedSession()
+        assertEquals(listOf(VoiceInputProblem.NO_MATCH), listener.problems)
+    }
+
+    @Test
+    fun cancellationRejectsOldAudioReadinessErrorsAndRecognitionResults() {
+        val oldListener = RecordingListener()
+        val oldEngine = start(oldListener)
+        val oldCallback = callbacks(oldEngine)
+        val oldStream = streams.single()
+        input.cancel()
+        val listener = RecordingListener()
+        val engine = startReady(listener)
+        oldStream.ready()
+        oldStream.failure()
+        oldCallback.onSegmentResults(results("이전 녹음"))
+        oldCallback.onResults(results("이전 녹음"))
+        assertTrue(oldStream.cancelled)
+        assertTrue(oldListener.committed.isEmpty())
+        assertTrue(oldListener.problems.isEmpty())
+        assertTrue(listener.committed.isEmpty())
+        assertTrue(listener.problems.isEmpty())
+        input.stop()
+        callbacks(engine).onResults(results("새 녹음"))
+        assertEquals(listOf("새 녹음"), listener.results)
+    }
+
+    @Test
+    fun permissionDenialNeverCreatesAudioOrRecognitionResources() {
+        shadowOf(context).denyPermissions(Manifest.permission.RECORD_AUDIO)
+        val listener = RecordingListener()
+        input.start(listener)
+        assertEquals(listOf(VoiceInputProblem.PERMISSION), listener.problems)
+        assertTrue(streams.isEmpty())
+        assertNull(ShadowSpeechRecognizer.getLatestSpeechRecognizer())
+    }
+
+    private fun start(listener: RecordingListener): ShadowSpeechRecognizer {
+        input.start(listener)
+        shadowOf(Looper.getMainLooper()).idle()
+        return shadowOf(ShadowSpeechRecognizer.getLatestSpeechRecognizer())
+    }
+
+    private fun startReady(listener: RecordingListener): ShadowSpeechRecognizer =
+        start(listener).also {
+            callbacks(it).onReadyForSpeech(Bundle())
+            streams.last().ready()
+        }
 
     private fun callbacks(engine: ShadowSpeechRecognizer): RecognitionListener {
         // Robolectric 4.13 exposes no segment triggers; obtain its actual application listener.
@@ -225,139 +268,46 @@ class AndroidConversationSpeechInputTest {
         return ReflectionHelpers.getField(state, "recognitionListener")
     }
 
-    @Test
-    fun separateUtterancesWaitForTheNextPhraseAndStopCommitsTheCombinedDraft() {
-        val listener = RecordingListener()
-        assertTrue(input.isAvailable())
-        input.start(listener)
-        shadowOf(Looper.getMainLooper()).idle()
-        val engine = shadowOf(ShadowSpeechRecognizer.getLatestSpeechRecognizer())
-        val request = engine.lastRecognizerIntent
-        assertEquals("ko-KR", request.getStringExtra(RecognizerIntent.EXTRA_LANGUAGE))
-        assertEquals(
-            RecognizerIntent.LANGUAGE_MODEL_FREE_FORM,
-            request.getStringExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL),
-        )
-        assertTrue(request.getBooleanExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, false))
-        assertFalse(request.hasExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE))
-        engine.triggerOnReadyForSpeech(Bundle())
-        engine.triggerOnRmsChanged(4f)
-        engine.triggerOnPartialResults(results("안녕하세요"))
-        engine.triggerOnRmsChanged(7f)
-        engine.triggerOnPartialResults(results("안녕하세요"))
-        engine.triggerOnEndOfSpeech()
-        engine.triggerOnResults(results("안녕하세요 오늘 날씨가 좋습니다"))
-        assertEquals(1, listener.ready)
-        assertTrue(listener.levels.contains(0.5f))
-        assertEquals(0f, listener.levels[1])
-        assertEquals(0, listener.ends)
-        assertTrue(listener.results.isEmpty())
-        assertFalse(engine.isDestroyed)
-        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(6))
-        val next = shadowOf(ShadowSpeechRecognizer.getLatestSpeechRecognizer())
-        next.triggerOnReadyForSpeech(Bundle())
-        next.triggerOnPartialResults(results("다음 문장입니다"))
-        next.triggerOnResults(results("다음 문장입니다"))
-        input.stop()
-        assertEquals(listOf("안녕하세요 오늘 날씨가 좋습니다 다음 문장입니다"), listener.results)
-        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(20))
-        assertEquals(1, listener.results.size)
-    }
-
-    @Test
-    fun cancellingReleasesTheOldRecognizerAndRejectsItsLateResultsInANewSession() {
-        val first = RecordingListener()
-        input.start(first)
-        shadowOf(Looper.getMainLooper()).idle()
-        val old = shadowOf(ShadowSpeechRecognizer.getLatestSpeechRecognizer())
-        input.cancel()
-        assertTrue(old.isDestroyed)
-        val next = RecordingListener()
-        input.start(next)
-        shadowOf(Looper.getMainLooper()).idle()
-        old.triggerOnPartialResults(results("old partial"))
-        old.triggerOnResults(results("old result"))
-        old.triggerOnError(SpeechRecognizer.ERROR_CLIENT)
-        assertTrue(first.results.isEmpty())
-        assertTrue(first.partials.isEmpty())
-        assertTrue(first.problems.isEmpty())
-        assertTrue(next.results.isEmpty())
-        val current = shadowOf(ShadowSpeechRecognizer.getLatestSpeechRecognizer())
-        assertFalse(current.isDestroyed)
-        current.triggerOnResults(results("current result"))
-        input.stop()
-        assertEquals(listOf("current result"), next.results)
-    }
-
-    @Test
-    fun deniedPermissionNeverCreatesAMicrophoneSession() {
-        shadowOf(context).denyPermissions(Manifest.permission.RECORD_AUDIO)
-        val listener = RecordingListener()
-        input.start(listener)
-        assertEquals(listOf(VoiceInputProblem.PERMISSION), listener.problems)
-        assertNull(ShadowSpeechRecognizer.getLatestSpeechRecognizer())
-    }
-
-    @Test
-    fun unavailableKoreanModelIsRecoverableAndTheRecognizerIsReleased() {
-        val listener = RecordingListener()
-        input.start(listener)
-        shadowOf(Looper.getMainLooper()).idle()
-        val engine = shadowOf(ShadowSpeechRecognizer.getLatestSpeechRecognizer())
-        engine.triggerOnError(SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE)
-        assertEquals(listOf(VoiceInputProblem.LANGUAGE), listener.problems)
-        assertTrue(engine.isDestroyed)
-        engine.triggerOnResults(results("late result"))
-        assertTrue(listener.results.isEmpty())
-    }
-
-    @Test
-    fun ambientRmsNeverAnimatesBeforeSpeechDetectionAndSilenceWaitIsBounded() {
-        val listener = RecordingListener()
-        input.start(listener)
-        shadowOf(Looper.getMainLooper()).idle()
-        val engine = shadowOf(ShadowSpeechRecognizer.getLatestSpeechRecognizer())
-        engine.triggerOnReadyForSpeech(Bundle())
-        listOf(-2f, 0f, 2f, 8f).forEach(engine::triggerOnRmsChanged)
-        assertTrue(listener.levels.all { it == 0f })
-        engine.triggerOnError(SpeechRecognizer.ERROR_SPEECH_TIMEOUT)
-        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(6))
-        assertTrue(listener.problems.isEmpty())
-        val next = shadowOf(ShadowSpeechRecognizer.getLatestSpeechRecognizer())
-        next.triggerOnReadyForSpeech(Bundle())
-        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(6))
-        assertEquals(1, listener.ends)
-        next.triggerOnError(SpeechRecognizer.ERROR_NO_MATCH)
-        assertEquals(listOf(VoiceInputProblem.NO_MATCH), listener.problems)
-        assertTrue(next.isDestroyed)
-    }
-
-    @Test
-    fun cancellationDuringThePhrasePauseRejectsRestartAndQueuedIdleCompletion() {
-        val listener = RecordingListener()
-        input.start(listener)
-        shadowOf(Looper.getMainLooper()).idle()
-        val current = ShadowSpeechRecognizer.getLatestSpeechRecognizer()
-        val engine = shadowOf(current)
-        engine.triggerOnReadyForSpeech(Bundle())
-        engine.triggerOnResults(results("첫 문장"))
-        input.cancel()
-        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(20))
-        assertEquals(current, ShadowSpeechRecognizer.getLatestSpeechRecognizer())
-        assertTrue(listener.results.isEmpty())
-        assertEquals(0, listener.ends)
-    }
-
     private fun results(text: String) =
         Bundle().apply {
             putStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION, arrayListOf(text))
         }
+
+    private class FakeAudio : SpeechAudio {
+        // The speech shadow never consumes PCM; this descriptor owns no OS resource.
+        override val source: ParcelFileDescriptor =
+            ReflectionHelpers.callConstructor(
+                ParcelFileDescriptor::class.java,
+                ReflectionHelpers.ClassParameter.from(FileDescriptor::class.java, FileDescriptor()),
+            )
+        lateinit var ready: () -> Unit
+        lateinit var failure: () -> Unit
+        var stopped = false
+        var cancelled = false
+
+        override fun start(
+            onReady: () -> Unit,
+            onFailure: () -> Unit,
+        ) {
+            ready = onReady
+            failure = onFailure
+        }
+
+        override fun stop() {
+            stopped = true
+        }
+
+        override fun cancel() {
+            cancelled = true
+        }
+    }
 
     private class RecordingListener : ConversationSpeechInput.Listener {
         var ready = 0
         var ends = 0
         val levels = mutableListOf<Float>()
         val partials = mutableListOf<String>()
+        val committed = mutableListOf<String>()
         val results = mutableListOf<String>()
         val problems = mutableListOf<VoiceInputProblem>()
 
@@ -371,6 +321,10 @@ class AndroidConversationSpeechInputTest {
 
         override fun onPartial(text: String) {
             partials += text
+        }
+
+        override fun onCommitted(text: String) {
+            committed += text
         }
 
         override fun onEndOfSpeech() {

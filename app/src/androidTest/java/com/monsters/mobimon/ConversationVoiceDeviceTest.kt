@@ -2,6 +2,7 @@ package com.monsters.mobimon
 
 import android.Manifest
 import android.graphics.Bitmap
+import android.media.AudioManager
 import android.util.Log
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -129,6 +130,8 @@ class ConversationVoiceDeviceTest {
                     .isNotEmpty()
             }
             compose.onNodeWithTag("chat-send").assertIsNotEnabled()
+            val audioManager = context.getSystemService(AudioManager::class.java)
+            compose.waitUntil(10_000) { audioManager.activeRecordingConfigurations.isNotEmpty() }
             Log.i("MobiMonVoiceDeviceTest", "MICROPHONE_READY_FOR_FIXTURE")
             compose.waitUntil(20_000) {
                 compose
@@ -166,7 +169,9 @@ class ConversationVoiceDeviceTest {
                     ).fetchSemanticsNodes(atLeastOneRootRequired = false)
                     .isNotEmpty()
             }
+            compose.waitUntil(10_000) { audioManager.activeRecordingConfigurations.isEmpty() }
             assertEquals(0, conversations.replies)
+            compose.waitForIdle()
             val image = checkNotNull(InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot())
             val output = File(context.filesDir, "test-screenshots").apply { mkdirs() }
             File(output, "conversation-native-recognized-korean.png").outputStream().use {
@@ -198,6 +203,7 @@ class ConversationVoiceDeviceTest {
                     ).fetchSemanticsNodes(atLeastOneRootRequired = false)
                     .isNotEmpty()
             }
+            compose.waitUntil(10_000) { audioManager.activeRecordingConfigurations.isEmpty() }
             vehicle.publish(DrivingState.PARKED, SignalQuality.VALID)
             compose.waitUntil(10_000) {
                 compose.onAllNodesWithTag("chat-input").fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty()
@@ -219,6 +225,7 @@ class ConversationVoiceDeviceTest {
                     .isNotEmpty()
             }
             scenario.moveToState(Lifecycle.State.CREATED)
+            compose.waitUntil(10_000) { audioManager.activeRecordingConfigurations.isEmpty() }
             scenario.moveToState(Lifecycle.State.RESUMED)
             compose.waitUntil(10_000) {
                 compose.onAllNodesWithTag("chat-input").fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty()

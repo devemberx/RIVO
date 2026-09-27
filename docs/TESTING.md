@@ -76,8 +76,9 @@ identify the owning suites; individual test names define detailed cases.
 | Navigation/restoration, alert counts/popup, reveal input, safe insets and enlarged text | [Shell suites](../app/src/test/java/com/monsters/mobimon/ui), connection journey, owning Home/Quest/Vehicle suites |
 | Overlay clamping, resize/drag and independent motion preference | [OverlayMovementBoundsTest](../app/src/test/java/com/monsters/mobimon/service/OverlayMovementBoundsTest.kt), [DebugOverlayPlacementTest](../app/src/testDebug/java/com/monsters/mobimon/ui/DebugOverlayPlacementTest.kt), shell motion tests |
 | Chat draft/ownership, failed turns, network/parking recovery, guarded Send and deadlines | [Conversation feature suites](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth), connection journey, [network status tests](../app/src/test/java/com/monsters/mobimon/network/AndroidConversationNetworkStatusTest.kt) |
-| Voice permission/cancellation, review/footer, explicit Send and 20/60/20-second bounds | `ConversationViewModelTest`, `ConversationScreenTest` in the auth feature |
-| Segmented/ordinary sessions, repeated phrases/full final results, reuse, pause timer and late callbacks | [AndroidConversationSpeechInputTest](../app/src/test/java/com/monsters/mobimon/speech/AndroidConversationSpeechInputTest.kt); Robolectric |
+| Voice permission/cancellation, confirmed text on errors/timeouts, review/footer, explicit Send and deadlines | `ConversationViewModelTest`, `ConversationScreenTest` in the auth feature |
+| External PCM request, repeated phrases/full final results, EOF Stop, pause timer and late callbacks | [AndroidConversationSpeechInputTest](../app/src/test/java/com/monsters/mobimon/speech/AndroidConversationSpeechInputTest.kt); Robolectric |
+| PCM ordering, microphone tail/queue drain, explicit overflow and cancellation | [SpeechAudioBufferTest](../app/src/test/java/com/monsters/mobimon/speech/SpeechAudioBufferTest.kt), [SpeechPcmCaptureTest](../app/src/test/java/com/monsters/mobimon/speech/SpeechPcmCaptureTest.kt); actual capture/pipe uses the device test below |
 | Actual offline Korean microphone, three repeated greetings, pauses, Stop and interruption | [ConversationVoiceDeviceTest](../app/src/androidTest/java/com/monsters/mobimon/ConversationVoiceDeviceTest.kt); opt-in, see below |
 | Native IME, Back/draft, recovery dialogs, voice action clearance and footer | [ConversationKeyboardDeviceTest](../app/src/androidTest/java/com/monsters/mobimon/preview/ConversationKeyboardDeviceTest.kt); isolated Debug preview |
 
@@ -110,9 +111,11 @@ Use an installed Korean system model, disconnect network and feed synthetic
 “안녕하세요” at `MICROPHONE_READY_FOR_FIXTURE`, `NEXT_PHRASE_READY_FOR_FIXTURE` and
 `THIRD_PHRASE_READY_FOR_FIXTURE`. The test includes a six-second pause, stops after
 the third greeting, checks the full review and then explicit Send/cancellation.
-Account/vehicle/Copilot dependencies remain fakes. A successful run proves neither
-all OEM segmentation support nor offline use when network is available. Never put
-audio or transcripts from real users in production logs.
+The production path uses continuous `AudioRecord` capture and an external PCM pipe.
+Account/vehicle/Copilot dependencies remain fakes. A separate muted-microphone probe
+verified external-source support and EOF finalization on GoogleTTSRecognitionService.
+A successful run proves neither all OEM audio-source support nor offline use when
+network is available. Never put real-user audio or transcripts in production logs.
 
 ### CI AAOS environment
 

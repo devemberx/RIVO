@@ -143,20 +143,29 @@ Offline preference is advisory; service availability does not prove Korean/offli
 support. Permission and microphone activation are explicit. Voice requires a resumed,
 authenticated, authorized chat but remains usable during Copilot network failures.
 
-Request segmented recognition with a 12-second pause boundary. Ordinary-result
-services reuse the recognizer after terminal callbacks; pre-ready option rejection
-retries once without segmentation. No-match retries wait 300 ms. Capture gaps and
-service accuracy remain device-dependent. Keep repeated segments; a full final
-result replaces only that request's segments. Partial hypotheses are never committed.
-Speech beginning suspends the pause timer until speech end; ambient RMS cannot
-extend it. Bound startup/capture/finalization at 20/60/20 seconds.
+The app captures mono 16kHz PCM continuously with `AudioRecord` and supplies it
+through `EXTRA_AUDIO_SOURCE` in one segmented recognition request. A bounded memory
+queue separates capture from pipe delivery; slow writes never overwrite queued
+samples. Stop drains the microphone tail and queued PCM, then closes the stream rather than
+calling `stopListening` early. Cancel releases capture/pipe and clears queued audio.
+Nothing is written to disk. Overflow or premature service termination ends with an
+error, without a silent fallback to microphone sessions with capture gaps.
 
-Stop produces an editable draft; only explicit Send submits it. Cancel, background,
-navigation or restrictions release recognition and preserve the prior draft. Reject
-cancelled-session callbacks and duplicate terminal callbacks before restart. Android
-callbacks lack request IDs, so a misbehaving reused service's late events after
-restart cannot be attributed reliably. Never store/log audio. Validate actual
-microphones, Korean accuracy and offline behavior on the target device.
+Keep repeated segments and separate confirmed text from partial hypotheses. A full
+final result replaces that request's segments. Service errors or finalization timeout
+retain confirmed text as an editable draft with the failure; partial guesses are
+never promoted. Explicit cancellation/restrictions retain the previous draft instead.
+Only Send submits. Reject callbacks after session cancellation. Startup/capture/
+finalization remain bounded at 20/60/20 seconds; the 12-second pause timer is suspended
+during speech. Ambient RMS and empty segments cannot extend silence.
+
+External PCM input and stream-close completion were verified on the local AAOS 34-ext9
+GoogleTTSRecognitionService with the microphone disabled and network disconnected.
+That does not establish support on other services/OEMs; verify those before rollout.
+The app does not replay unconfirmed audio after a service failure, and temporary
+capture buffers cannot survive process death. Never claim universal loss-free speech
+or store/log user audio; OS/driver capture overruns remain possible under overload.
+Physical-device accuracy and microphone behavior still need verification.
 
 ### Vehicle interaction authorization
 

@@ -864,6 +864,56 @@ class ConversationViewModelTest {
             assertTrue(provider.requests.isEmpty())
         }
 
+    @Test fun confirmedSpeechSurvivesServiceFailureAndFinalizationTimeoutWithoutSending() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val speech = FakeSpeech()
+            val model = model(speech)
+            runCurrent()
+            model.setVoiceResumed(true)
+            model.edit(TextFieldValue("previous draft"))
+            model.requestVoice(true)
+            val first = requireNotNull(speech.listener)
+            first.onReady()
+            first.onCommitted("확정된 첫 문장")
+            first.onPartial("확정된 첫 문장 미확정")
+            first.onFailure(VoiceInputProblem.SERVICE)
+            assertEquals("확정된 첫 문장", model.draft.text)
+            assertEquals(VoiceInputPhase.REVIEW, model.state.value.voice.phase)
+            assertEquals(VoiceInputProblem.SERVICE, model.state.value.voice.problem)
+            model.requestVoice(true)
+            val second = requireNotNull(speech.listener)
+            second.onReady()
+            second.onCommitted("다음 녹음의 확정 문장")
+            model.stopVoice()
+            advanceTimeBy(20_001)
+            runCurrent()
+            assertEquals("다음 녹음의 확정 문장", model.draft.text)
+            assertEquals(VoiceInputProblem.TIMEOUT, model.state.value.voice.problem)
+            second.onCommitted("늦은 결과")
+            assertEquals("다음 녹음의 확정 문장", model.draft.text)
+            assertTrue(provider.requests.isEmpty())
+        }
+
+    @Test fun cancellingStillDiscardsTheNewRecordingEvenAfterConfirmedSpeech() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val speech = FakeSpeech()
+            val model = model(speech)
+            runCurrent()
+            model.setVoiceResumed(true)
+            model.edit(TextFieldValue("previous draft"))
+            model.requestVoice(true)
+            val listener = requireNotNull(speech.listener)
+            listener.onReady()
+            listener.onCommitted("취소할 확정 문장")
+            model.cancelVoice()
+            listener.onCommitted("늦은 결과")
+            listener.onFailure(VoiceInputProblem.SERVICE)
+            assertEquals("previous draft", model.draft.text)
+            assertTrue(provider.requests.isEmpty())
+        }
+
     @Test fun totalVoiceBoundStopsForReviewInsteadOfDiscardingRecognizedPhrases() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
@@ -1114,6 +1164,40 @@ class ConversationViewModelTest {
             val listener = requireNotNull(speech.listener)
             listener.onReady()
             listener.onResult("새로운 초안")
+            assertEquals("새로운 초안", model.draft.text)
+            assertFalse(model.state.value.failed)
+            assertTrue(
+                model.state.value.messages
+                    .isEmpty(),
+            )
+            model.edit(TextFieldValue("수정한 새 초안"))
+            assertEquals("수정한 새 초안", model.draft.text)
+            assertEquals(ConversationConnection.UNAVAILABLE, model.state.value.connection)
+            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
+            model.send()
+            model.retry()
+            runCurrent()
+            assertEquals(1, provider.requests.size)
+        }
+
+    @Test fun confirmedDraftAfterRecognitionFailureRemainsEditableAfterAFailedChatTurn() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            provider.answer = { ConversationResult.Failure(ConversationProblem.NETWORK) }
+            val speech = FakeSpeech()
+            val model = model(speech)
+            runCurrent()
+            model.edit(TextFieldValue("failed attempt"))
+            model.send()
+            runCurrent()
+            assertTrue(model.state.value.failed)
+            model.setVoiceResumed(true)
+            model.requestVoice(true)
+            assertEquals(1, speech.starts)
+            val listener = requireNotNull(speech.listener)
+            listener.onReady()
+            listener.onCommitted("새로운 초안")
+            listener.onFailure(VoiceInputProblem.AUDIO)
             assertEquals("새로운 초안", model.draft.text)
             assertFalse(model.state.value.failed)
             assertTrue(
