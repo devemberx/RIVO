@@ -1,7 +1,7 @@
 # Product design
 
 MobiMon is a parked companion for vehicle information, conversation, quests and
-personalization. [V5 exports](ui/README.md) own screen geometry;
+personalization. [UI exports](ui/README.md) own screen geometry;
 [Architecture](ARCHITECTURE.md) separates implementation from integration gaps.
 
 ## Concept
