@@ -34,6 +34,7 @@ internal fun QuestCardItem(
     quest: QuestItemUiModel,
     scale: Float,
     canClaim: Boolean,
+    isClaimPending: Boolean = false,
     onClick: () -> Unit,
     onClaimReward: () -> Unit,
     modifier: Modifier = Modifier,
@@ -136,7 +137,10 @@ internal fun QuestCardItem(
                     )
                     Spacer(Modifier.width(16.dp * scale))
                     Text(
-                        text = stringResource(R.string.quest_action_claim),
+                        text =
+                            stringResource(
+                                if (isClaimPending) R.string.quest_saving_short else R.string.quest_action_claim,
+                            ),
                         style = questTextStyle(38f, scale, bold = true, color = Colors.onButton),
                     )
                 }
