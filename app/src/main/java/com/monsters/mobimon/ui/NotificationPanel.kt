@@ -165,7 +165,7 @@ private fun NotificationEmptyState(
 ) {
     Box(
         Modifier
-            .offset(panelWidth / 2 - (64 * scale).dp, (524 * scale).dp)
+            .offset(panelWidth / 2 - (64 * scale).dp, (494 * scale).dp)
             .size((128 * scale).dp)
             .background(Color(0xFF203C58), CircleShape)
             .border((1 * scale).dp, Color(0xFF64839F), CircleShape),
@@ -180,7 +180,7 @@ private fun NotificationEmptyState(
     }
     Text(
         "새 알림이 없어요",
-        Modifier.offset(y = (678 * scale).dp).width(panelWidth),
+        Modifier.offset(y = (648 * scale).dp).width(panelWidth),
         color = titleColor,
         fontSize = (46 * scale).sp,
         fontWeight = FontWeight.Bold,
@@ -188,7 +188,7 @@ private fun NotificationEmptyState(
     )
     Text(
         "차량과 퀘스트의 새 소식이 생기면\n여기서 알려드릴게요.",
-        Modifier.offset(y = (760 * scale).dp).width(panelWidth),
+        Modifier.offset(y = (730 * scale).dp).width(panelWidth),
         color = detailColor,
         fontSize = (30 * scale).sp,
         textAlign = TextAlign.Center,
