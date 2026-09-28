@@ -223,6 +223,7 @@ class CopilotConnectionJourneyTest {
             }
             waitFor(hasText(text(AuthR.string.chat_new)))
             compose.onNodeWithText(text(AuthR.string.chat_new)).ensureDisplayed().performClick()
+            waitForAbsent(hasText("이야기를 들려줘서 고마워요."))
             compose.onNodeWithText("이야기를 들려줘서 고마워요.").assertDoesNotExist()
             compose.onNodeWithTag("chat-send").assertIsNotEnabled()
         }
@@ -283,7 +284,9 @@ class CopilotConnectionJourneyTest {
             waitFor(hasText(text(AuthR.string.chat_ready)))
             compose.onNodeWithText("second exchange").assertExists()
             compose.onNodeWithTag("chat-new-action").ensureDisplayed().performClick()
+            waitForAbsent(hasTestTag("chat-new-action"))
             compose.onNodeWithTag("chat-new-action").assertDoesNotExist()
+            compose.onNodeWithText("second exchange").assertDoesNotExist()
             compose.onNodeWithTag("chat-input").performTextInput("fresh exchange")
             waitFor(hasTestTag("chat-send") and isEnabled())
             compose.onNodeWithTag("chat-send").performClick()
@@ -353,5 +356,9 @@ class CopilotConnectionJourneyTest {
 
     private fun waitFor(matcher: SemanticsMatcher) {
         compose.waitUntil(timeoutMillis = 10_000) { compose.onAllNodes(matcher).fetchSemanticsNodes().size == 1 }
+    }
+
+    private fun waitForAbsent(matcher: SemanticsMatcher) {
+        compose.waitUntil(timeoutMillis = 10_000) { compose.onAllNodes(matcher).fetchSemanticsNodes().isEmpty() }
     }
 }
