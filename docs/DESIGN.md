@@ -175,8 +175,8 @@ no-match/silence leaves the cleared composer and disclosure in place.
 Network popups release the microphone and retain unsent drafts or failed turns.
 
 Exports may show older recovery copy or visible history; use the current session
-behavior with their geometry. Footer names GitHub Copilot, discloses transmitted
-conversation, available name/time and AI uncertainty. Local clearing does not promise
+behavior with their geometry. Footer names GitHub Copilot and discloses conversation
+transmission and AI uncertainty. Local clearing does not promise
 provider deletion. Manual lookup preserves the existing companion copy and suggestions;
 manual answers add short app-generated source references, while tool protocol and raw
 search results never become chat bubbles. Spoken replies remain planned and must yield

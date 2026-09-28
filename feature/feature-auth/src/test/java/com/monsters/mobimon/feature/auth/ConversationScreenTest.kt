@@ -91,7 +91,7 @@ class ConversationScreenTest {
     fun copilotDisclosureStaysVisibleDuringVoicePermissionAndSignOut() {
         state = state.copy(voice = VoiceInputState(available = true))
         show()
-        val disclosure = "대화와 확인된 이름·시간은 GitHub Copilot에 전달돼요. 답변은 부정확할 수 있어요."
+        val disclosure = "대화는 GitHub Copilot으로 전송돼요. AI 답변은 부정확할 수 있어요."
         compose.onNodeWithText(disclosure).assertIsDisplayed()
         capture("composer-placeholder")
 
@@ -727,7 +727,7 @@ class ConversationScreenTest {
         }
         capture("keyboard-input")
         compose.onNodeWithText("오늘은 조금 피곤한 하루였어.").assertIsDisplayed()
-        compose.onNodeWithText("대화와 확인된 이름·시간은 GitHub Copilot에 전달돼요. 답변은 부정확할 수 있어요.").assertIsDisplayed()
+        compose.onNodeWithText("대화는 GitHub Copilot으로 전송돼요. AI 답변은 부정확할 수 있어요.").assertIsDisplayed()
         val resized = compose.onNodeWithTag("chat-panel").fetchSemanticsNode().boundsInRoot
         val composer = compose.onNodeWithTag("chat-composer").fetchSemanticsNode().boundsInRoot
         assertEquals(panel.left, resized.left, 1f)
@@ -994,7 +994,7 @@ class ConversationScreenTest {
         compose.onNodeWithTag("chat-send").assertIsNotEnabled()
         compose.onNodeWithTag("chat-new-action").assertDoesNotExist()
         compose.onNodeWithText("듣고 있어요", substring = true).assertDoesNotExist()
-        compose.onNodeWithText("대화와 확인된 이름·시간은 GitHub Copilot에 전달돼요. 답변은 부정확할 수 있어요.").assertIsDisplayed()
+        compose.onNodeWithText("대화는 GitHub Copilot으로 전송돼요. AI 답변은 부정확할 수 있어요.").assertIsDisplayed()
         compose.onNodeWithContentDescription("녹음 마치고 내용 확인").performClick()
         compose.runOnIdle {
             assertEquals(1, voiceStops)
@@ -1006,7 +1006,7 @@ class ConversationScreenTest {
         compose.runOnIdle { state = state.copy(voice = state.voice.copy(problem = VoiceInputProblem.NO_MATCH)) }
         capture("voice-review")
         compose.onNodeWithTag("chat-voice-hint").assertDoesNotExist()
-        compose.onNodeWithText("대화와 확인된 이름·시간은 GitHub Copilot에 전달돼요. 답변은 부정확할 수 있어요.").assertIsDisplayed()
+        compose.onNodeWithText("대화는 GitHub Copilot으로 전송돼요. AI 답변은 부정확할 수 있어요.").assertIsDisplayed()
         compose.onNodeWithTag("chat-input").assertIsDisplayed()
         compose.onNodeWithContentDescription("음성으로 입력").assertIsDisplayed()
         val composer = compose.onNodeWithTag("chat-composer").fetchSemanticsNode().boundsInRoot
