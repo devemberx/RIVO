@@ -123,18 +123,12 @@ class DecorativeMotionTest {
                     accessoryId = "accessory:luna_cap",
                     emotion = PetEmotion.SICK,
                 )
-                PetAvatar(
-                    modifier = Modifier.size(180.dp).testTag("luna_sunglasses_static"),
-                    friendId = "friend:luna",
-                    accessoryId = "accessory:luna_sunglasses",
-                )
             }
         }
         val firstIdle = pixels("luna_hat_idle")
         val firstMoving = pixels("luna_hat_moving")
         val firstHungry = pixels("luna_hat_hungry")
         val firstSick = pixels("luna_hat_sick")
-        val firstSunglasses = pixels("luna_sunglasses_static")
 
         compose.mainClock.advanceTimeBy(320)
 
@@ -142,7 +136,40 @@ class DecorativeMotionTest {
         assertTrue("Luna with hat moves/runs over time", firstMoving != pixels("luna_hat_moving"))
         assertTrue("Luna with hat hungry animates over time", firstHungry != pixels("luna_hat_hungry"))
         assertTrue("Luna with hat sick animates over time", firstSick != pixels("luna_hat_sick"))
-        assertTrue("Luna with sunglasses remains static", firstSunglasses == pixels("luna_sunglasses_static"))
+    }
+
+    @Test
+    fun lunaSunglassesAnimateAndSwitchAcrossAllStates() {
+        var accessory by mutableStateOf<String?>(null)
+        var emotion by mutableStateOf(PetEmotion.IDLE)
+        var moving by mutableStateOf(false)
+        show {
+            PetAvatar(
+                Modifier.size(180.dp).testTag("luna"),
+                friendId = "friend:luna",
+                accessoryId = accessory,
+                emotion = emotion,
+                isMoving = moving,
+            )
+        }
+        val normal = pixels("luna")
+        updateStateAndDraw { accessory = "accessory:luna_sunglasses" }
+        assertTrue("Equipping sunglasses changes rendered artwork", normal != pixels("luna"))
+        for (state in listOf(PetEmotion.IDLE, PetEmotion.HUNGRY, PetEmotion.SICK)) {
+            updateStateAndDraw { emotion = state }
+            val first = pixels("luna")
+            compose.mainClock.advanceTimeBy(320)
+            assertTrue("Sunglasses animate in $state", first != pixels("luna"))
+            saveLunaReview(state.name.lowercase())
+        }
+        updateStateAndDraw {
+            emotion = PetEmotion.IDLE
+            moving = true
+        }
+        val run = pixels("luna")
+        compose.mainClock.advanceTimeBy(320)
+        assertTrue("Sunglasses run animation advances", run != pixels("luna"))
+        saveLunaReview("run")
     }
 
     @Test
@@ -380,6 +407,17 @@ class DecorativeMotionTest {
         }
         compose.mainClock.advanceTimeByFrame()
         compose.waitForIdle()
+    }
+
+    private fun saveLunaReview(state: String) {
+        compose.runOnIdle {
+            val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            view.draw(Canvas(bitmap))
+            val output = java.io.File("build/reports/luna-sunglasses-$state.png")
+            output.parentFile?.mkdirs()
+            output.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            bitmap.recycle()
+        }
     }
 
     private fun pixels(tag: String): List<Int> {

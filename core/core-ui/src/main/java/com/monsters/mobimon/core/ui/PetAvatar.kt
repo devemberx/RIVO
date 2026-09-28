@@ -38,38 +38,50 @@ private val IDLE_BREATH_FRAME_DURATIONS_MS =
 internal val RUN_FRAME_DURATIONS_MS =
     IntArray(24) { 50 }
 
+enum class LunaAppearance(
+    internal val assetName: String,
+) {
+    NORMAL("normal"),
+    HAT("hat"),
+    SUNGLASSES("sunglasses"),
+}
+
+private fun lunaAppearance(accessoryId: String?): LunaAppearance =
+    when (accessoryId) {
+        "accessory:luna_cap" -> LunaAppearance.HAT
+        "accessory:luna_sunglasses" -> LunaAppearance.SUNGLASSES
+        else -> LunaAppearance.NORMAL
+    }
+
 internal object LunaAnimationCache {
     @Volatile
     private var cachedFrames: List<ImageBitmap>? = null
 
     @Volatile
-    private var cachedHasHat: Boolean = false
+    private var cachedAppearance: LunaAppearance = LunaAppearance.NORMAL
 
     fun peek(): List<ImageBitmap>? = cachedFrames
 
     fun clear() {
         cachedFrames = null
-        cachedHasHat = false
+        cachedAppearance = LunaAppearance.NORMAL
     }
 
     fun getOrLoadFrames(
         context: Context,
-        hasHat: Boolean = false,
+        appearance: LunaAppearance = LunaAppearance.NORMAL,
     ): List<ImageBitmap> {
         val current = cachedFrames
-        if (current != null && cachedHasHat == hasHat) return current
+        if (current != null && cachedAppearance == appearance) return current
         return synchronized(this) {
             val syncCurrent = cachedFrames
-            if (syncCurrent != null && cachedHasHat == hasHat) return syncCurrent
+            if (syncCurrent != null && cachedAppearance == appearance) return syncCurrent
             try {
                 val assetManager = context.applicationContext?.assets ?: context.assets
                 val decodeOptions = BitmapFactory.Options().apply { inSampleSize = 2 }
                 val basePath =
-                    if (hasHat) {
-                        "characters/luna/hat/idle_breath/luna_idle_breath_hat_%02d.png"
-                    } else {
-                        "characters/luna/normal/idle_breath/luna_idle_breath_normal_%02d.png"
-                    }
+                    "characters/luna/${appearance.assetName}/idle_breath/" +
+                        "luna_idle_breath_${appearance.assetName}_%02d.png"
                 val frames =
                     (1..24).map { i ->
                         val path = String.format(Locale.US, basePath, i)
@@ -77,7 +89,7 @@ internal object LunaAnimationCache {
                             BitmapFactory.decodeStream(stream, null, decodeOptions)!!.asImageBitmap()
                         }
                     }
-                cachedHasHat = hasHat
+                cachedAppearance = appearance
                 cachedFrames = frames
                 frames
             } catch (_: Exception) {
@@ -92,33 +104,30 @@ internal object LunaRunAnimationCache {
     private var cachedFrames: List<ImageBitmap>? = null
 
     @Volatile
-    private var cachedHasHat: Boolean = false
+    private var cachedAppearance: LunaAppearance = LunaAppearance.NORMAL
 
     fun peek(): List<ImageBitmap>? = cachedFrames
 
     fun clear() {
         cachedFrames = null
-        cachedHasHat = false
+        cachedAppearance = LunaAppearance.NORMAL
     }
 
     fun getOrLoadFrames(
         context: Context,
-        hasHat: Boolean = false,
+        appearance: LunaAppearance = LunaAppearance.NORMAL,
     ): List<ImageBitmap> {
         val current = cachedFrames
-        if (current != null && cachedHasHat == hasHat) return current
+        if (current != null && cachedAppearance == appearance) return current
         return synchronized(this) {
             val syncCurrent = cachedFrames
-            if (syncCurrent != null && cachedHasHat == hasHat) return syncCurrent
+            if (syncCurrent != null && cachedAppearance == appearance) return syncCurrent
             try {
                 val assetManager = context.applicationContext?.assets ?: context.assets
                 val decodeOptions = BitmapFactory.Options().apply { inSampleSize = 2 }
                 val basePath =
-                    if (hasHat) {
-                        "characters/luna/hat/run/luna_run_left_hat_%02d.png"
-                    } else {
-                        "characters/luna/normal/run/luna_run_left_normal_%02d.png"
-                    }
+                    "characters/luna/${appearance.assetName}/run/" +
+                        "luna_run_left_${appearance.assetName}_%02d.png"
                 val frames =
                     (1..24).map { i ->
                         val path = String.format(Locale.US, basePath, i)
@@ -126,7 +135,7 @@ internal object LunaRunAnimationCache {
                             BitmapFactory.decodeStream(stream, null, decodeOptions)!!.asImageBitmap()
                         }
                     }
-                cachedHasHat = hasHat
+                cachedAppearance = appearance
                 cachedFrames = frames
                 frames
             } catch (_: Exception) {
@@ -141,33 +150,30 @@ internal object LunaHungryAnimationCache {
     private var cachedFrames: List<ImageBitmap>? = null
 
     @Volatile
-    private var cachedHasHat: Boolean = false
+    private var cachedAppearance: LunaAppearance = LunaAppearance.NORMAL
 
     fun peek(): List<ImageBitmap>? = cachedFrames
 
     fun clear() {
         cachedFrames = null
-        cachedHasHat = false
+        cachedAppearance = LunaAppearance.NORMAL
     }
 
     fun getOrLoadFrames(
         context: Context,
-        hasHat: Boolean = false,
+        appearance: LunaAppearance = LunaAppearance.NORMAL,
     ): List<ImageBitmap> {
         val current = cachedFrames
-        if (current != null && cachedHasHat == hasHat) return current
+        if (current != null && cachedAppearance == appearance) return current
         return synchronized(this) {
             val syncCurrent = cachedFrames
-            if (syncCurrent != null && cachedHasHat == hasHat) return syncCurrent
+            if (syncCurrent != null && cachedAppearance == appearance) return syncCurrent
             try {
                 val assetManager = context.applicationContext?.assets ?: context.assets
                 val decodeOptions = BitmapFactory.Options().apply { inSampleSize = 2 }
                 val basePath =
-                    if (hasHat) {
-                        "characters/luna/hat/hungry/luna_hungry_hat_%02d.png"
-                    } else {
-                        "characters/luna/normal/hungry/luna_hungry_normal_%02d.png"
-                    }
+                    "characters/luna/${appearance.assetName}/hungry/" +
+                        "luna_hungry_${appearance.assetName}_%02d.png"
                 val frames =
                     (1..24).map { i ->
                         val path = String.format(Locale.US, basePath, i)
@@ -175,7 +181,7 @@ internal object LunaHungryAnimationCache {
                             BitmapFactory.decodeStream(stream, null, decodeOptions)!!.asImageBitmap()
                         }
                     }
-                cachedHasHat = hasHat
+                cachedAppearance = appearance
                 cachedFrames = frames
                 frames
             } catch (_: Exception) {
@@ -190,33 +196,30 @@ internal object LunaSickAnimationCache {
     private var cachedFrames: List<ImageBitmap>? = null
 
     @Volatile
-    private var cachedHasHat: Boolean = false
+    private var cachedAppearance: LunaAppearance = LunaAppearance.NORMAL
 
     fun peek(): List<ImageBitmap>? = cachedFrames
 
     fun clear() {
         cachedFrames = null
-        cachedHasHat = false
+        cachedAppearance = LunaAppearance.NORMAL
     }
 
     fun getOrLoadFrames(
         context: Context,
-        hasHat: Boolean = false,
+        appearance: LunaAppearance = LunaAppearance.NORMAL,
     ): List<ImageBitmap> {
         val current = cachedFrames
-        if (current != null && cachedHasHat == hasHat) return current
+        if (current != null && cachedAppearance == appearance) return current
         return synchronized(this) {
             val syncCurrent = cachedFrames
-            if (syncCurrent != null && cachedHasHat == hasHat) return syncCurrent
+            if (syncCurrent != null && cachedAppearance == appearance) return syncCurrent
             try {
                 val assetManager = context.applicationContext?.assets ?: context.assets
                 val decodeOptions = BitmapFactory.Options().apply { inSampleSize = 2 }
                 val basePath =
-                    if (hasHat) {
-                        "characters/luna/hat/sick/luna_sick_hat_%02d.png"
-                    } else {
-                        "characters/luna/normal/sick/luna_sick_normal_%02d.png"
-                    }
+                    "characters/luna/${appearance.assetName}/sick/" +
+                        "luna_sick_${appearance.assetName}_%02d.png"
                 val frames =
                     (1..24).map { i ->
                         val path = String.format(Locale.US, basePath, i)
@@ -224,7 +227,7 @@ internal object LunaSickAnimationCache {
                             BitmapFactory.decodeStream(stream, null, decodeOptions)!!.asImageBitmap()
                         }
                     }
-                cachedHasHat = hasHat
+                cachedAppearance = appearance
                 cachedFrames = frames
                 frames
             } catch (_: Exception) {
@@ -316,7 +319,7 @@ fun PetAvatar(
     val isHungry = vehicleHungry || emotion == PetEmotion.HUNGRY
     val equippedAccessory = accessoryId ?: outfitId
     val equippedLook = CharacterArtwork.equippedLooks[equippedAccessory]
-    val hasLunaHat = cat && (equippedAccessory == "accessory:luna_cap")
+    val appearance = lunaAppearance(equippedAccessory)
 
     val activeLunaAnimation =
         when {
@@ -327,7 +330,7 @@ fun PetAvatar(
             else -> LunaActiveAnimation.IDLE
         }
 
-    LaunchedEffect(cat, activeLunaAnimation, hasLunaHat) {
+    LaunchedEffect(cat, activeLunaAnimation, appearance) {
         LunaAnimationManager.retainOnly(activeLunaAnimation)
     }
 
@@ -391,26 +394,26 @@ fun PetAvatar(
                         LunaSickAnimation(
                             modifier = Modifier.fillMaxSize(),
                             fallbackAsset = CharacterArtwork.sick(friendId, equippedAccessory),
-                            hasHat = hasLunaHat,
+                            appearance = appearance,
                         )
                     isHungry ->
                         LunaHungryAnimation(
                             modifier = Modifier.fillMaxSize(),
                             fallbackAsset = CharacterArtwork.hungry(friendId, equippedAccessory),
-                            hasHat = hasLunaHat,
+                            appearance = appearance,
                         )
                     runEnabled ->
                         LunaRunAnimation(
                             modifier = Modifier.fillMaxSize(),
                             movingLeft = movingLeft,
                             fallbackAsset = CharacterArtwork.preview(friendId, equippedAccessory),
-                            hasHat = hasLunaHat,
+                            appearance = appearance,
                         )
                     else ->
                         LunaIdleBreathAnimation(
                             modifier = Modifier.fillMaxSize(),
                             fallbackAsset = CharacterArtwork.preview(friendId, equippedAccessory),
-                            hasHat = hasLunaHat,
+                            appearance = appearance,
                         )
                 }
             } else {
@@ -443,14 +446,14 @@ fun LunaRunAnimation(
     movingLeft: Boolean = true,
     contentDescription: String? = null,
     fallbackAsset: CharacterAsset = CharacterArtwork.characters.getValue("friend:luna"),
-    hasHat: Boolean = false,
+    appearance: LunaAppearance = LunaAppearance.NORMAL,
 ) {
     if (!LocalMobiMonMotionEnabled.current) {
         CharacterAssetImage(fallbackAsset, modifier, contentDescription)
         return
     }
     val context = LocalContext.current
-    val frames = remember(context, hasHat) { LunaRunAnimationCache.getOrLoadFrames(context, hasHat) }
+    val frames = remember(context, appearance) { LunaRunAnimationCache.getOrLoadFrames(context, appearance) }
 
     if (frames.isEmpty()) {
         CharacterAssetImage(
@@ -502,11 +505,11 @@ fun LunaIdleBreathAnimation(
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
     fallbackAsset: CharacterAsset = CharacterArtwork.characters.getValue("friend:luna"),
-    hasHat: Boolean = false,
+    appearance: LunaAppearance = LunaAppearance.NORMAL,
 ) {
     IdleBreathAnimation(
         LunaAnimationCache::getOrLoadFrames,
-        hasHat,
+        appearance,
         true,
         modifier,
         contentDescription,
@@ -519,11 +522,11 @@ fun LunaHungryAnimation(
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
     fallbackAsset: CharacterAsset = CharacterArtwork.hungry("friend:luna"),
-    hasHat: Boolean = false,
+    appearance: LunaAppearance = LunaAppearance.NORMAL,
 ) {
     IdleBreathAnimation(
         LunaHungryAnimationCache::getOrLoadFrames,
-        hasHat,
+        appearance,
         true,
         modifier,
         contentDescription,
@@ -536,11 +539,11 @@ fun LunaSickAnimation(
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
     fallbackAsset: CharacterAsset = CharacterArtwork.sick("friend:luna"),
-    hasHat: Boolean = false,
+    appearance: LunaAppearance = LunaAppearance.NORMAL,
 ) {
     IdleBreathAnimation(
         LunaSickAnimationCache::getOrLoadFrames,
-        hasHat,
+        appearance,
         true,
         modifier,
         contentDescription,
@@ -550,15 +553,15 @@ fun LunaSickAnimation(
 
 @Composable
 private fun IdleBreathAnimation(
-    loadFrames: (Context, Boolean) -> List<ImageBitmap>,
-    hasHat: Boolean,
+    loadFrames: (Context, LunaAppearance) -> List<ImageBitmap>,
+    appearance: LunaAppearance,
     applyAssetTransform: Boolean,
     modifier: Modifier,
     contentDescription: String?,
     fallbackAsset: CharacterAsset,
 ) {
     val context = LocalContext.current
-    val frames = remember(context, loadFrames, hasHat) { loadFrames(context, hasHat) }
+    val frames = remember(context, loadFrames, appearance) { loadFrames(context, appearance) }
 
     if (frames.isEmpty()) {
         CharacterAssetImage(
@@ -619,8 +622,8 @@ suspend fun preloadPetRunSprite(
         if (friendId == "friend:mobi") {
             MobiRunSpriteCache.getOrLoad(context, accessoryId)
         } else if (friendId == "friend:luna") {
-            val hasHat = (accessoryId == "accessory:luna_cap")
-            LunaRunAnimationCache.getOrLoadFrames(context, hasHat)
+            val appearance = lunaAppearance(accessoryId)
+            LunaRunAnimationCache.getOrLoadFrames(context, appearance)
         }
     }
 }
