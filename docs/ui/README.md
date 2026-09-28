@@ -21,6 +21,10 @@ only with a new export from its linked frame. The connected screen includes a
 
 ### Shell
 
+Populated notification references use 160 px rows with 16 px gaps while retaining
+their text and icon sizes. The five-alert state keeps a fixed header and a 944 px
+list viewport; its partially visible final row indicates more content below.
+
 | Reference | Visible state |
 | --- | --- |
 | [home.svg](shell/home.svg) | [Home with notification indicator; three alerts](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-3973) |
@@ -31,7 +35,7 @@ only with a new export from its linked frame. The connected screen includes a
 | [menu-many-notifications.svg](shell/menu-many-notifications.svg) | [Menu with notification row; five alerts](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=783-1164) |
 | [notifications-empty.svg](shell/notifications-empty.svg) | [Compact header with centered bell empty state](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=777-350) |
 | [notifications-three.svg](shell/notifications-three.svg) | [Three grouped alerts with compact spacing and gift reward icon](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=777-203) |
-| [notifications-many.svg](shell/notifications-many.svg) | [Five grouped alerts with gift icons, fixed header and scrolling list](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=777-470) |
+| [notifications-many.svg](shell/notifications-many.svg) | [Five compact grouped alerts with gift icons, fixed header and scrolling list](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=777-470) |
 | [settings.svg](shell/settings.svg) | [Settings](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-3641) |
 
 ### Connection
