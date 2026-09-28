@@ -165,6 +165,18 @@ class VehicleReviewTest {
         capture(view, File(directory, "reference-card-selector.png"))
     }
 
+    @Test
+    fun enlargedTextSelectorKeepsHeaderAndSelectionVisible() {
+        show({ samples().first().second.copy(vssCardSignals = VehicleCardVssDefaults.values) }, fontScale = 2f)
+        compose.onNodeWithTag("vehicle-card-slot-1").performTouchInput { longClick() }
+
+        assertTextFullyVisible("바꿀 위치와 새 정보를 선택해 주세요.")
+        val directory = File("build/reports/vehicle-ui").apply { mkdirs() }
+        capture(view, File(directory, "enlarged-text-card-selector.png"))
+        val footer = compose.onNodeWithTag("vehicle-dialog-footer").getUnclippedBoundsInRoot()
+        assertTrue("Selected card names need room to grow with text", footer.bottom - footer.top > 98.dp)
+    }
+
     private fun renderReviewImages(
         variant: String,
         fontScale: Float,

@@ -190,12 +190,15 @@ provider deletion. Spoken replies remain planned and must yield to calls/navigat
 ## Vehicle information
 
 The [vehicle v6 exports](ui/README.md#vehicle) define the header edit action, summary,
-companion, cards and selector layout. Six default cards show condition through icon and
-text color with accessible status labels; the selector excludes assigned cards and saves
-the selected alternative locally after confirmation. Selector tabs use 64 px full pill
-shapes and centered bold labels. Match the visible gaps above and below the tabs to the
-list-to-footer gap (about 31 px); the apply button is 352 px wide. Keep card sizes stable, scroll
-additional choices, and label Debug values as simulations rather than vehicle verification.
+cards and selector layout. The companion uses shared `PetAvatar` artwork and motion,
+including equipped accessories and Hungry/Sick condition variants.
+
+Six default cards show condition through icon and text color with accessible status
+labels; the selector excludes assigned cards and saves the selected alternative locally
+after confirmation. Selector tabs use 64 px full pill shapes and centered bold labels.
+Match the visible gaps above and below the tabs to the list-to-footer gap (about 31 px);
+the apply button is 352 px wide. Keep card sizes stable, scroll additional choices, and
+label Debug values as simulations rather than vehicle verification.
 
 Distinguish Info, Normal, Caution and Unavailable. Missing/stale/invalid is never Normal;
 four-wheel Normal requires all readings, while one confirmed warning permits Caution.

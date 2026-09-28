@@ -590,24 +590,6 @@ private fun CompanionStatusPanel(
                 backgroundId = backgroundId,
                 vehicleWarning = mood == VehicleMood.WARNING,
                 vehicleHungry = mood == VehicleMood.ATTENTION,
-                artworkOverride =
-                    when (friendId) {
-                        "friend:mobi" ->
-                            when (mood) {
-                                VehicleMood.GOOD -> R.drawable.mobi_vehicle_normal
-                                VehicleMood.ATTENTION -> R.drawable.mobi_vehicle_hungry
-                                VehicleMood.WARNING -> R.drawable.mobi_vehicle_sick
-                                else -> null
-                            }
-                        "friend:luna" ->
-                            when (mood) {
-                                VehicleMood.GOOD -> R.drawable.luna_vehicle_normal
-                                VehicleMood.ATTENTION -> R.drawable.luna_vehicle_hungry
-                                VehicleMood.WARNING -> R.drawable.luna_vehicle_sick
-                                else -> null
-                            }
-                        else -> null
-                    },
             )
             Text(
                 text =
@@ -856,7 +838,9 @@ private fun VehicleCardSelector(
                 verticalArrangement = Arrangement.spacedBy(if (wide) 0.dp else 24.dp),
             ) {
                 Row(
-                    Modifier.fillMaxWidth().then(if (wide) Modifier.height(117.184.dp * designScale) else Modifier),
+                    Modifier.fillMaxWidth().then(
+                        if (wide) Modifier.heightIn(min = 117.184.dp * designScale) else Modifier,
+                    ),
                     verticalAlignment = Alignment.Top,
                 ) {
                     Column(Modifier.weight(1f)) {
@@ -1044,7 +1028,10 @@ private fun VehicleCardSelector(
                 }
                 if (wide) Spacer(Modifier.height(20.dp * designScale))
                 Row(
-                    Modifier.fillMaxWidth().then(if (wide) Modifier.height(98.dp * designScale) else Modifier),
+                    Modifier
+                        .fillMaxWidth()
+                        .then(if (wide) Modifier.heightIn(min = 98.dp * designScale) else Modifier)
+                        .testTag("vehicle-dialog-footer"),
                     verticalAlignment = Alignment.Bottom,
                 ) {
                     Column(Modifier.weight(1f).align(Alignment.Top).offset(y = 2.dp * designScale)) {
