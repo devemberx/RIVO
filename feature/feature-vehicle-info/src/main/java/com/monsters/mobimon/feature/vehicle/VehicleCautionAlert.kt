@@ -17,8 +17,8 @@ fun vehicleCautionAlerts(
         if (VehicleCardCatalog.status(id, snapshot) != VehicleCardStatus.CAUTION) return@mapNotNull null
         val title =
             when (id) {
-                "battery" -> "배터리 잔량을 확인해 주세요"
-                "tire", "tire-low" -> "타이어 상태를 확인해 주세요"
+                "battery" -> "배터리 잔량이 낮아요"
+                "tire", "tire-low" -> "타이어 공기압 확인이 필요해요"
                 else -> "${spec.title} 확인이 필요해요"
             }
         VehicleCautionAlert(id, title)

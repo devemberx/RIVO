@@ -294,19 +294,10 @@ class CopilotConnectionJourneyTest {
     }
 
     @Test
-    fun signedOutHomeAndMenuChatOpenConnectionDirectly() {
+    fun signedOutHomeChatOpensConnectionDirectly() {
         ActivityScenario.launch(MainActivity::class.java).use {
             waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
             compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
-            waitFor(hasText(text(AuthR.string.copilot_connect)))
-            compose.onNodeWithTag("chat-input").assertDoesNotExist()
-            compose.onNodeWithContentDescription(text(AuthR.string.copilot_back)).ensureDisplayed().performClick()
-            waitFor(hasContentDescription(text(PetR.string.pet_open_menu)))
-            compose.onNodeWithContentDescription(text(PetR.string.pet_open_menu)).performClick()
-            compose
-                .onNode(hasText(text(R.string.drawer_menu_chat)) and hasAnyAncestor(hasTestTag("companion-menu")))
-                .ensureDisplayed()
-                .performClick()
             waitFor(hasText(text(AuthR.string.copilot_connect)))
             compose.onNodeWithTag("chat-input").assertDoesNotExist()
         }
@@ -333,18 +324,23 @@ class CopilotConnectionJourneyTest {
     }
 
     @Test
-    fun authenticatedMenuChatOpensComposer() {
+    fun menuOffersNotificationsInsteadOfConversation() {
         authentication.approve()
         ActivityScenario.launch(MainActivity::class.java).use {
             waitFor(hasContentDescription(text(PetR.string.pet_open_menu)))
             compose.onNodeWithContentDescription(text(PetR.string.pet_open_menu)).performClick()
             compose
-                .onNode(hasText(text(R.string.drawer_menu_chat)) and hasAnyAncestor(hasTestTag("companion-menu")))
-                .ensureDisplayed()
+                .onNode(
+                    hasText(text(R.string.drawer_menu_notifications)) and hasAnyAncestor(hasTestTag("companion-menu")),
+                ).ensureDisplayed()
                 .performClick()
-            waitFor(hasTestTag("chat-input"))
-            compose.onNodeWithTag("chat-input").assertIsEnabled()
-            compose.onNodeWithTag("chat-send").assertIsNotEnabled()
+            waitFor(hasTestTag("notification-panel"))
+            compose.onNodeWithTag("chat-input").assertDoesNotExist()
+            compose.onNodeWithContentDescription("메뉴로 돌아가기").performClick()
+            compose
+                .onNode(
+                    hasText(text(PetR.string.pet_talk_action)) and hasAnyAncestor(hasTestTag("companion-menu")),
+                ).assertDoesNotExist()
         }
     }
 
