@@ -6,10 +6,24 @@ class ConversationContext(
     val vssTimestamp: String? = null,
     val timeOfDay: String? = null,
     val simulatedTime: Boolean = false,
+    val batteryPercent: Int? = null,
+    val simulatedBattery: Boolean = false,
+    val petCondition: String? = null,
+    val conditionReasons: List<ConversationConditionReason> = emptyList(),
+    val simulatedCondition: Boolean = false,
 ) {
     override fun toString() = "ConversationContext(REDACTED)"
 }
 
+class ConversationConditionReason(
+    val concern: String,
+    val signal: String,
+    val value: String,
+    val description: String,
+) {
+    override fun toString() = "ConversationConditionReason(REDACTED)"
+}
+
 fun interface ConversationContextSource {
-    fun current(): ConversationContext
+    suspend fun current(): ConversationContext
 }

@@ -46,6 +46,9 @@ data class VssInterpretationOverrides(
 interface VssRawVehicleSource {
     /** A verified adapter supplies the monotonic receive time of CurrentLocation.Timestamp. */
     val timeObservedAtMillis: Long? get() = null
+
+    /** Monotonic receive time of the battery SOC; absent until the adapter receives that signal. */
+    val batteryObservedAtMillis: Long? get() = null
     val state: StateFlow<VssRawVehicleState?>
 
     fun start() = Unit
@@ -68,6 +71,7 @@ object VssVehicleInterpreter {
         source: SignalSource,
         overrides: VssInterpretationOverrides = VssInterpretationOverrides(),
         timeObservedAtMillis: Long? = null,
+        batteryObservedAtMillis: Long? = observedAtMillis,
     ): VehicleSnapshot {
         if (raw == null) {
             return VehicleSnapshot(
@@ -84,6 +88,10 @@ object VssVehicleInterpreter {
             )
         }
 
+        val batteryPercent =
+            (overrides.batteryPercent?.toFloat() ?: raw.tractionBatterySocDisplayed)
+                .takeIf { it.isFinite() && it in 0f..100f }
+                ?.roundToInt()
         val speed = overrides.speed ?: raw.speed.roundToInt().coerceAtLeast(0)
         val gear = overrides.gear ?: raw.selectedGear.toGearLabel()
         val isMoving = overrides.isMoving ?: (raw.isMoving || raw.speed > 0f)
@@ -104,11 +112,14 @@ object VssVehicleInterpreter {
             source = source,
             drivingState = drivingState(isMoving, speed, gear),
             quality = SignalQuality.VALID,
-            batteryPercent =
-                overrides.batteryPercent
-                    ?: raw.tractionBatterySocDisplayed.roundToInt().coerceIn(0, 100),
-            batteryReceivedAtMillis = observedAtMillis,
-            batteryQuality = SignalQuality.VALID,
+            batteryPercent = batteryPercent,
+            batteryReceivedAtMillis = batteryObservedAtMillis,
+            batteryQuality =
+                if (batteryPercent != null && batteryObservedAtMillis != null) {
+                    SignalQuality.VALID
+                } else {
+                    SignalQuality.UNAVAILABLE
+                },
             isDistracted = overrides.isDistracted ?: (raw.driverDistractionLevel >= DISTRACTION_THRESHOLD_PERCENT),
             isDrowsy = overrides.isDrowsy ?: (raw.driverFatigueLevel >= FATIGUE_THRESHOLD_PERCENT || raw.dmsIsWarning),
             attentionLevel =
