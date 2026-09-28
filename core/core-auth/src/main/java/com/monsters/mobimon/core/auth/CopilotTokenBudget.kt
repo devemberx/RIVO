@@ -20,6 +20,10 @@ internal object CopilotTokenBudget {
                 else -> throw ConversationException(ConversationProblem.PROVIDER)
             }
         val encoding = registry.getEncoding(type)
+        if (request.has("tools")) {
+            // Serialized schemas, null content, call IDs, arguments and results plus protocol slack.
+            return encoding.countTokensOrdinary(request.toString()).toLong() + 128L
+        }
         val messages =
             request.optJSONArray("messages") ?: org.json.JSONArray().apply {
                 put(JSONObject().put("role", "system").put("content", request.getString("instructions")))

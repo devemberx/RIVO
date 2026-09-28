@@ -6,12 +6,17 @@ import com.monsters.mobimon.core.domain.ConversationLimits
 import com.monsters.mobimon.core.domain.ConversationProblem
 import com.monsters.mobimon.core.domain.ConversationProvider
 import com.monsters.mobimon.core.domain.ConversationResult
+import com.monsters.mobimon.core.domain.ConversationTools
 import com.monsters.mobimon.core.domain.ConversationTurn
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
@@ -65,6 +70,19 @@ internal interface CopilotApi {
         friendId: String,
         messages: List<ConversationTurn>,
     ): String
+
+    suspend fun completeWithTools(
+        access: CopilotAccess,
+        model: CopilotModel,
+        friendId: String,
+        messages: List<ConversationTurn>,
+        tools: ConversationTools,
+        guard: suspend () -> Unit,
+    ): String {
+        if (tools.tools.isNotEmpty()) throw ConversationException(ConversationProblem.PROVIDER)
+        guard()
+        return complete(access, model, friendId, messages).also { guard() }
+    }
 }
 
 /** Experimental native adapter. Successful GitHub authentication alone never establishes readiness. */
@@ -75,6 +93,7 @@ internal class CopilotConversationProvider(
     private val api: CopilotApi,
     private val nowMillis: () -> Long,
     private val rejectCredential: suspend (ConversationCredential) -> Unit,
+    private val tools: ConversationTools = ConversationTools.None,
 ) : ConversationProvider {
     private val mutex = Mutex()
     private var cachedCredential: ConversationCredential? = null
@@ -93,28 +112,47 @@ internal class CopilotConversationProvider(
         friendId: String,
         messages: List<ConversationTurn>,
     ): ConversationResult<String> =
-        operation(accountId) { lease ->
-            if (conversationId.isBlank() ||
-                conversationId.length > 128 ||
-                messages.isEmpty() ||
-                messages.size % 2 != 1 ||
-                messages.withIndex().any { (index, message) ->
-                    message.fromUser != (index % 2 == 0) ||
-                        message.text.isBlank() ||
-                        message.text.length >
-                        if (message.fromUser) {
-                            ConversationLimits.INPUT_CHARACTERS
-                        } else {
-                            ConversationLimits.REPLY_CHARACTERS
-                        }
+        withTimeoutOrNull(30_000) {
+            operation(accountId) { lease ->
+                if (conversationId.isBlank() ||
+                    conversationId.length > 128 ||
+                    messages.isEmpty() ||
+                    messages.size % 2 != 1 ||
+                    messages.withIndex().any { (index, message) ->
+                        message.fromUser != (index % 2 == 0) ||
+                            message.text.isBlank() ||
+                            message.text.length >
+                            if (message.fromUser) {
+                                ConversationLimits.INPUT_CHARACTERS
+                            } else {
+                                ConversationLimits.REPLY_CHARACTERS
+                            }
+                    }
+                ) {
+                    throw ConversationException(ConversationProblem.LIMIT)
                 }
-            ) {
-                throw ConversationException(ConversationProblem.LIMIT)
+                coroutineScope {
+                    val monitor =
+                        if (tools.tools.isNotEmpty()) {
+                            launch {
+                                while (true) {
+                                    delay(100)
+                                    guard(lease)
+                                }
+                            }
+                        } else {
+                            null
+                        }
+                    try {
+                        prepare(lease)
+                        guard(lease)
+                        api.completeWithTools(access!!, selectedModel!!, friendId, messages, tools) { guard(lease) }
+                    } finally {
+                        monitor?.cancel()
+                    }
+                }
             }
-            prepare(lease)
-            guard(lease)
-            api.complete(access!!, selectedModel!!, friendId, messages)
-        }
+        } ?: ConversationResult.Failure(ConversationProblem.TIMEOUT)
 
     private suspend fun prepare(
         lease: ConversationCredential,
@@ -200,6 +238,7 @@ internal class CopilotConversationProvider(
             authentication: PersistentGitHubAuthentication,
             interactionAllowed: () -> Boolean,
             context: ConversationContextSource,
+            tools: ConversationTools,
         ): ConversationProvider {
             val client = httpClient()
             return CopilotConversationProvider(
@@ -209,6 +248,7 @@ internal class CopilotConversationProvider(
                 OkHttpCopilotApi(client, System::currentTimeMillis, context = context),
                 System::currentTimeMillis,
                 authentication::rejectConversationCredential,
+                tools,
             )
         }
 

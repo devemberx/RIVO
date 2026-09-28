@@ -167,4 +167,6 @@
     <string name="chat_storage_error">대화 기록을 읽거나 저장하지 못했어요.</string>
     <string name="chat_storage_title">대화 기록 오류</string>
     <string name="chat_storage_retry">불러오기</string>
+    <string name="chat_no_evidence">답변의 근거를 찾지 못했어. 질문을 좀 더 구체적으로 바꿔 줘.</string>
+    <string name="chat_tool_unavailable">앱에 저장된 자료를 읽지 못했어. 잠시 후 다시 시도해 줘.</string>
 </resources>

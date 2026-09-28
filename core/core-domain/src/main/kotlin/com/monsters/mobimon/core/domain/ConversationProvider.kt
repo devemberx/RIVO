@@ -42,6 +42,8 @@ enum class ConversationProblem {
     RESTRICTED,
     LIMIT,
     STORAGE,
+    NO_EVIDENCE,
+    TOOL_UNAVAILABLE,
 }
 
 object ConversationLimits {
