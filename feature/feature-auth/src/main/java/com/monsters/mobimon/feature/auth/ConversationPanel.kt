@@ -189,7 +189,10 @@ internal fun ConversationPanel(
             ) {
                 Text(
                     stringResource(
-                        if (state.connection == ConversationConnection.READY && state.connectionProblem == null) {
+                        if (!state.storageBusy &&
+                            state.connection == ConversationConnection.READY &&
+                            state.connectionProblem == null
+                        ) {
                             R.string.chat_ready
                         } else {
                             R.string.chat_checking
@@ -197,7 +200,10 @@ internal fun ConversationPanel(
                     ),
                     style = mobiMonReferenceTextStyle(28f, scale),
                     color =
-                        if (state.connection == ConversationConnection.READY && state.connectionProblem == null) {
+                        if (!state.storageBusy &&
+                            state.connection == ConversationConnection.READY &&
+                            state.connectionProblem == null
+                        ) {
                             Colors.success
                         } else {
                             Colors.muted
@@ -325,7 +331,15 @@ private fun CompactConversationInlineFailure(
         verticalArrangement = Arrangement.spacedBy(8.dp * scale),
     ) {
         Text(
-            stringResource(R.string.chat_inline_failure_title),
+            stringResource(
+                if (problem ==
+                    ConversationProblem.STORAGE
+                ) {
+                    R.string.chat_storage_title
+                } else {
+                    R.string.chat_inline_failure_title
+                },
+            ),
             style = mobiMonReferenceTextStyle(24f, scale, true),
             color = Color(0xFFEAB8AA),
         )
@@ -347,7 +361,7 @@ private fun CompactConversationInlineFailure(
                 Modifier.weight(1f),
             )
             ConversationAction(
-                stringResource(R.string.chat_return),
+                stringResource(if (problem == ConversationProblem.STORAGE) R.string.chat_new else R.string.chat_return),
                 onDismiss,
                 true,
                 scale,
@@ -666,7 +680,15 @@ private fun ConversationInlineFailure(
             tint = Color.Unspecified,
         )
         Text(
-            stringResource(R.string.chat_inline_failure_title),
+            stringResource(
+                if (problem ==
+                    ConversationProblem.STORAGE
+                ) {
+                    R.string.chat_storage_title
+                } else {
+                    R.string.chat_inline_failure_title
+                },
+            ),
             Modifier.offset(48.dp * scale, -9.dp * scale).width(262.dp * scale),
             style = mobiMonReferenceTextStyle(30f, scale).copy(lineHeight = (36f * scale).sp),
             color = Color(0xFFEAB8AA),
@@ -702,7 +724,7 @@ private fun ConversationInlineFailure(
             textColor = Color(0xFFD4F4F5),
         )
         ReferenceFailureAction(
-            stringResource(R.string.chat_return),
+            stringResource(if (problem == ConversationProblem.STORAGE) R.string.chat_new else R.string.chat_return),
             onDismiss,
             true,
             scale,
@@ -1119,6 +1141,7 @@ private fun ConversationComposer(
     val voicePermissionPending = state.voice.phase == VoiceInputPhase.PERMISSION
     val canSend =
         allowed &&
+            !state.storageBusy &&
             state.connection == ConversationConnection.READY &&
             !state.failed &&
             !state.replyPending &&

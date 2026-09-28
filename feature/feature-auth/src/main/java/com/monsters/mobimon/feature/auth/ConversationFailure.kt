@@ -12,6 +12,7 @@ internal fun conversationFailureNote(problem: ConversationProblem?): Int =
         ConversationProblem.USAGE -> R.string.chat_usage_error
         ConversationProblem.PROVIDER -> R.string.chat_provider_error
         ConversationProblem.RESTRICTED -> R.string.chat_restricted_error
+        ConversationProblem.STORAGE -> R.string.chat_storage_error
         ConversationProblem.LIMIT -> R.string.chat_limit_error
         null -> R.string.chat_inline_failure_note
     }
@@ -20,6 +21,7 @@ internal fun conversationRetryLabel(problem: ConversationProblem?): Int =
     when (problem) {
         ConversationProblem.ACCOUNT -> R.string.conversation_connect
         ConversationProblem.ACCESS -> R.string.chat_network_recheck
+        ConversationProblem.STORAGE -> R.string.chat_storage_retry
         ConversationProblem.LIMIT -> R.string.chat_new
         else -> R.string.chat_retry
     }

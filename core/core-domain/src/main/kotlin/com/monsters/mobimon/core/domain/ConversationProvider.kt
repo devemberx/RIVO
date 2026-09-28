@@ -1,11 +1,11 @@
 package com.monsters.mobimon.core.domain
 
-/** Credentials stay inside the provider implementation. Dialogue is never persisted. */
+/** Credentials stay inside the provider implementation. Current dialogue storage is owned by ConversationStore. */
 interface ConversationProvider {
     /** Checks account access and returns the selected model ID. */
     suspend fun connect(accountId: Long): ConversationResult<String>
 
-    /** A fresh, memory-only conversation ID identifies the local dialogue. */
+    /** A stable current-thread ID identifies the local dialogue. */
     suspend fun reply(
         accountId: Long,
         conversationId: String,
@@ -41,11 +41,10 @@ enum class ConversationProblem {
     PROVIDER,
     RESTRICTED,
     LIMIT,
+    STORAGE,
 }
 
 object ConversationLimits {
     const val INPUT_CHARACTERS = 4_000
     const val REPLY_CHARACTERS = 12_000
-    const val HISTORY_CHARACTERS = 48_000
-    const val EXCHANGES = 16
 }

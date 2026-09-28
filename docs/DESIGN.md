@@ -136,7 +136,9 @@ Use split companion/chat panels, suggestions and a system-keyboard composer.
 Suggestions fill without sending; omit change-of-pace. Signed-out Chat opens connection
 settings. Follow the [session contract](ARCHITECTURE.md#keyboard-conversation-ui)
 for retained screen history and provider context, and full New conversation reset;
-keep New conversation reachable above the composer while messages exist.
+keep New conversation reachable above the composer while messages exist. It deletes
+only the active companion's previous local thread; switching companions restores
+their separate current threads. Missing names receive no invented fallback title.
 
 Recovery copy says “이전 대화 기록은 보존돼요.” Network failures/timeouts use the
 [network popup](ui/conversation/network-error.svg), including when voice is available.
@@ -168,7 +170,7 @@ Network popups release the microphone and retain unsent drafts or failed turns.
 
 Exports may show older recovery copy or visible history; use the current session
 behavior with their geometry. Footer names GitHub Copilot, discloses transmitted
-conversation/companion name and AI uncertainty. Local clearing does not promise
+conversation, available name/time and AI uncertainty. Local clearing does not promise
 provider deletion. Spoken replies remain planned and must yield to calls/navigation.
 
 ## Vehicle information

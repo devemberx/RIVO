@@ -4,19 +4,23 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModelStore
 import com.monsters.mobimon.core.domain.AuthenticationProblem
+import com.monsters.mobimon.core.domain.ConversationKey
 import com.monsters.mobimon.core.domain.ConversationLimits
 import com.monsters.mobimon.core.domain.ConversationProblem
 import com.monsters.mobimon.core.domain.ConversationProvider
 import com.monsters.mobimon.core.domain.ConversationResult
+import com.monsters.mobimon.core.domain.ConversationStore
 import com.monsters.mobimon.core.domain.ConversationTurn
 import com.monsters.mobimon.core.domain.GitHubAccount
 import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.core.domain.GitHubSession
 import com.monsters.mobimon.core.domain.GitHubSignIn
+import com.monsters.mobimon.core.domain.StoredConversation
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -708,7 +712,7 @@ class ConversationViewModelTest {
                     { model.activate(false) },
                     { model.bind("profile", "friend:luna") },
                 )
-            for (change in changes) {
+            for ((index, change) in changes.withIndex()) {
                 model.activate(true)
                 val late = CompletableDeferred<ConversationResult<String>>()
                 provider.answer = { withContext(NonCancellable) { late.await() } }
@@ -723,7 +727,7 @@ class ConversationViewModelTest {
                     model.state.value.messages
                         .isEmpty(),
                 )
-                assertEquals("keep", model.draft.text)
+                assertEquals(if (index == 3) "" else "keep", model.draft.text)
             }
         }
 
@@ -776,7 +780,7 @@ class ConversationViewModelTest {
             assertEquals(TextFieldValue(), model.draft)
         }
 
-    @Test fun limitsNeverSendAndNewViewModelHasNoSessionData() =
+    @Test fun perInputLimitRemainsButExchangeCountIsNotAnArtificialContextLimit() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val model = model()
@@ -787,7 +791,7 @@ class ConversationViewModelTest {
             assertEquals(ConversationProblem.LIMIT, model.state.value.problem)
             assertEquals(0, provider.requests.size)
             model.newConversation()
-            repeat(ConversationLimits.EXCHANGES) {
+            repeat(20) {
                 model.edit(TextFieldValue("turn $it"))
                 model.send()
                 runCurrent()
@@ -795,8 +799,8 @@ class ConversationViewModelTest {
             model.edit(TextFieldValue("too many"))
             model.send()
             runCurrent()
-            assertEquals(ConversationLimits.EXCHANGES, provider.requests.size)
-            assertEquals(ConversationProblem.LIMIT, model.state.value.problem)
+            assertEquals(21, provider.requests.size)
+            assertEquals(null, model.state.value.problem)
             val restarted = model()
             assertEquals(TextFieldValue(), restarted.draft)
             assertTrue(
@@ -823,6 +827,232 @@ class ConversationViewModelTest {
             assertEquals(0, provider.requests.size)
             assertEquals(ConversationConnection.SIGNED_OUT, model.state.value.connection)
         }
+
+    @Test fun durableThreadsRestorePerCompanionAndNewConversationRemovesOnlyActiveThread() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val disk = FakeConversationStore()
+
+            fun create() =
+                ConversationViewModel(
+                    authentication,
+                    provider,
+                    networkStatus,
+                    conversationStore = disk,
+                ).also {
+                    store.put("durable-${System.identityHashCode(it)}", it)
+                    it.bind("profile", "friend:mobi")
+                    it.activate(true)
+                }
+            val first = create()
+            runCurrent()
+            first.edit(TextFieldValue("mobi private"))
+            first.send()
+            runCurrent()
+            first.bind("profile", "friend:luna")
+            runCurrent()
+            assertTrue(
+                first.state.value.messages
+                    .isEmpty(),
+            )
+            first.edit(TextFieldValue("luna private"))
+            first.send()
+            runCurrent()
+            first.bind("profile", "friend:mobi")
+            runCurrent()
+            assertEquals(
+                "mobi private",
+                first.state.value.messages
+                    .first()
+                    .text,
+            )
+            val restart = create()
+            runCurrent()
+            assertEquals(
+                "mobi private",
+                restart.state.value.messages
+                    .first()
+                    .text,
+            )
+            restart.newConversation()
+            runCurrent()
+            assertTrue(
+                create()
+                    .also { runCurrent() }
+                    .state.value.messages
+                    .isEmpty(),
+            )
+            restart.bind("profile", "friend:luna")
+            runCurrent()
+            assertEquals(
+                "luna private",
+                restart.state.value.messages
+                    .first()
+                    .text,
+            )
+        }
+
+    @Test fun interruptedCommittedSaveReconcilesBeforeTheNextProviderRequest() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val disk = FakeConversationStore()
+            val committed = CompletableDeferred<Unit>()
+            disk.afterAppend = {
+                withContext(NonCancellable) { committed.await() }
+                kotlinx.coroutines.currentCoroutineContext().ensureActive()
+            }
+            val model = ConversationViewModel(authentication, provider, networkStatus, conversationStore = disk)
+            store.put("save-race", model)
+            model.bind("profile", "friend:mobi")
+            model.activate(true)
+            runCurrent()
+            model.edit(TextFieldValue("committed"))
+            model.send()
+            runCurrent()
+            model.deactivate()
+            committed.complete(Unit)
+            runCurrent()
+            model.activate(true)
+            runCurrent()
+            assertEquals(
+                listOf("committed", "answer"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+            disk.afterAppend = {}
+            model.edit(TextFieldValue("next"))
+            model.send()
+            runCurrent()
+            assertEquals(3, provider.requests.last().size)
+        }
+
+    @Test fun networkRecoveryWaitsForInterruptedSaveEvenWhenItFailsAfterCancellation() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val disk = FakeConversationStore()
+            val finish = CompletableDeferred<Unit>()
+            disk.afterAppend = {
+                withContext(NonCancellable) { finish.await() }
+                throw java.io.IOException("uncertain save")
+            }
+            val model = ConversationViewModel(authentication, provider, networkStatus, conversationStore = disk)
+            store.put("network-save-race", model)
+            model.bind("profile", "friend:mobi")
+            model.activate(true)
+            runCurrent()
+            model.edit(TextFieldValue("committed"))
+            model.send()
+            runCurrent()
+            networkStatus.online.value = false
+            runCurrent()
+            networkStatus.online.value = true
+            model.retryConnection()
+            runCurrent()
+            model.retry()
+            runCurrent()
+            assertEquals(1, provider.requests.size)
+            assertTrue(model.state.value.storageBusy)
+            finish.complete(Unit)
+            runCurrent()
+            assertFalse(model.state.value.storageBusy)
+            assertEquals(
+                listOf("committed", "answer"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+        }
+
+    @Test fun offlineBeforeSaveCommitRestoresTheUncommittedInput() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val disk = FakeConversationStore()
+            val finish = CompletableDeferred<Unit>()
+            disk.beforeAppend = { finish.await() }
+            val model = ConversationViewModel(authentication, provider, networkStatus, conversationStore = disk)
+            store.put("uncommitted-network-save", model)
+            model.bind("profile", "friend:mobi")
+            model.activate(true)
+            runCurrent()
+            model.edit(TextFieldValue("keep unsaved input"))
+            model.send()
+            runCurrent()
+            networkStatus.online.value = false
+            runCurrent()
+            assertEquals("keep unsaved input", model.draft.text)
+            assertTrue(
+                model.state.value.messages
+                    .isEmpty(),
+            )
+            assertFalse(model.state.value.storageBusy)
+            assertEquals(1, provider.requests.size)
+        }
+
+    @Test fun saveFailureRecoveryRestoresUserInputWithoutResending() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val disk = FakeConversationStore().apply { failAppend = true }
+            val model = ConversationViewModel(authentication, provider, networkStatus, conversationStore = disk)
+            store.put("save-failure", model)
+            model.bind("profile", "friend:mobi")
+            model.activate(true)
+            runCurrent()
+            model.edit(TextFieldValue("keep this"))
+            model.send()
+            runCurrent()
+            assertEquals(ConversationProblem.STORAGE, model.state.value.problem)
+            model.retry()
+            runCurrent()
+            assertEquals("keep this", model.draft.text)
+            assertEquals(1, provider.requests.size)
+        }
+
+    private class FakeConversationStore : ConversationStore {
+        val values = mutableMapOf<ConversationKey, StoredConversation>()
+        var failAppend = false
+        var beforeAppend: suspend () -> Unit = {}
+        var afterAppend: suspend () -> Unit = {}
+
+        override suspend fun load(
+            key: ConversationKey,
+            accountId: Long,
+        ): StoredConversation = values[key]?.takeIf { it.accountId == accountId } ?: reset(key, accountId)
+
+        override suspend fun reset(
+            key: ConversationKey,
+            accountId: Long,
+        ): StoredConversation =
+            StoredConversation(
+                java.util.UUID
+                    .randomUUID()
+                    .toString(),
+                accountId,
+                0,
+                emptyList(),
+            ).also {
+                values[key] =
+                    it
+            }
+
+        override suspend fun append(
+            key: ConversationKey,
+            expected: StoredConversation,
+            user: String,
+            reply: String,
+        ): StoredConversation? {
+            beforeAppend()
+            if (failAppend) throw java.io.IOException("storage failure")
+            if (values[key] !== expected) return null
+            return StoredConversation(
+                expected.id,
+                expected.accountId,
+                expected.revision + 1,
+                expected.turns + ConversationTurn(user, true) + ConversationTurn(reply, false),
+            ).also {
+                values[key] = it
+                afterAppend()
+            }
+        }
+    }
 
     private fun model(speech: ConversationSpeechInput = UnavailableConversationSpeechInput) =
         ConversationViewModel(authentication, provider, networkStatus, speech).also {

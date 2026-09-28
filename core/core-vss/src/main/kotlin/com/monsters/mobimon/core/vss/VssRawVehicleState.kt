@@ -44,6 +44,8 @@ data class VssInterpretationOverrides(
 )
 
 interface VssRawVehicleSource {
+    /** A verified adapter supplies the monotonic receive time of CurrentLocation.Timestamp. */
+    val timeObservedAtMillis: Long? get() = null
     val state: StateFlow<VssRawVehicleState?>
 
     fun start() = Unit
@@ -65,6 +67,7 @@ object VssVehicleInterpreter {
         observedAtMillis: Long,
         source: SignalSource,
         overrides: VssInterpretationOverrides = VssInterpretationOverrides(),
+        timeObservedAtMillis: Long? = null,
     ): VehicleSnapshot {
         if (raw == null) {
             return VehicleSnapshot(
@@ -143,6 +146,11 @@ object VssVehicleInterpreter {
             distanceToDestination = distanceToDestination,
             isEngineOn = overrides.isEngineOn ?: raw.combustionEngineRunning,
             timeOfDay = overrides.timeOfDay?.toTimeOfDay() ?: raw.currentLocationTimestamp.toTimeOfDay(),
+            vssTimestamp =
+                raw.currentLocationTimestamp.takeIf {
+                    overrides.timeOfDay == null && runCatching { OffsetDateTime.parse(it) }.isSuccess
+                },
+            timeObservedAtMillis = timeObservedAtMillis,
         )
     }
 }

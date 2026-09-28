@@ -70,6 +70,10 @@ object JourneyTestModule {
     fun conversation(provider: JourneyConversationProvider): ConversationProvider = provider
 
     @Provides
+    fun conversationStore(storage: JourneyStorage): com.monsters.mobimon.core.domain.ConversationStore =
+        storage.conversations
+
+    @Provides
     fun networkStatus(status: JourneyNetworkStatus): ConversationNetworkStatus = status
 
     @Provides
@@ -215,6 +219,9 @@ class JourneyStorage
         @ApplicationContext context: Context,
     ) : AutoCloseable {
         private val directory = Files.createTempDirectory(context.cacheDir.toPath(), "journey-").toFile()
+        val conversations =
+            com.monsters.mobimon.core.database
+                .AtomicConversationStore(File(directory, "chat"))
         private val job = SupervisorJob()
         val database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
         val preferences =
