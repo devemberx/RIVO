@@ -94,11 +94,17 @@ connection returns to its entry route. Explicit Home opens Home. Menus close thr
 close/backdrop/Back/selection, with equipped friend/version and safe footer placement.
 
 [Shell references](ui/README.md#shell) use a mint Home notification indicator,
-positive-only menu count and opaque left panel. Keep the header fixed; scroll one
-list of selected-card cautions followed by claimable rewards. Rows open their screens;
-quest alerts remain until receipt. Back returns to Menu; Close/backdrop returns Home.
-Empty state uses the bell illustration. See [current implementation](ARCHITECTURE.md#state-and-lifecycle)
-for the popup/reference gap.
+positive-only menu count and opaque navy panel opening from the left. Back returns
+to Menu; Close/backdrop returns Home. Keep the header fixed and scroll selected-card
+cautions followed by claimable rewards. Rows open their screens; quest alerts remain
+until reward receipt.
+
+Use the same compact title row in populated and empty states, without an unread
+subtitle or header divider. Populated lists start at y=260 in the 2560 × 1440
+reference. Vehicle checks use amber battery/tire outlines; claimable rewards use
+mint gift outlines. The empty state keeps a centered bell and short message.
+Spacing and close-control geometry live in the SVGs. See
+[current implementation](ARCHITECTURE.md#state-and-lifecycle) for the popup/reference gap.
 
 Unavailable services explain recovery. Pending actions block duplicates; uncertain
 writes reconcile before retry.
