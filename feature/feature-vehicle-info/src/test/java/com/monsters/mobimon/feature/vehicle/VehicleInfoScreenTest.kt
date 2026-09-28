@@ -6,17 +6,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
-import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
-import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -95,9 +94,9 @@ class VehicleInfoScreenTest {
     fun missingReadingsDoNotClaimHealthyVehicleOrCheckedAssistance() {
         render(snapshot(battery = null))
 
-        compose.onNodeWithText("차량의 상태가 좋아요").assertDoesNotExist()
+        compose.onNodeWithText("주요 차량 정보를 확인했어요.").assertDoesNotExist()
         compose.onNodeWithText("저압 경고 없음").assertDoesNotExist()
-        compose.onNodeWithText("주의 경고 없음").assertDoesNotExist()
+        compose.onNodeWithText("경고 없음").assertDoesNotExist()
         compose.onNodeWithText("타이어 정보 없음").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("운전자 보조 정보 없음").performScrollTo().assertIsDisplayed()
     }
@@ -114,7 +113,7 @@ class VehicleInfoScreenTest {
             ),
         )
 
-        compose.onNodeWithText("차량의 상태가 좋아요").assertDoesNotExist()
+        compose.onNodeWithText("주요 차량 정보를 확인했어요.").assertDoesNotExist()
         compose.onNodeWithText("일부 정보만 확인했어요").assertIsDisplayed()
     }
 
@@ -200,7 +199,7 @@ class VehicleInfoScreenTest {
     fun partialAssistReadingsDoNotEstablishNoWarnings() {
         render(snapshot().copy(isEmergencyBraking = false, isDrowsy = false))
 
-        compose.onNodeWithText("주의 경고 없음").assertDoesNotExist()
+        compose.onNodeWithText("경고 없음").assertDoesNotExist()
         compose.onNodeWithText("운전자 보조 정보 없음").performScrollTo().assertIsDisplayed()
     }
 
@@ -228,9 +227,9 @@ class VehicleInfoScreenTest {
 
         compose.onNodeWithText("정상").assertDoesNotExist()
         compose.onNodeWithText("85").assertDoesNotExist()
-        compose.onNodeWithText("18°").assertDoesNotExist()
+        compose.onNodeWithText("18°C").assertDoesNotExist()
         compose.onNodeWithText("저압 경고 없음").assertDoesNotExist()
-        compose.onNodeWithText("주의 경고 없음").assertDoesNotExist()
+        compose.onNodeWithText("경고 없음").assertDoesNotExist()
     }
 
     @Test
@@ -248,8 +247,8 @@ class VehicleInfoScreenTest {
         )
 
         compose.onNodeWithTag("vehicle-card-slot-3").performScrollTo().assertTextContains("정상")
-        compose.onNodeWithText("주의 경고 없음").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("18°").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("경고 없음").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("18°C").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -270,7 +269,7 @@ class VehicleInfoScreenTest {
     fun freshBatteryRemainsVisibleWhenParkingIsStale() {
         render(snapshot(quality = SignalQuality.STALE).copy(batteryQuality = SignalQuality.VALID))
 
-        compose.onNodeWithText("배터리 67%").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("67%").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -354,6 +353,17 @@ class VehicleInfoScreenTest {
     }
 
     @Test
+    fun editButtonOpensCardSelectorAtFirstSlot() {
+        render(snapshot())
+
+        compose.onNodeWithTag("vehicle-card-edit-button").performClick()
+
+        compose.onNodeWithTag("vehicle-card-selector").assertIsDisplayed()
+        compose.onNodeWithText("1번 카드").assertIsDisplayed()
+        compose.onNodeWithTag("vehicle-dialog-slot-1").assertIsDisplayed()
+    }
+
+    @Test
     fun longPressOpensFullCardChoicesAndConfirmChangesOnlyTheSelectedSlot() {
         var selections by mutableStateOf(VehicleCardCatalog.defaultSlots.map { it.id })
         compose.setContent {
@@ -367,9 +377,9 @@ class VehicleInfoScreenTest {
         }
 
         compose.onNodeWithTag("vehicle-card-slot-1").performTouchInput { longClick() }
-        compose.onNodeWithText("차량상태 카드 변경").assertIsDisplayed()
+        compose.onNodeWithTag("vehicle-card-selector").assertIsDisplayed()
         compose.onNodeWithTag("vehicle-dialog-option-battery").assertDoesNotExist()
-        compose.onNodeWithTag("vehicle-dialog-confirm").assertIsNotEnabled()
+        compose.onNodeWithTag("vehicle-dialog-confirm").assertIsEnabled()
         compose.onNodeWithTag("vehicle-dialog-option-battery-health").performScrollTo().performClick()
         compose.onNodeWithTag("vehicle-dialog-confirm").performClick()
 
@@ -403,7 +413,7 @@ class VehicleInfoScreenTest {
     }
 
     @Test
-    fun galleryExcludesAllAssignedCardsAndClearsDraftWhenSlotChanges() {
+    fun galleryExcludesAllAssignedCardsAndSelectsFirstChoiceWhenSlotChanges() {
         val assigned = listOf("battery", "battery-health", "tire", "washer", "environment", "assist")
         compose.setContent {
             MaterialTheme {
@@ -414,10 +424,11 @@ class VehicleInfoScreenTest {
         compose.onNodeWithTag("vehicle-card-slot-1").performTouchInput { longClick() }
         compose.onNodeWithTag("vehicle-dialog-option-battery").assertDoesNotExist()
         compose.onNodeWithTag("vehicle-dialog-option-battery-health").assertDoesNotExist()
-        compose.onNodeWithText("28개 · 실제 크기 · 아래로 스크롤 ↓").assertIsDisplayed()
-        compose.onNodeWithTag("vehicle-dialog-option-battery-range").performScrollTo().performClick()
+        compose.onNodeWithText("선택 가능한 카드 28개").assertIsDisplayed()
+        compose.onNodeWithTag("vehicle-dialog-option-battery-time").performScrollTo().performClick()
         compose.onNodeWithTag("vehicle-dialog-slot-2").performClick()
-        compose.onNodeWithTag("vehicle-dialog-confirm").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("배터리 건강도 → 주행 가능 거리").assertExists()
+        compose.onNodeWithTag("vehicle-dialog-confirm").assertIsEnabled()
     }
 
     @Test
@@ -456,8 +467,8 @@ class VehicleInfoScreenTest {
         assertTrue(dialog.bottom.value <= 1248f)
         compose.onNodeWithTag("vehicle-dialog-option-battery").assertDoesNotExist()
         compose.onNodeWithTag("vehicle-dialog-option-battery-health").assertIsDisplayed()
-        compose.onNodeWithText("29개 · 실제 크기 · 아래로 스크롤 ↓").assertIsDisplayed()
-        compose.onNodeWithTag("vehicle-dialog-confirm").assertIsNotEnabled()
+        compose.onNodeWithText("선택 가능한 카드 29개").assertIsDisplayed()
+        compose.onNodeWithTag("vehicle-dialog-confirm").assertIsEnabled()
     }
 
     @Test
@@ -469,6 +480,7 @@ class VehicleInfoScreenTest {
                     listOf(
                         VehicleWarning(
                             item = "타이어",
+                            location = "왼쪽 앞바퀴",
                             severity = WarningSeverity.CAUTION,
                             description = "타이어 공기압 확인이 필요해요.",
                             nextAction = "점검",
@@ -478,17 +490,16 @@ class VehicleInfoScreenTest {
             ),
         )
 
-        compose.onNodeWithText("아픔").assertIsDisplayed()
-        compose.onNodeWithText("모비가 아파요").assertIsDisplayed()
+        compose.onNodeWithText("모비가 아파요.").assertIsDisplayed()
         assertTrue(compose.onAllNodesWithText("타이어 공기압 확인이 필요해요.").fetchSemanticsNodes().isNotEmpty())
+        compose.onNodeWithText("앞왼쪽 공기압 낮음").assertIsDisplayed()
     }
 
     @Test
     fun verifiedLowBatteryUsesHungryCharacterCopy() {
         render(snapshot(battery = 18))
 
-        compose.onNodeWithText("배고픔").assertIsDisplayed()
-        compose.onNodeWithText("모비가 배고파요").assertIsDisplayed()
+        compose.onNodeWithText("모비가 배고파요.").assertIsDisplayed()
     }
 
     @Test
@@ -501,8 +512,7 @@ class VehicleInfoScreenTest {
                 )
             }
         }
-        compose.onNodeWithText("배고픔").assertIsDisplayed()
-        compose.onNodeWithText("루나가 배고파요").assertIsDisplayed()
+        compose.onNodeWithText("루나가 배고파요.").assertIsDisplayed()
     }
 
     @Test
@@ -527,7 +537,7 @@ class VehicleInfoScreenTest {
             }
         }
 
-        compose.onNodeWithText("루나가 건강해요").assertIsDisplayed()
+        compose.onNodeWithText("루나가 편안해요.").assertIsDisplayed()
         compose.runOnIdle {
             current =
                 baseline.copy(
@@ -536,7 +546,7 @@ class VehicleInfoScreenTest {
                             ("Vehicle.Body.Windshield.Front.WasherFluid.IsLevelLow" to "true"),
                 )
         }
-        compose.onNodeWithText("루나가 배고파요").assertIsDisplayed()
+        compose.onNodeWithText("루나가 배고파요.").assertIsDisplayed()
         compose.onNodeWithText("부족한 항목을 확인해 주세요").assertIsDisplayed()
 
         compose.runOnIdle {
@@ -545,7 +555,7 @@ class VehicleInfoScreenTest {
         compose.onNodeWithText("루나가 아파요").assertIsDisplayed()
 
         compose.runOnIdle { current = baseline }
-        compose.onNodeWithText("루나가 건강해요").assertIsDisplayed()
+        compose.onNodeWithText("루나가 편안해요.").assertIsDisplayed()
     }
 
     private fun render(snapshot: VehicleSnapshot) {
@@ -564,7 +574,7 @@ class VehicleInfoScreenTest {
     ) {
         compose
             .onNode(
-                hasTestTag("vehicle-card-$cardId-status") and hasAnyDescendant(hasText(label)),
+                hasTestTag("vehicle-card-$cardId-status") and hasContentDescription(label),
                 useUnmergedTree = true,
             ).assertIsDisplayed()
     }
