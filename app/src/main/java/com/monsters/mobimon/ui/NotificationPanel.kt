@@ -51,8 +51,8 @@ private val panelColor = Color(0xFF183257)
 private val cardColor = Color(0xFF203B5A)
 private val titleColor = Color(0xFFF4F7FC)
 private val detailColor = Color(0xFFB9CADD)
-private val vehicleColor = Color(0xFFFFD38A)
-private val questColor = Color(0xFF9FE8DA)
+private val vehicleColor = Color(0xFFFFD18A)
+private val questColor = Color(0xFF71E5C5)
 
 @Composable
 internal fun NotificationPanel(
