@@ -861,22 +861,33 @@ class ConversationScreenTest {
 
     @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
-    fun hiddenHistoryKeepsNewConversationReachableAtReferenceSize() {
-        assertHiddenHistoryCanBeReset(fontScale = 1f)
+    fun visibleHistoryKeepsNewConversationReachableAtReferenceSize() {
+        assertVisibleHistoryCanBeReset(fontScale = 1f)
     }
 
     @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
-    fun hiddenHistoryKeepsNewConversationReachableWithEnlargedText() {
-        assertHiddenHistoryCanBeReset(fontScale = 1.6f)
+    fun visibleHistoryKeepsNewConversationReachableWithEnlargedText() {
+        assertVisibleHistoryCanBeReset(fontScale = 1.6f)
     }
 
-    private fun assertHiddenHistoryCanBeReset(fontScale: Float) {
-        state = state.copy(hasConversationHistory = true)
+    private fun assertVisibleHistoryCanBeReset(fontScale: Float) {
+        state =
+            state.copy(
+                messages =
+                    listOf(
+                        ConversationMessage("1", "previous exchange", true),
+                        ConversationMessage("2", "previous reply", false),
+                    ),
+            )
         show(fontScale = fontScale)
-        capture(if (fontScale == 1f) "hidden-history" else "hidden-history-enlarged")
+        capture(if (fontScale == 1f) "visible-history" else "visible-history-enlarged")
+        compose.onNodeWithText("previous exchange").assertExists()
+        compose.onNodeWithText("previous reply").assertExists()
         compose.onNodeWithTag("chat-new-action").assertIsDisplayed().performClick()
         compose.onNodeWithTag("chat-new-action").assertDoesNotExist()
+        compose.onNodeWithText("previous exchange").assertDoesNotExist()
+        compose.onNodeWithText("previous reply").assertDoesNotExist()
     }
 
     @Test
@@ -1086,7 +1097,6 @@ class ConversationScreenTest {
                             state =
                                 state.copy(
                                     messages = emptyList(),
-                                    hasConversationHistory = false,
                                 )
                         },
                         onStartVoice = {

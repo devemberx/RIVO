@@ -736,7 +736,7 @@ class ConversationViewModelTest {
             assertNotEquals(second, provider.conversationIds.last())
         }
 
-    @Test fun recordingClearsVisibleMessagesButKeepsContextUntilNewConversation() =
+    @Test fun recordingKeepsVisibleMessagesAndContextUntilNewConversation() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val speech = FakeSpeech()
@@ -765,18 +765,20 @@ class ConversationViewModelTest {
             model.requestVoice(true)
             val listener = requireNotNull(speech.listener)
             listener.onReady()
-            assertTrue(
+            assertEquals(
+                listOf("first", "answer"),
                 model.state.value.messages
-                    .isEmpty(),
+                    .map { it.text },
             )
             assertEquals("keep draft", model.draft.text)
             model.cancelVoice()
             model.deactivate()
             model.activate(true)
             runCurrent()
-            assertTrue(
+            assertEquals(
+                listOf("first", "answer"),
                 model.state.value.messages
-                    .isEmpty(),
+                    .map { it.text },
             )
             model.edit(TextFieldValue("second"))
             model.send()
@@ -784,7 +786,7 @@ class ConversationViewModelTest {
             assertEquals(listOf("first", "answer", "second"), provider.requests.last().map { it.text })
             assertEquals(conversation, provider.conversationIds.last())
             assertEquals(
-                listOf("second", "answer"),
+                listOf("first", "answer", "second", "answer"),
                 model.state.value.messages
                     .map { it.text },
             )
@@ -801,13 +803,13 @@ class ConversationViewModelTest {
             assertNotEquals(conversation, provider.conversationIds.last())
         }
 
-    @Test fun hiddenHistoryDoesNotReappearAfterFailedTurnEditAndRecheck() =
+    @Test fun historyStaysVisibleAfterFailedTurnEditAndRecheck() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val speech = FakeSpeech()
             val model = model(speech)
             runCurrent()
-            model.edit(TextFieldValue("hidden"))
+            model.edit(TextFieldValue("previous"))
             model.send()
             runCurrent()
             model.setVoiceResumed(true)
@@ -818,25 +820,27 @@ class ConversationViewModelTest {
             model.send()
             runCurrent()
             assertEquals(
-                listOf("attempt"),
+                listOf("previous", "answer", "attempt"),
                 model.state.value.messages
                     .map { it.text },
             )
             model.retryConnection()
             runCurrent()
             assertFalse(model.state.value.failed)
-            assertTrue(
+            assertEquals(
+                listOf("previous", "answer"),
                 model.state.value.messages
-                    .isEmpty(),
+                    .map { it.text },
             )
             provider.answer = { ConversationResult.Failure(ConversationProblem.TIMEOUT) }
             model.send()
             runCurrent()
             model.dismissFailure()
             model.cancel()
-            assertTrue(
+            assertEquals(
+                listOf("previous", "answer"),
                 model.state.value.messages
-                    .isEmpty(),
+                    .map { it.text },
             )
             assertEquals("attempt", model.draft.text)
             model.retryConnection()
@@ -844,9 +848,9 @@ class ConversationViewModelTest {
             provider.answer = { ConversationResult.Success("recovered") }
             model.send()
             runCurrent()
-            assertEquals(listOf("hidden", "answer", "attempt"), provider.requests.last().map { it.text })
+            assertEquals(listOf("previous", "answer", "attempt"), provider.requests.last().map { it.text })
             assertEquals(
-                listOf("attempt", "recovered"),
+                listOf("previous", "answer", "attempt", "recovered"),
                 model.state.value.messages
                     .map { it.text },
             )

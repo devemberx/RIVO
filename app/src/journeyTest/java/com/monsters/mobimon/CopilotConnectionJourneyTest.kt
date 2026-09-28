@@ -18,6 +18,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -228,13 +229,14 @@ class CopilotConnectionJourneyTest {
     }
 
     @Test
-    fun returningFromHomeClearsVisibleMessagesButKeepsProviderHistory() {
+    fun returningFromHomeKeepsVisibleMessagesAndProviderHistory() {
         authentication.approve()
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
             compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
             waitFor(hasText(text(AuthR.string.chat_ready)))
             compose.onNodeWithTag("chat-input").performTextInput("first exchange")
+            waitFor(hasTestTag("chat-send") and isEnabled())
             compose.onNodeWithTag("chat-send").performClick()
             waitFor(hasText("이야기를 들려줘서 고마워요."))
             var keyboardVisible = false
@@ -250,13 +252,17 @@ class CopilotConnectionJourneyTest {
             waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
             compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
             waitFor(hasText(text(AuthR.string.chat_ready)))
-            compose.onNodeWithText("first exchange").assertDoesNotExist()
-            compose.onNodeWithText("이야기를 들려줘서 고마워요.").assertDoesNotExist()
+            compose.onNodeWithText("first exchange").assertExists()
+            compose.onNodeWithText("이야기를 들려줘서 고마워요.").assertExists()
             compose.onNodeWithTag("chat-new-action").assertExists()
             compose.onNodeWithTag("chat-input").performTextInput("second exchange")
+            waitFor(hasTestTag("chat-send") and isEnabled())
             compose.onNodeWithTag("chat-send").performClick()
-            waitFor(hasText("이야기를 들려줘서 고마워요."))
-            compose.onNodeWithText("first exchange").assertDoesNotExist()
+            compose.waitUntil(timeoutMillis = 10_000) { conversations.requests.size == 2 }
+            waitFor(hasTestTag("chat-input") and hasText(""))
+            compose.onNodeWithTag("chat-messages").performScrollToNode(hasText("first exchange"))
+            compose.onNodeWithText("first exchange").assertExists()
+            compose.onNodeWithTag("chat-messages").performScrollToNode(hasText("second exchange"))
             compose.onNodeWithText("second exchange").assertExists()
             assertEquals(
                 listOf("first exchange", "이야기를 들려줘서 고마워요.", "second exchange"),
@@ -275,10 +281,11 @@ class CopilotConnectionJourneyTest {
             waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
             compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
             waitFor(hasText(text(AuthR.string.chat_ready)))
-            compose.onNodeWithText("second exchange").assertDoesNotExist()
+            compose.onNodeWithText("second exchange").assertExists()
             compose.onNodeWithTag("chat-new-action").ensureDisplayed().performClick()
             compose.onNodeWithTag("chat-new-action").assertDoesNotExist()
             compose.onNodeWithTag("chat-input").performTextInput("fresh exchange")
+            waitFor(hasTestTag("chat-send") and isEnabled())
             compose.onNodeWithTag("chat-send").performClick()
             waitFor(hasText("이야기를 들려줘서 고마워요."))
             assertEquals(listOf("fresh exchange"), conversations.requests.last().map { it.text })

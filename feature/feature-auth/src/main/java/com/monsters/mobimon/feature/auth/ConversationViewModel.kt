@@ -52,7 +52,6 @@ class ConversationViewModel(
     private var checkWork: Job? = null
     private var authenticationRetry: Job? = null
     private var history = emptyList<ConversationMessage>()
-    private var visibleHistoryStart = 0
     private var confirmedVoiceText = ""
     private var voiceGeneration = 0L
     private var voiceTimeout: Job? = null
@@ -368,7 +367,6 @@ class ConversationViewModel(
             object : ConversationSpeechInput.Listener {
                 override fun onReady() {
                     if (!voiceCurrent(session) || state.value.voice.phase != VoiceInputPhase.STARTING) return
-                    clearDisplay()
                     updateVoice(state.value.voice.copy(phase = VoiceInputPhase.LISTENING))
                     voiceTimeout?.cancel()
                     voiceTimeout =
@@ -502,7 +500,7 @@ class ConversationViewModel(
         val user = ConversationMessage((++messageId).toString(), text, true)
         draft = draft.copy(composition = null)
         mutableState.value =
-            state.value.copy(messages = visibleHistory() + user, replyPending = true, failed = false, problem = null)
+            state.value.copy(messages = history + user, replyPending = true, failed = false, problem = null)
         if (!networkStatus.isOnline()) {
             fail(ConversationProblem.NETWORK)
             return
@@ -529,8 +527,7 @@ class ConversationViewModel(
                             draft = TextFieldValue()
                             mutableState.value =
                                 state.value.copy(
-                                    messages = visibleHistory(),
-                                    hasConversationHistory = true,
+                                    messages = history,
                                     replyPending = false,
                                     connection = ConversationConnection.READY,
                                 )
@@ -648,21 +645,11 @@ class ConversationViewModel(
                     ) {
                         state.value.messages
                     } else {
-                        visibleHistory()
+                        history
                     },
                 replyPending = false,
             )
     }
-
-    /** Hides earlier exchanges without removing the context sent to the provider. */
-    fun clearDisplay() {
-        cancel()
-        visibleHistoryStart = history.size
-        mutableState.value =
-            state.value.copy(messages = emptyList(), hasConversationHistory = history.isNotEmpty())
-    }
-
-    private fun visibleHistory() = history.drop(visibleHistoryStart)
 
     fun newConversation() {
         if (!active || !allowed) return
@@ -671,13 +658,11 @@ class ConversationViewModel(
         updateVoice(state.value.voice.copy(phase = VoiceInputPhase.IDLE))
         cancel()
         history = emptyList()
-        visibleHistoryStart = 0
         conversationId = UUID.randomUUID().toString()
         draft = TextFieldValue()
         mutableState.value =
             state.value.copy(
-                messages = visibleHistory(),
-                hasConversationHistory = false,
+                messages = history,
                 failed = false,
                 problem = null,
             )
@@ -689,7 +674,6 @@ class ConversationViewModel(
         cancel()
         cancelCheck()
         history = emptyList()
-        visibleHistoryStart = 0
         conversationId = UUID.randomUUID().toString()
         draft = TextFieldValue()
         mutableState.value = ConversationUiState(voice = VoiceInputState(available = voiceAvailable()))
@@ -709,7 +693,7 @@ class ConversationViewModel(
 
     private fun resumeEditing() {
         val recheckAccess = state.value.problem == ConversationProblem.ACCESS
-        mutableState.value = state.value.copy(messages = visibleHistory(), failed = false, problem = null)
+        mutableState.value = state.value.copy(messages = history, failed = false, problem = null)
         if (recheckAccess) checkConnection()
     }
 
@@ -772,7 +756,7 @@ class ConversationViewModel(
                                 connection = ConversationConnection.READY,
                                 connectionProblem = null,
                                 connectionRetrying = false,
-                                messages = if (recoveredAccess) visibleHistory() else current.messages,
+                                messages = if (recoveredAccess) history else current.messages,
                                 failed = if (recoveredAccess) false else current.failed,
                                 problem = if (recoveredAccess) null else current.problem,
                             )
@@ -804,7 +788,7 @@ class ConversationViewModel(
     private fun fail(problem: ConversationProblem) {
         mutableState.value =
             state.value.copy(
-                messages = if (state.value.replyPending) state.value.messages else visibleHistory(),
+                messages = if (state.value.replyPending) state.value.messages else history,
                 replyPending = false,
                 failed = true,
                 problem = problem,

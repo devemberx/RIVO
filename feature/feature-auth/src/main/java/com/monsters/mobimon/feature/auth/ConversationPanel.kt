@@ -229,7 +229,7 @@ internal fun ConversationPanel(
             state.voice.phase != VoiceInputPhase.REVIEW
         ) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                if ((state.hasConversationHistory || state.messages.isNotEmpty()) && onNewConversation != null) {
+                if (state.messages.isNotEmpty() && onNewConversation != null) {
                     ConversationAction(
                         stringResource(R.string.chat_new),
                         onNewConversation,
@@ -511,7 +511,7 @@ private fun ReferenceConversationPanel(
         if (!shortened &&
             !state.replyPending &&
             !showFailure &&
-            (state.hasConversationHistory || state.messages.isNotEmpty()) &&
+            state.messages.isNotEmpty() &&
             onNewConversation != null &&
             !state.voice.capturing &&
             state.voice.phase != VoiceInputPhase.PERMISSION &&

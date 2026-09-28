@@ -127,8 +127,8 @@ selection. Read/save failures offer inline Retry.
 Use split companion/chat panels, suggestions and a system-keyboard composer.
 Suggestions fill without sending; omit change-of-pace. Signed-out Chat opens connection
 settings. Follow the [session contract](ARCHITECTURE.md#keyboard-conversation-ui)
-for display clearing, retained history and full New conversation reset; keep New
-conversation reachable above the composer when hidden history exists.
+for retained screen history and provider context, and full New conversation reset;
+keep New conversation reachable above the composer while messages exist.
 
 Recovery copy says “이전 대화 기록은 보존돼요.” Network failures/timeouts use the
 [network popup](ui/conversation/network-error.svg), including when voice is available.

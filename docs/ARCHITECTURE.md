@@ -88,8 +88,8 @@ subscription or rewards.
 ### Keyboard conversation UI
 
 `feature-auth` keeps draft, conversation identity and full provider context in Activity
-memory. Home entry or successful recording startup clears only the visible messages;
-hidden exchanges stay hidden. New chat clears all conversation state. Account/profile
+memory. Home entry and recording startup preserve both visible messages and provider
+context. New chat clears all conversation state. Account/profile
 change, disconnect or process restart clears private data; initial account validation
 retains an unsent draft. Temporary failures retain the attempted turn and draft.
 Departure, backgrounding, parking loss or companion changes cancel work; reject late replies.
