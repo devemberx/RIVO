@@ -5,25 +5,21 @@ import androidx.lifecycle.viewModelScope
 import com.monsters.mobimon.core.domain.Clock
 import com.monsters.mobimon.core.domain.ProgressionIdentity
 import com.monsters.mobimon.core.domain.SignalSourceProvider
-import com.monsters.mobimon.core.domain.UtcClock
 import com.monsters.mobimon.core.domain.VehicleFreshnessPolicy
 import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
-import java.time.Instant
-import java.time.ZoneId
 
 /** One provider emission supplies display freshness and the original command evidence together. */
 data class VehicleReading(
     val snapshot: VehicleSnapshot,
     val evidence: VehicleSnapshot,
-    /** Decorative local time is separate from vehicle observations and command evidence. */
+    /** Decorative VSS time stays separate from command evidence. */
     val backgroundTimeOfDay: String,
 )
 
@@ -33,13 +29,10 @@ class VehicleStateViewModel(
     private val identity: ProgressionIdentity,
     private val clock: Clock,
     private val freshness: VehicleFreshnessPolicy,
-    private val utcClock: UtcClock,
-    private val zoneId: () -> ZoneId = ZoneId::systemDefault,
     private val sourceProvider: SignalSourceProvider = SignalSourceProvider { identity.source },
-    private val backgroundOverride: StateFlow<String?> = MutableStateFlow(null),
 ) : ViewModel() {
     private val mutableState =
-        MutableStateFlow(reading(vehicle.snapshots.value, clock.nowMillis(), backgroundOverride.value))
+        MutableStateFlow(reading(vehicle.snapshots.value, clock.nowMillis()))
     val state = mutableState.asStateFlow()
 
     init {
@@ -51,8 +44,8 @@ class VehicleStateViewModel(
                         delay(1_000)
                     }
                 }
-            combine(vehicle.snapshots, ticks, backgroundOverride) { snapshot, _, override ->
-                reading(snapshot, clock.nowMillis(), override)
+            combine(vehicle.snapshots, ticks) { snapshot, _ ->
+                reading(snapshot, clock.nowMillis())
             }.collect { mutableState.value = it }
         }
     }
@@ -60,17 +53,10 @@ class VehicleStateViewModel(
     private fun reading(
         snapshot: VehicleSnapshot,
         nowMillis: Long,
-        override: String?,
     ): VehicleReading =
         VehicleReading(
             snapshot = freshness.displaySnapshot(snapshot, sourceProvider.source(), nowMillis),
             evidence = snapshot,
-            backgroundTimeOfDay =
-                override?.takeIf { it.isNotBlank() }
-                    ?: Instant
-                        .ofEpochMilli(utcClock.nowEpochMillis())
-                        .atZone(zoneId())
-                        .hour
-                        .toString(),
+            backgroundTimeOfDay = snapshot.timeOfDay ?: "Night",
         )
 }

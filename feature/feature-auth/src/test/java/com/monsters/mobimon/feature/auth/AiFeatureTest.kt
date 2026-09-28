@@ -50,7 +50,6 @@ import com.monsters.mobimon.core.domain.ProgressionIdentity
 import com.monsters.mobimon.core.domain.PurchaseResult
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
-import com.monsters.mobimon.core.domain.UtcClock
 import com.monsters.mobimon.core.domain.VehicleFreshnessPolicy
 import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.domain.VehicleSnapshot
@@ -281,7 +280,6 @@ class AiFeatureTest {
                         0
                     },
                     VehicleFreshnessPolicy(15_000),
-                    UtcClock { 0L },
                 ),
                 object : GitHubAuthentication {
                     override val session = this@AiFeatureTest.session

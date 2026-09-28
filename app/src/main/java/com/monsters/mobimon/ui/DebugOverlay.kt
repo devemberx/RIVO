@@ -116,7 +116,6 @@ fun DebugOverlay() {
         remember(settingsRepository) { settingsRepository.settings.map { it.debugModeEnabled } }
     val isDebugEnabled by isDebugEnabledFlow.collectAsStateWithLifecycle(initialValue = false)
     val state by debugStore.state.collectAsStateWithLifecycle()
-    val backgroundTimeOverride by debugStore.backgroundTimeOverride.collectAsStateWithLifecycle()
     val safeDriveCount by debugStore.safeDriveCount.collectAsStateWithLifecycle()
 
     fun updateState(reducer: (DebugVssState) -> DebugVssState) {
@@ -287,29 +286,6 @@ fun DebugOverlay() {
                         DebugInterpretationSection(state) { overrides ->
                             updateState { it.copy(overrides = overrides) }
                         }
-                    }
-
-                    DebugSection("장면 시간 미리보기") {
-                        DebugInterpretationRow(
-                            label = "backgroundTime",
-                            value = backgroundTimeOverride ?: "Auto",
-                            manualValue = backgroundTimeOverride.orEmpty(),
-                            formula =
-                                "Home and store use local time in Auto. " +
-                                    "This preview does not change vehicle evidence.",
-                            onManualValueChange = debugStore::setBackgroundTimeOverride,
-                            onClearManualValue = { debugStore.setBackgroundTimeOverride(null) },
-                            presets =
-                                listOf(
-                                    "Midnight (01시)" to "01:00",
-                                    "Sunrise (06시)" to "06:00",
-                                    "Morning (09시)" to "09:00",
-                                    "Day (14시)" to "14:00",
-                                    "Afternoon (16시)" to "16:00",
-                                    "Sunset (18시)" to "18:00",
-                                    "Night (20시)" to "20:00",
-                                ),
-                        )
                     }
 
                     DebugSection("Quest") {
@@ -1232,11 +1208,15 @@ private fun DebugInterpretationSection(
             label = "timeOfDay",
             value = state.timeOfDay,
             manualValue = overrides.timeOfDay.orEmpty(),
-            formula = "Timestamp hour: 06-11=Morning, 12-15=Day, 16-17=Afternoon, 18-19=Sunset, else=Night",
+            formula =
+                "VSS hour: 00-04=Midnight, 05-06=Sunrise, 07-11=Morning, 12-15=Day, " +
+                    "16-17=Afternoon, 18-19=Sunset, 20-23=Night",
             onManualValueChange = { onOverridesChange(overrides.copy(timeOfDay = it.ifBlank { null })) },
             onClearManualValue = { onOverridesChange(overrides.copy(timeOfDay = null)) },
             presets =
                 listOf(
+                    "Midnight (01시)" to "01:00",
+                    "Sunrise (06시)" to "06:00",
                     "Morning (09시)" to "09:00",
                     "Day (14시)" to "14:00",
                     "Afternoon (16시)" to "16:00",

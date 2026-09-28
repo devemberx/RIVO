@@ -63,6 +63,9 @@ are read-only summaries; repositories own reward writes. Current notifications u
 a three-card popup; the [left-panel reference](DESIGN.md#screens-and-navigation) is
 not implemented. [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
 owns rendering only. Display evidence and decorative previews cannot authorize commands.
+Decorative Home and Store backgrounds use interpreted VSS time from the vehicle
+snapshot, independent of device time and quest weather. Debug uses the same VSS
+timestamp and interpretation controls; it has no separate background time override.
 
 ### Window geometry
 

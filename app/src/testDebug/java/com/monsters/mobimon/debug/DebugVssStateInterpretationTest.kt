@@ -100,35 +100,8 @@ class DebugVssStateInterpretationTest {
     }
 
     @Test
-    fun debugHoursKeepFiveEvidenceLabelsAndSelectSevenDecorativeBackgrounds() {
-        val evidence =
-            listOf(
-                "Night",
-                "Night",
-                "Night",
-                "Night",
-                "Night",
-                "Night",
-                "Morning",
-                "Morning",
-                "Morning",
-                "Morning",
-                "Morning",
-                "Morning",
-                "Day",
-                "Day",
-                "Day",
-                "Day",
-                "Afternoon",
-                "Afternoon",
-                "Sunset",
-                "Sunset",
-                "Night",
-                "Night",
-                "Night",
-                "Night",
-            )
-        val backgrounds =
+    fun debugHoursSelectTheSameSevenVssAndDecorativePeriods() {
+        val periods =
             listOf(
                 "Midnight",
                 "Midnight",
@@ -155,11 +128,11 @@ class DebugVssStateInterpretationTest {
                 "Night",
                 "Night",
             )
-        evidence.forEachIndexed { hour, period ->
+        periods.forEachIndexed { hour, period ->
             assertEquals("Hour $hour", period, interpretVssTimeOfDay(hour.toString()))
             assertEquals(
                 com.monsters.mobimon.core.ui
-                    .companionBackgroundRes(backgrounds[hour]),
+                    .companionBackgroundRes(period),
                 com.monsters.mobimon.core.ui
                     .companionBackgroundRes(hour.toString()),
             )
@@ -195,7 +168,9 @@ class DebugVssStateInterpretationTest {
         assertEquals("Day", stateFor("낮"))
         assertEquals("Day", stateFor("14시"))
 
-        assertEquals("Night", stateFor("0"))
+        assertEquals("Midnight", stateFor("0"))
+        assertEquals("Sunrise", stateFor("5"))
+        assertEquals("Sunrise", stateFor("6"))
         assertEquals("Morning", stateFor("7"))
         assertEquals("Sunset", stateFor("19"))
         assertEquals("Night", stateFor("23"))

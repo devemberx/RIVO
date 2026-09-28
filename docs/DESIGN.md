@@ -77,9 +77,11 @@ perspective changes. Never stretch anatomy to fit accessories/canvas; reject dri
 ### Home scene
 
 [Home/Store backgrounds](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/CompanionBackground.kt)
-use local time, independent of vehicle timestamps. Preserve
-approved scene geometry and celestial disk sizes; Midnight retains dark windows and
-road lights. Debug background overrides affect display only.
+share seven periods selected by VSS time: Midnight 00–04,
+Sunrise 05–06, Morning 07–11, Day 12–15, Afternoon 16–17, Sunset 18–19,
+Night 20–23. `Vehicle.CurrentLocation.Timestamp` and its Debug VSS interpretation
+control select the period; device time does not. Preserve approved scene geometry
+and celestial disk sizes; Midnight retains dark windows, reflections and road lights.
 
 Follow [home.svg](ui/shell/home.svg): keep the centered artwork crop and horizon stable
 when content height changes. Store crops within cards. Crossfade background/tint

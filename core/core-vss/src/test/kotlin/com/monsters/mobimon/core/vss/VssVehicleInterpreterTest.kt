@@ -152,16 +152,16 @@ class VssVehicleInterpreterTest {
     }
 
     @Test
-    fun timeOfDayUsesSharedFivePeriodMapping() {
+    fun timeOfDayKeepsSevenBackgroundPeriodsFromVssTime() {
         val expected =
             listOf(
-                "Night",
-                "Night",
-                "Night",
-                "Night",
-                "Night",
-                "Night",
-                "Morning",
+                "Midnight",
+                "Midnight",
+                "Midnight",
+                "Midnight",
+                "Midnight",
+                "Sunrise",
+                "Sunrise",
                 "Morning",
                 "Morning",
                 "Morning",
@@ -185,16 +185,16 @@ class VssVehicleInterpreterTest {
             assertEquals("Hour $hour", period, snapshotTimeOfDay(hour.toString()))
         }
         mapOf(
-            "sunrise" to "Morning",
-            "일출" to "Morning",
+            "sunrise" to "Sunrise",
+            "일출" to "Sunrise",
             "afternoon" to "Afternoon",
             "오후" to "Afternoon",
             "늦은 오후" to "Afternoon",
             "sunset" to "Sunset",
             "노을" to "Sunset",
             "저녁" to "Sunset",
-            "midnight" to "Night",
-            "한밤중" to "Night",
+            "midnight" to "Midnight",
+            "한밤중" to "Midnight",
             "16:00" to "Afternoon",
             "18시" to "Sunset",
         ).forEach { (input, period) ->

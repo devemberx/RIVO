@@ -40,13 +40,14 @@ private const val PENALTY_LANE_DEPARTURE = 15
 /**
  * Derives a default [WeatherCondition] from VSS weather-related signals.
  * If raining or rain intensity is detected, maps to [WeatherCondition.RAIN_OR_SNOW].
- * If time of day is NIGHT, maps to [WeatherCondition.CLOUDY_OR_NIGHT].
+ * If time of day is Night or Midnight, maps to [WeatherCondition.CLOUDY_OR_NIGHT].
  * Otherwise defaults to [WeatherCondition.CLEAR].
  */
 fun DebugVssState.deriveWeatherCondition(): WeatherCondition =
     when {
         isRaining || raw.rainIntensity > 0 -> WeatherCondition.RAIN_OR_SNOW
-        timeOfDay.equals("NIGHT", ignoreCase = true) -> WeatherCondition.CLOUDY_OR_NIGHT
+        timeOfDay.equals("NIGHT", ignoreCase = true) ||
+            timeOfDay.equals("MIDNIGHT", ignoreCase = true) -> WeatherCondition.CLOUDY_OR_NIGHT
         else -> WeatherCondition.CLEAR
     }
 

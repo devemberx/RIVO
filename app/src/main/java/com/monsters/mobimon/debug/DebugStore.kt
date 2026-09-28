@@ -182,29 +182,16 @@ interface DebugVssProvider {
     val state: StateFlow<DebugVssState>
 }
 
-interface DebugBackgroundTimeProvider {
-    val backgroundTimeOverride: StateFlow<String?>
-}
-
 @Singleton
 class DebugStore
     @Inject
     constructor(
         @ApplicationContext context: Context,
-    ) : DebugVssProvider,
-        DebugBackgroundTimeProvider {
+    ) : DebugVssProvider {
         private val prefs: SharedPreferences = context.getSharedPreferences("debug_vss_prefs", Context.MODE_PRIVATE)
 
         private val _state = MutableStateFlow(loadState())
         override val state: StateFlow<DebugVssState> = _state.asStateFlow()
-        private val _backgroundTimeOverride = MutableStateFlow(prefs.stringOverride("override.backgroundTimeOfDay"))
-        override val backgroundTimeOverride: StateFlow<String?> = _backgroundTimeOverride.asStateFlow()
-
-        fun setBackgroundTimeOverride(value: String?) {
-            val override = value?.takeIf { it.isNotBlank() }
-            _backgroundTimeOverride.value = override
-            prefs.edit().apply { putOverride("override.backgroundTimeOfDay", override) }.apply()
-        }
 
         // Count of completed safe drives. VSS is a snapshot and cannot express this history, so the
         // debug overlay accumulates it: each qualifying VSS-derived drive records one.
