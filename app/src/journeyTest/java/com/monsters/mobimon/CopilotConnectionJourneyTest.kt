@@ -221,7 +221,7 @@ class CopilotConnectionJourneyTest {
             if (keyboardVisible) {
                 compose.onNodeWithContentDescription(text(AuthR.string.copilot_back)).ensureDisplayed().performClick()
             }
-            waitFor(hasText(text(AuthR.string.chat_new)))
+            waitFor(hasText(text(AuthR.string.chat_new)) and isEnabled())
             compose.onNodeWithText(text(AuthR.string.chat_new)).ensureDisplayed().performClick()
             waitForAbsent(hasText("이야기를 들려줘서 고마워요."))
             compose.onNodeWithText("이야기를 들려줘서 고마워요.").assertDoesNotExist()
@@ -255,6 +255,7 @@ class CopilotConnectionJourneyTest {
             waitFor(hasText(text(AuthR.string.chat_ready)))
             compose.onNodeWithText("first exchange").assertExists()
             compose.onNodeWithText("이야기를 들려줘서 고마워요.").assertExists()
+            waitFor(hasTestTag("chat-new-action") and isEnabled())
             compose.onNodeWithTag("chat-new-action").assertExists()
             compose.onNodeWithTag("chat-input").performTextInput("second exchange")
             waitFor(hasTestTag("chat-send") and isEnabled())
@@ -283,6 +284,7 @@ class CopilotConnectionJourneyTest {
             compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
             waitFor(hasText(text(AuthR.string.chat_ready)))
             compose.onNodeWithText("second exchange").assertExists()
+            waitFor(hasTestTag("chat-new-action") and isEnabled())
             compose.onNodeWithTag("chat-new-action").ensureDisplayed().performClick()
             waitForAbsent(hasTestTag("chat-new-action"))
             compose.onNodeWithTag("chat-new-action").assertDoesNotExist()
