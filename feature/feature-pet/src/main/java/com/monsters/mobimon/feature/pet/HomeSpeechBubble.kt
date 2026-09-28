@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -35,6 +36,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -129,6 +131,16 @@ internal fun homeSpeechBubbleScale(
     val lineHeight = (43.2f * scale).coerceAtLeast(34f)
     return maxOf(fontSize / 32.4f, lineHeight / 43.2f) * fontScale.coerceAtLeast(1f)
 }
+
+/** Keep the tail at the one-line baseline while taller dialogue grows upward. */
+internal fun Modifier.anchorHomeSpeechBubbleTail(oneLineHeight: Dp): Modifier =
+    this.layout { measurable, constraints ->
+        val bubble = measurable.measure(constraints)
+        val anchorHeight = oneLineHeight.roundToPx()
+        layout(bubble.width, anchorHeight) {
+            bubble.placeRelative(0, anchorHeight - bubble.height)
+        }
+    }
 
 @Composable
 internal fun HomeSpeechBubbleContent(

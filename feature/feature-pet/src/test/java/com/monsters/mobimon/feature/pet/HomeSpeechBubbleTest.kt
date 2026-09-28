@@ -6,6 +6,7 @@ import android.view.View
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
@@ -21,6 +22,7 @@ import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonTheme
@@ -201,6 +203,30 @@ class HomeSpeechBubbleTest {
                     assertTrue(abs(layout.getLineLeft(line) - (layout.size.width - layout.getLineRight(line))) <= 1f)
                 }
             }
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w800dp-h600dp-mdpi")
+    fun referenceHomeBubbleGrowsUpwardWithoutMovingItsTail() {
+        val message = mutableStateOf("짠! 모비 준비 완료! 뭐 할까?")
+        compose.setContent {
+            MobiMonTheme {
+                Box(Modifier.fillMaxSize()) {
+                    HomeSpeechBubbleContent(
+                        message = message.value,
+                        modifier = Modifier.offset(y = 180.dp).anchorHomeSpeechBubbleTail(130.dp),
+                    )
+                }
+            }
+        }
+
+        val singleLine = compose.onNodeWithTag("home-companion-message").fetchSemanticsNode().boundsInRoot
+        compose.runOnIdle { message.value = "히히, 찌르니까 간지러워! 무슨 일 있어?" }
+        val twoLines = compose.onNodeWithTag("home-companion-message").fetchSemanticsNode().boundsInRoot
+
+        assertEquals(singleLine.left, twoLines.left, 1f)
+        assertEquals(singleLine.bottom, twoLines.bottom, 1f)
+        assertEquals(43.2f, singleLine.top - twoLines.top, 2f)
     }
 
     private fun captureReview(name: String) {

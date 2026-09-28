@@ -87,10 +87,10 @@ Follow [home.svg](ui/shell/home.svg): keep the centered artwork crop and horizon
 when content height changes. Store crops within cards. Crossfade background/tint
 without tinting controls; notices must not move the main action. Use the animated
 time phrase rather than the export subtitle, with scrolling for enlarged text.
-Home speech uses regular-weight text and a fixed bubble start point. Keep the
-tail anchored horizontally, scale the body curves to its height, and center
-reflowed text inside it. Size the height to the displayed line count with
-consistent vertical padding.
+Home speech uses regular-weight text. On the reference Home scene, keep the
+tail anchored in both axes as longer dialogue grows upward. Scale the body
+curves to its height and center reflowed text inside it. Size the height to
+the displayed line count with consistent vertical padding.
 
 ## Screens and navigation
 

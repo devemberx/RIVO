@@ -181,10 +181,12 @@ fun PetHomeScreen(
                         )
                         if (friendId != null) {
                             HomeSpeechBubble(
-                                Modifier.align(Alignment.TopStart).offset(
-                                    x = bubbleLeft,
-                                    y = (500 * scale).dp,
-                                ),
+                                Modifier
+                                    .align(Alignment.TopStart)
+                                    .offset(
+                                        x = bubbleLeft,
+                                        y = (500 * scale).dp,
+                                    ).anchorHomeSpeechBubbleTail((130f * homeSpeechBubbleScale(scale, fontScale)).dp),
                                 scale = scale,
                                 triggerKey = bubbleTrigger,
                                 friendId = friendId,
