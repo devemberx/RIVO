@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -35,145 +34,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.presentation.PointBalanceState
 import com.monsters.mobimon.core.ui.MobiMonPointSummary
-import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.MobiMonColors as Colors
-
-@Composable
-internal fun QuestListContent(
-    quests: List<QuestItemUiModel>,
-    friendId: String,
-    accessoryId: String?,
-    outfitId: String?,
-    backgroundId: String?,
-    scale: Float,
-    selectedTab: QuestFilterTab,
-    onSelectTab: (QuestFilterTab) -> Unit,
-    canClaim: Boolean,
-    onSelectQuest: (String) -> Unit,
-    onClaimReward: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    isCompact: Boolean = false,
-    pointBalance: PointBalanceState = PointBalanceState.Loading,
-    showPointInPanel: Boolean = true,
-) {
-    if (isCompact) {
-        Column(
-            modifier = modifier,
-            verticalArrangement = Arrangement.spacedBy(24.dp * scale),
-        ) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(24.dp * scale))
-                        .background(Colors.panel)
-                        .padding(24.dp * scale),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(24.dp * scale),
-            ) {
-                PetAvatar(
-                    modifier = Modifier.size(160.dp * scale),
-                    friendId = friendId,
-                    accessoryId = accessoryId,
-                    outfitId = outfitId,
-                    backgroundId = backgroundId,
-                )
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.quest_companion_heading),
-                        style = questTextStyle(40f, scale, bold = true, color = Colors.text),
-                    )
-                    Spacer(Modifier.height(8.dp * scale))
-                    Text(
-                        text = stringResource(R.string.quest_companion_quote),
-                        style = questTextStyle(34f, scale, bold = true, color = Colors.text),
-                    )
-                    Spacer(Modifier.height(6.dp * scale))
-                    Text(
-                        text = stringResource(R.string.quest_companion_sub_ready),
-                        style = questTextStyle(26f, scale, bold = false, color = Colors.muted),
-                    )
-                }
-            }
-
-            QuestRightPanel(
-                quests = quests,
-                scale = scale,
-                selectedTab = selectedTab,
-                onSelectTab = onSelectTab,
-                canClaim = canClaim,
-                isCompact = true,
-                onSelectQuest = onSelectQuest,
-                onClaimReward = onClaimReward,
-                pointBalance = pointBalance,
-                showPointSummary = showPointInPanel,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-    } else {
-        Row(
-            modifier = modifier,
-            horizontalArrangement = Arrangement.spacedBy(56.dp * scale),
-        ) {
-            Box(
-                modifier =
-                    Modifier
-                        .width(680.dp * scale)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(48.dp * scale))
-                        .background(Colors.panel)
-                        .testTag("quest-companion-panel"),
-            ) {
-                Text(
-                    text = stringResource(R.string.quest_companion_heading),
-                    style = questTextStyle(48f, scale, bold = true, color = Colors.text),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.align(Alignment.TopCenter).offset(y = 55.dp * scale),
-                )
-                PetAvatar(
-                    modifier = Modifier.offset(28.dp * scale, 140.dp * scale).size(624.dp * scale),
-                    friendId = friendId,
-                    accessoryId = accessoryId,
-                    outfitId = outfitId,
-                    backgroundId = backgroundId,
-                )
-                Text(
-                    text = stringResource(R.string.quest_companion_quote),
-                    style = questTextStyle(42f, scale, bold = true, color = Colors.text),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.align(Alignment.BottomCenter).offset(y = -(127.dp * scale)),
-                )
-                Text(
-                    text = stringResource(R.string.quest_companion_sub_ready),
-                    style = questTextStyle(30f, scale, bold = false, color = Colors.muted),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.align(Alignment.BottomCenter).offset(y = -(67.dp * scale)),
-                )
-            }
-
-            QuestRightPanel(
-                quests = quests,
-                scale = scale,
-                selectedTab = selectedTab,
-                onSelectTab = onSelectTab,
-                canClaim = canClaim,
-                isCompact = false,
-                onSelectQuest = onSelectQuest,
-                onClaimReward = onClaimReward,
-                pointBalance = pointBalance,
-                showPointSummary = showPointInPanel,
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-            )
-        }
-    }
-}
 
 @Composable
 internal fun QuestRightPanel(
@@ -185,6 +49,7 @@ internal fun QuestRightPanel(
     isCompact: Boolean,
     onSelectQuest: (String) -> Unit,
     onClaimReward: (String) -> Unit,
+    scrollState: ScrollState,
     modifier: Modifier = Modifier,
     pointBalance: PointBalanceState = PointBalanceState.Loading,
     showPointSummary: Boolean = true,
@@ -285,7 +150,6 @@ internal fun QuestRightPanel(
                 isCompact = isCompact,
             )
         } else {
-            val scrollState = rememberScrollState()
             val listModifier =
                 if (isCompact) {
                     Modifier.fillMaxWidth()
@@ -311,7 +175,7 @@ internal fun QuestRightPanel(
                     }
                     Spacer(Modifier.height(80.dp * scale))
                 }
-                if (!isCompact) {
+                if (!isCompact && scrollState.maxValue > 0) {
                     QuestScrollIndicator(
                         scrollState = scrollState,
                         scale = scale,
@@ -329,7 +193,13 @@ internal fun QuestScrollIndicator(
     scale: Float,
     modifier: Modifier = Modifier,
 ) {
-    Canvas(modifier.width(8.dp * scale).fillMaxHeight().padding(bottom = 10.dp * scale)) {
+    Canvas(
+        modifier
+            .width(8.dp * scale)
+            .fillMaxHeight()
+            .padding(bottom = 10.dp * scale)
+            .testTag("quest-scroll-indicator"),
+    ) {
         val thumbHeight = 180.dp.toPx() * scale
         val travel = (size.height - thumbHeight - 12.dp.toPx() * scale).coerceAtLeast(0f)
         val progress = if (scrollState.maxValue == 0) 0f else scrollState.value.toFloat() / scrollState.maxValue

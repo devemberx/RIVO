@@ -17,6 +17,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -140,6 +141,10 @@ class ConversationKeyboardDeviceTest {
                 compose.onNodeWithTag("chat-input").assertIsDisplayed()
                 val full = compose.onNodeWithTag("chat-panel").fetchSemanticsNode().boundsInRoot
                 compose.onNodeWithTag("chat-input").performClick()
+                compose.onNodeWithTag("chat-input").assertIsFocused()
+                scenario.onActivity {
+                    WindowInsetsControllerCompat(it.window, it.window.decorView).show(WindowInsetsCompat.Type.ime())
+                }
 
                 fun waitForIme(visible: Boolean) {
                     compose.waitUntil(15_000) {
