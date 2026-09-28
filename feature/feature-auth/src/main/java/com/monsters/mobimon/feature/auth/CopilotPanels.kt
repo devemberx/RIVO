@@ -67,7 +67,9 @@ internal fun CopilotPanel(
             ) {
                 when (state) {
                     is CopilotUiState.AuthenticationStatus -> {
-                        ConnectionSteps(if (state.account != null) 1 else 0, scale)
+                        if (state.problem != AuthenticationProblem.NETWORK) {
+                            ConnectionSteps(if (state.account != null) 1 else 0, scale)
+                        }
                         PanelHeading(
                             if (state.account !=
                                 null
@@ -375,32 +377,38 @@ private fun PanelActions(
                             ActionButton(stringResource(R.string.copilot_settings), CopilotAction.OPEN_SETTINGS),
                         )
                     else ->
-                        listOf(
-                            ActionButton(
-                                stringResource(
+                        buildList {
+                            add(
+                                ActionButton(
+                                    stringResource(
+                                        if (state.problem == AuthenticationProblem.REAUTHENTICATION ||
+                                            state.problem == AuthenticationProblem.DENIED
+                                        ) {
+                                            R.string.copilot_reconnect
+                                        } else {
+                                            R.string.copilot_recheck
+                                        },
+                                    ),
                                     if (state.problem == AuthenticationProblem.REAUTHENTICATION ||
                                         state.problem == AuthenticationProblem.DENIED
                                     ) {
-                                        R.string.copilot_reconnect
+                                        CopilotAction.REQUEST_CODE
                                     } else {
-                                        R.string.copilot_recheck
+                                        CopilotAction.RECHECK
                                     },
+                                    allowed,
                                 ),
-                                if (state.problem == AuthenticationProblem.REAUTHENTICATION ||
-                                    state.problem == AuthenticationProblem.DENIED
-                                ) {
-                                    CopilotAction.REQUEST_CODE
-                                } else {
-                                    CopilotAction.RECHECK
-                                },
-                                allowed,
-                            ),
-                            ActionButton(
-                                stringResource(R.string.github_clear_connection),
-                                CopilotAction.DISCONNECT,
-                                allowed,
-                            ),
-                        )
+                            )
+                            if (state.problem != AuthenticationProblem.NETWORK) {
+                                add(
+                                    ActionButton(
+                                        stringResource(R.string.github_clear_connection),
+                                        CopilotAction.DISCONNECT,
+                                        allowed,
+                                    ),
+                                )
+                            }
+                        }
                 }
             is CopilotUiState.Introduction ->
                 listOf(

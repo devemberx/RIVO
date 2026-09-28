@@ -129,6 +129,13 @@ Keep header, preview, tabs and cards stable during loading; reuse committed appe
 and show still placeholders. Pending/uncertain writes block duplicates and preserve
 selection. Read/save failures offer inline Retry.
 
+The 200-point `background:star_hanger` (별빛 모빌) uses the supplied body and glow
+canvases on one continuous mesh, suspended from the top center. Chain joints between
+the ribbon, star, moon and tip swing with increasing phase delay; solid ornaments
+retain their shape. Glow follows the same joints and fades in/out independently.
+It occupies the background slot, is shared by both friends, and appears on Home and
+in Store previews; reduced motion shows a still hanger.
+
 ## Conversation
 
 Use split companion/chat panels, suggestions and a system-keyboard composer.
@@ -198,7 +205,9 @@ hide expired codes. Unconfigured builds disable sign-in. Follow the
 
 [Verified success](ui/connection/connected.svg) shows the account and equipped friend's
 conversation action plus Settings. Explain local persistence and separate Copilot
-readiness. Failures offer retry/local clearing; Disconnect confirms local-only removal.
+readiness. Network failures omit connection steps and offer retry without local
+clearing; other authentication failures retain the steps and clearing option.
+Disconnect confirms local-only removal.
 Reuse shared loading/failure panels where exports are absent.
 
 ## Motion

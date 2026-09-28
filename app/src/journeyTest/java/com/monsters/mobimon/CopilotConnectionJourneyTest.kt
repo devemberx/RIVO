@@ -255,8 +255,7 @@ class CopilotConnectionJourneyTest {
             waitFor(hasText(text(AuthR.string.chat_ready)))
             compose.onNodeWithText("first exchange").assertExists()
             compose.onNodeWithText("이야기를 들려줘서 고마워요.").assertExists()
-            waitFor(hasTestTag("chat-new-action") and isEnabled())
-            compose.onNodeWithTag("chat-new-action").assertExists()
+            waitForNewConversationAction(scenario)
             compose.onNodeWithTag("chat-input").performTextInput("second exchange")
             waitFor(hasTestTag("chat-send") and isEnabled())
             compose.onNodeWithTag("chat-send").performClick()
@@ -284,7 +283,7 @@ class CopilotConnectionJourneyTest {
             compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
             waitFor(hasText(text(AuthR.string.chat_ready)))
             compose.onNodeWithText("second exchange").assertExists()
-            waitFor(hasTestTag("chat-new-action") and isEnabled())
+            waitForNewConversationAction(scenario)
             compose.onNodeWithTag("chat-new-action").ensureDisplayed().performClick()
             waitForAbsent(hasTestTag("chat-new-action"))
             compose.onNodeWithTag("chat-new-action").assertDoesNotExist()
@@ -355,6 +354,19 @@ class CopilotConnectionJourneyTest {
     }
 
     private fun text(resource: Int) = InstrumentationRegistry.getInstrumentation().targetContext.getString(resource)
+
+    private fun waitForNewConversationAction(scenario: ActivityScenario<MainActivity>) {
+        var keyboardVisible = false
+        scenario.onActivity { activity ->
+            keyboardVisible = ViewCompat
+                .getRootWindowInsets(activity.window.decorView)
+                ?.isVisible(WindowInsetsCompat.Type.ime()) == true
+        }
+        if (keyboardVisible) {
+            compose.onNodeWithContentDescription(text(AuthR.string.copilot_back)).ensureDisplayed().performClick()
+        }
+        waitFor(hasTestTag("chat-new-action") and isEnabled())
+    }
 
     private fun waitFor(matcher: SemanticsMatcher) {
         compose.waitUntil(timeoutMillis = 10_000) { compose.onAllNodes(matcher).fetchSemanticsNodes().size == 1 }
