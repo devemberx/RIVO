@@ -290,22 +290,12 @@ internal fun ConversationPanel(
                 color = Colors.muted,
             )
         }
-        if (!shortened) {
-            Text(
-                stringResource(
-                    if (state.connection ==
-                        ConversationConnection.SIGNED_OUT
-                    ) {
-                        R.string.chat_sign_in_note
-                    } else {
-                        R.string.chat_disclaimer
-                    },
-                ),
-                Modifier.padding(top = 12.dp * scale),
-                style = mobiMonReferenceTextStyle(24f, scale).copy(lineHeight = (32f * scale).sp),
-                color = Colors.muted,
-            )
-        }
+        Text(
+            stringResource(R.string.chat_disclaimer),
+            Modifier.padding(top = 12.dp * scale),
+            style = mobiMonReferenceTextStyle(24f, scale).copy(lineHeight = (32f * scale).sp),
+            color = Colors.muted,
+        )
         if (state.connection == ConversationConnection.SIGNED_OUT && !shortened) {
             ConversationAction(
                 stringResource(R.string.conversation_connect),
@@ -534,12 +524,12 @@ private fun ReferenceConversationPanel(
             MobiMonReferenceText(
                 voiceHintText(state.voice),
                 58f,
-                composerTop.value / scale + 120.5f,
+                composerTop.value / scale - 30f,
                 24f,
                 scale = scale,
                 color = Color(0xFFA9BDCF),
                 modifier =
-                    Modifier.width(1580.dp * scale).testTag("chat-voice-hint").semantics {
+                    Modifier.width(1300.dp * scale).testTag("chat-voice-hint").semantics {
                         liveRegion =
                             LiveRegionMode.Polite
                     },
@@ -585,24 +575,14 @@ private fun ReferenceConversationPanel(
                 color = Colors.warning,
             )
         }
-        if (!state.voice.showHint) {
-            MobiMonReferenceText(
-                stringResource(
-                    if (state.connection ==
-                        ConversationConnection.SIGNED_OUT
-                    ) {
-                        R.string.chat_sign_in_note
-                    } else {
-                        R.string.chat_disclaimer
-                    },
-                ),
-                58f,
-                composerTop.value / scale + (if (shortened) 103.5f else 112f),
-                18f,
-                scale = scale,
-                color = Color(0xFFA9BDCF),
-            )
-        }
+        MobiMonReferenceText(
+            stringResource(R.string.chat_disclaimer),
+            58f,
+            composerTop.value / scale + (if (shortened) 103.5f else 112f),
+            18f,
+            scale = scale,
+            color = Color(0xFFA9BDCF),
+        )
         if (state.connection == ConversationConnection.SIGNED_OUT && !shortened) {
             ReferenceAction(
                 stringResource(R.string.conversation_connect),
@@ -1251,7 +1231,7 @@ private fun ConversationComposer(
                                 friend,
                             ),
                             style = mobiMonReferenceTextStyle(if (wide) 26f else 32f, scale),
-                            color = Colors.muted,
+                            color = Colors.muted.copy(alpha = 0.72f),
                         )
                     }
                     input()

@@ -159,7 +159,7 @@ internal fun VoiceIconButton(
 }
 
 internal val VoiceInputState.showHint: Boolean
-    get() = phase == VoiceInputPhase.PERMISSION || (problem != null && problem != VoiceInputProblem.NO_MATCH)
+    get() = problem != null && problem != VoiceInputProblem.NO_MATCH
 
 internal fun voiceHint(voice: VoiceInputState): Int =
     voice.problem?.let {
@@ -176,7 +176,6 @@ internal fun voiceHint(voice: VoiceInputState): Int =
             VoiceInputProblem.TOO_LONG -> R.string.chat_input_limit
         }
     } ?: when (voice.phase) {
-        VoiceInputPhase.PERMISSION -> R.string.chat_voice_permission_pending
         VoiceInputPhase.STARTING -> R.string.chat_voice_starting
         VoiceInputPhase.STOPPING -> R.string.chat_voice_stopping
         VoiceInputPhase.REVIEW -> R.string.chat_voice_review

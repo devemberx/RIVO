@@ -50,6 +50,52 @@ class ConversationViewModelTest {
         Dispatchers.resetMain()
     }
 
+    @Test fun acceptedMicrophoneRequestClearsTypedInputBeforePermissionResult() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model(FakeSpeech())
+            runCurrent()
+            model.edit(TextFieldValue("unsent text"))
+            model.setVoiceResumed(true)
+
+            val permission = requireNotNull(model.requestVoice(false))
+            assertEquals(TextFieldValue(), model.draft)
+            model.voicePermissionResult(permission, false)
+            assertEquals(TextFieldValue(), model.draft)
+            assertEquals(null, model.state.value.voice.problem)
+
+            model.edit(TextFieldValue("new draft"))
+            model.setVoiceResumed(false)
+            model.requestVoice(true)
+            assertEquals("new draft", model.draft.text)
+        }
+
+    @Test fun leavingForHomeClearsOnlyTheComposer() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            model.edit(TextFieldValue("first"))
+            model.send()
+            runCurrent()
+            val conversation = provider.conversationIds.single()
+            model.edit(TextFieldValue("unsent text"))
+
+            model.clearDraftForHome()
+            assertEquals(TextFieldValue(), model.draft)
+            assertEquals(
+                listOf("first", "answer"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+
+            model.edit(TextFieldValue("second"))
+            model.send()
+            runCurrent()
+            assertEquals(conversation, provider.conversationIds.last())
+            assertEquals(listOf("first", "answer", "second"), provider.requests.last().map { it.text })
+        }
+
     @Test fun modelCheckConnectsBeforeSendAndDuplicateSendIsBlocked() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
@@ -380,7 +426,7 @@ class ConversationViewModelTest {
             assertTrue(model.state.value.failed)
         }
 
-    @Test fun idleReadyRecordingReportsNetworkLossForPopupAndKeepsDraft() =
+    @Test fun idleReadyRecordingReportsNetworkLossForPopupWithoutRestoringOldDraft() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val speech = FakeSpeech()
@@ -399,7 +445,7 @@ class ConversationViewModelTest {
             assertFalse(model.state.value.failed)
             model.cancelVoice()
             assertEquals(1, speech.cancellations)
-            assertEquals("보존할 초안", model.draft.text)
+            assertEquals("", model.draft.text)
             assertTrue(provider.requests.isEmpty())
         }
 
@@ -736,7 +782,7 @@ class ConversationViewModelTest {
             assertNotEquals(second, provider.conversationIds.last())
         }
 
-    @Test fun recordingKeepsVisibleMessagesAndContextUntilNewConversation() =
+    @Test fun recordingKeepsVisibleMessagesAndContextButClearsComposer() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val speech = FakeSpeech()
@@ -770,7 +816,7 @@ class ConversationViewModelTest {
                 model.state.value.messages
                     .map { it.text },
             )
-            assertEquals("keep draft", model.draft.text)
+            assertEquals("", model.draft.text)
             model.cancelVoice()
             model.deactivate()
             model.activate(true)
@@ -871,7 +917,7 @@ class ConversationViewModelTest {
             val listener = requireNotNull(speech.listener)
             listener.onReady()
             listener.onPartial("안녕하세요")
-            assertEquals("original draft", model.draft.text)
+            assertEquals("", model.draft.text)
             model.send()
             runCurrent()
             assertTrue(provider.requests.isEmpty())
@@ -896,7 +942,7 @@ class ConversationViewModelTest {
             )
         }
 
-    @Test fun speechCancellationPreservesDraftAndRejectsOldSessionsAfterRestartAndParkingLoss() =
+    @Test fun speechCancellationKeepsClearedComposerAndRejectsOldSessionsAfterParkingLoss() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val speech = FakeSpeech()
@@ -914,11 +960,11 @@ class ConversationViewModelTest {
             current.onReady()
             old.onPartial("discard")
             old.onResult("discard")
-            assertEquals("keep this", model.draft.text)
+            assertEquals("", model.draft.text)
             assertEquals("", model.state.value.voice.partial)
             model.setForegroundAllowed(false)
             current.onResult("also discard")
-            assertEquals("keep this", model.draft.text)
+            assertEquals("", model.draft.text)
             assertFalse(model.state.value.voice.capturing)
             assertEquals(2, speech.cancellations)
             model.requestVoice(true)
@@ -944,7 +990,7 @@ class ConversationViewModelTest {
             model.activate(true)
             model.requestVoice(true)
             assertEquals(2, speech.starts)
-            assertEquals("keep this", model.draft.text)
+            assertEquals("", model.draft.text)
             model.setVoiceResumed(false)
             model.deactivate()
             model.activate(true)
@@ -961,7 +1007,7 @@ class ConversationViewModelTest {
             runCurrent()
             model.setVoiceResumed(true)
             val denied = requireNotNull(model.requestVoice(false))
-            model.voicePermissionResult(denied, false)
+            model.voicePermissionResult(denied, false, showSettingsHint = true)
             assertEquals(VoiceInputProblem.PERMISSION, model.state.value.voice.problem)
             assertEquals(0, speech.starts)
             val obsolete = requireNotNull(model.requestVoice(false))
@@ -994,7 +1040,7 @@ class ConversationViewModelTest {
             first.onResult("discard")
             model.setVoiceResumed(true)
             assertEquals(1, speech.starts)
-            assertEquals("keep on pause", model.draft.text)
+            assertEquals("", model.draft.text)
             model.requestVoice(true)
             val next = requireNotNull(speech.listener)
             next.onReady()
@@ -1006,7 +1052,7 @@ class ConversationViewModelTest {
             assertEquals(2, speech.cancellations)
         }
 
-    @Test fun failedOrOversizedSpeechNeverReplacesDraftAndStoppingHasABoundedWait() =
+    @Test fun failedOrOversizedSpeechLeavesClearedDraftAndStoppingHasABoundedWait() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val speech = FakeSpeech()
@@ -1017,11 +1063,11 @@ class ConversationViewModelTest {
             model.requestVoice(true)
             requireNotNull(speech.listener).onResult("")
             assertEquals(VoiceInputProblem.NO_MATCH, model.state.value.voice.problem)
-            assertEquals("preserved", model.draft.text)
+            assertEquals("", model.draft.text)
             model.requestVoice(true)
             requireNotNull(speech.listener).onResult("x".repeat(ConversationLimits.INPUT_CHARACTERS + 1))
             assertEquals(VoiceInputProblem.TOO_LONG, model.state.value.voice.problem)
-            assertEquals("preserved", model.draft.text)
+            assertEquals("", model.draft.text)
             model.requestVoice(true)
             requireNotNull(speech.listener).onReady()
             repeat(70) { requireNotNull(speech.listener).onLevel(0.5f) }
@@ -1034,7 +1080,7 @@ class ConversationViewModelTest {
             runCurrent()
             assertEquals(VoiceInputProblem.TIMEOUT, model.state.value.voice.problem)
             assertFalse(model.state.value.voice.capturing)
-            assertEquals("preserved", model.draft.text)
+            assertEquals("", model.draft.text)
             assertTrue(provider.requests.isEmpty())
         }
 
@@ -1084,7 +1130,7 @@ class ConversationViewModelTest {
             model.cancelVoice()
             listener.onCommitted("늦은 결과")
             listener.onFailure(VoiceInputProblem.SERVICE)
-            assertEquals("previous draft", model.draft.text)
+            assertEquals("", model.draft.text)
             assertTrue(provider.requests.isEmpty())
         }
 
@@ -1153,7 +1199,7 @@ class ConversationViewModelTest {
             listener.onReady()
             listener.onResult("late result")
             assertFalse(model.state.value.voice.capturing)
-            assertEquals("preserved", model.draft.text)
+            assertEquals("", model.draft.text)
             assertTrue(provider.requests.isEmpty())
         }
 
@@ -1198,7 +1244,7 @@ class ConversationViewModelTest {
             runCurrent()
             assertEquals(VoiceInputProblem.TIMEOUT, model.state.value.voice.problem)
             listener.onResult("too late")
-            assertEquals("preserved", model.draft.text)
+            assertEquals("", model.draft.text)
             assertFalse(model.state.value.voice.capturing)
         }
 
@@ -1256,7 +1302,7 @@ class ConversationViewModelTest {
                 listener.onResult("late result")
                 model.requestVoice(true)
                 assertEquals(1, speech.starts)
-                assertEquals("preserved", model.draft.text)
+                assertEquals("", model.draft.text)
                 assertTrue(provider.requests.isEmpty())
             }
         }
@@ -1440,7 +1486,7 @@ class ConversationViewModelTest {
             model.setVoiceResumed(false)
             startup.onReady()
             startup.onResult("discard background")
-            assertEquals("preserved", model.draft.text)
+            assertEquals("", model.draft.text)
             assertFalse(model.state.value.voice.capturing)
             model.setVoiceResumed(true)
             model.requestVoice(true)
@@ -1449,7 +1495,7 @@ class ConversationViewModelTest {
             model.stopVoice()
             model.activate(false)
             finalizing.onResult("discard parking")
-            assertEquals("preserved", model.draft.text)
+            assertEquals("", model.draft.text)
             assertFalse(model.state.value.voice.capturing)
             model.activate(true)
             model.requestVoice(true)
@@ -1461,7 +1507,7 @@ class ConversationViewModelTest {
             model.requestVoice(true)
             assertEquals(3, speech.starts)
             assertEquals(3, speech.cancellations)
-            assertEquals("preserved", model.draft.text)
+            assertEquals("", model.draft.text)
             assertFalse(model.state.value.voice.capturing)
             assertTrue(provider.requests.isEmpty())
         }

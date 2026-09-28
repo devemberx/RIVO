@@ -260,6 +260,11 @@ class ConversationViewModel(
         if (state.value.voice.problem != null) updateVoice(state.value.voice.copy(problem = null))
     }
 
+    fun clearDraftForHome() {
+        cancelVoice()
+        draft = TextFieldValue()
+    }
+
     fun setVoiceResumed(resumed: Boolean) {
         voiceResumed = resumed
         if (resumed && !state.value.voice.capturing) {
@@ -286,6 +291,7 @@ class ConversationViewModel(
             updateVoice(state.value.voice.copy(available = false, problem = VoiceInputProblem.UNAVAILABLE))
             return null
         }
+        draft = TextFieldValue()
         returnToVoiceReview = state.value.voice.phase == VoiceInputPhase.REVIEW
         voicePermissionGranted = permissionGranted
         confirmedVoiceText = ""
@@ -301,6 +307,7 @@ class ConversationViewModel(
     fun voicePermissionResult(
         session: Long,
         granted: Boolean,
+        showSettingsHint: Boolean = false,
     ) {
         if (session != voiceGeneration ||
             state.value.voice.phase != VoiceInputPhase.PERMISSION ||
@@ -309,7 +316,7 @@ class ConversationViewModel(
             return
         }
         if (!granted) {
-            finishVoice(problem = VoiceInputProblem.PERMISSION)
+            finishVoice(problem = if (showSettingsHint) VoiceInputProblem.PERMISSION else null)
             return
         }
         voicePermissionGranted = true

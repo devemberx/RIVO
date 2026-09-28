@@ -88,11 +88,12 @@ subscription or rewards.
 ### Keyboard conversation UI
 
 `feature-auth` keeps draft, conversation identity and full provider context in Activity
-memory. Home entry and recording startup preserve both visible messages and provider
-context. New chat clears all conversation state. Account/profile
+memory. Home navigation and recording startup preserve visible messages and provider
+context, while clearing the composer draft. New chat clears all conversation state. Account/profile
 change, disconnect or process restart clears private data; initial account validation
 retains an unsent draft. Temporary failures retain the attempted turn and draft.
 Departure, backgrounding, parking loss or companion changes cancel work; reject late replies.
+Backgrounding and parking loss alone retain the current draft.
 
 Entry/recheck requires fresh Copilot access and model responses, bypassing cached
 readiness without sending a completion. Transport failures/timeouts use network

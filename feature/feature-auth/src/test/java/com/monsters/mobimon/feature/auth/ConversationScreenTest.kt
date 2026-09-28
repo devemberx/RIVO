@@ -77,6 +77,33 @@ class ConversationScreenTest {
 
     @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun copilotDisclosureStaysVisibleDuringVoicePermissionAndSignOut() {
+        state = state.copy(voice = VoiceInputState(available = true))
+        show()
+        val disclosure = "대화는 GitHub Copilot으로 전송돼요. AI 답변은 부정확할 수 있어요."
+        compose.onNodeWithText(disclosure).assertIsDisplayed()
+        capture("composer-placeholder")
+
+        compose.runOnIdle { state = state.copy(voice = state.voice.copy(phase = VoiceInputPhase.PERMISSION)) }
+        compose.onNodeWithText(disclosure).assertIsDisplayed()
+        compose.onNodeWithTag("chat-voice-hint").assertDoesNotExist()
+        capture("voice-permission-disclosure")
+
+        compose.runOnIdle {
+            state =
+                state.copy(
+                    connection = ConversationConnection.SIGNED_OUT,
+                    voice = VoiceInputState(available = true, problem = VoiceInputProblem.PERMISSION),
+                )
+        }
+        compose.onNodeWithText(disclosure).assertIsDisplayed()
+        val hint = compose.onNodeWithTag("chat-voice-hint").fetchSemanticsNode().boundsInRoot
+        val composer = compose.onNodeWithTag("chat-composer").fetchSemanticsNode().boundsInRoot
+        assertTrue(hint.bottom <= composer.top)
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun voiceInputBlocksSuggestionsUntilCancellationRestoresEditing() {
         state = state.copy(voice = VoiceInputState(available = true))
         draft = TextFieldValue("original draft")
@@ -461,7 +488,7 @@ class ConversationScreenTest {
 
     @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
-    fun parkingLossShowsBlockingDialogAndHomeKeepsDraft() {
+    fun parkingLossShowsBlockingDialogWithoutClearingDraftBeforeHomeCallback() {
         draft = TextFieldValue("주차 후 보낼 메시지")
         allowed = false
         show()
@@ -1008,7 +1035,7 @@ class ConversationScreenTest {
     }
 
     @Test
-    fun voiceStartAndCancellationNeverSubmitAndTheOriginalDraftSurvives() {
+    fun voiceStartAndCancellationDoNotSubmitWithoutOwnerDraftChange() {
         state = state.copy(voice = VoiceInputState(available = true))
         draft = TextFieldValue("original")
         show()

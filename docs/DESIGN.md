@@ -140,13 +140,18 @@ blocks editing and hides IME; AAOS restrictions remove the screen.
 Use [keyboard](ui/conversation/keyboard-input.svg), [recording](ui/conversation/voice-listening.svg)
 and [review](ui/conversation/voice-review.svg) geometry; enlarged text prioritizes chat.
 Microphone/Stop and Send are separate, with Cancel, waveform and disabled Send during
-capture. Keep draft/footer text legible and actions clear. Hide suggestions during
-permission/capture; hide microphone if no system service exists. No listening timer
+capture. Keep the Copilot disclosure unchanged below the composer; place voice status
+above it. Make the empty-field hint quieter than typed text but legible. Hide suggestions
+during permission/capture; hide microphone if no system service exists. No listening timer
 or extra review/rerecord caption; waveform stays flat before speech detection.
 
-Request permission on activation. Stop produces editable text; only explicit Send
-submits. Cancel/Back/background/restrictions preserve the previous draft. Errors retain
-confirmed text for review; no-match/silence preserves the normal draft/footer.
+The native dialog handles permission; the first denial needs no additional hint.
+Show settings guidance only when the permission dialog cannot reopen. An accepted
+microphone request clears typed input, including when permission is denied afterward.
+Returning Home clears typed input; backgrounding and restrictions alone retain it.
+Stop produces editable text; only explicit Send submits. Cancel preserves the current
+draft. Errors retain confirmed text for review;
+no-match/silence leaves the cleared composer and disclosure in place.
 Network popups release the microphone and retain the draft.
 
 Exports may show older recovery copy or visible history; use the current session
