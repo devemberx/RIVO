@@ -29,8 +29,8 @@ vehicles or replace warnings.
 - On an active Vehicle, Store, or Quest route, losing verified Park shows a
   blocking, route-specific parking interruption dialog over the current screen.
   The restricted badge, pause icon, explanation, preserved-progress note and
-  Home action follow the `수정본_v5` Figma frames (Vehicle `770:2`, Store
-  `770:155`, Quest `770:282`). Hide any underlying selector or reward dialog;
+  Home action follow the [vehicle v6 export](ui/vehicle/parking-required.svg)
+  and `수정본_v5` Figma frames (Store `770:155`, Quest `770:282`). Hide any underlying selector or reward dialog;
   restore the route when verified Park returns if the user has not gone Home.
   Initial unavailable vehicle data stays in each route's ordinary unavailable
   state. Pending writes receive no success presentation after interruption;
@@ -87,6 +87,10 @@ Follow [home.svg](ui/shell/home.svg): keep the centered artwork crop and horizon
 when content height changes. Store crops within cards. Crossfade background/tint
 without tinting controls; notices must not move the main action. Use the animated
 time phrase rather than the export subtitle, with scrolling for enlarged text.
+Home speech uses regular-weight text. On the reference Home scene, keep the
+tail anchored in both axes as longer dialogue grows upward. Scale the body
+curves to its height and center reflowed text inside it. Size the height to
+the displayed line count with consistent vertical padding.
 
 ## Screens and navigation
 
@@ -111,6 +115,10 @@ assumed daily reset. Show one committed Points balance; unknown is not zero.
 Celebrate only committed amounts, once per claim; later repository data replaces
 confirmations. Show persisted completion dates. Align point headers with parking
 badges; compact Quest may place balance beside its heading.
+Keep the claim button and quest card in place while saving, with progress shown in
+the button. After commit, show one centered reward popup with a short entrance
+motion, a consistently framed happy companion, and amounts labeled P; reduced
+motion displays the popup immediately.
 
 Quest detail slightly widens the companion panel and shifts the friend as the
 selected content enters from the side; Back reverses the motion and restores the
@@ -176,17 +184,24 @@ Network popups release the microphone and retain unsent drafts or failed turns.
 
 Exports may show older recovery copy or visible history; use the current session
 behavior with their geometry. Footer names GitHub Copilot and discloses conversation
-transmission and AI uncertainty. Local clearing does not promise
-provider deletion. Manual lookup preserves the existing companion copy and suggestions;
+transmission and AI uncertainty. Local clearing does not promise provider deletion.
+Manual lookup preserves the existing companion copy and suggestions;
 manual answers add short app-generated source references, while tool protocol and raw
 search results never become chat bubbles. Spoken replies remain planned and must yield
 to calls/navigation.
 
 ## Vehicle information
 
-Six default cards use a gallery that excludes assigned cards; Confirm saves a selected
-alternative locally. Keep card sizes stable and scroll additional choices. Debug values
-are simulations, not vehicle verification.
+The [vehicle v6 exports](ui/README.md#vehicle) define the header edit action, summary,
+cards and selector layout. The companion uses shared `PetAvatar` artwork and motion,
+including equipped accessories and Hungry/Sick condition variants.
+
+Six default cards show condition through icon and text color with accessible status
+labels; the selector excludes assigned cards and saves the selected alternative locally
+after confirmation. Selector tabs use 64 px full pill shapes and centered bold labels.
+Match the visible gaps above and below the tabs to the list-to-footer gap (about 31 px);
+the apply button is 352 px wide. Keep card sizes stable, scroll additional choices, and
+label Debug values as simulations rather than vehicle verification.
 
 Distinguish Info, Normal, Caution and Unavailable. Missing/stale/invalid is never Normal;
 four-wheel Normal requires all readings, while one confirmed warning permits Caution.

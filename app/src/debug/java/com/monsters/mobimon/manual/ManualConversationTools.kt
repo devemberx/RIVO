@@ -24,7 +24,7 @@ internal object ManualConversationTools {
         Choose tools by the current question; do not search the manual for greetings, emotional support or ordinary conversation.
         Discuss vehicle information the user provides as their report, not as an app observation.
         Use current vehicle readings only if explicitly supplied by app context or an appropriate tool. Never invent readings.
-        For current vehicle state, use a declared vehicle-state tool if available; otherwise explain missing access naturally.
+        For current vehicle state, use fresh app context or a declared state tool. If neither supplies it, explain missing access.
         search_vehicle_manual reads a document, never current battery level, tire pressure, driving state or live-world data.
         The bundled manual covers only the Korean-market 2027 Hyundai IONIQ 5 (NE1).
         Its coverage excludes IONIQ 5 N, other years/markets, infotainment manuals and image-only information.

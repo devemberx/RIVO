@@ -26,6 +26,7 @@ import com.monsters.mobimon.core.domain.PetProfile
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleSnapshot
+import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.LocalMobiMonNotificationCount
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import org.junit.Assert.assertEquals
@@ -114,6 +115,30 @@ class PetHomeScreenTest {
         compose.runOnIdle { friend.value = "friend:luna" }
         compose.onNodeWithContentDescription("Luna 고양이").assertExists()
         compose.onNodeWithContentDescription("Mobi 강아지").assertDoesNotExist()
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w800dp-h600dp-mdpi")
+    fun compactHomeKeepsBubbleStartFixedWhenDialogueChanges() {
+        val friend = mutableStateOf("friend:mobi")
+        compose.setContent {
+            CompositionLocalProvider(LocalMobiMonMotionEnabled provides false) {
+                MobiMonTheme {
+                    PetHomeScreen(
+                        profile = PetProfile("profile"),
+                        snapshot = parkedSnapshot(),
+                        onOpenMenu = {},
+                        onPetClick = {},
+                        friendId = friend.value,
+                    )
+                }
+            }
+        }
+        val before = compose.onNodeWithTag("home-companion-message").fetchSemanticsNode().boundsInRoot
+        compose.runOnIdle { friend.value = "friend:luna" }
+        val after = compose.onNodeWithTag("home-companion-message").fetchSemanticsNode().boundsInRoot
+        assertEquals(before.left, after.left, 1f)
+        assertEquals(before.top, after.top, 1f)
     }
 
     @Test

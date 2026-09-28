@@ -146,9 +146,10 @@ visual page directories. Local BM25 retrieval preserves retained procedures, con
 and required warnings; missing/corrupt assets fail closed. Extraction and retrieval
 need no network, while AI generation uses online Copilot.
 
-Ordinary companion conversation and discussion of explicitly supplied vehicle context
-can answer directly without retrieval. Current battery/pressure and other vehicle
-telemetry are not supplied by the existing context or manual tool and must not be inferred.
+Ordinary companion conversation and discussion of supplied vehicle context can answer
+directly without manual retrieval. The app supplies bounded time, battery and pet
+condition evidence when fresh and authorized; other current readings are unavailable.
+The manual tool never supplies live vehicle state.
 `search_vehicle_manual` supplies excerpts only when called, and each manual-grounded answer
 requires current-turn sources checked by the
 [acceptance policy](../app/src/debug/java/com/monsters/mobimon/manual/ManualReplyPolicy.kt).
@@ -160,15 +161,27 @@ IONIQ 5 N are outside the bundled manual's coverage, not a limit on ordinary con
 The system instruction gives Mobi a curious rabbit persona and Luna a quietly caring
 cat persona, using short natural Korean banmal without habitual animal suffixes,
 emojis or stage directions. Each send adds optional bounded AAOS context-user name
-(`QUERY_USERS`, absent without permission) and independently fresh VSS timestamp/period.
-These values are untrusted data, never instructions or ownership identifiers. No other
-vehicle readings or reward commands are sent. Declared read-only tools are available
-only with an explicitly enabled registry. Missing context is omitted.
+(`QUERY_USERS`, absent without permission) and independently fresh VSS timestamp.
+These values are untrusted data, never instructions or ownership identifiers. Battery
+SOC is also sent using the shared freshness policy; unavailable battery is explicit.
+Each send reads the runtime debugger setting: enabled selects labeled test readings
+in either build, disabled accepts only real-source readings. Source mismatches are
+unavailable during switching; simulated fallback is never sent with the debugger off.
+Pet condition and its current hunger/sickness evidence use the same classifier as
+the display, including valid warning signals. Derived readings are labeled separately
+from raw signal paths; explanations cannot invent historical causes or diagnoses.
+Declared read-only tools are available only with an explicitly enabled registry:
+Debug enables local manual lookup, while Release has none. No live vehicle tools or
+reward commands are sent. Debugger warning inputs are available in both build variants
+while the debugger is enabled.
 
-VSS time retains its offset and the scene mapper's period; it is not converted to
-system wall-clock time. A timestamp must have its own monotonic observation within
-60 seconds. Ticker publications never refresh it. Verified real adapters must supply
-that provenance; Debug observations are marked simulated. This is an observation
+Chat time uses the original VSS timestamp's hours, minutes, seconds and UTC offset;
+the scene mapper's period is not sent or substituted for an exact time. It is not
+converted to system wall-clock time. A timestamp must have its own monotonic observation within
+60 seconds. Ticker publications never refresh it. Real adapters must supply time and
+battery observation timestamps through `VssRawVehicleSource`; missing battery provenance
+is unavailable, and ticker publications cannot refresh it. Debugger readings are
+marked simulated. This is an observation
 freshness policy, not proof that GNSS provides a continuously advancing clock.
 
 Copilot catalog metadata supplies `max_prompt_tokens`, optional combined

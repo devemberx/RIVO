@@ -1,12 +1,15 @@
 package com.monsters.mobimon.feature.quest
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -55,14 +59,18 @@ internal fun QuestRewardSuccessModal(
 ) {
     val motionEnabled = LocalMobiMonMotionEnabled.current
     val entrance = remember(motionEnabled) { Animatable(if (motionEnabled) 0f else 1f) }
+    val avatarPop = remember(motionEnabled) { Animatable(if (motionEnabled) 0.75f else 1f) }
     LaunchedEffect(motionEnabled) {
-        if (motionEnabled) entrance.animateTo(1f, tween(durationMillis = 240))
+        if (motionEnabled) {
+            entrance.animateTo(1f, tween(durationMillis = 240))
+            avatarPop.animateTo(1f, spring(dampingRatio = 0.68f, stiffness = Spring.StiffnessMediumLow))
+        }
     }
     Dialog(
         onDismissRequest = onConfirm,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        Box(
+        BoxWithConstraints(
             modifier =
                 Modifier
                     .fillMaxSize()
@@ -70,19 +78,21 @@ internal fun QuestRewardSuccessModal(
                     .clickable(onClick = onConfirm),
             contentAlignment = Alignment.Center,
         ) {
+            val modalScale = minOf(scale, maxWidth.value / 1120f, maxHeight.value / 940f)
             Box(
                 modifier =
                     Modifier
-                        .width(1040.dp * scale)
-                        .height(880.dp * scale)
+                        .width(1040.dp * modalScale)
+                        .height(880.dp * modalScale)
                         .graphicsLayer {
                             val progress = entrance.value
                             alpha = progress
-                            scaleX = 0.92f + progress * 0.08f
-                            scaleY = 0.92f + progress * 0.08f
-                        }.clip(RoundedCornerShape(32.dp * scale))
+                            scaleX = 0.94f + progress * 0.06f
+                            scaleY = 0.94f + progress * 0.06f
+                            translationY = (1f - progress) * 24.dp.toPx()
+                        }.clip(RoundedCornerShape(32.dp * modalScale))
                         .background(Colors.panel)
-                        .border(2.dp * scale, Colors.border, RoundedCornerShape(32.dp * scale))
+                        .border(2.dp * modalScale, Colors.border, RoundedCornerShape(32.dp * modalScale))
                         .clickable {}
                         .testTag("quest-reward-success-modal"),
             ) {
@@ -90,12 +100,12 @@ internal fun QuestRewardSuccessModal(
                     modifier =
                         Modifier
                             .align(Alignment.TopCenter)
-                            .offset(y = 48.dp * scale)
-                            .widthIn(min = 160.dp * scale)
-                            .height(44.dp * scale)
-                            .clip(RoundedCornerShape(22.dp * scale))
+                            .offset(y = 48.dp * modalScale)
+                            .widthIn(min = 160.dp * modalScale)
+                            .height(44.dp * modalScale)
+                            .clip(RoundedCornerShape(22.dp * modalScale))
                             .background(Colors.raised)
-                            .padding(horizontal = 20.dp * scale),
+                            .padding(horizontal = 20.dp * modalScale),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
@@ -109,11 +119,19 @@ internal fun QuestRewardSuccessModal(
                                     R.string.quest_modal_badge
                                 },
                             ),
-                        style = questTextStyle(24f, scale, color = Colors.accent),
+                        style = questTextStyle(24f, modalScale, color = Colors.accent),
                     )
                 }
                 PetAvatar(
-                    modifier = Modifier.align(Alignment.TopCenter).offset(y = 128.dp * scale).size(280.dp * scale),
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopCenter)
+                            .offset(y = 112.dp * modalScale)
+                            .size(360.dp * modalScale)
+                            .graphicsLayer {
+                                scaleX = avatarPop.value
+                                scaleY = avatarPop.value
+                            },
                     appearanceKey = "GOLDEN",
                     friendId = friendId,
                     accessoryId = accessoryId,
@@ -123,9 +141,12 @@ internal fun QuestRewardSuccessModal(
                 )
                 Text(
                     text = stringResource(R.string.quest_modal_title, points),
-                    style = questTextStyle(46f, scale, bold = true, color = Colors.text),
+                    style = questTextStyle(46f, modalScale, bold = true, color = Colors.text),
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.align(Alignment.TopCenter).offset(y = 465.dp * scale),
+                    modifier =
+                        Modifier.align(Alignment.TopCenter).offset(y = 480.dp * modalScale).width(
+                            900.dp * modalScale,
+                        ),
                 )
                 Text(
                     text =
@@ -133,28 +154,34 @@ internal fun QuestRewardSuccessModal(
                             "모비",
                             if (friendId == "friend:luna") "루나" else "모비",
                         ),
-                    style = questTextStyle(30f, scale, color = Colors.muted),
+                    style = questTextStyle(30f, modalScale, color = Colors.muted),
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.align(Alignment.TopCenter).offset(y = 521.dp * scale),
+                    modifier =
+                        Modifier.align(Alignment.TopCenter).offset(y = 550.dp * modalScale).width(
+                            900.dp * modalScale,
+                        ),
                 )
                 if (bonusPoints > 0) {
                     Text(
                         text = stringResource(R.string.quest_modal_weather_bonus, bonusPoints),
-                        style = questTextStyle(26f, scale, bold = true, color = Colors.accent),
+                        style = questTextStyle(26f, modalScale, bold = true, color = Colors.accent),
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.align(Alignment.TopCenter).offset(y = 566.dp * scale),
+                        modifier =
+                            Modifier.align(Alignment.TopCenter).offset(y = 600.dp * modalScale).width(
+                                900.dp * modalScale,
+                            ),
                     )
                 }
                 Box(
                     modifier =
                         Modifier
                             .align(Alignment.TopCenter)
-                            .offset(y = (if (bonusPoints > 0) 616 else 575).dp * scale)
-                            .width(if (bonusPoints > 0) 640.dp * scale else 520.dp * scale)
-                            .height(64.dp * scale)
-                            .clip(RoundedCornerShape(32.dp * scale))
+                            .offset(y = (if (bonusPoints > 0) 650 else 610).dp * modalScale)
+                            .width(if (bonusPoints > 0) 640.dp * modalScale else 520.dp * modalScale)
+                            .height(64.dp * modalScale)
+                            .clip(RoundedCornerShape(32.dp * modalScale))
                             .background(Color(0xFF0E2034))
-                            .border(1.dp * scale, Color(0xFF2A4968), RoundedCornerShape(32.dp * scale)),
+                            .border(1.dp * modalScale, Color(0xFF2A4968), RoundedCornerShape(32.dp * modalScale)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
@@ -173,7 +200,7 @@ internal fun QuestRewardSuccessModal(
                                 } else {
                                     32f
                                 },
-                                scale,
+                                modalScale,
                                 bold = true,
                                 color = Colors.success,
                             ),
@@ -183,18 +210,18 @@ internal fun QuestRewardSuccessModal(
                     modifier =
                         Modifier
                             .align(Alignment.TopCenter)
-                            .offset(y = (if (bonusPoints > 0) 720 else 688).dp * scale)
-                            .width(440.dp * scale)
-                            .height(96.dp * scale)
-                            .clip(RoundedCornerShape(20.dp * scale))
+                            .offset(y = (if (bonusPoints > 0) 750 else 710).dp * modalScale)
+                            .width(440.dp * modalScale)
+                            .height(96.dp * modalScale)
+                            .clip(RoundedCornerShape(20.dp * modalScale))
                             .background(Colors.button)
-                            .clickable(onClick = onConfirm)
+                            .clickable(role = Role.Button, onClick = onConfirm)
                             .testTag("quest-modal-btn-confirm"),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = stringResource(R.string.quest_action_confirm),
-                        style = questTextStyle(38f, scale, bold = true, color = Colors.onButton),
+                        style = questTextStyle(38f, modalScale, bold = true, color = Colors.onButton),
                     )
                 }
             }
@@ -290,12 +317,6 @@ internal fun QuestHiddenClaimModal(
 
                 Spacer(Modifier.height(24.dp * scale))
 
-                if (isBusy) {
-                    Text(
-                        stringResource(R.string.quest_saving),
-                        style = questTextStyle(28f, scale, color = Colors.muted),
-                    )
-                }
                 errorMessage?.let { MobiMonMessage(it, isError = true) }
 
                 // Reward chip
@@ -330,7 +351,7 @@ internal fun QuestHiddenClaimModal(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = stringResource(R.string.quest_action_claim),
+                        text = stringResource(if (isBusy) R.string.quest_saving_short else R.string.quest_action_claim),
                         style =
                             questTextStyle(
                                 baseSp = 36f,

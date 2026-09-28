@@ -131,6 +131,28 @@ class QuestCatalogTest {
     }
 
     @Test
+    fun committedObservationWaitsForClaimResultBeforeChangingTheVisibleQuest() {
+        val state =
+            ready().copy(
+                satisfiedDrivingQuestIds = setOf(DrivingQuestIds.SEATBELT),
+                completedPointQuestIds = setOf(DrivingQuestIds.SEATBELT, DrivingQuestIds.HIDDEN_NEW_FRIEND),
+                pendingQuestId = DrivingQuestIds.SEATBELT,
+            )
+        val screen = catalog.present(state, CompanionAppearanceState(), PointBalanceState.Ready(0), true, Int::toString)
+        assertEquals(QuestItemStatus.CLAIMABLE, screen.quests.first { it.id == DrivingQuestIds.SEATBELT }.status)
+        assertFalse(screen.canClaim)
+        val confirmed =
+            catalog.present(
+                state.copy(pendingQuestId = null, rewardSuccess = QuestRewardSuccess(DrivingQuestIds.SEATBELT, 5)),
+                CompanionAppearanceState(),
+                PointBalanceState.Ready(5),
+                true,
+                Int::toString,
+            )
+        assertEquals(QuestItemStatus.COMPLETED, confirmed.quests.first { it.id == DrivingQuestIds.SEATBELT }.status)
+    }
+
+    @Test
     fun questsAreOrderedByClaimableThenInProgressThenCompleted() {
         val state =
             ready().copy(

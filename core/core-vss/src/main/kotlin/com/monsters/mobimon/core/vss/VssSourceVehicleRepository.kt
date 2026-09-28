@@ -32,6 +32,8 @@ class VssSourceVehicleRepository(
                 sequence = 0,
                 observedAtMillis = clock.nowMillis(),
                 source = SignalSource.REAL,
+                timeObservedAtMillis = rawSource.timeObservedAtMillis,
+                batteryObservedAtMillis = rawSource.batteryObservedAtMillis,
             ),
         )
     override val snapshots = mutableSnapshots.asStateFlow()
@@ -57,6 +59,8 @@ class VssSourceVehicleRepository(
                             sequence = nextSequence,
                             observedAtMillis = clock.nowMillis(),
                             source = SignalSource.REAL,
+                            timeObservedAtMillis = rawSource.timeObservedAtMillis,
+                            batteryObservedAtMillis = rawSource.batteryObservedAtMillis,
                         )
                     synchronized(this@VssSourceVehicleRepository) {
                         if (generation == currentGeneration) {

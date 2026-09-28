@@ -24,7 +24,6 @@ internal fun QuestStatusPanel(
         state.isLoading ||
             state.observationFailed ||
             state.errorMessage != null ||
-            state.pendingQuestId != null ||
             state.appearance.failed ||
             state.pointBalance == PointBalanceState.Failed
     if (!hasStatus) return
@@ -35,7 +34,6 @@ internal fun QuestStatusPanel(
                 MobiMonButton(onClick = onRetryQuests) { Text(stringResource(R.string.quest_retry_records)) }
             }
             state.isLoading -> MobiMonMessage(stringResource(R.string.quest_loading))
-            state.pendingQuestId != null -> MobiMonMessage(stringResource(R.string.quest_saving))
         }
         state.errorMessage?.let { MobiMonMessage(it, isError = true) }
         if (state.pointBalance == PointBalanceState.Failed) {

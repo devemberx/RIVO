@@ -46,6 +46,7 @@ internal fun QuestRightPanel(
     selectedTab: QuestFilterTab,
     onSelectTab: (QuestFilterTab) -> Unit,
     canClaim: Boolean,
+    pendingQuestId: String? = null,
     isCompact: Boolean,
     onSelectQuest: (String) -> Unit,
     onClaimReward: (String) -> Unit,
@@ -166,6 +167,7 @@ internal fun QuestRightPanel(
                             QuestCardItem(
                                 quest = quest,
                                 canClaim = canClaim,
+                                isClaimPending = pendingQuestId == quest.id,
                                 scale = scale,
                                 isCompact = isCompact,
                                 onClick = { onSelectQuest(quest.id) },
