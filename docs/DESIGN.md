@@ -199,7 +199,9 @@ hide expired codes. Unconfigured builds disable sign-in. Follow the
 
 [Verified success](ui/connection/connected.svg) shows the account and equipped friend's
 conversation action plus Settings. Explain local persistence and separate Copilot
-readiness. Failures offer retry/local clearing; Disconnect confirms local-only removal.
+readiness. Network failures omit connection steps and offer retry without local
+clearing; other authentication failures retain the steps and clearing option.
+Disconnect confirms local-only removal.
 Reuse shared loading/failure panels where exports are absent.
 
 ## Motion
