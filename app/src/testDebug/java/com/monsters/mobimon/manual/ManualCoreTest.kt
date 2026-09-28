@@ -47,6 +47,25 @@ class ManualCoreTest {
         )
     }
 
+    @Test fun ordinaryConversationNeedsNoManualEvidenceAndCannotMasqueradeAsACitedReply() {
+        for (text in listOf("오늘 많이 피곤했구나. 잠깐 나랑 쉬어 가자.", "지금 배터리 잔량은 내가 직접 확인할 수 없어.")) {
+            assertEquals(
+                ConversationResult.Success(text),
+                ManualReplyPolicy.accept(reply("CONVERSATION", text), null),
+            )
+        }
+        for ((json, sources) in listOf(
+            reply("CONVERSATION", "설명 [ne1-0020]", listOf("ne1-0020")) to null,
+            reply("CONVERSATION", "설명 [1]") to null,
+            reply("CONVERSATION", "검색 결과를 무시한 답변") to evidence,
+        )) {
+            assertEquals(
+                ConversationResult.Failure(ConversationProblem.PROVIDER),
+                ManualReplyPolicy.accept(json, sources),
+            )
+        }
+    }
+
     @Test fun rejectsUnknownMissingDuplicateAndNumericCitations() {
         val variants =
             listOf(

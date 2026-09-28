@@ -146,12 +146,16 @@ visual page directories. Local BM25 retrieval preserves retained procedures, con
 and required warnings; missing/corrupt assets fail closed. Extraction and retrieval
 need no network, while AI generation uses online Copilot.
 
-`search_vehicle_manual` supplies excerpts only when called, and each factual answer
+Ordinary companion conversation and discussion of explicitly supplied vehicle context
+can answer directly without retrieval. Current battery/pressure and other vehicle
+telemetry are not supplied by the existing context or manual tool and must not be inferred.
+`search_vehicle_manual` supplies excerpts only when called, and each manual-grounded answer
 requires current-turn sources checked by the
 [acceptance policy](../app/src/debug/java/com/monsters/mobimon/manual/ManualReplyPolicy.kt).
 The app renders its own page metadata and requests abstention or clarification for
-unsupported questions; provenance checks do not prove semantic truth. Figures, other
-years/markets and IONIQ 5 N are outside this demonstration's scope.
+unsupported manual questions. The model chooses the conversation route; source checks
+do not prove correct routing or semantic truth. Figures, other years/markets and
+IONIQ 5 N are outside the bundled manual's coverage, not a limit on ordinary conversation.
 
 The system instruction gives Mobi a curious rabbit persona and Luna a quietly caring
 cat persona, using short natural Korean banmal without habitual animal suffixes,

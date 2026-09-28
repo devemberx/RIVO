@@ -22,6 +22,14 @@ internal object ManualReplyPolicy : ConversationReplyPolicy {
             }
         val markers = Regex("\\[(?:ne1-|[0-9])[^\\]]*]").findAll(reply.text).map { it.value }.toList()
         return when (reply.status) {
+            "CONVERSATION" -> {
+                // A direct companion reply cannot discard a tool result or claim manual provenance.
+                if (result != null || reply.ids.isNotEmpty() || markers.isNotEmpty()) {
+                    failure()
+                } else {
+                    ConversationResult.Success(reply.text)
+                }
+            }
             "ANSWERED" -> {
                 val sources =
                     result?.evidence?.associateBy { it.id }

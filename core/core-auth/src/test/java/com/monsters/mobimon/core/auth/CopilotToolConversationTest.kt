@@ -96,6 +96,21 @@ class CopilotToolConversationTest {
             assertEquals(1, requests.size)
         }
 
+    @Test fun acceptedDirectConversationUsesOneRequestWithoutExecutingATool() =
+        runTest {
+            answer = { response(text = "ordinary conversation") }
+            policy =
+                ConversationReplyPolicy { text, evidence ->
+                    assertEquals(null, evidence)
+                    ConversationResult.Success(text)
+                }
+            assertEquals(ConversationResult.Success("ordinary conversation"), runTurn())
+            assertEquals(0, executed)
+            assertEquals(1, requests.size)
+            assertEquals(0, usage.single().toolExecutions)
+            assertEquals("gpt-4o", requests.single().getString("model"))
+        }
+
     @Test fun malformedUnknownAndMultipleCallsNeverExecute() =
         runTest {
             val invalid =
