@@ -1,0 +1,46 @@
+{
+  "version": "driver-use-v1",
+  "sourceSha256": "4525f59eb85737ca87c3e0e0b43de9f36cb48ad2d5456f708f5861a0d6de9b1c",
+  "policy": "Omit publication metadata and visual page directories. Preserve operating instructions, conditions, warnings, emergency actions, maintenance and specifications.",
+  "excludeSubtrees": [
+    {
+      "headingPath": [
+        "취급설명서에 대하여"
+      ],
+      "expectedCount": 9,
+      "reason": "Publication and reading guide, symbol legend and legal notices; operating sections retain their own warnings and option labels."
+    },
+    {
+      "headingPath": [
+        "차량 살펴보기",
+        "차량 외부"
+      ],
+      "expectedCount": 3,
+      "reason": "Visual component directory with page references, not operating instructions."
+    },
+    {
+      "headingPath": [
+        "차량 살펴보기",
+        "차량 내부"
+      ],
+      "expectedCount": 4,
+      "reason": "Visual control directory with page references, not operating instructions."
+    },
+    {
+      "headingPath": [
+        "차량 살펴보기",
+        "모터룸"
+      ],
+      "expectedCount": 1,
+      "reason": "Overview illustration and cross-reference; detailed motor-room maintenance text is retained."
+    },
+    {
+      "headingPath": [
+        "차량 살펴보기",
+        "오픈소스 소프트웨어 정보"
+      ],
+      "expectedCount": 1,
+      "reason": "Software license and source-code publication information."
+    }
+  ]
+}

@@ -125,16 +125,33 @@ conversation storage. It checks two automatic tool round trips and forced select
 separately; only reproduced live results establish compatibility. The shell-only
 Debug entry cancels on pause and has no Release component. Its foundation mode exercises
 the shared provider with a synthetic tool and exact local-value acceptance policy.
+Manual evaluation uses bundled synthetic questions and writes accepted answers, source
+IDs and timing/usage to app cache for review; it never reads or writes user threads.
+Service/access limits stop the batch, with no automatic retry.
 
 [Local tool contracts](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/ConversationTools.kt)
-are pure Kotlin and explicitly bound by build variant; both app registries are currently
-empty. An enabled registry uses fixed gpt-4o with automatic tool selection, at most two
-model requests and one local execution within one 30-second turn. The adapter validates
+are pure Kotlin and explicitly bound by build variant. Debug enables the bundled manual
+lookup; Release keeps an empty registry. An enabled registry uses fixed gpt-4o with
+automatic tool selection, at most two model requests and one local execution within one 30-second turn. The adapter validates
 the allowlist, bounded string arguments and call IDs, rejects multiple/repeated calls,
 and checks identity and Park/AAOS allowance throughout pending work. Failed tools stop
 before further generation; every final response passes the injected acceptance policy.
 Protocol messages and evidence remain in turn memory; only accepted final text reaches
 existing atomic conversation storage.
+
+Debug bundles one Korean 2027 IONIQ 5 NE1 manual prepared by the
+[offline extractor](../scripts/manual/prepare_manual.py), with a pinned source hash and
+[curation rules](../scripts/manual/curation.json) that omit publication material and
+visual page directories. Local BM25 retrieval preserves retained procedures, conditions
+and required warnings; missing/corrupt assets fail closed. Extraction and retrieval
+need no network, while AI generation uses online Copilot.
+
+`search_vehicle_manual` supplies excerpts only when called, and each factual answer
+requires current-turn sources checked by the
+[acceptance policy](../app/src/debug/java/com/monsters/mobimon/manual/ManualReplyPolicy.kt).
+The app renders its own page metadata and requests abstention or clarification for
+unsupported questions; provenance checks do not prove semantic truth. Figures, other
+years/markets and IONIQ 5 N are outside this demonstration's scope.
 
 The system instruction gives Mobi a curious rabbit persona and Luna a quietly caring
 cat persona, using short natural Korean banmal without habitual animal suffixes,

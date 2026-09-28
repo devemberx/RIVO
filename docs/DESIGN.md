@@ -177,7 +177,11 @@ Network popups release the microphone and retain unsent drafts or failed turns.
 Exports may show older recovery copy or visible history; use the current session
 behavior with their geometry. Footer names GitHub Copilot, discloses transmitted
 conversation, available name/time and AI uncertainty. Local clearing does not promise
-provider deletion. Spoken replies remain planned and must yield to calls/navigation.
+provider deletion. Debug manual mode identifies the bundled year/market, offers manual
+questions and discloses transmission of retrieved excerpts. It displays only accepted
+answers, clarifications or scope guidance with short app-generated source references;
+tool protocol and raw search results are never chat bubbles. Spoken replies remain
+planned and must yield to calls/navigation.
 
 ## Vehicle information
 
