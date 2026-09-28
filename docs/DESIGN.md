@@ -184,7 +184,7 @@ Network popups release the microphone and retain unsent drafts or failed turns.
 
 Exports may show older recovery copy or visible history; use the current session
 behavior with their geometry. Footer names GitHub Copilot, discloses transmitted
-conversation, available name/time and AI uncertainty. Local clearing does not promise
+conversation, available name/time/vehicle condition signals, debugger test values and AI uncertainty. Local clearing does not promise
 provider deletion. Spoken replies remain planned and must yield to calls/navigation.
 
 ## Vehicle information
