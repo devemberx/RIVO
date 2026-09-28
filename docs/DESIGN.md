@@ -114,8 +114,11 @@ opening from the left. Back returns to the menu; Close/backdrop returns Home.
 Keep its header fixed and scroll one list of selected-card cautions, then claimable
 quest rewards, grouped by section. Rows open their owning screens; quest alerts
 remain until reward receipt.
-The empty state has a bell illustration and short message. Reference outlines,
-dividers and close-control geometry live in the SVGs. Current Android popup
+Use the same compact title row in populated and empty states, without an unread
+subtitle or header divider. Populated lists start at y=260 in the 2560 × 1440
+reference. Vehicle checks use amber battery/tire outlines; claimable rewards use
+mint gift outlines. The empty state keeps a centered bell and short message.
+Exact spacing and close-control geometry live in the SVGs. Current Android popup
 behavior is described in [Architecture](ARCHITECTURE.md#state-and-lifecycle);
 updated references do not establish implementation parity.
 
