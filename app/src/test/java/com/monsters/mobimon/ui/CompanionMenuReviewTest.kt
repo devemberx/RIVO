@@ -15,7 +15,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -57,52 +56,125 @@ class CompanionMenuReviewTest {
         assertEquals(1184f, panel.height, 1f)
         val home = compose.onNodeWithText("홈").fetchSemanticsNode().boundsInRoot
         assertEquals(44f, home.left, 1f)
-        assertEquals(332f, home.top, 1f)
+        assertEquals(341f, home.top, 1f)
         assertEquals(596f, home.width, 1f)
         assertEquals(94f, home.height, 1f)
         val name = compose.onNodeWithText("모비").fetchSemanticsNode().boundsInRoot
         assertEquals(244f, name.left, 1f)
+        val close = compose.onNodeWithContentDescription("닫기").fetchSemanticsNode().boundsInRoot
+        assertEquals(552f, close.left, 1f)
+        assertEquals(50f, close.top, 1f)
+        val alerts = compose.onNodeWithTag("menu-notifications").fetchSemanticsNode().boundsInRoot
+        assertEquals(453f, alerts.top, 1f)
         compose.onNodeWithText("v0.1.0").assertIsDisplayed()
         capture("menu")
     }
 
-    @Test fun emptyNotificationPopupMatchesReferenceBounds() {
+    @Test fun emptyNotificationPanelMatchesReferenceBounds() {
         show()
         compose.onNodeWithContentDescription("알림 열기").performClick()
-        val popup = compose.onNodeWithTag("notification-popup").fetchSemanticsNode().boundsInRoot
-        assertEquals(825f, popup.left, 1f)
-        assertEquals(224f, popup.top, 1f)
-        assertEquals(1480f, popup.width, 1f)
-        assertEquals(720f, popup.height, 1f)
+        val popup = compose.onNodeWithTag("notification-panel").fetchSemanticsNode().boundsInRoot
+        assertEquals(0f, popup.left, 1f)
+        assertEquals(0f, popup.top, 1f)
+        assertEquals(944f, popup.width, 1f)
+        assertEquals(1184f, popup.height, 1f)
         compose.onNodeWithText("새 알림이 없어요").assertIsDisplayed()
         capture("notifications-empty")
-        compose.onNodeWithContentDescription("알림 닫기").performClick()
-        compose.onNodeWithTag("notification-popup").assertDoesNotExist()
+        compose.onNodeWithContentDescription("메뉴로 돌아가기").performClick()
+        compose.onNodeWithTag("notification-panel").assertDoesNotExist()
+        compose.onNodeWithTag("menu-notifications").assertIsDisplayed()
     }
 
-    @Test fun manyNotificationsKeepThreeVisibleAndScrollToMore() {
+    @Test fun notificationPanelExpandsFromMenuWidth() {
+        show(motionEnabled = true, notifications = referenceAlerts())
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithContentDescription("알림 3건 열기").performClick()
+        compose.mainClock.advanceTimeBy(16)
+        val start =
+            compose
+                .onNodeWithTag("notification-panel")
+                .fetchSemanticsNode()
+                .boundsInRoot.width
+        assertTrue(start in 690f..944f)
+        compose.onNodeWithText("차량 확인").assertIsDisplayed()
+        compose.onNodeWithTag("notification-vehicle-battery").assertIsDisplayed()
+        capture("notifications-expanding-start", assertContentVisible = true)
+        compose.mainClock.advanceTimeBy(120)
+        val expanding =
+            compose
+                .onNodeWithTag("notification-panel")
+                .fetchSemanticsNode()
+                .boundsInRoot.width
+        assertTrue("panel should widen in place: $start -> $expanding", expanding > start && expanding < 944f)
+        val close = compose.onNodeWithTag("notification-close").fetchSemanticsNode().boundsInRoot
+        assertTrue(close.right <= expanding + 1f)
+        compose.onNodeWithText("차량 확인").assertIsDisplayed()
+        capture("notifications-expanding", assertContentVisible = true)
+        compose.mainClock.autoAdvance = true
+        compose.waitForIdle()
+        val expanded =
+            compose
+                .onNodeWithTag("notification-panel")
+                .fetchSemanticsNode()
+                .boundsInRoot.width
+        assertEquals(944f, expanded, 1f)
+        compose.onNodeWithText("차량 확인").assertIsDisplayed()
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithContentDescription("메뉴로 돌아가기").performClick()
+        compose.mainClock.advanceTimeBy(16)
+        val collapseStart =
+            compose
+                .onNodeWithTag("notification-panel")
+                .fetchSemanticsNode()
+                .boundsInRoot.width
+        compose.onNodeWithText("차량 확인").assertIsDisplayed()
+        capture("notifications-collapsing-start", assertContentVisible = true)
+        compose.mainClock.advanceTimeBy(120)
+        val collapsing =
+            compose
+                .onNodeWithTag("notification-panel")
+                .fetchSemanticsNode()
+                .boundsInRoot.width
+        assertTrue(
+            "panel should narrow in place: $collapseStart -> $collapsing",
+            collapsing < collapseStart && collapsing > 690f,
+        )
+        compose.onNodeWithText("차량 확인").assertIsDisplayed()
+        capture("notifications-collapsing", assertContentVisible = true)
+        compose.mainClock.advanceTimeBy(120)
+        capture("notifications-collapsing-end", assertContentVisible = true)
+        compose.mainClock.autoAdvance = true
+        compose.waitForIdle()
+        compose.onNodeWithTag("notification-panel").assertDoesNotExist()
+        compose.onNodeWithTag("menu-notifications").assertIsDisplayed()
+    }
+
+    @Test fun manyNotificationsScrollToMore() {
         var selected: AppRoute? = null
         val alerts =
             referenceAlerts() +
                 listOf(
-                    NotificationItem("washer", "워셔액 확인이 필요해요", NotificationKind.VEHICLE),
-                    NotificationItem("quest-2", "안전 운전 완료", NotificationKind.QUEST),
+                    NotificationItem("quest-1", "배터리 지킴이 완료", NotificationKind.QUEST),
+                    NotificationItem("quest-2", "네 바퀴의 균형 완료", NotificationKind.QUEST),
                 )
         show(onNavigate = { selected = it }, notifications = alerts)
         compose.onNodeWithContentDescription("알림 5건 열기").performClick()
-        compose.onNodeWithText("알림(5)").assertIsDisplayed()
+        compose.onNodeWithText("차량 확인").assertIsDisplayed()
+        compose.onNodeWithText("퀘스트 보상").assertIsDisplayed()
         val list = compose.onNodeWithTag("notification-list").fetchSemanticsNode().boundsInRoot
-        assertEquals(612f, list.height, 1f)
-        compose.onNodeWithTag("notification-quest-quest-2").assertIsNotDisplayed()
+        assertEquals(816f, list.width, 1f)
+        assertEquals(934f, list.height, 1f)
         capture("notifications-many")
         compose.onNodeWithTag("notification-quest-quest-2").performScrollTo().performClick()
         assertEquals(QuestRoute.QUESTS, selected)
     }
 
-    @Test fun threeNotificationPopupShowsVehicleAndQuestCards() {
+    @Test fun threeNotificationPanelShowsVehicleAndQuestCards() {
         show(notifications = referenceAlerts())
+        capture("menu-three")
         compose.onNodeWithContentDescription("알림 3건 열기").performClick()
-        compose.onNodeWithText("알림(3)").assertIsDisplayed()
+        compose.onNodeWithText("차량 확인").assertIsDisplayed()
+        compose.onNodeWithText("퀘스트 보상").assertIsDisplayed()
         compose.onNodeWithTag("notification-quest-pre-drive").assertIsDisplayed()
         capture("notifications-three")
     }
@@ -134,7 +206,7 @@ class CompanionMenuReviewTest {
         assertEquals(244f * scale, name.left, 1f)
         compose.onNodeWithContentDescription("닫기").assertIsDisplayed()
         compose.onNodeWithText("v0.1.0").assertIsDisplayed()
-        val labels = listOf("홈", "대화하기", "퀘스트", "차량 상태", "꾸미기", "설정")
+        val labels = listOf("홈", "알림", "퀘스트", "차량 상태", "꾸미기", "설정")
         val bounds =
             labels.mapIndexed { index, label ->
                 val row =
@@ -145,7 +217,7 @@ class CompanionMenuReviewTest {
                         .assertHeightIsAtLeast(76.dp)
                         .fetchSemanticsNode()
                         .boundsInRoot
-                val top = if (index == 0) 332f else 336f + 112f * index
+                val top = 341f + 112f * index
                 assertEquals((top + 47) * scale, row.center.y, 1f)
                 row
             }
@@ -155,7 +227,29 @@ class CompanionMenuReviewTest {
 
     @Test
     @Config(qualifiers = "ko-rKR-w1792dp-h829dp-mdpi")
-    fun notificationPopupKeepsTargetsReachableAtEnlargedText() {
+    fun notificationCountRemainsVisibleInReflowedMenu() {
+        show(fontScale = 1.5f, notifications = referenceAlerts())
+        val row = compose.onNodeWithTag("menu-notifications").fetchSemanticsNode().boundsInRoot
+        compose.runOnIdle {
+            val bitmap = popupBitmap()
+            try {
+                val badgeColor = android.graphics.Color.rgb(0xBD, 0xED, 0xF7)
+                val visible =
+                    (row.top.toInt() until row.bottom.toInt()).any { y ->
+                        ((row.right - 100f).toInt() until row.right.toInt()).any { x ->
+                            bitmap.getPixel(x, y) == badgeColor
+                        }
+                    }
+                assertTrue("notification count badge is clipped in the reflowed menu", visible)
+            } finally {
+                bitmap.recycle()
+            }
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w1792dp-h829dp-mdpi")
+    fun notificationPanelKeepsTargetsReachableAtEnlargedText() {
         show(fontScale = 1.5f, notifications = referenceAlerts())
         compose.onNodeWithTag("menu-notifications").assertWidthIsAtLeast(76.dp).assertHeightIsAtLeast(76.dp)
         compose.onNodeWithContentDescription("알림 3건 열기").performClick()
@@ -181,7 +275,7 @@ class CompanionMenuReviewTest {
     fun aaosMenuKeepsDestinationTouchTargetsSeparate() {
         var selected: AppRoute? = null
         show(onNavigate = { selected = it })
-        val labels = listOf("홈", "대화하기", "퀘스트", "차량 상태", "꾸미기", "설정")
+        val labels = listOf("홈", "알림", "퀘스트", "차량 상태", "꾸미기", "설정")
         capture("menu-aaos-touch-targets")
         labels.zipWithNext().forEach { (upperLabel, lowerLabel) ->
             val lower =
@@ -202,11 +296,12 @@ class CompanionMenuReviewTest {
         fontScale: Float = 1f,
         onNavigate: (AppRoute) -> Unit = {},
         notifications: List<NotificationItem> = emptyList(),
+        motionEnabled: Boolean = false,
     ) {
         val visible = mutableStateOf(true)
         compose.setContent {
             CompositionLocalProvider(
-                LocalMobiMonMotionEnabled provides false,
+                LocalMobiMonMotionEnabled provides motionEnabled,
                 LocalDensity provides Density(1f, fontScale),
             ) {
                 MobiMonTheme {
@@ -229,23 +324,47 @@ class CompanionMenuReviewTest {
 
     private fun referenceAlerts() =
         listOf(
-            NotificationItem("battery", "배터리 잔량을 확인해 주세요", NotificationKind.VEHICLE),
-            NotificationItem("tire", "타이어 상태를 확인해 주세요", NotificationKind.VEHICLE),
-            NotificationItem("pre-drive", "출발 전 차 살피기 완료", NotificationKind.QUEST),
+            NotificationItem("battery", "배터리 잔량이 낮아요", NotificationKind.VEHICLE),
+            NotificationItem("tire", "타이어 공기압 확인이 필요해요", NotificationKind.VEHICLE),
+            NotificationItem("pre-drive", "차량 건강검진 완료", NotificationKind.QUEST),
         )
 
-    private fun capture(name: String) {
+    private fun capture(
+        name: String,
+        assertContentVisible: Boolean = false,
+    ) {
         compose.runOnIdle {
-            val roots = WindowInspector.getGlobalWindowViews()
-            val popup = roots.last { it.javaClass.simpleName == "PopupLayout" }
-            val bitmap = Bitmap.createBitmap(popup.width, popup.height, Bitmap.Config.ARGB_8888)
-            popup.draw(Canvas(bitmap))
+            val bitmap = popupBitmap()
+            if (assertContentVisible) {
+                var brightPixels = 0
+                for (y in 20 until 145) {
+                    for (x in 30 until 500) {
+                        val pixel = bitmap.getPixel(x, y)
+                        if (
+                            android.graphics.Color.red(pixel) > 150 &&
+                            android.graphics.Color.green(pixel) > 150 &&
+                            android.graphics.Color.blue(pixel) > 150
+                        ) {
+                            brightPixels++
+                        }
+                    }
+                }
+                assertTrue("$name has no visible menu or notification header", brightPixels > 100)
+            }
             val directory = File("build/reports/menu-ui").apply { mkdirs() }
             File(
                 directory,
                 "$name.png",
             ).outputStream().use { assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)) }
             bitmap.recycle()
+        }
+    }
+
+    private fun popupBitmap(): Bitmap {
+        val roots = WindowInspector.getGlobalWindowViews()
+        val popup = roots.last { it.javaClass.simpleName == "PopupLayout" }
+        return Bitmap.createBitmap(popup.width, popup.height, Bitmap.Config.ARGB_8888).also {
+            popup.draw(Canvas(it))
         }
     }
 }

@@ -3,6 +3,7 @@ package com.monsters.mobimon.feature.pet
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +24,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -41,6 +43,7 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.LayoutCoordinates
@@ -70,7 +73,6 @@ import com.monsters.mobimon.core.ui.MobiMonButton
 import com.monsters.mobimon.core.ui.MobiMonColors
 import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonNavigationButton
-import com.monsters.mobimon.core.ui.MobiMonNotificationBadge
 import com.monsters.mobimon.core.ui.MobiMonParkingStatusBadge
 import com.monsters.mobimon.core.ui.MobiMonPointSummary
 import com.monsters.mobimon.core.ui.ParticleType
@@ -472,12 +474,14 @@ private fun HomeHeader(
                         iconSize = (32 * scale).dp,
                         borderWidth = (2 * scale).dp,
                     )
-                    MobiMonNotificationBadge(
-                        notificationCount,
-                        (48 * scale).dp,
-                        (27 * scale).sp,
-                        Modifier.offset((73 * scale).dp, (-19 * scale).dp),
-                    )
+                    if (notificationCount > 0) {
+                        Box(
+                            Modifier
+                                .offset((69 * scale).dp, (19 * scale).dp)
+                                .size((12 * scale).dp)
+                                .background(Color(0xFF9FE8DA), CircleShape),
+                        )
+                    }
                 }
                 Column(Modifier.offset(x = (-2 * scale).dp, y = (-10 * scale).dp)) {
                     Text(
