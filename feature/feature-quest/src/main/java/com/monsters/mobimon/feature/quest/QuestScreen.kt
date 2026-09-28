@@ -1,12 +1,29 @@
 package com.monsters.mobimon.feature.quest
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
@@ -22,14 +39,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.presentation.PointBalanceState
+import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonParkingInterruption
 import com.monsters.mobimon.core.ui.MobiMonParkingStatusBadge
 import com.monsters.mobimon.core.ui.MobiMonPointSummary
@@ -53,6 +74,8 @@ fun QuestScreen(
 ) {
     var selectedQuestId by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedTab by rememberSaveable { mutableStateOf(QuestFilterTab.ALL) }
+    val listScrollState = rememberScrollState()
+    val detailScrollState = rememberScrollState()
     val selectedQuest = state.quests.firstOrNull { it.id == selectedQuestId }
     BackHandler(enabled = !parkingRequired) {
         if (selectedQuest != null) {
@@ -110,6 +133,7 @@ fun QuestScreen(
                                     onClaimReward = onClaimReward,
                                     onNavigateRoute = onNavigateRoute,
                                     pointInHeader = pointInHeader,
+                                    listScrollState = listScrollState,
                                     modifier =
                                         Modifier.offset(72.dp * scale, 196.dp * scale).size(
                                             2416.dp * scale,
@@ -121,7 +145,11 @@ fun QuestScreen(
                     } else {
                         val compactScale = (maxWidth.value / 1400f).coerceIn(0.55f, 0.9f)
                         Column(
-                            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(if (selectedQuest == null) listScrollState else detailScrollState)
+                                    .padding(24.dp),
                             verticalArrangement = Arrangement.spacedBy(24.dp),
                         ) {
                             QuestHeader(
@@ -149,6 +177,7 @@ fun QuestScreen(
                                 onClaimReward = onClaimReward,
                                 onNavigateRoute = onNavigateRoute,
                                 pointInHeader = pointInHeader,
+                                listScrollState = listScrollState,
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         }
@@ -233,40 +262,102 @@ private fun QuestContent(
     onClaimReward: (String) -> Unit,
     onNavigateRoute: (AppRoute) -> Unit,
     pointInHeader: Boolean,
+    listScrollState: ScrollState,
     modifier: Modifier = Modifier,
 ) {
-    if (selectedQuest != null) {
-        QuestDetailContent(
-            quest = selectedQuest,
+    val motionEnabled = LocalMobiMonMotionEnabled.current
+    val detailId = selectedQuest?.id
+    val panelGap by animateDpAsState(
+        targetValue = (if (detailId == null) 56 else 48).dp * scale,
+        animationSpec = if (motionEnabled) spring(stiffness = Spring.StiffnessMediumLow) else snap(),
+        label = "quest panel gap",
+    )
+    val panel: @Composable (Modifier) -> Unit = { panelModifier ->
+        QuestCompanionPanel(
             friendId = state.appearance.friendId,
             accessoryId = state.appearance.accessoryId,
             outfitId = state.appearance.outfitId,
             backgroundId = state.appearance.backgroundId,
             scale = scale,
-            canClaim = state.canClaim,
-            onBackToList = { onSelectQuest(null) },
-            onExecute = { onNavigateRoute(selectedQuest.targetRoute) },
-            onClaimReward = { onClaimReward(selectedQuest.id) },
-            modifier = modifier,
+            isDetail = detailId != null,
+            isCompleted = selectedQuest?.status == QuestItemStatus.COMPLETED,
             isCompact = isCompact,
+            modifier = panelModifier,
         )
+    }
+    val content: @Composable (Modifier) -> Unit = { contentModifier ->
+        AnimatedContent(
+            targetState = detailId,
+            contentKey = { it != null },
+            transitionSpec = {
+                if (!motionEnabled) {
+                    (EnterTransition.None togetherWith ExitTransition.None).using(null)
+                } else {
+                    val forward = targetState != null
+                    val direction = if (forward) 1 else -1
+                    val motion = tween<IntOffset>(durationMillis = 280, easing = FastOutSlowInEasing)
+                    val fade = tween<Float>(durationMillis = 200, easing = FastOutSlowInEasing)
+                    (
+                        (
+                            slideInHorizontally(motion) { direction * it / 16 } +
+                                fadeIn(fade) +
+                                scaleIn(
+                                    initialScale = 0.97f,
+                                    transformOrigin = TransformOrigin(1f, 0.5f),
+                                    animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing),
+                                )
+                        ) togetherWith
+                            (slideOutHorizontally(motion) { -direction * it / 32 } + fadeOut(fade))
+                    ).using(null)
+                }
+            },
+            modifier = contentModifier,
+            label = "quest detail transition",
+        ) { currentId ->
+            val currentQuest = state.quests.firstOrNull { it.id == currentId }
+            val active = currentId == detailId
+            val activeModifier = if (active) Modifier else Modifier.clearAndSetSemantics {}
+            if (currentQuest != null) {
+                QuestDetailCard(
+                    quest = currentQuest,
+                    canClaim = state.canClaim,
+                    scale = scale,
+                    onBackToList = { if (active) onSelectQuest(null) },
+                    onExecute = { if (active) onNavigateRoute(currentQuest.targetRoute) },
+                    onClaimReward = { if (active) onClaimReward(currentQuest.id) },
+                    modifier = activeModifier.fillMaxSize(),
+                    isCompact = isCompact,
+                )
+            } else {
+                QuestRightPanel(
+                    quests = state.quests,
+                    scale = scale,
+                    selectedTab = selectedTab,
+                    onSelectTab = { if (active) onSelectTab(it) },
+                    canClaim = state.canClaim,
+                    isCompact = isCompact,
+                    onSelectQuest = { if (active) onSelectQuest(it) },
+                    onClaimReward = { if (active) onClaimReward(it) },
+                    pointBalance = state.pointBalance,
+                    showPointSummary = !pointInHeader,
+                    scrollState = listScrollState,
+                    modifier = activeModifier.fillMaxSize(),
+                )
+            }
+        }
+    }
+    if (isCompact) {
+        Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(24.dp * scale)) {
+            panel(Modifier.fillMaxWidth())
+            content(Modifier.fillMaxWidth())
+        }
     } else {
-        QuestListContent(
-            quests = state.quests,
-            friendId = state.appearance.friendId,
-            accessoryId = state.appearance.accessoryId,
-            outfitId = state.appearance.outfitId,
-            backgroundId = state.appearance.backgroundId,
-            scale = scale,
-            selectedTab = selectedTab,
-            onSelectTab = onSelectTab,
-            canClaim = state.canClaim,
-            onSelectQuest = onSelectQuest,
-            onClaimReward = onClaimReward,
-            pointBalance = state.pointBalance,
-            showPointInPanel = !pointInHeader,
+        Row(
             modifier = modifier,
-            isCompact = isCompact,
-        )
+            horizontalArrangement = Arrangement.spacedBy(panelGap),
+        ) {
+            panel(Modifier.fillMaxHeight())
+            content(Modifier.weight(1f).fillMaxHeight())
+        }
     }
 }
