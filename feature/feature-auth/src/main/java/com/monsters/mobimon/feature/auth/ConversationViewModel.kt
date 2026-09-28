@@ -487,7 +487,7 @@ class ConversationViewModel(
             work?.isActive == true ||
             (state.value.failed && !retry) ||
             text.isBlank() ||
-            text != draft.text
+            text != if (retry) failedTurnText() else draft.text
         ) {
             return
         }
@@ -500,6 +500,7 @@ class ConversationViewModel(
             return
         }
         val account = accountId ?: return
+        if (retry) draft = TextFieldValue(text, TextRange(text.length))
         cancelVoice()
         returnToVoiceReview = false
         updateVoice(state.value.voice.copy(phase = VoiceInputPhase.IDLE))
@@ -547,7 +548,7 @@ class ConversationViewModel(
 
     fun retry() {
         if (!canInteract() || work?.isActive == true) return
-        sendInternal(draft.text, retry = true)
+        failedTurnText()?.let { sendInternal(it, retry = true) }
     }
 
     fun retryConnection() {
@@ -700,9 +701,17 @@ class ConversationViewModel(
 
     private fun resumeEditing() {
         val recheckAccess = state.value.problem == ConversationProblem.ACCESS
+        failedTurnText()?.let { draft = TextFieldValue(it, TextRange(it.length)) }
         mutableState.value = state.value.copy(messages = history, failed = false, problem = null)
         if (recheckAccess) checkConnection()
     }
+
+    private fun failedTurnText(): String? =
+        state.value.messages
+            .takeIf { state.value.failed && it.size == history.size + 1 }
+            ?.lastOrNull()
+            ?.takeIf { it.fromUser }
+            ?.text
 
     private fun canInteract() =
         active &&
@@ -759,6 +768,9 @@ class ConversationViewModel(
                         is ConversationResult.Success -> {
                             val current = state.value
                             val recoveredAccess = current.failed && current.problem == ConversationProblem.ACCESS
+                            if (recoveredAccess) {
+                                failedTurnText()?.let { draft = TextFieldValue(it, TextRange(it.length)) }
+                            }
                             current.copy(
                                 connection = ConversationConnection.READY,
                                 connectionProblem = null,
@@ -793,6 +805,7 @@ class ConversationViewModel(
     }
 
     private fun fail(problem: ConversationProblem) {
+        if (state.value.replyPending) draft = TextFieldValue()
         mutableState.value =
             state.value.copy(
                 messages = if (state.value.replyPending) state.value.messages else history,

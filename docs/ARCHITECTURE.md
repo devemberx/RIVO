@@ -91,7 +91,7 @@ subscription or rewards.
 memory. Home navigation and recording startup preserve visible messages and provider
 context, while clearing the composer draft. New chat clears all conversation state. Account/profile
 change, disconnect or process restart clears private data; initial account validation
-retains an unsent draft. Temporary failures retain the attempted turn and draft.
+retains an unsent draft. Failed sends keep the attempted turn for Edit/Retry while clearing the composer.
 Departure, backgrounding, parking loss or companion changes cancel work; reject late replies.
 Backgrounding and parking loss alone retain the current draft.
 

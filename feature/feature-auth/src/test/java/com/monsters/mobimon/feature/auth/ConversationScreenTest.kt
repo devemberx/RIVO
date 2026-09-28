@@ -375,7 +375,7 @@ class ConversationScreenTest {
                 connectionProblem = ConversationProblem.NETWORK,
                 voice = VoiceInputState(available = true),
             )
-        draft = TextFieldValue("다시 보낼 내용")
+        draft = TextFieldValue()
         show()
         capture("message-network-failed")
         compose.onNodeWithTag("chat-network-dialog").assertIsDisplayed()
@@ -387,6 +387,7 @@ class ConversationScreenTest {
         compose.onNodeWithTag("chat-user-bubble").assertIsDisplayed()
         compose.onNodeWithTag("chat-inline-failure").assertIsDisplayed()
         compose.onNodeWithText("Copilot 연결됨").assertIsDisplayed()
+        compose.runOnIdle { assertEquals("", draft.text) }
         capture("message-network-recovered")
         compose.runOnIdle { draft = draft.copy(selection = TextRange(0)) }
         compose.onNodeWithTag("chat-inline-failure").assertIsDisplayed()
@@ -818,13 +819,14 @@ class ConversationScreenTest {
                 failed = true,
                 problem = ConversationProblem.TIMEOUT,
             )
-        draft = TextFieldValue("남겨 둔 질문")
+        draft = TextFieldValue()
         height = 900.dp
         show(fontScale = 1.6f)
 
         compose.onNodeWithTag("chat-user-bubble").assertIsDisplayed()
         compose.onNodeWithTag("chat-inline-failure").assertIsDisplayed()
         compose.onNodeWithTag("chat-composer").assertIsDisplayed()
+        compose.runOnIdle { assertEquals("", draft.text) }
         capture("failed-enlarged-text")
         compose.onNodeWithText("다시 보내기").performClick()
         compose.onNodeWithText("내용 수정").performClick()
@@ -1118,6 +1120,9 @@ class ConversationScreenTest {
                                 )
                         },
                         onDismissFailure = {
+                            state.messages.lastOrNull()?.takeIf { state.failed && it.fromUser }?.let {
+                                draft = TextFieldValue(it.text, TextRange(it.text.length))
+                            }
                             state = state.copy(messages = state.messages.dropLast(1), failed = false)
                         },
                         onNewConversation = {

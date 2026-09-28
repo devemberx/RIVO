@@ -13,7 +13,7 @@ internal fun conversationFailureNote(problem: ConversationProblem?): Int =
         ConversationProblem.PROVIDER -> R.string.chat_provider_error
         ConversationProblem.RESTRICTED -> R.string.chat_restricted_error
         ConversationProblem.LIMIT -> R.string.chat_limit_error
-        null -> R.string.chat_failure_note
+        null -> R.string.chat_inline_failure_note
     }
 
 internal fun conversationRetryLabel(problem: ConversationProblem?): Int =

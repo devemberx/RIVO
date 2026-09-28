@@ -161,26 +161,26 @@ internal fun VoiceIconButton(
 internal val VoiceInputState.showHint: Boolean
     get() = problem != null && problem != VoiceInputProblem.NO_MATCH
 
-internal fun voiceHint(voice: VoiceInputState): Int =
-    voice.problem?.let {
-        when (it) {
-            VoiceInputProblem.UNAVAILABLE -> R.string.chat_voice_unavailable
-            VoiceInputProblem.PERMISSION -> R.string.chat_voice_permission
-            VoiceInputProblem.NO_MATCH -> R.string.chat_voice_no_match
-            VoiceInputProblem.AUDIO -> R.string.chat_voice_audio
-            VoiceInputProblem.BUSY -> R.string.chat_voice_busy
-            VoiceInputProblem.LANGUAGE -> R.string.chat_voice_language
-            VoiceInputProblem.NETWORK -> R.string.chat_voice_network
-            VoiceInputProblem.SERVICE -> R.string.chat_voice_service
-            VoiceInputProblem.TIMEOUT -> R.string.chat_voice_timeout
-            VoiceInputProblem.TOO_LONG -> R.string.chat_input_limit
-        }
-    } ?: when (voice.phase) {
-        VoiceInputPhase.STARTING -> R.string.chat_voice_starting
-        VoiceInputPhase.STOPPING -> R.string.chat_voice_stopping
-        VoiceInputPhase.REVIEW -> R.string.chat_voice_review
-        else -> R.string.chat_voice_recording
+internal fun voiceHint(voice: VoiceInputState): Int? =
+    when (voice.problem) {
+        VoiceInputProblem.UNAVAILABLE -> R.string.chat_voice_unavailable
+        VoiceInputProblem.PERMISSION -> R.string.chat_voice_permission
+        VoiceInputProblem.NO_MATCH -> null
+        VoiceInputProblem.AUDIO -> R.string.chat_voice_audio
+        VoiceInputProblem.BUSY -> R.string.chat_voice_busy
+        VoiceInputProblem.LANGUAGE -> R.string.chat_voice_language
+        VoiceInputProblem.NETWORK -> R.string.chat_voice_network
+        VoiceInputProblem.SERVICE -> R.string.chat_voice_service
+        VoiceInputProblem.TIMEOUT -> R.string.chat_voice_timeout
+        VoiceInputProblem.TOO_LONG -> R.string.chat_input_limit
+        null ->
+            when (voice.phase) {
+                VoiceInputPhase.STARTING -> R.string.chat_voice_starting
+                VoiceInputPhase.STOPPING -> R.string.chat_voice_stopping
+                VoiceInputPhase.REVIEW -> R.string.chat_voice_review
+                else -> R.string.chat_voice_recording
+            }
     }
 
 @Composable
-internal fun voiceHintText(voice: VoiceInputState): String = stringResource(voiceHint(voice))
+internal fun voiceHintText(voice: VoiceInputState): String = voiceHint(voice)?.let { stringResource(it) }.orEmpty()

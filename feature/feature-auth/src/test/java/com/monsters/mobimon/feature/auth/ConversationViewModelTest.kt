@@ -287,7 +287,7 @@ class ConversationViewModelTest {
             assertEquals(priorChecks, provider.connections)
         }
 
-    @Test fun failureRetainsHistoryAndDraftAndRetryDoesNotDuplicateUserMessage() =
+    @Test fun failureRetainsHistoryAndAttemptAndRetryDoesNotDuplicateUserMessage() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val model = model()
@@ -305,7 +305,7 @@ class ConversationViewModelTest {
                 model.state.value.messages
                     .map { it.text },
             )
-            assertEquals("second", model.draft.text)
+            assertEquals("", model.draft.text)
             assertEquals(ConversationProblem.TIMEOUT, model.state.value.problem)
             assertEquals(ConversationProblem.TIMEOUT, model.state.value.connectionProblem)
             provider.answer = { ConversationResult.Success("answer") }
@@ -322,7 +322,7 @@ class ConversationViewModelTest {
             )
         }
 
-    @Test fun editingFailedTurnRemovesItsUnansweredBubbleButKeepsTheDraft() =
+    @Test fun editingFailedTurnAfterHomeMovesItsTextFromTheBubbleIntoTheComposer() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val model = model()
@@ -340,13 +340,15 @@ class ConversationViewModelTest {
             model.edit(TextFieldValue("after"))
 
             assertTrue(model.state.value.failed)
-            assertEquals("before", model.draft.text)
+            assertEquals("", model.draft.text)
             assertEquals(
                 listOf("before"),
                 model.state.value.messages
                     .map { it.text },
             )
+            model.clearDraftForHome()
             model.dismissFailure()
+            assertEquals("before", model.draft.text)
             model.edit(TextFieldValue("after"))
 
             assertFalse(model.state.value.failed)
@@ -508,7 +510,7 @@ class ConversationViewModelTest {
 
             assertFalse(model.state.value.replyPending)
             assertEquals(ConversationProblem.TIMEOUT, model.state.value.problem)
-            assertEquals("waiting", model.draft.text)
+            assertEquals("", model.draft.text)
             assertEquals(
                 listOf("waiting"),
                 model.state.value.messages
@@ -549,6 +551,7 @@ class ConversationViewModelTest {
             model.edit(TextFieldValue("keep this attempt"))
             model.send()
             runCurrent()
+            model.clearDraftForHome()
             model.deactivate()
             model.activate(true)
 
@@ -558,7 +561,38 @@ class ConversationViewModelTest {
                 model.state.value.messages
                     .map { it.text },
             )
-            assertEquals("keep this attempt", model.draft.text)
+            assertEquals("", model.draft.text)
+        }
+
+    @Test fun failedTurnCanBeRetriedAfterHomeAndConnectionRecovery() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            provider.answer = { ConversationResult.Failure(ConversationProblem.TIMEOUT) }
+            model.edit(TextFieldValue("retry after home"))
+            model.send()
+            runCurrent()
+            model.clearDraftForHome()
+            model.deactivate()
+            model.activate(true)
+            provider.answer = { ConversationResult.Success("answer") }
+            model.retryConnection()
+            runCurrent()
+
+            assertEquals("", model.draft.text)
+            assertEquals(1, provider.requests.size)
+            model.retry()
+            runCurrent()
+
+            assertEquals(2, provider.requests.size)
+            assertEquals(listOf("retry after home"), provider.requests.last().map { it.text })
+            assertEquals(
+                listOf("retry after home", "answer"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+            assertEquals("", model.draft.text)
         }
 
     @Test fun accessFailureRecheckDoesNotResendAndRestoresExplicitSend() =

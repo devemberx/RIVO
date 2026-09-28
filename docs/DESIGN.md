@@ -133,7 +133,8 @@ keep New conversation reachable above the composer while messages exist.
 Recovery copy says “이전 대화 기록은 보존돼요.” Network failures/timeouts use the
 [network popup](ui/conversation/network-error.svg), including when voice is available.
 Badges show only “Copilot 확인 중” or verified “Copilot 연결됨”. Recheck never resends;
-after recovery, preserve failed turns for explicit Edit/Retry. Account/access/usage failures
+after recovery, preserve failed turns for explicit Edit/Retry, with the composer empty
+until Edit restores the failed text. Account/access/usage failures
 explain appropriate account recovery. [Parking recovery](ui/conversation/parking-required.svg)
 blocks editing and hides IME; AAOS restrictions remove the screen.
 
@@ -152,7 +153,7 @@ Returning Home clears typed input; backgrounding and restrictions alone retain i
 Stop produces editable text; only explicit Send submits. Cancel preserves the current
 draft. Errors retain confirmed text for review;
 no-match/silence leaves the cleared composer and disclosure in place.
-Network popups release the microphone and retain the draft.
+Network popups release the microphone and retain unsent drafts or failed turns.
 
 Exports may show older recovery copy or visible history; use the current session
 behavior with their geometry. Footer names GitHub Copilot, discloses transmitted

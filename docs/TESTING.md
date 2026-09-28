@@ -59,7 +59,7 @@ Keep one row per critical contract group; test sources own detailed cases.
 | Shared artwork, badges, motion and geometry | [Core UI](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui), owning feature suites |
 | Active Vehicle/Store/Quest Park-loss dialogs, blocked input and recovery | [Shared UI](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui/MobiMonParkingInterruptionTest.kt), owning feature suites |
 | Shell routes, notifications, launcher identity and overlay bounds | [Shell](../app/src/test/java/com/monsters/mobimon/ui), [service](../app/src/test/java/com/monsters/mobimon/service), Debug and connection suites |
-| Chat history continuity, Home draft clearing, fixed disclosure, reset, authorization, badges and network popup/parking recovery | Auth feature/connection suites; [network status](../app/src/test/java/com/monsters/mobimon/network/AndroidConversationNetworkStatusTest.kt) |
+| Chat history continuity, failed-turn Retry/Edit after Home, draft clearing, disclosure, reset, authorization, badges and network popup/parking recovery | Auth feature/connection suites; [network status](../app/src/test/java/com/monsters/mobimon/network/AndroidConversationNetworkStatusTest.kt) |
 | Microphone draft clearing, permission feedback, confirmed results, PCM integrity, cancellation and explicit Send | [Speech suites](../app/src/test/java/com/monsters/mobimon/speech), auth feature |
 | Real microphone and native keyboard flows | [Voice device](../app/src/androidTest/java/com/monsters/mobimon/ConversationVoiceDeviceTest.kt), [keyboard device](../app/src/androidTest/java/com/monsters/mobimon/preview/ConversationKeyboardDeviceTest.kt); isolated dependencies |
 

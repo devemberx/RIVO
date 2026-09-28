@@ -204,8 +204,6 @@ class ConversationPreviewActivity : ComponentActivity() {
                         when (sample) {
                             "voice-review" -> "모비는 뭐가 좋았어?"
                             "keyboard" -> "오늘 하루가 조금 힘들었어"
-                            in failedSamples ->
-                                "모비는 뭐가 좋아?"
                             else -> ""
                         },
                         selection = TextRange(if (sample == "voice-review") "모비는 뭐가 좋았어?".length else 0),
@@ -250,6 +248,9 @@ class ConversationPreviewActivity : ComponentActivity() {
                                     )
                             },
                             onDismissFailure = {
+                                state.messages.lastOrNull()?.takeIf { state.failed && it.fromUser }?.let {
+                                    draft = TextFieldValue(it.text, TextRange(it.text.length))
+                                }
                                 state = state.copy(messages = state.messages.dropLast(1), failed = false)
                             },
                             onStartVoice = {
