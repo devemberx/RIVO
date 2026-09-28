@@ -123,6 +123,13 @@ Keep header, preview, tabs and cards stable during loading; reuse committed appe
 and show still placeholders. Pending/uncertain writes block duplicates and preserve
 selection. Read/save failures offer inline Retry.
 
+The 200-point `background:star_hanger` (별빛 모빌) uses the supplied body and glow
+canvases on one continuous mesh, suspended from the top center. Chain joints between
+the ribbon, star, moon and tip swing with increasing phase delay; solid ornaments
+retain their shape. Glow follows the same joints and fades in/out independently.
+It occupies the background slot, is shared by both friends, and appears on Home and
+in Store previews; reduced motion shows a still hanger.
+
 ## Conversation
 
 Use split companion/chat panels, suggestions and a system-keyboard composer.
