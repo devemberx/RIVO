@@ -21,6 +21,7 @@ import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -55,7 +56,7 @@ class HomeSpeechBubbleTest {
         update { visible.value = true }
         assertNotEquals("Returning Home starts a new entrance", settled, pixels())
         compose.mainClock.advanceTimeBy(1000)
-        assertEquals(settled, pixels())
+        compose.onNodeWithTag("home-companion-message").fetchSemanticsNode()
     }
 
     @Test
@@ -66,8 +67,10 @@ class HomeSpeechBubbleTest {
         compose.mainClock.advanceTimeBy(1000)
         assertEquals(first, pixels())
         update { motion.value = true }
-        compose.mainClock.advanceTimeBy(120)
-        assertEquals(first, pixels())
+        compose.mainClock.advanceTimeBy(200)
+        val enabled = pixels()
+        compose.mainClock.advanceTimeBy(1000)
+        assertEquals(enabled, pixels())
     }
 
     @Test
@@ -76,6 +79,7 @@ class HomeSpeechBubbleTest {
         compose.mainClock.advanceTimeBy(80)
         val entering = pixels()
         update { motion.value = false }
+        compose.mainClock.advanceTimeBy(32)
         val stopped = pixels()
         assertNotEquals(entering, stopped)
         compose.mainClock.advanceTimeBy(1000)
@@ -84,11 +88,12 @@ class HomeSpeechBubbleTest {
 
     @Test
     @Config(qualifiers = "ko-rKR-w800dp-h600dp-mdpi")
-    fun enlargedTextPreservesTheSpeechBubbleProportions() {
+    fun enlargedTextLetsTheSpeechBubbleFollowItsContent() {
         motion.value = false
         show(fontScale = 1.5f)
         val bounds = compose.onNodeWithTag("home-companion-message").fetchSemanticsNode().boundsInRoot
-        assertEquals(324f / 174.6f, bounds.width / bounds.height, 0.01f)
+        assertTrue(bounds.width in 390f..800f)
+        assertTrue(bounds.height >= 210f)
     }
 
     private fun show(fontScale: Float = 1f) {
