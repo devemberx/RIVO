@@ -306,9 +306,15 @@ class PetAvatarTest {
         assertNotNull(mobiGogglesHappy)
         assertNotNull(lunaCapHappy)
         assertNotNull(lunaSunglassesHappy)
-        assertEquals(0.87f, lunaHappy.visualScale)
-        assertEquals(0.87f, lunaCapHappy.visualScale)
-        assertEquals(0.87f, lunaSunglassesHappy.visualScale)
+        listOf(mobiHappy, lunaHappy, mobiHeadphonesHappy, mobiGogglesHappy, lunaCapHappy, lunaSunglassesHappy)
+            .forEach { asset ->
+                val crop = requireNotNull(asset.crop)
+                val canvas = if (asset == mobiHappy) 2508 else 1254
+                assertTrue(crop.x >= 0 && crop.y >= 0)
+                assertTrue(crop.x + crop.width <= canvas && crop.y + crop.height <= canvas)
+                assertTrue(crop.height >= canvas * 0.87)
+                assertEquals(1f, asset.visualScale)
+            }
 
         lateinit var view: View
         compose.setContent {

@@ -215,6 +215,8 @@ class QuestScreenTest {
             ),
         )
         compose.onNodeWithTag("quest-hidden-btn-claim").assertIsNotEnabled()
+        compose.onNodeWithText("보상 저장 중…").assertIsDisplayed()
+        compose.onNodeWithText("진행 상황을 저장하고 있어요.").assertDoesNotExist()
         compose.onNodeWithTag("quest-hidden-btn-dismiss").assertDoesNotExist()
         compose.onNodeWithTag("quest-reward-success-modal").assertDoesNotExist()
     }
@@ -233,10 +235,11 @@ class QuestScreenTest {
             QuestUiState(
                 isLoading = false,
                 satisfiedDrivingQuestIds = setOf(DrivingQuestIds.SEATBELT),
-                pendingQuestId = DrivingQuestIds.SAFE_DRIVE,
+                pendingQuestId = DrivingQuestIds.SEATBELT,
             )
         render(presentation(state))
         compose.onNodeWithTag("quest-btn-claim-${DrivingQuestIds.SEATBELT}").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithText("보상 저장 중…").assertIsDisplayed()
     }
 
     @Test
@@ -374,7 +377,8 @@ class QuestScreenTest {
                 QuestScreen(state, {}, {}, { state = state.copy(rewardSuccess = null) }, {}, {}, {}, {})
             }
         }
-        compose.onNodeWithText("17포인트를 획득했어요!!").assertIsDisplayed()
+        compose.onNodeWithText("17 P를 받았어요!").assertIsDisplayed()
+        compose.onNodeWithText("보상 · 17 P").assertIsDisplayed()
         compose.onNodeWithTag("quest-reward-success-modal").performClick()
         compose.onNodeWithTag("quest-reward-success-modal").assertIsDisplayed()
         compose.onNodeWithTag("quest-modal-btn-confirm").performClick()
@@ -401,10 +405,10 @@ class QuestScreenTest {
                 QuestScreen(state, {}, {}, {}, {}, {}, {}, {})
             }
         }
-        compose.onNodeWithText("8포인트를 획득했어요!!").assertIsDisplayed()
+        compose.onNodeWithText("8 P를 받았어요!").assertIsDisplayed()
         compose.onNodeWithText("퀘스트 완료 · 날씨 보너스").assertIsDisplayed()
-        compose.onNodeWithText("날씨 보너스로 3포인트를 더 받았어요!").assertIsDisplayed()
-        compose.onNodeWithText("보상 · 8 Point (날씨 보너스 +3)").assertIsDisplayed()
+        compose.onNodeWithText("날씨 보너스 +3 P").assertIsDisplayed()
+        compose.onNodeWithText("보상 · 8 P (날씨 보너스 +3 P)").assertIsDisplayed()
     }
 
     @Test
