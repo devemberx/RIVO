@@ -75,7 +75,7 @@ internal fun ConversationNetworkOverlay(
 ) {
     val accountAction = problem == ConversationProblem.ACCOUNT
     val accessError = problem == ConversationProblem.ACCESS
-    val networkError = problem == ConversationProblem.NETWORK
+    val networkError = problem in setOf(ConversationProblem.NETWORK, ConversationProblem.TIMEOUT)
     val usageError = problem == ConversationProblem.USAGE
     val showAction = checking || !accessError && !usageError
     val referenceCopy = networkError || checking
@@ -87,7 +87,6 @@ internal fun ConversationNetworkOverlay(
                 usageError -> R.string.chat_connection_usage_title
                 accessError -> R.string.chat_connection_access_title
                 accountAction -> R.string.chat_connection_account_title
-                problem == ConversationProblem.TIMEOUT -> R.string.chat_connection_timeout_title
                 else -> R.string.chat_connection_error_title
             },
         )

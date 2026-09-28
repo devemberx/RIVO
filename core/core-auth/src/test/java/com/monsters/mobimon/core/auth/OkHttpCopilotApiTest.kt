@@ -227,6 +227,32 @@ class OkHttpCopilotApiTest {
             }
         }
 
+    @Test fun connectedTransportFailuresNeverBecomeAccountOrAccessErrorsOrReplayCompletion() =
+        runBlocking {
+            for ((policy, expected) in listOf(
+                SocketPolicy.NO_RESPONSE to ConversationProblem.TIMEOUT,
+                SocketPolicy.DISCONNECT_DURING_RESPONSE_BODY to ConversationProblem.NETWORK,
+            )) {
+                val boundedApi =
+                    OkHttpCopilotApi(
+                        OkHttpClient.Builder().readTimeout(1, TimeUnit.SECONDS).build(),
+                        { 1_000_000 },
+                        server.url("/copilot_internal/user"),
+                    )
+                val before = server.requestCount
+                server.enqueue(MockResponse().setBody("x".repeat(1024)).setSocketPolicy(policy))
+                val pending =
+                    async(Dispatchers.Default) {
+                        assertProblem(expected) {
+                            boundedApi.complete(access, model, "friend:mobi", listOf(ConversationTurn("hello", true)))
+                        }
+                    }
+                assertNotNull(server.takeRequest(5, TimeUnit.SECONDS))
+                pending.await()
+                assertEquals(before + 1, server.requestCount)
+            }
+        }
+
     @Test fun cancellationStopsWaitingForHttpResponse() =
         runBlocking {
             server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE))

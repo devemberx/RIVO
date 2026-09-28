@@ -111,8 +111,7 @@ with their consumers; integrate structural changes before rebasing dependent wor
 
 Use the existing convention plugins in [build-logic](../build-logic/src/main/kotlin)
 and the version catalog. Regenerate combined lock/schema changes rather than
-choosing one side of a conflict. Keep assignments and execution logs in issues/PRs;
-component readiness and final screen acceptance are separate.
+choosing one side of a conflict. Keep assignments and execution logs in issues/PRs.
 
 ## Branches and commits
 

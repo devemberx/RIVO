@@ -50,6 +50,74 @@ class ConversationViewModelTest {
         Dispatchers.resetMain()
     }
 
+    @Test fun acceptedMicrophoneRequestClearsTypedInputBeforePermissionResult() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model(FakeSpeech())
+            runCurrent()
+            model.edit(TextFieldValue("unsent text"))
+            model.setVoiceResumed(true)
+
+            val permission = requireNotNull(model.requestVoice(false))
+            assertEquals(TextFieldValue(), model.draft)
+            model.voicePermissionResult(permission, false)
+            assertEquals(TextFieldValue(), model.draft)
+            assertEquals(null, model.state.value.voice.problem)
+
+            model.edit(TextFieldValue("new draft"))
+            model.setVoiceResumed(false)
+            model.requestVoice(true)
+            assertEquals("new draft", model.draft.text)
+        }
+
+    @Test fun leavingForHomeClearsOnlyTheComposer() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            model.edit(TextFieldValue("first"))
+            model.send()
+            runCurrent()
+            val conversation = provider.conversationIds.single()
+            model.edit(TextFieldValue("unsent text"))
+
+            model.clearDraftForHome()
+            assertEquals(TextFieldValue(), model.draft)
+            assertEquals(
+                listOf("first", "answer"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+
+            model.edit(TextFieldValue("second"))
+            model.send()
+            runCurrent()
+            assertEquals(conversation, provider.conversationIds.last())
+            assertEquals(listOf("first", "answer", "second"), provider.requests.last().map { it.text })
+        }
+
+    @Test fun leavingForHomeWhileWaitingDoesNotRestoreTheSentText() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            provider.answer = { CompletableDeferred<ConversationResult<String>>().await() }
+            model.edit(TextFieldValue("sent before Home"))
+            model.send()
+            runCurrent()
+            assertTrue(model.state.value.replyPending)
+
+            model.clearDraftForHome()
+            model.deactivate()
+
+            assertFalse(model.state.value.replyPending)
+            assertTrue(
+                model.state.value.messages
+                    .isEmpty(),
+            )
+            assertEquals("", model.draft.text)
+        }
+
     @Test fun modelCheckConnectsBeforeSendAndDuplicateSendIsBlocked() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
@@ -66,6 +134,7 @@ class ConversationViewModelTest {
             runCurrent()
             assertEquals(1, provider.requests.size)
             assertTrue(model.state.value.replyPending)
+            assertEquals("", model.draft.text)
             assertEquals(ConversationConnection.READY, model.state.value.connection)
             reply.complete(ConversationResult.Success("hi"))
             runCurrent()
@@ -109,6 +178,28 @@ class ConversationViewModelTest {
             assertEquals(ConversationConnection.READY, model.state.value.connection)
             assertEquals(null, model.state.value.connectionProblem)
             assertEquals("keep this draft", model.draft.text)
+        }
+
+    @Test fun cancellingPendingReplyReturnsItsTextToTheComposer() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            provider.answer = { CompletableDeferred<ConversationResult<String>>().await() }
+            model.edit(TextFieldValue("cancel this message"))
+            model.send()
+            runCurrent()
+
+            assertTrue(model.state.value.replyPending)
+            assertEquals("", model.draft.text)
+            model.cancel()
+
+            assertFalse(model.state.value.replyPending)
+            assertTrue(
+                model.state.value.messages
+                    .isEmpty(),
+            )
+            assertEquals("cancel this message", model.draft.text)
         }
 
     @Test fun parkingLossCancelsLateModelCheck() =
@@ -194,6 +285,37 @@ class ConversationViewModelTest {
             )
         }
 
+    @Test fun interruptedInitialCredentialRetryRemainsRecoverableWithoutKnownAccount() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            authentication.session.value = GitHubSession.Failure(AuthenticationProblem.NETWORK)
+            val model = model()
+            runCurrent()
+            model.edit(TextFieldValue("보존할 초안"))
+            authentication.restoreAction = {
+                authentication.session.value = GitHubSession.Restoring
+                CompletableDeferred<Unit>().await()
+            }
+            model.retryConnection()
+            runCurrent()
+            networkStatus.online.value = false
+            runCurrent()
+            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
+            assertFalse(model.state.value.connectionRetrying)
+            assertTrue(provider.requests.isEmpty())
+
+            networkStatus.online.value = true
+            authentication.restoreAction = {
+                authentication.session.value = GitHubSession.Authenticated(GitHubAccount(1, "first"))
+            }
+            model.retryConnection()
+            runCurrent()
+            assertEquals(2, authentication.restores)
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
+            assertEquals("보존할 초안", model.draft.text)
+            assertTrue(provider.requests.isEmpty())
+        }
+
     @Test fun unexpectedAuthenticationRestoreFailureNeverChecksTheModel() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
@@ -210,7 +332,7 @@ class ConversationViewModelTest {
             assertEquals(priorChecks, provider.connections)
         }
 
-    @Test fun failureRetainsHistoryAndDraftAndRetryDoesNotDuplicateUserMessage() =
+    @Test fun failureRetainsHistoryAndAttemptAndRetryDoesNotDuplicateUserMessage() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val model = model()
@@ -228,7 +350,7 @@ class ConversationViewModelTest {
                 model.state.value.messages
                     .map { it.text },
             )
-            assertEquals("second", model.draft.text)
+            assertEquals("", model.draft.text)
             assertEquals(ConversationProblem.TIMEOUT, model.state.value.problem)
             assertEquals(ConversationProblem.TIMEOUT, model.state.value.connectionProblem)
             provider.answer = { ConversationResult.Success("answer") }
@@ -245,7 +367,7 @@ class ConversationViewModelTest {
             )
         }
 
-    @Test fun editingFailedTurnRemovesItsUnansweredBubbleButKeepsTheDraft() =
+    @Test fun editingFailedTurnAfterHomeMovesItsTextFromTheBubbleIntoTheComposer() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val model = model()
@@ -263,13 +385,15 @@ class ConversationViewModelTest {
             model.edit(TextFieldValue("after"))
 
             assertTrue(model.state.value.failed)
-            assertEquals("before", model.draft.text)
+            assertEquals("", model.draft.text)
             assertEquals(
                 listOf("before"),
                 model.state.value.messages
                     .map { it.text },
             )
+            model.clearDraftForHome()
             model.dismissFailure()
+            assertEquals("before", model.draft.text)
             model.edit(TextFieldValue("after"))
 
             assertFalse(model.state.value.failed)
@@ -349,6 +473,29 @@ class ConversationViewModelTest {
             assertTrue(model.state.value.failed)
         }
 
+    @Test fun idleReadyRecordingReportsNetworkLossForPopupWithoutRestoringOldDraft() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val speech = FakeSpeech()
+            val model = model(speech)
+            runCurrent()
+            model.edit(TextFieldValue("보존할 초안"))
+            model.setVoiceResumed(true)
+            model.requestVoice(true)
+            requireNotNull(speech.listener).onReady()
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
+
+            networkStatus.online.value = false
+            runCurrent()
+            assertEquals(ConversationConnection.UNAVAILABLE, model.state.value.connection)
+            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
+            assertFalse(model.state.value.failed)
+            model.cancelVoice()
+            assertEquals(1, speech.cancellations)
+            assertEquals("", model.draft.text)
+            assertTrue(provider.requests.isEmpty())
+        }
+
     @Test fun disconnectDuringPendingReplyStopsWaitingAndShowsNetworkFailure() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
@@ -408,7 +555,7 @@ class ConversationViewModelTest {
 
             assertFalse(model.state.value.replyPending)
             assertEquals(ConversationProblem.TIMEOUT, model.state.value.problem)
-            assertEquals("waiting", model.draft.text)
+            assertEquals("", model.draft.text)
             assertEquals(
                 listOf("waiting"),
                 model.state.value.messages
@@ -449,6 +596,7 @@ class ConversationViewModelTest {
             model.edit(TextFieldValue("keep this attempt"))
             model.send()
             runCurrent()
+            model.clearDraftForHome()
             model.deactivate()
             model.activate(true)
 
@@ -458,7 +606,38 @@ class ConversationViewModelTest {
                 model.state.value.messages
                     .map { it.text },
             )
-            assertEquals("keep this attempt", model.draft.text)
+            assertEquals("", model.draft.text)
+        }
+
+    @Test fun failedTurnCanBeRetriedAfterHomeAndConnectionRecovery() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            provider.answer = { ConversationResult.Failure(ConversationProblem.TIMEOUT) }
+            model.edit(TextFieldValue("retry after home"))
+            model.send()
+            runCurrent()
+            model.clearDraftForHome()
+            model.deactivate()
+            model.activate(true)
+            provider.answer = { ConversationResult.Success("answer") }
+            model.retryConnection()
+            runCurrent()
+
+            assertEquals("", model.draft.text)
+            assertEquals(1, provider.requests.size)
+            model.retry()
+            runCurrent()
+
+            assertEquals(2, provider.requests.size)
+            assertEquals(listOf("retry after home"), provider.requests.last().map { it.text })
+            assertEquals(
+                listOf("retry after home", "answer"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+            assertEquals("", model.draft.text)
         }
 
     @Test fun accessFailureRecheckDoesNotResendAndRestoresExplicitSend() =
@@ -682,6 +861,126 @@ class ConversationViewModelTest {
             assertNotEquals(second, provider.conversationIds.last())
         }
 
+    @Test fun recordingKeepsVisibleMessagesAndContextButClearsComposer() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val speech = FakeSpeech()
+            val model = model(speech)
+            runCurrent()
+            model.edit(TextFieldValue("first"))
+            model.send()
+            runCurrent()
+            val conversation = provider.conversationIds.last()
+            model.edit(TextFieldValue("keep draft"))
+            model.setVoiceResumed(true)
+            val denied = requireNotNull(model.requestVoice(false))
+            model.voicePermissionResult(denied, false)
+            assertEquals(
+                listOf("first", "answer"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+            model.requestVoice(true)
+            requireNotNull(speech.listener).onFailure(VoiceInputProblem.AUDIO)
+            assertEquals(
+                listOf("first", "answer"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+            model.requestVoice(true)
+            val listener = requireNotNull(speech.listener)
+            listener.onReady()
+            assertEquals(
+                listOf("first", "answer"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+            assertEquals("", model.draft.text)
+            model.cancelVoice()
+            model.deactivate()
+            model.activate(true)
+            runCurrent()
+            assertEquals(
+                listOf("first", "answer"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+            model.edit(TextFieldValue("second"))
+            model.send()
+            runCurrent()
+            assertEquals(listOf("first", "answer", "second"), provider.requests.last().map { it.text })
+            assertEquals(conversation, provider.conversationIds.last())
+            assertEquals(
+                listOf("first", "answer", "second", "answer"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+            model.newConversation()
+            assertTrue(
+                model.state.value.messages
+                    .isEmpty(),
+            )
+            assertEquals("", model.draft.text)
+            model.edit(TextFieldValue("fresh"))
+            model.send()
+            runCurrent()
+            assertEquals(listOf("fresh"), provider.requests.last().map { it.text })
+            assertNotEquals(conversation, provider.conversationIds.last())
+        }
+
+    @Test fun historyStaysVisibleAfterFailedTurnEditAndRecheck() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val speech = FakeSpeech()
+            val model = model(speech)
+            runCurrent()
+            model.edit(TextFieldValue("previous"))
+            model.send()
+            runCurrent()
+            model.setVoiceResumed(true)
+            model.requestVoice(true)
+            requireNotNull(speech.listener).onReady()
+            requireNotNull(speech.listener).onResult("attempt")
+            provider.answer = { ConversationResult.Failure(ConversationProblem.ACCESS) }
+            model.send()
+            runCurrent()
+            assertEquals(
+                listOf("previous", "answer", "attempt"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+            model.retryConnection()
+            runCurrent()
+            assertFalse(model.state.value.failed)
+            assertEquals(
+                listOf("previous", "answer"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+            provider.answer = { ConversationResult.Failure(ConversationProblem.TIMEOUT) }
+            model.send()
+            runCurrent()
+            model.dismissFailure()
+            model.cancel()
+            assertEquals(
+                listOf("previous", "answer"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+            assertEquals("attempt", model.draft.text)
+            model.retryConnection()
+            runCurrent()
+            provider.answer = { ConversationResult.Success("recovered") }
+            model.send()
+            runCurrent()
+            assertEquals(listOf("previous", "answer", "attempt"), provider.requests.last().map { it.text })
+            assertEquals(
+                listOf("previous", "answer", "attempt", "recovered"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+        }
+
     @Test fun speechStopProducesReviewOnlyAndExplicitSendUsesTheExistingGuard() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
@@ -697,7 +996,7 @@ class ConversationViewModelTest {
             val listener = requireNotNull(speech.listener)
             listener.onReady()
             listener.onPartial("안녕하세요")
-            assertEquals("original draft", model.draft.text)
+            assertEquals("", model.draft.text)
             model.send()
             runCurrent()
             assertTrue(provider.requests.isEmpty())
@@ -722,7 +1021,7 @@ class ConversationViewModelTest {
             )
         }
 
-    @Test fun speechCancellationPreservesDraftAndRejectsOldSessionsAfterRestartAndParkingLoss() =
+    @Test fun speechCancellationKeepsClearedComposerAndRejectsOldSessionsAfterParkingLoss() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val speech = FakeSpeech()
@@ -740,11 +1039,11 @@ class ConversationViewModelTest {
             current.onReady()
             old.onPartial("discard")
             old.onResult("discard")
-            assertEquals("keep this", model.draft.text)
+            assertEquals("", model.draft.text)
             assertEquals("", model.state.value.voice.partial)
             model.setForegroundAllowed(false)
             current.onResult("also discard")
-            assertEquals("keep this", model.draft.text)
+            assertEquals("", model.draft.text)
             assertFalse(model.state.value.voice.capturing)
             assertEquals(2, speech.cancellations)
             model.requestVoice(true)
@@ -770,7 +1069,7 @@ class ConversationViewModelTest {
             model.activate(true)
             model.requestVoice(true)
             assertEquals(2, speech.starts)
-            assertEquals("keep this", model.draft.text)
+            assertEquals("", model.draft.text)
             model.setVoiceResumed(false)
             model.deactivate()
             model.activate(true)
@@ -787,7 +1086,7 @@ class ConversationViewModelTest {
             runCurrent()
             model.setVoiceResumed(true)
             val denied = requireNotNull(model.requestVoice(false))
-            model.voicePermissionResult(denied, false)
+            model.voicePermissionResult(denied, false, showSettingsHint = true)
             assertEquals(VoiceInputProblem.PERMISSION, model.state.value.voice.problem)
             assertEquals(0, speech.starts)
             val obsolete = requireNotNull(model.requestVoice(false))
@@ -820,7 +1119,7 @@ class ConversationViewModelTest {
             first.onResult("discard")
             model.setVoiceResumed(true)
             assertEquals(1, speech.starts)
-            assertEquals("keep on pause", model.draft.text)
+            assertEquals("", model.draft.text)
             model.requestVoice(true)
             val next = requireNotNull(speech.listener)
             next.onReady()
@@ -832,7 +1131,7 @@ class ConversationViewModelTest {
             assertEquals(2, speech.cancellations)
         }
 
-    @Test fun failedOrOversizedSpeechNeverReplacesDraftAndStoppingHasABoundedWait() =
+    @Test fun failedOrOversizedSpeechLeavesClearedDraftAndStoppingHasABoundedWait() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val speech = FakeSpeech()
@@ -843,11 +1142,11 @@ class ConversationViewModelTest {
             model.requestVoice(true)
             requireNotNull(speech.listener).onResult("")
             assertEquals(VoiceInputProblem.NO_MATCH, model.state.value.voice.problem)
-            assertEquals("preserved", model.draft.text)
+            assertEquals("", model.draft.text)
             model.requestVoice(true)
             requireNotNull(speech.listener).onResult("x".repeat(ConversationLimits.INPUT_CHARACTERS + 1))
             assertEquals(VoiceInputProblem.TOO_LONG, model.state.value.voice.problem)
-            assertEquals("preserved", model.draft.text)
+            assertEquals("", model.draft.text)
             model.requestVoice(true)
             requireNotNull(speech.listener).onReady()
             repeat(70) { requireNotNull(speech.listener).onLevel(0.5f) }
@@ -860,7 +1159,7 @@ class ConversationViewModelTest {
             runCurrent()
             assertEquals(VoiceInputProblem.TIMEOUT, model.state.value.voice.problem)
             assertFalse(model.state.value.voice.capturing)
-            assertEquals("preserved", model.draft.text)
+            assertEquals("", model.draft.text)
             assertTrue(provider.requests.isEmpty())
         }
 
@@ -910,7 +1209,7 @@ class ConversationViewModelTest {
             model.cancelVoice()
             listener.onCommitted("늦은 결과")
             listener.onFailure(VoiceInputProblem.SERVICE)
-            assertEquals("previous draft", model.draft.text)
+            assertEquals("", model.draft.text)
             assertTrue(provider.requests.isEmpty())
         }
 
@@ -979,7 +1278,7 @@ class ConversationViewModelTest {
             listener.onReady()
             listener.onResult("late result")
             assertFalse(model.state.value.voice.capturing)
-            assertEquals("preserved", model.draft.text)
+            assertEquals("", model.draft.text)
             assertTrue(provider.requests.isEmpty())
         }
 
@@ -1024,7 +1323,7 @@ class ConversationViewModelTest {
             runCurrent()
             assertEquals(VoiceInputProblem.TIMEOUT, model.state.value.voice.problem)
             listener.onResult("too late")
-            assertEquals("preserved", model.draft.text)
+            assertEquals("", model.draft.text)
             assertFalse(model.state.value.voice.capturing)
         }
 
@@ -1082,9 +1381,46 @@ class ConversationViewModelTest {
                 listener.onResult("late result")
                 model.requestVoice(true)
                 assertEquals(1, speech.starts)
-                assertEquals("preserved", model.draft.text)
+                assertEquals("", model.draft.text)
                 assertTrue(provider.requests.isEmpty())
             }
+        }
+
+    @Test fun onlineTimeoutRecoveryKeepsSendBlockedAndLocalRecordingAliveUntilFreshSuccess() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            provider.connectionAnswer = { ConversationResult.Failure(ConversationProblem.TIMEOUT) }
+            val speech = FakeSpeech()
+            val model = model(speech)
+            runCurrent()
+            model.setVoiceResumed(true)
+            model.edit(TextFieldValue("보존할 초안"))
+            model.requestVoice(true)
+            assertEquals(1, speech.starts)
+            val listener = requireNotNull(speech.listener)
+            listener.onReady()
+            assertEquals(VoiceInputPhase.LISTENING, model.state.value.voice.phase)
+            model.retryConnection()
+            runCurrent()
+            assertEquals(ConversationConnection.UNAVAILABLE, model.state.value.connection)
+            assertEquals(ConversationProblem.TIMEOUT, model.state.value.connectionProblem)
+            assertEquals(VoiceInputPhase.LISTENING, model.state.value.voice.phase)
+            assertEquals(0, speech.cancellations)
+            model.send()
+            assertTrue(provider.requests.isEmpty())
+            listener.onResult("녹음한 초안")
+            val recovery = CompletableDeferred<ConversationResult<String>>()
+            provider.connectionAnswer = { recovery.await() }
+            model.retryConnection()
+            runCurrent()
+            assertEquals(ConversationConnection.CHECKING, model.state.value.connection)
+            model.send()
+            assertTrue(provider.requests.isEmpty())
+            recovery.complete(ConversationResult.Success("gpt-4o"))
+            runCurrent()
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
+            assertEquals("녹음한 초안", model.draft.text)
+            assertTrue(provider.requests.isEmpty())
         }
 
     @Test fun offlineDraftRecognitionSurvivesConnectionRetryAndSendStaysBlocked() =
@@ -1229,7 +1565,7 @@ class ConversationViewModelTest {
             model.setVoiceResumed(false)
             startup.onReady()
             startup.onResult("discard background")
-            assertEquals("preserved", model.draft.text)
+            assertEquals("", model.draft.text)
             assertFalse(model.state.value.voice.capturing)
             model.setVoiceResumed(true)
             model.requestVoice(true)
@@ -1238,7 +1574,7 @@ class ConversationViewModelTest {
             model.stopVoice()
             model.activate(false)
             finalizing.onResult("discard parking")
-            assertEquals("preserved", model.draft.text)
+            assertEquals("", model.draft.text)
             assertFalse(model.state.value.voice.capturing)
             model.activate(true)
             model.requestVoice(true)
@@ -1250,7 +1586,7 @@ class ConversationViewModelTest {
             model.requestVoice(true)
             assertEquals(3, speech.starts)
             assertEquals(3, speech.cancellations)
-            assertEquals("preserved", model.draft.text)
+            assertEquals("", model.draft.text)
             assertFalse(model.state.value.voice.capturing)
             assertTrue(provider.requests.isEmpty())
         }
