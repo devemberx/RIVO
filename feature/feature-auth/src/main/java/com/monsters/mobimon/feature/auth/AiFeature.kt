@@ -1,6 +1,8 @@
 package com.monsters.mobimon.feature.auth
 
 import android.Manifest
+import android.app.Activity
+import android.content.ContextWrapper
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -115,7 +118,20 @@ class AiFeature(
         var voicePermissionRequest by remember(conversationModel) { mutableLongStateOf(0L) }
         val microphonePermission =
             rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-                conversationModel.voicePermissionResult(voicePermissionRequest, granted)
+                val activity =
+                    generateSequence(context) { (it as? ContextWrapper)?.baseContext }
+                        .filterIsInstance<Activity>()
+                        .firstOrNull()
+                val showSettingsHint =
+                    !granted &&
+                        (
+                            activity == null ||
+                                !ActivityCompat.shouldShowRequestPermissionRationale(
+                                    activity,
+                                    Manifest.permission.RECORD_AUDIO,
+                                )
+                        )
+                conversationModel.voicePermissionResult(voicePermissionRequest, granted, showSettingsHint)
             }
         val startVoice: () -> Unit = {
             val granted =
@@ -222,7 +238,10 @@ class AiFeature(
                     onDraftChange = conversationModel::edit,
                     onSend = conversationModel::send,
                     onCancelReply = conversationModel::cancel,
-                    onBack = navigator.back,
+                    onBack = {
+                        conversationModel.clearDraftForHome()
+                        navigator.back()
+                    },
                     onOpenConnection = { if (snapshot.parkedVerified) navigator.navigate(AiRoute.COPILOT) },
                     modifier = Modifier.weight(1f),
                     interactionAllowed = snapshot.parkedVerified,
@@ -242,7 +261,10 @@ class AiFeature(
                     },
                     onDismissFailure = conversationModel::dismissFailure,
                     onNewConversation = conversationModel::newConversation,
-                    onReturnHome = navigator.returnHome,
+                    onReturnHome = {
+                        conversationModel.clearDraftForHome()
+                        navigator.returnHome()
+                    },
                     onRecheckConnection = conversationModel::retryConnection,
                     onStartVoice = startVoice,
                     onStopVoice = conversationModel::stopVoice,

@@ -52,13 +52,6 @@ class ConversationPreviewActivity : ComponentActivity() {
                 ConversationMessage("sample-reply", "오늘 하루도 수고했어요.\n지금은 잠깐 쉬어 가도 괜찮아요.\n어떤 일이 있었는지 들려줄래요?", false),
             )
         val voiceSample = sample == "voice-listening" || sample == "voice-review"
-        val voiceMessages =
-            listOf(
-                ConversationMessage("first-user", "오늘은 조금 피곤한 하루였어.", true),
-                ConversationMessage("first-reply", "오늘 하루도 수고했어요.\n잠깐 쉬면서 편하게 이야기해 볼까요?", false),
-                ConversationMessage("second-user", "응, 기분 좋아지는 얘기 해줘.", true),
-                ConversationMessage("second-reply", "좋아요. 오늘 발견한 작은 행복부터 나눠 볼까요?", false),
-            )
         val voiceLevels =
             listOf(
                 8f,
@@ -146,7 +139,13 @@ class ConversationPreviewActivity : ComponentActivity() {
                         connectionRetrying = sample == "checking",
                         voice =
                             VoiceInputState(
-                                available = voiceSample,
+                                available =
+                                    voiceSample ||
+                                        sampleProblem in
+                                        setOf(
+                                            ConversationProblem.NETWORK,
+                                            ConversationProblem.TIMEOUT,
+                                        ),
                                 phase =
                                     if (sample ==
                                         "voice-listening"
@@ -163,7 +162,7 @@ class ConversationPreviewActivity : ComponentActivity() {
                             ),
                         messages =
                             when (sample) {
-                                "voice-listening", "voice-review" -> voiceMessages
+                                "voice-listening", "voice-review" -> emptyList()
                                 "messages" -> messages
                                 "keyboard" ->
                                     listOf(
@@ -205,8 +204,6 @@ class ConversationPreviewActivity : ComponentActivity() {
                         when (sample) {
                             "voice-review" -> "모비는 뭐가 좋았어?"
                             "keyboard" -> "오늘 하루가 조금 힘들었어"
-                            in failedSamples ->
-                                "모비는 뭐가 좋아?"
                             else -> ""
                         },
                         selection = TextRange(if (sample == "voice-review") "모비는 뭐가 좋았어?".length else 0),
@@ -251,11 +248,17 @@ class ConversationPreviewActivity : ComponentActivity() {
                                     )
                             },
                             onDismissFailure = {
+                                state.messages.lastOrNull()?.takeIf { state.failed && it.fromUser }?.let {
+                                    draft = TextFieldValue(it.text, TextRange(it.text.length))
+                                }
                                 state = state.copy(messages = state.messages.dropLast(1), failed = false)
                             },
                             onStartVoice = {
                                 state =
-                                    state.copy(voice = state.voice.copy(phase = VoiceInputPhase.LISTENING))
+                                    state.copy(
+                                        messages = emptyList(),
+                                        voice = state.voice.copy(phase = VoiceInputPhase.LISTENING),
+                                    )
                             },
                             onStopVoice = {
                                 state =

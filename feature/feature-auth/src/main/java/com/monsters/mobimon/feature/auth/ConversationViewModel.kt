@@ -71,8 +71,12 @@ class ConversationViewModel(
                     work = null
                     fail(ConversationProblem.NETWORK)
                 }
-                if (checkWork?.isActive == true || authenticationRetry?.isActive == true) {
-                    cancelCheck()
+                val interruptedCheck = checkWork?.isActive == true || authenticationRetry?.isActive == true
+                if (interruptedCheck) cancelCheck()
+                if ((accountId != null || interruptedCheck) &&
+                    state.value.connectionProblem in
+                    setOf(null, ConversationProblem.NETWORK, ConversationProblem.TIMEOUT)
+                ) {
                     mutableState.value =
                         state.value.copy(
                             connection = ConversationConnection.UNAVAILABLE,
@@ -256,6 +260,12 @@ class ConversationViewModel(
         if (state.value.voice.problem != null) updateVoice(state.value.voice.copy(problem = null))
     }
 
+    fun clearDraftForHome() {
+        cancelVoice()
+        cancel()
+        draft = TextFieldValue()
+    }
+
     fun setVoiceResumed(resumed: Boolean) {
         voiceResumed = resumed
         if (resumed && !state.value.voice.capturing) {
@@ -282,6 +292,7 @@ class ConversationViewModel(
             updateVoice(state.value.voice.copy(available = false, problem = VoiceInputProblem.UNAVAILABLE))
             return null
         }
+        draft = TextFieldValue()
         returnToVoiceReview = state.value.voice.phase == VoiceInputPhase.REVIEW
         voicePermissionGranted = permissionGranted
         confirmedVoiceText = ""
@@ -297,6 +308,7 @@ class ConversationViewModel(
     fun voicePermissionResult(
         session: Long,
         granted: Boolean,
+        showSettingsHint: Boolean = false,
     ) {
         if (session != voiceGeneration ||
             state.value.voice.phase != VoiceInputPhase.PERMISSION ||
@@ -305,7 +317,7 @@ class ConversationViewModel(
             return
         }
         if (!granted) {
-            finishVoice(problem = VoiceInputProblem.PERMISSION)
+            finishVoice(problem = if (showSettingsHint) VoiceInputProblem.PERMISSION else null)
             return
         }
         voicePermissionGranted = true
@@ -461,7 +473,7 @@ class ConversationViewModel(
             profileId != null &&
             accountId != null &&
             (authentication.session.value as? GitHubSession.Authenticated)?.account?.id == accountId &&
-            state.value.connectionProblem in setOf(null, ConversationProblem.NETWORK) &&
+            state.value.connectionProblem in setOf(null, ConversationProblem.NETWORK, ConversationProblem.TIMEOUT) &&
             !state.value.replyPending
 
     fun send(text: String = draft.text) = sendInternal(text, retry = false)
@@ -476,7 +488,7 @@ class ConversationViewModel(
             work?.isActive == true ||
             (state.value.failed && !retry) ||
             text.isBlank() ||
-            text != draft.text
+            text != if (retry) failedTurnText() else draft.text
         ) {
             return
         }
@@ -494,7 +506,7 @@ class ConversationViewModel(
         updateVoice(state.value.voice.copy(phase = VoiceInputPhase.IDLE))
         val request = ++generation
         val user = ConversationMessage((++messageId).toString(), text, true)
-        draft = draft.copy(composition = null)
+        draft = TextFieldValue()
         mutableState.value =
             state.value.copy(messages = history + user, replyPending = true, failed = false, problem = null)
         if (!networkStatus.isOnline()) {
@@ -536,7 +548,7 @@ class ConversationViewModel(
 
     fun retry() {
         if (!canInteract() || work?.isActive == true) return
-        sendInternal(draft.text, retry = true)
+        failedTurnText()?.let { sendInternal(it, retry = true) }
     }
 
     fun retryConnection() {
@@ -552,8 +564,17 @@ class ConversationViewModel(
         }
         when (val session = authentication.session.value) {
             is GitHubSession.Authenticated -> checkConnection(retrying = true)
-            is GitHubSession.Failure -> {
-                if (session.problem !in setOf(AuthenticationProblem.NETWORK, AuthenticationProblem.PROVIDER)) return
+            is GitHubSession.Failure, GitHubSession.Restoring -> {
+                if (session is GitHubSession.Failure &&
+                    session.problem !in setOf(AuthenticationProblem.NETWORK, AuthenticationProblem.PROVIDER)
+                ) {
+                    return
+                }
+                if (session == GitHubSession.Restoring &&
+                    state.value.connectionProblem != ConversationProblem.NETWORK
+                ) {
+                    return
+                }
                 val request = ++checkGeneration
                 mutableState.value =
                     state.value.copy(
@@ -621,14 +642,23 @@ class ConversationViewModel(
     }
 
     fun cancel() {
+        val pendingTurn = if (state.value.replyPending) unansweredTurnText() else null
         generation++
         work?.cancel()
         work = null
         mutableState.value =
             state.value.copy(
-                messages = if (state.value.failed && !state.value.replyPending) state.value.messages else history,
+                messages =
+                    if (state.value.failed &&
+                        !state.value.replyPending
+                    ) {
+                        state.value.messages
+                    } else {
+                        history
+                    },
                 replyPending = false,
             )
+        pendingTurn?.let { draft = TextFieldValue(it, TextRange(it.length)) }
     }
 
     fun newConversation() {
@@ -640,7 +670,12 @@ class ConversationViewModel(
         history = emptyList()
         conversationId = UUID.randomUUID().toString()
         draft = TextFieldValue()
-        mutableState.value = state.value.copy(messages = history, failed = false, problem = null)
+        mutableState.value =
+            state.value.copy(
+                messages = history,
+                failed = false,
+                problem = null,
+            )
     }
 
     private fun clear() {
@@ -668,9 +703,19 @@ class ConversationViewModel(
 
     private fun resumeEditing() {
         val recheckAccess = state.value.problem == ConversationProblem.ACCESS
+        failedTurnText()?.let { draft = TextFieldValue(it, TextRange(it.length)) }
         mutableState.value = state.value.copy(messages = history, failed = false, problem = null)
         if (recheckAccess) checkConnection()
     }
+
+    private fun failedTurnText(): String? = unansweredTurnText().takeIf { state.value.failed }
+
+    private fun unansweredTurnText(): String? =
+        state.value.messages
+            .takeIf { it.size == history.size + 1 }
+            ?.lastOrNull()
+            ?.takeIf { it.fromUser }
+            ?.text
 
     private fun canInteract() =
         active &&
@@ -717,12 +762,19 @@ class ConversationViewModel(
                 val result = safelyWithinWait { provider.connect(account) }
                 if (request != checkGeneration || !checkAllowed() || account != accountId) return@launch
                 checkWork = null
-                if (result is ConversationResult.Failure && result.problem != ConversationProblem.NETWORK) cancelVoice()
+                if (result is ConversationResult.Failure &&
+                    result.problem !in setOf(ConversationProblem.NETWORK, ConversationProblem.TIMEOUT)
+                ) {
+                    cancelVoice()
+                }
                 mutableState.value =
                     when (result) {
                         is ConversationResult.Success -> {
                             val current = state.value
                             val recoveredAccess = current.failed && current.problem == ConversationProblem.ACCESS
+                            if (recoveredAccess) {
+                                failedTurnText()?.let { draft = TextFieldValue(it, TextRange(it.length)) }
+                            }
                             current.copy(
                                 connection = ConversationConnection.READY,
                                 connectionProblem = null,
@@ -757,6 +809,7 @@ class ConversationViewModel(
     }
 
     private fun fail(problem: ConversationProblem) {
+        if (state.value.replyPending) draft = TextFieldValue()
         mutableState.value =
             state.value.copy(
                 messages = if (state.value.replyPending) state.value.messages else history,

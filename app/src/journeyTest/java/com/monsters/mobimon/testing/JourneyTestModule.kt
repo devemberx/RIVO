@@ -113,6 +113,8 @@ class JourneyConversationProvider
             private set
         var replies = 0
             private set
+        val requests = mutableListOf<List<ConversationTurn>>()
+        val conversationIds = mutableListOf<String>()
 
         override suspend fun connect(accountId: Long): ConversationResult<String> {
             connections++
@@ -126,6 +128,8 @@ class JourneyConversationProvider
             messages: List<ConversationTurn>,
         ): ConversationResult<String> {
             replies++
+            requests += messages
+            conversationIds += conversationId
             return ConversationResult.Success("이야기를 들려줘서 고마워요.")
         }
     }
