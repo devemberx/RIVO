@@ -112,11 +112,11 @@ Celebrate only committed amounts, once per claim; later repository data replaces
 confirmations. Show persisted completion dates. Align point headers with parking
 badges; compact Quest may place balance beside its heading.
 
-Quest detail keeps the same companion panel as the list: it widens slightly while
-the friend shifts with it, and the selected quest content enters from the side.
-Keep “작은 도전, 큰 여정” in the companion panel in both views; detail focuses its
-right panel on the selected quest and progress. Show a scroll indicator only when
-the list overflows; reduced motion switches the views immediately.
+Quest detail slightly widens the companion panel and shifts the friend as the
+selected content enters from the side; Back reverses the motion and restores the
+list's scroll position. Keep “작은 도전, 큰 여정” in both views and a fixed gap
+between progress content and reward points in detail. Show a scroll indicator
+only when the list overflows; reduced motion switches the views immediately.
 
 ## Customization
 

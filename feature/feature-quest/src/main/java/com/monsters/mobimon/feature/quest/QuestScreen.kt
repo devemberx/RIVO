@@ -16,6 +16,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -73,6 +74,8 @@ fun QuestScreen(
 ) {
     var selectedQuestId by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedTab by rememberSaveable { mutableStateOf(QuestFilterTab.ALL) }
+    val listScrollState = rememberScrollState()
+    val detailScrollState = rememberScrollState()
     val selectedQuest = state.quests.firstOrNull { it.id == selectedQuestId }
     BackHandler(enabled = !parkingRequired) {
         if (selectedQuest != null) {
@@ -130,6 +133,7 @@ fun QuestScreen(
                                     onClaimReward = onClaimReward,
                                     onNavigateRoute = onNavigateRoute,
                                     pointInHeader = pointInHeader,
+                                    listScrollState = listScrollState,
                                     modifier =
                                         Modifier.offset(72.dp * scale, 196.dp * scale).size(
                                             2416.dp * scale,
@@ -141,7 +145,11 @@ fun QuestScreen(
                     } else {
                         val compactScale = (maxWidth.value / 1400f).coerceIn(0.55f, 0.9f)
                         Column(
-                            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(if (selectedQuest == null) listScrollState else detailScrollState)
+                                    .padding(24.dp),
                             verticalArrangement = Arrangement.spacedBy(24.dp),
                         ) {
                             QuestHeader(
@@ -169,6 +177,7 @@ fun QuestScreen(
                                 onClaimReward = onClaimReward,
                                 onNavigateRoute = onNavigateRoute,
                                 pointInHeader = pointInHeader,
+                                listScrollState = listScrollState,
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         }
@@ -253,6 +262,7 @@ private fun QuestContent(
     onClaimReward: (String) -> Unit,
     onNavigateRoute: (AppRoute) -> Unit,
     pointInHeader: Boolean,
+    listScrollState: ScrollState,
     modifier: Modifier = Modifier,
 ) {
     val motionEnabled = LocalMobiMonMotionEnabled.current
@@ -330,6 +340,7 @@ private fun QuestContent(
                     onClaimReward = { if (active) onClaimReward(it) },
                     pointBalance = state.pointBalance,
                     showPointSummary = !pointInHeader,
+                    scrollState = listScrollState,
                     modifier = activeModifier.fillMaxSize(),
                 )
             }

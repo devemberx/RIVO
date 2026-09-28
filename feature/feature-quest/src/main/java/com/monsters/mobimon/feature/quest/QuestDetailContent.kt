@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -364,39 +363,42 @@ private fun QuestReferenceDetailCard(
         Column(
             modifier = Modifier.offset(64.dp * scale, 501.dp * scale).width(1416.dp * scale),
         ) {
-            Box(Modifier.fillMaxWidth().heightIn(min = 124.dp * scale)) {
-                Column(verticalArrangement = Arrangement.spacedBy(14.dp * scale)) {
-                    QuestProgressDetailSection(quest.progressDetail, scale)
-                    if (quest.showVehicleStep) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (isClaimable || isCompleted) {
-                                Image(
-                                    painterResource(R.drawable.quest_icon_check),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(32.dp * scale),
-                                    colorFilter = ColorFilter.tint(Colors.success),
-                                )
-                                Spacer(Modifier.width(16.dp * scale))
-                            }
-                            Text(
-                                text =
-                                    stringResource(
-                                        if (isClaimable || isCompleted) {
-                                            R.string.quest_detail_vehicle_done
-                                        } else {
-                                            R.string.quest_detail_vehicle_step
-                                        },
-                                    ),
-                                style = questTextStyle(38f, scale, bold = true, color = Colors.text),
+            Column(
+                verticalArrangement = Arrangement.spacedBy(14.dp * scale),
+                modifier = Modifier.testTag("quest-detail-progress"),
+            ) {
+                QuestProgressDetailSection(quest.progressDetail, scale)
+                if (quest.showVehicleStep) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (isClaimable || isCompleted) {
+                            Image(
+                                painterResource(R.drawable.quest_icon_check),
+                                contentDescription = null,
+                                modifier = Modifier.size(32.dp * scale),
+                                colorFilter = ColorFilter.tint(Colors.success),
                             )
+                            Spacer(Modifier.width(16.dp * scale))
                         }
+                        Text(
+                            text =
+                                stringResource(
+                                    if (isClaimable || isCompleted) {
+                                        R.string.quest_detail_vehicle_done
+                                    } else {
+                                        R.string.quest_detail_vehicle_step
+                                    },
+                                ),
+                            style = questTextStyle(38f, scale, bold = true, color = Colors.text),
+                        )
                     }
                 }
             }
+            Spacer(Modifier.height(40.dp * scale))
             if (isCompleted) {
                 Text(
                     text = completionReceiptLabel(quest),
                     style = questTextStyle(38f, scale, bold = true, color = Colors.accent),
+                    modifier = Modifier.testTag("quest-detail-reward"),
                 )
                 Spacer(Modifier.height(24.dp * scale))
                 Text(
@@ -407,6 +409,7 @@ private fun QuestReferenceDetailCard(
                 Text(
                     text = stringResource(R.string.quest_detail_reward_label, quest.rewardPoints),
                     style = questTextStyle(38f, scale, bold = true, color = Colors.accent),
+                    modifier = Modifier.testTag("quest-detail-reward"),
                 )
                 Spacer(Modifier.height(24.dp * scale))
                 Text(
