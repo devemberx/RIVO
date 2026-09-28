@@ -7,6 +7,7 @@ import com.monsters.mobimon.core.domain.GitHubSession
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -135,8 +136,14 @@ suspend fun PersistentGitHubAuthentication.probeToolCalling(onEvent: (ToolProbeE
         onEvent(ToolProbeEvent(stage, failure = probeFailure(error)))
         return ToolProbeReport(ToolProbeVerdict.INCONCLUSIVE)
     } finally {
-        client.connectionPool.evictAll()
-        client.dispatcher.executorService.shutdown()
+        // TLS shutdown can write to the socket, including when the calling Activity was cancelled.
+        withContext(NonCancellable + Dispatchers.IO) {
+            try {
+                client.connectionPool.evictAll()
+            } finally {
+                client.dispatcher.executorService.shutdown()
+            }
+        }
     }
 }
 

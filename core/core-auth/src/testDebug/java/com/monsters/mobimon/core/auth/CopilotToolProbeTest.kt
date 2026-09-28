@@ -177,6 +177,22 @@ class CopilotToolProbeTest {
             assertEquals(6, requests.size)
         }
 
+    @Test fun forcedStopWithToolCallsIsInconclusiveWithoutDiscardingAutomaticSuccess() =
+        runTest {
+            val report =
+                probe { input ->
+                    if (input.opt("tool_choice") is JSONObject) {
+                        response().apply { getJSONArray("choices").getJSONObject(0).put("finish_reason", "stop") }
+                    } else {
+                        defaultResponse(input)
+                    }
+                }.run()
+            assertEquals(ToolProbeReport(ToolProbeVerdict.SUPPORTED, ToolProbeVerdict.INCONCLUSIVE), report)
+            assertEquals(ToolProbeFailure.PROTOCOL, events.last().failure)
+            assertEquals(2, executions)
+            assertEquals(6, requests.size)
+        }
+
     @Test fun permissionLossAfterModelResponsePreventsLocalExecution() =
         runTest {
             var allowed = true
