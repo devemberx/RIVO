@@ -78,7 +78,7 @@ internal class CopilotConversationProvider(
 
     override suspend fun connect(accountId: Long): ConversationResult<String> =
         operation(accountId) { lease ->
-            prepare(lease)
+            prepare(lease, forceRefresh = true)
             selectedModel!!.id
         }
 
@@ -114,9 +114,13 @@ internal class CopilotConversationProvider(
             api.complete(access!!, selectedModel!!, friendId, messages)
         }
 
-    private suspend fun prepare(lease: ConversationCredential) {
+    private suspend fun prepare(
+        lease: ConversationCredential,
+        forceRefresh: Boolean = false,
+    ) {
         val cached = cachedCredential
-        if (cached?.accountId == lease.accountId &&
+        if (!forceRefresh &&
+            cached?.accountId == lease.accountId &&
             cached.revision == lease.revision &&
             cached.token == lease.token &&
             access?.expiresAtMillis?.let { it > nowMillis() + 60_000 } == true &&

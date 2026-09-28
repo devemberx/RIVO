@@ -108,10 +108,13 @@ class OkHttpGitHubApiTest {
             for ((code, problem) in listOf(
                 401 to AuthenticationProblem.REAUTHENTICATION,
                 403 to AuthenticationProblem.PROVIDER,
+                408 to AuthenticationProblem.NETWORK,
                 429 to AuthenticationProblem.NETWORK,
                 503 to AuthenticationProblem.NETWORK,
             )) {
-                server.enqueue(MockResponse().setResponseCode(code).setBody("private details"))
+                server.enqueue(
+                    MockResponse().setResponseCode(code).setHeader("Retry-After", "1").setBody("private details"),
+                )
                 assertProblem(problem) { api.account("private-token") }
             }
         }
