@@ -301,18 +301,20 @@ private fun distanceMeters(
 fun interpretVssTimeOfDay(input: String): String {
     val trimmed = input.trim()
     when (trimmed.lowercase()) {
-        "sunrise", "일출", "새벽" -> return "Morning"
+        "sunrise", "일출", "새벽" -> return "Sunrise"
         "morning", "아침" -> return "Morning"
         "day", "낮" -> return "Day"
         "afternoon", "오후", "늦은 오후" -> return "Afternoon"
         "sunset", "노을", "저녁" -> return "Sunset"
         "night", "밤" -> return "Night"
-        "midnight", "한밤", "한밤중", "자정" -> return "Night"
+        "midnight", "한밤", "한밤중", "자정" -> return "Midnight"
     }
 
     val hour = extractHour(trimmed) ?: return "Day"
     return when (hour) {
-        in 6..11 -> "Morning"
+        in 0..4 -> "Midnight"
+        in 5..6 -> "Sunrise"
+        in 7..11 -> "Morning"
         in 12..15 -> "Day"
         in 16..17 -> "Afternoon"
         in 18..19 -> "Sunset"

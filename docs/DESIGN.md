@@ -88,11 +88,11 @@ both references.
 
 ### Home scene
 
-Home and Store share seven local-time backgrounds: Midnight 00–04, Sunrise 05–06,
-Morning 07–11, Day 12–15, Afternoon 16–17, Sunset 18–19, Night 20–23. Vehicle
-timestamps do not select them; only the separate Debug background preview overrides
-the period. Variants retain scene geometry and celestial disk sizes; Midnight has
-dark city windows/reflections with road lights on.
+Home and Store share seven backgrounds selected by VSS time: Midnight 00–04,
+Sunrise 05–06, Morning 07–11, Day 12–15, Afternoon 16–17, Sunset 18–19,
+Night 20–23. `Vehicle.CurrentLocation.Timestamp` and its Debug VSS interpretation
+control select the period; device time does not. Variants retain scene geometry
+and celestial disk sizes; Midnight has dark city windows/reflections with road lights on.
 
 Home follows [home.svg](ui/shell/home.svg): preserve its centered original artwork
 crop so changing content height does not move the horizon. Store crops within its

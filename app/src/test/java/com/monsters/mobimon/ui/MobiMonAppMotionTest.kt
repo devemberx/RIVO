@@ -27,7 +27,6 @@ import com.monsters.mobimon.core.domain.PurchaseResult
 import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
-import com.monsters.mobimon.core.domain.UtcClock
 import com.monsters.mobimon.core.domain.VehicleFreshnessPolicy
 import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.domain.VehicleSnapshot
@@ -139,7 +138,6 @@ class MobiMonAppMotionTest {
                 ProgressionIdentity("motion-test", SignalSource.REAL),
                 Clock { 0L },
                 VehicleFreshnessPolicy(15_000),
-                UtcClock { 0L },
             )
         val home =
             object : FeatureEntry {

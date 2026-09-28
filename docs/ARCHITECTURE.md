@@ -71,8 +71,9 @@ shell uses counts and a three-card scrolling popup; the newer left-panel
 [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
 owns rendering only. Shared freshness-filtered condition includes warnings from
 unselected cards; display-only card evidence cannot authorize rewards or commands.
-Decorative backgrounds use local time, independent of vehicle timestamps and quest
-weather. The Debug background override changes display only. Playback stops when
+Decorative backgrounds use interpreted VSS time from the vehicle snapshot, independent
+of device time and quest weather. Debug uses its VSS timestamp and interpretation
+controls for the same path. Playback stops when
 removed; floating-companion motion preferences do not disable in-app motion.
 
 ### Window geometry
