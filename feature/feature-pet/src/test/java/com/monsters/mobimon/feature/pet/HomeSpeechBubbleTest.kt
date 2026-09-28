@@ -14,9 +14,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.sp
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import org.junit.Assert.assertEquals
@@ -94,6 +99,43 @@ class HomeSpeechBubbleTest {
         val bounds = compose.onNodeWithTag("home-companion-message").fetchSemanticsNode().boundsInRoot
         assertTrue(bounds.width in 390f..800f)
         assertTrue(bounds.height >= 210f)
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w800dp-h600dp-mdpi")
+    fun messageLengthChangesOnlyTheBubbleBoundsAndKeepsOriginalTypography() {
+        val message = mutableStateOf("안녕!")
+        compose.setContent {
+            MobiMonTheme {
+                Box(Modifier.fillMaxSize()) {
+                    HomeSpeechBubbleContent(message.value)
+                }
+            }
+        }
+        val short = compose.onNodeWithTag("home-companion-message").fetchSemanticsNode().boundsInRoot
+        compose.runOnIdle { message.value = "오늘은 같이 이야기를 나누고 싶어. 네가 어떤 하루를 보냈는지 천천히 들려줘!" }
+        val long = compose.onNodeWithTag("home-companion-message").fetchSemanticsNode().boundsInRoot
+
+        assertEquals(short.left, long.left, 1f)
+        assertEquals(short.top, long.top, 1f)
+        assertTrue(long.width > short.width)
+        assertTrue(long.height > short.height)
+        assertTrue(long.width <= 560f)
+        compose
+            .onNodeWithTag("home-companion-message-text", useUnmergedTree = true)
+            .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { action ->
+                val layouts = mutableListOf<TextLayoutResult>()
+                action(layouts)
+                val layout = layouts.single()
+                assertEquals(32.4f.sp, layout.layoutInput.style.fontSize)
+                assertEquals(43.2f.sp, layout.layoutInput.style.lineHeight)
+                assertEquals(FontWeight.Normal, layout.layoutInput.style.fontWeight)
+                repeat(layout.lineCount) { line ->
+                    assertTrue(!layout.isLineEllipsized(line))
+                    assertTrue(layout.getLineRight(line) <= layout.size.width + 1f)
+                    assertTrue(layout.getLineBottom(line) <= layout.size.height + 1f)
+                }
+            }
     }
 
     private fun show(fontScale: Float = 1f) {

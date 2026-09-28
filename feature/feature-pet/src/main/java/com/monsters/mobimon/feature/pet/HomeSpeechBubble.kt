@@ -45,11 +45,6 @@ internal fun HomeSpeechBubble(
     backgroundTimeOfDay: String? = null,
 ) {
     val motionEnabled = LocalMobiMonMotionEnabled.current
-    val textScale = LocalDensity.current.fontScale.coerceAtLeast(1f)
-    val fontSize = (38.4f * scale).coerceAtLeast(28f)
-    val lineHeight = fontSize * 1.4f
-    // The artwork must stop shrinking when either minimum text dimension is reached.
-    val bubbleScale = maxOf(scale, fontSize / 38.4f) * textScale
     var visible by remember { mutableStateOf(!motionEnabled) }
     val progress by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
@@ -106,6 +101,35 @@ internal fun HomeSpeechBubble(
             delay(Random.nextLong(10_000L, 15_000L))
         }
     }
+    HomeSpeechBubbleContent(
+        message = currentText.ifEmpty { stringResource(R.string.pet_home_message) },
+        modifier = modifier,
+        scale = scale,
+        progress = progress,
+        motionEnabled = motionEnabled,
+    )
+}
+
+internal fun homeSpeechBubbleScale(
+    scale: Float,
+    fontScale: Float,
+): Float {
+    val fontSize = (32.4f * scale).coerceAtLeast(24f)
+    val lineHeight = (43.2f * scale).coerceAtLeast(34f)
+    return maxOf(fontSize / 32.4f, lineHeight / 43.2f) * fontScale.coerceAtLeast(1f)
+}
+
+@Composable
+internal fun HomeSpeechBubbleContent(
+    message: String,
+    modifier: Modifier = Modifier,
+    scale: Float = 1f,
+    progress: Float = 1f,
+    motionEnabled: Boolean = false,
+) {
+    val fontSize = (32.4f * scale).coerceAtLeast(24f)
+    val lineHeight = (43.2f * scale).coerceAtLeast(34f)
+    val bubbleScale = homeSpeechBubbleScale(scale, LocalDensity.current.fontScale)
     Box(
         modifier
             .widthIn(min = (260 * bubbleScale).dp, max = (560 * bubbleScale).dp)
@@ -126,7 +150,7 @@ internal fun HomeSpeechBubble(
             contentScale = ContentScale.FillBounds,
         )
         Text(
-            currentText.ifEmpty { stringResource(R.string.pet_home_message) },
+            message,
             modifier =
                 Modifier
                     .testTag("home-companion-message-text")
@@ -141,7 +165,7 @@ internal fun HomeSpeechBubble(
                     fontSize = fontSize.sp,
                     lineHeight = lineHeight.sp,
                     letterSpacing = (0.2f * scale).sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Normal,
                 ),
             color = MobiMonColors.onButton,
         )

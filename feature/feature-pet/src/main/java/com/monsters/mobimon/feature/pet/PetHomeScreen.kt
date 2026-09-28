@@ -218,14 +218,20 @@ fun PetHomeScreen(
                     HomeGreeting(backgroundTimeOfDay, Modifier, 0.65f, textShadow)
                     companion(Modifier.size(240.dp))
                     if (friendId != null) {
-                        HomeSpeechBubble(
-                            scale = 0.75f,
-                            triggerKey = bubbleTrigger,
-                            friendId = friendId,
-                            isSick = snapshot.vehicleCondition() == VehicleCondition.WARNING,
-                            isHungry = snapshot.vehicleCondition() == VehicleCondition.LOW_BATTERY,
-                            backgroundTimeOfDay = backgroundTimeOfDay,
-                        )
+                        Box(
+                            Modifier
+                                .widthIn(max = (560 * homeSpeechBubbleScale(0.75f, fontScale)).dp)
+                                .fillMaxWidth(),
+                        ) {
+                            HomeSpeechBubble(
+                                scale = 0.75f,
+                                triggerKey = bubbleTrigger,
+                                friendId = friendId,
+                                isSick = snapshot.vehicleCondition() == VehicleCondition.WARNING,
+                                isHungry = snapshot.vehicleCondition() == VehicleCondition.LOW_BATTERY,
+                                backgroundTimeOfDay = backgroundTimeOfDay,
+                            )
+                        }
                     }
                     action(Modifier, 0.75f)
                 }
