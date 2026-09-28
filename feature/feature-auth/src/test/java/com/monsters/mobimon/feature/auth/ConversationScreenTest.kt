@@ -158,6 +158,25 @@ class ConversationScreenTest {
     }
 
     @Test
+    fun storageResetBlocksComposerSuggestionAndVoiceUntilItFinishes() {
+        state = state.copy(storageBusy = true, voice = VoiceInputState(available = true))
+        draft = TextFieldValue("old draft")
+        show()
+        compose.onNodeWithTag("chat-input").assertIsNotEnabled()
+        compose.onNodeWithTag("chat-send").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("음성으로 입력").assertIsNotEnabled()
+        compose.onNodeWithText("오늘 하루 이야기할래").performClick()
+        compose.runOnIdle {
+            assertEquals("old draft", draft.text)
+            assertEquals(0, voiceStarts)
+        }
+
+        compose.runOnIdle { state = state.copy(storageBusy = false) }
+        compose.onNodeWithTag("chat-input").assertIsEnabled()
+        compose.onNodeWithContentDescription("음성으로 입력").assertIsEnabled()
+    }
+
+    @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun enlargedVoiceInputRestoresSuggestionsAfterCancellationAtAaosDensity() {
         state = state.copy(voice = VoiceInputState(available = true, phase = VoiceInputPhase.PERMISSION))

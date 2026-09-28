@@ -119,6 +119,7 @@ internal fun ConversationPanel(
     val keyboard = LocalSoftwareKeyboardController.current
     val suggestionInputAllowed by rememberUpdatedState(
         allowed &&
+            !state.storageBusy &&
             !state.replyPending &&
             !state.failed &&
             !state.voice.capturing &&
@@ -1209,7 +1210,7 @@ private fun ConversationComposer(
         BasicTextField(
             value = draft,
             onValueChange = {
-                if (allowed && !state.replyPending && !state.failed && !voicePermissionPending) {
+                if (allowed && !state.storageBusy && !state.replyPending && !state.failed && !voicePermissionPending) {
                     onDismissVoiceProblem()
                     onDraftChange(it)
                 }
@@ -1234,7 +1235,7 @@ private fun ConversationComposer(
                         contentDescription = label
                         if (reviewingVoice) stateDescription = voiceReviewDescription
                     },
-            enabled = allowed,
+            enabled = allowed && !state.storageBusy,
             readOnly = state.replyPending || state.failed || voicePermissionPending,
             textStyle =
                 mobiMonReferenceTextStyle(
@@ -1267,6 +1268,7 @@ private fun ConversationComposer(
                 R.drawable.conversation_voice_mic,
                 onStartVoice,
                 allowed &&
+                    !state.storageBusy &&
                     state.connection != ConversationConnection.SIGNED_OUT &&
                     !state.replyPending &&
                     !voicePermissionPending,

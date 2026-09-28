@@ -892,6 +892,38 @@ class ConversationViewModelTest {
             )
         }
 
+    @Test fun newConversationDoesNotAcceptDraftEditsWhileResetIsPending() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val disk = FakeConversationStore()
+            val model = ConversationViewModel(authentication, provider, networkStatus, conversationStore = disk)
+            store.put("pending-reset", model)
+            model.bind("profile", "friend:mobi")
+            model.activate(true)
+            runCurrent()
+            model.edit(TextFieldValue("first"))
+            model.send()
+            runCurrent()
+            model.edit(TextFieldValue("old draft"))
+
+            val finishReset = CompletableDeferred<Unit>()
+            disk.beforeReset = { finishReset.await() }
+            model.newConversation()
+            runCurrent()
+            assertTrue(model.state.value.storageBusy)
+            model.edit(TextFieldValue("new draft"))
+            assertEquals("old draft", model.draft.text)
+
+            finishReset.complete(Unit)
+            runCurrent()
+            assertFalse(model.state.value.storageBusy)
+            assertEquals("", model.draft.text)
+            assertTrue(
+                model.state.value.messages
+                    .isEmpty(),
+            )
+        }
+
     @Test fun interruptedCommittedSaveReconcilesBeforeTheNextProviderRequest() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
@@ -1009,6 +1041,7 @@ class ConversationViewModelTest {
     private class FakeConversationStore : ConversationStore {
         val values = mutableMapOf<ConversationKey, StoredConversation>()
         var failAppend = false
+        var beforeReset: suspend () -> Unit = {}
         var beforeAppend: suspend () -> Unit = {}
         var afterAppend: suspend () -> Unit = {}
 
@@ -1020,8 +1053,9 @@ class ConversationViewModelTest {
         override suspend fun reset(
             key: ConversationKey,
             accountId: Long,
-        ): StoredConversation =
-            StoredConversation(
+        ): StoredConversation {
+            beforeReset()
+            return StoredConversation(
                 java.util.UUID
                     .randomUUID()
                     .toString(),
@@ -1032,6 +1066,7 @@ class ConversationViewModelTest {
                 values[key] =
                     it
             }
+        }
 
         override suspend fun append(
             key: ConversationKey,

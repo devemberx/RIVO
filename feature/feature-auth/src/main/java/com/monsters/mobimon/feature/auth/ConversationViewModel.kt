@@ -257,6 +257,7 @@ class ConversationViewModel(
     fun edit(value: TextFieldValue) {
         if (!active ||
             !allowed ||
+            state.value.storageBusy ||
             state.value.replyPending ||
             state.value.failed ||
             state.value.voice.capturing ||
@@ -482,6 +483,7 @@ class ConversationViewModel(
             accountId != null &&
             (authentication.session.value as? GitHubSession.Authenticated)?.account?.id == accountId &&
             state.value.connectionProblem in setOf(null, ConversationProblem.NETWORK, ConversationProblem.TIMEOUT) &&
+            !state.value.storageBusy &&
             !state.value.replyPending
 
     fun send(text: String = draft.text) = sendInternal(text, retry = false)
