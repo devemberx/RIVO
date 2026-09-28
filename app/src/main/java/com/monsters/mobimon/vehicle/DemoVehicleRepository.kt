@@ -185,16 +185,17 @@ class DemoVehicleRepository(
         if (vssRawSource is DefaultParkedVssRawVehicleSource) now else vssRawSource.batteryObservedAtMillis
 
     private fun initialSnapshot(): VehicleSnapshot {
+        val observedAt = clock.nowMillis()
         val interpreted =
             VssVehicleInterpreter.snapshot(
                 raw = vssRawSource.state.value,
                 id = INITIAL_SNAPSHOT_ID,
                 epoch = INITIAL_SNAPSHOT_EPOCH,
                 sequence = 0,
-                observedAtMillis = clock.nowMillis(),
+                observedAtMillis = observedAt,
                 source = rawSourceSignalSource(),
                 timeObservedAtMillis = sourceTimeObservation(),
-                batteryObservedAtMillis = sourceBatteryObservation(clock.nowMillis()),
+                batteryObservedAtMillis = sourceBatteryObservation(observedAt),
             )
         return interpreted.copy(vssCardSignals = fallbackCardSignals())
     }
