@@ -1,14 +1,11 @@
 package com.monsters.mobimon.feature.quest
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDp
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.updateTransition
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -64,12 +61,6 @@ internal fun QuestCompanionPanel(
         },
         label = "companion x",
     ) { detail -> (if (detail) 86 else 28).dp * scale }
-    val avatarY by transition.animateDp(
-        transitionSpec = {
-            if (motionEnabled) spring(stiffness = Spring.StiffnessMediumLow) else snap()
-        },
-        label = "companion y",
-    ) { detail -> (if (detail) 110 else 140).dp * scale }
     val avatarScale by transition.animateFloat(
         transitionSpec = {
             if (motionEnabled) spring(stiffness = Spring.StiffnessMediumLow) else snap()
@@ -82,8 +73,6 @@ internal fun QuestCompanionPanel(
         },
         label = "compact companion x",
     ) { detail -> (if (detail) 8 else 0).dp * scale }
-    val taglineEnter = if (motionEnabled) fadeIn() else androidx.compose.animation.EnterTransition.None
-    val taglineExit = if (motionEnabled) fadeOut() else androidx.compose.animation.ExitTransition.None
 
     if (isCompact) {
         Row(
@@ -106,15 +95,11 @@ internal fun QuestCompanionPanel(
                 backgroundId = backgroundId,
             )
             Column(modifier = Modifier.weight(1f)) {
-                AnimatedVisibility(visible = !isDetail, enter = taglineEnter, exit = taglineExit) {
-                    Column {
-                        Text(
-                            text = stringResource(R.string.quest_companion_heading),
-                            style = questTextStyle(40f, scale, bold = true, color = Colors.text),
-                        )
-                        Spacer(Modifier.height(8.dp * scale))
-                    }
-                }
+                Text(
+                    text = stringResource(R.string.quest_companion_heading),
+                    style = questTextStyle(40f, scale, bold = true, color = Colors.text),
+                )
+                Spacer(Modifier.height(8.dp * scale))
                 Text(
                     text = stringResource(R.string.quest_companion_quote),
                     style = questTextStyle(if (isDetail) 36f else 34f, scale, bold = true, color = Colors.text),
@@ -143,22 +128,16 @@ internal fun QuestCompanionPanel(
                     .background(Colors.panel)
                     .testTag("quest-companion-panel"),
         ) {
-            AnimatedVisibility(
-                visible = !isDetail,
-                enter = taglineEnter,
-                exit = taglineExit,
+            Text(
+                text = stringResource(R.string.quest_companion_heading),
+                style = questTextStyle(48f, scale, bold = true, color = Colors.text),
+                textAlign = TextAlign.Center,
                 modifier = Modifier.align(Alignment.TopCenter).offset(y = 55.dp * scale),
-            ) {
-                Text(
-                    text = stringResource(R.string.quest_companion_heading),
-                    style = questTextStyle(48f, scale, bold = true, color = Colors.text),
-                    textAlign = TextAlign.Center,
-                )
-            }
+            )
             PetAvatar(
                 modifier =
                     Modifier
-                        .offset { IntOffset(avatarX.roundToPx(), avatarY.roundToPx()) }
+                        .offset { IntOffset(avatarX.roundToPx(), (140.dp * scale).roundToPx()) }
                         .size(624.dp * scale)
                         .graphicsLayer {
                             scaleX = avatarScale

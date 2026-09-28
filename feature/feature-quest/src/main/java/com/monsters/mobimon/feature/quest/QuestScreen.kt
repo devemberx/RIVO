@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -309,29 +308,16 @@ private fun QuestContent(
             val active = currentId == detailId
             val activeModifier = if (active) Modifier else Modifier.clearAndSetSemantics {}
             if (currentQuest != null) {
-                Box(activeModifier.fillMaxSize()) {
-                    QuestDetailCard(
-                        quest = currentQuest,
-                        canClaim = state.canClaim,
-                        scale = scale,
-                        onBackToList = { if (active) onSelectQuest(null) },
-                        onExecute = { if (active) onNavigateRoute(currentQuest.targetRoute) },
-                        onClaimReward = { if (active) onClaimReward(currentQuest.id) },
-                        modifier = Modifier.fillMaxSize(),
-                        isCompact = isCompact,
-                    )
-                    if (!isCompact && currentQuest.status == QuestItemStatus.IN_PROGRESS) {
-                        QuestScrollIndicator(
-                            scrollState = rememberScrollState(),
-                            scale = scale,
-                            modifier =
-                                Modifier
-                                    .align(Alignment.TopEnd)
-                                    .offset(x = 24.dp * scale, y = 242.dp * scale)
-                                    .height(722.dp * scale),
-                        )
-                    }
-                }
+                QuestDetailCard(
+                    quest = currentQuest,
+                    canClaim = state.canClaim,
+                    scale = scale,
+                    onBackToList = { if (active) onSelectQuest(null) },
+                    onExecute = { if (active) onNavigateRoute(currentQuest.targetRoute) },
+                    onClaimReward = { if (active) onClaimReward(currentQuest.id) },
+                    modifier = activeModifier.fillMaxSize(),
+                    isCompact = isCompact,
+                )
             } else {
                 QuestRightPanel(
                     quests = state.quests,

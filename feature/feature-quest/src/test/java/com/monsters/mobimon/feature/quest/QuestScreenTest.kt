@@ -249,6 +249,7 @@ class QuestScreenTest {
             MobiMonTheme { QuestScreen(state, {}, {}, {}, {}, {}, {}, {}) }
         }
         compose.onNodeWithTag("quest-tab-completed").assertIsDisplayed().performClick()
+        compose.onNodeWithTag("quest-scroll-indicator").assertDoesNotExist()
         compose.onNodeWithTag("quest-card-${DrivingQuestIds.SEATBELT}").performScrollTo().performClick()
         restoration.emulateSavedInstanceStateRestore()
         compose.onNodeWithTag("quest-header-back-button").assertIsDisplayed().performClick()
@@ -258,25 +259,28 @@ class QuestScreenTest {
     }
 
     @Test
-    fun detailMovesCompanionAndKeepsListTaglineOutOfDetail() {
+    fun detailMovesCompanionAndKeepsHeadingWithoutFalseScrollIndicator() {
         render(presentation())
         val listBounds = compose.onNodeWithTag("quest-companion-panel").getUnclippedBoundsInRoot()
         val listWidth = (listBounds.right - listBounds.left).value
         compose.onNodeWithText("작은 도전, 큰 여정").assertIsDisplayed()
+        compose.onNodeWithTag("quest-scroll-indicator").assertIsDisplayed()
 
         compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.BATTERY_CARE}").performScrollTo().performClick()
         compose.waitForIdle()
         val detailBounds = compose.onNodeWithTag("quest-companion-panel").getUnclippedBoundsInRoot()
         val detailWidth = (detailBounds.right - detailBounds.left).value
         assertTrue("Companion panel grows on detail", detailWidth > listWidth)
-        compose.onNodeWithText("작은 도전, 큰 여정").assertDoesNotExist()
+        compose.onNodeWithText("작은 도전, 큰 여정").assertIsDisplayed()
         compose.onNodeWithTag("quest-detail-card").assertIsDisplayed()
+        compose.onNodeWithTag("quest-scroll-indicator").assertDoesNotExist()
 
         compose.onNodeWithTag("quest-header-back-button").performClick()
         compose.waitForIdle()
         val returnedBounds = compose.onNodeWithTag("quest-companion-panel").getUnclippedBoundsInRoot()
         assertEquals(listWidth, (returnedBounds.right - returnedBounds.left).value, 1f)
         compose.onNodeWithText("작은 도전, 큰 여정").assertIsDisplayed()
+        compose.onNodeWithTag("quest-scroll-indicator").assertIsDisplayed()
     }
 
     @Test
@@ -289,7 +293,8 @@ class QuestScreenTest {
         }
         compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.BATTERY_CARE}").performScrollTo().performClick()
         compose.onNodeWithTag("quest-detail-card").assertIsDisplayed()
-        compose.onNodeWithText("작은 도전, 큰 여정").assertDoesNotExist()
+        compose.onNodeWithText("작은 도전, 큰 여정").assertIsDisplayed()
+        compose.onNodeWithTag("quest-scroll-indicator").assertDoesNotExist()
         compose.onNodeWithTag("quest-header-back-button").performClick()
         compose.onNodeWithText("작은 도전, 큰 여정").assertIsDisplayed()
     }

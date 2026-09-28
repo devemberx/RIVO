@@ -176,7 +176,7 @@ internal fun QuestRightPanel(
                     }
                     Spacer(Modifier.height(80.dp * scale))
                 }
-                if (!isCompact) {
+                if (!isCompact && scrollState.maxValue > 0) {
                     QuestScrollIndicator(
                         scrollState = scrollState,
                         scale = scale,
@@ -194,7 +194,13 @@ internal fun QuestScrollIndicator(
     scale: Float,
     modifier: Modifier = Modifier,
 ) {
-    Canvas(modifier.width(8.dp * scale).fillMaxHeight().padding(bottom = 10.dp * scale)) {
+    Canvas(
+        modifier
+            .width(8.dp * scale)
+            .fillMaxHeight()
+            .padding(bottom = 10.dp * scale)
+            .testTag("quest-scroll-indicator"),
+    ) {
         val thumbHeight = 180.dp.toPx() * scale
         val travel = (size.height - thumbHeight - 12.dp.toPx() * scale).coerceAtLeast(0f)
         val progress = if (scrollState.maxValue == 0) 0f else scrollState.value.toFloat() / scrollState.maxValue
