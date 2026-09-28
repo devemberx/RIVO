@@ -29,7 +29,74 @@ class OkHttpCopilotApiTest {
     private val server = MockWebServer()
     private lateinit var api: OkHttpCopilotApi
     private lateinit var access: CopilotAccess
-    private val model = CopilotModel("gpt-4o", CopilotChatApi.CHAT_COMPLETIONS)
+    private val model =
+        CopilotModel(
+            "gpt-4o",
+            CopilotChatApi.CHAT_COMPLETIONS,
+            maxPromptTokens = 128000,
+            maxContextWindowTokens = 128000,
+            tokenizer = "o200k_base",
+        )
+
+    @Test fun personasGiveEachPetIdentityWithoutHabitualAnimalSuffixes() {
+        val mobi =
+            CopilotMessageCodec
+                .request(model, "friend:mobi", listOf(ConversationTurn("hi", true)))
+                .getJSONArray("messages")
+                .getJSONObject(0)
+                .getString("content")
+        val luna =
+            CopilotMessageCodec
+                .request(model, "friend:luna", listOf(ConversationTurn("hi", true)))
+                .getJSONArray("messages")
+                .getJSONObject(0)
+                .getString("content")
+        assertTrue(mobi.contains("rabbit"))
+        assertTrue(luna.contains("cat"))
+        assertTrue(mobi.contains("emoji"))
+        assertTrue(luna.contains("banmal"))
+    }
+
+    @Test fun budgetIncludesKoreanPersonaContextAndReplyReservationAtExactBoundary() =
+        runBlocking {
+            val request =
+                CopilotMessageCodec.request(
+                    model,
+                    "friend:mobi",
+                    listOf(ConversationTurn("같이 가자", true)),
+                    com.monsters.mobimon.core.domain
+                        .ConversationContext(userName = "하늘"),
+                )
+            val tokens = CopilotTokenBudget.promptTokens(model, request).toInt()
+            assertTrue(tokens > 100)
+            CopilotTokenBudget.requireFits(
+                model.copy(maxPromptTokens = tokens, maxContextWindowTokens = tokens + 2048),
+                request,
+            )
+            assertProblem(ConversationProblem.LIMIT) {
+                CopilotTokenBudget.requireFits(model.copy(maxPromptTokens = tokens - 1), request)
+            }
+            assertProblem(ConversationProblem.LIMIT) {
+                CopilotTokenBudget.requireFits(model.copy(maxContextWindowTokens = tokens + 2047), request)
+            }
+            assertProblem(ConversationProblem.PROVIDER) {
+                CopilotTokenBudget.requireFits(model.copy(tokenizer = "unknown"), request)
+            }
+            assertProblem(ConversationProblem.PROVIDER) {
+                CopilotTokenBudget.requireFits(model.copy(maxPromptTokens = null), request)
+            }
+        }
+
+    @Test fun serverContextOverflowIsRecoverableLimitWithoutReplay() =
+        runBlocking {
+            server.enqueue(
+                MockResponse().setResponseCode(400).setBody("""{"error":{"code":"context_length_exceeded"}}"""),
+            )
+            assertProblem(ConversationProblem.LIMIT) {
+                api.complete(access, model, "friend:mobi", listOf(ConversationTurn("hi", true)))
+            }
+            assertEquals(1, server.requestCount)
+        }
 
     @Before fun setup() {
         server.start()
@@ -71,13 +138,26 @@ class OkHttpCopilotApiTest {
             }
         }
 
+    @Test fun missingUnknownAndMalformedModelLimitsFailClosed() =
+        runBlocking {
+            for (capabilities in listOf(
+                """{"type":"chat"}""",
+                """{"type":"chat","tokenizer":"unknown","limits":{"max_prompt_tokens":1000,"max_output_tokens":100}}""",
+                """{"type":"chat","tokenizer":"o200k_base","limits":{"max_prompt_tokens":1000,"max_output_tokens":100,"max_context_window_tokens":-1}}""",
+                """{"type":"chat","tokenizer":"o200k_base","limits":{"max_prompt_tokens":1000.5,"max_output_tokens":100}}""",
+            )) {
+                enqueue("""{"data":[{"id":"gpt-4o","capabilities":$capabilities}]}""")
+                assertTrue(api.models(access).isEmpty())
+            }
+        }
+
     @Test fun modelDiscoveryReadsChatMetadataAndPolicy() =
         runBlocking {
             enqueue(
                 """{"data":[
-          {"id":"blocked","is_chat_default":true,"policy":{"state":"disabled"},"capabilities":{"type":"chat"}},
-          {"id":"responses-only","capabilities":{"type":"chat"},"supported_endpoints":["/responses"]},
-          {"id":"gpt-4o","model_picker_enabled":false,"capabilities":{"type":"chat"}}
+          {"id":"blocked","is_chat_default":true,"policy":{"state":"disabled"},"capabilities":{"type":"chat","tokenizer":"o200k_base","limits":{"max_prompt_tokens":64000,"max_context_window_tokens":128000,"max_output_tokens":4096}}},
+          {"id":"responses-only","capabilities":{"type":"chat","tokenizer":"o200k_base","limits":{"max_prompt_tokens":64000,"max_context_window_tokens":128000,"max_output_tokens":4096}},"supported_endpoints":["/responses"]},
+          {"id":"gpt-4o","model_picker_enabled":false,"capabilities":{"type":"chat","tokenizer":"o200k_base","limits":{"max_prompt_tokens":64000,"max_context_window_tokens":128000,"max_output_tokens":4096}}}
         ]}""",
             )
             val models = api.models(access)
@@ -122,7 +202,14 @@ class OkHttpCopilotApiTest {
     @Test fun fixedGpt4oCompletionDoesNotSendASessionToken() =
         runBlocking {
             enqueue("""{"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":"Hello"}}]}""")
-            val fixedModel = CopilotModel("gpt-4o", CopilotChatApi.CHAT_COMPLETIONS)
+            val fixedModel =
+                CopilotModel(
+                    "gpt-4o",
+                    CopilotChatApi.CHAT_COMPLETIONS,
+                    maxPromptTokens = 128000,
+                    maxContextWindowTokens = 128000,
+                    tokenizer = "o200k_base",
+                )
             assertEquals(
                 "Hello",
                 api.complete(
@@ -227,6 +314,32 @@ class OkHttpCopilotApiTest {
             }
         }
 
+    @Test fun connectedTransportFailuresNeverBecomeAccountOrAccessErrorsOrReplayCompletion() =
+        runBlocking {
+            for ((policy, expected) in listOf(
+                SocketPolicy.NO_RESPONSE to ConversationProblem.TIMEOUT,
+                SocketPolicy.DISCONNECT_DURING_RESPONSE_BODY to ConversationProblem.NETWORK,
+            )) {
+                val boundedApi =
+                    OkHttpCopilotApi(
+                        OkHttpClient.Builder().readTimeout(1, TimeUnit.SECONDS).build(),
+                        { 1_000_000 },
+                        server.url("/copilot_internal/user"),
+                    )
+                val before = server.requestCount
+                server.enqueue(MockResponse().setBody("x".repeat(1024)).setSocketPolicy(policy))
+                val pending =
+                    async(Dispatchers.Default) {
+                        assertProblem(expected) {
+                            boundedApi.complete(access, model, "friend:mobi", listOf(ConversationTurn("hello", true)))
+                        }
+                    }
+                assertNotNull(server.takeRequest(5, TimeUnit.SECONDS))
+                pending.await()
+                assertEquals(before + 1, server.requestCount)
+            }
+        }
+
     @Test fun cancellationStopsWaitingForHttpResponse() =
         runBlocking {
             server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE))
@@ -241,7 +354,14 @@ class OkHttpCopilotApiTest {
 
     @Test fun responsesRejectToolsFailuresAndEmptyOrOversizedText() =
         runBlocking {
-            val routed = CopilotModel("responses", CopilotChatApi.RESPONSES)
+            val routed =
+                CopilotModel(
+                    "responses",
+                    CopilotChatApi.RESPONSES,
+                    maxPromptTokens = 128000,
+                    maxContextWindowTokens = 128000,
+                    tokenizer = "o200k_base",
+                )
             val message =
                 JSONObject(
                     """{"type":"message","role":"assistant","content":[{"type":"output_text","text":"answer"}]}""",

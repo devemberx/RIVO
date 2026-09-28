@@ -2,10 +2,15 @@ package com.monsters.mobimon.di
 
 import android.content.Context
 import com.monsters.mobimon.BuildConfig
+import com.monsters.mobimon.chat.AndroidUserName
+import com.monsters.mobimon.chat.VehicleConversationContext
 import com.monsters.mobimon.core.auth.PersistentGitHubAuthentication
+import com.monsters.mobimon.core.database.AtomicConversationStore
 import com.monsters.mobimon.core.domain.AppUseState
 import com.monsters.mobimon.core.domain.Clock
+import com.monsters.mobimon.core.domain.ConversationContextSource
 import com.monsters.mobimon.core.domain.ConversationProvider
+import com.monsters.mobimon.core.domain.ConversationStore
 import com.monsters.mobimon.core.domain.CurrentAppUse
 import com.monsters.mobimon.core.domain.CurrentVehicleEvidence
 import com.monsters.mobimon.core.domain.DrivingState
@@ -19,6 +24,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import java.io.File
 import javax.inject.Singleton
 
 @Module
@@ -42,11 +48,31 @@ object AuthenticationModule {
                 snapshot.drivingState == DrivingState.PARKED
         }
 
+    @Provides @Singleton
+    fun conversationStore(
+        @ApplicationContext context: Context,
+    ): ConversationStore = AtomicConversationStore(File(context.noBackupFilesDir, "current-conversations"))
+
     @Provides
     fun githubAuthentication(authentication: PersistentGitHubAuthentication): GitHubAuthentication = authentication
 
     @Provides
     @Singleton
-    fun conversation(authentication: PersistentGitHubAuthentication): ConversationProvider =
-        authentication.conversationProvider()
+    fun conversation(
+        authentication: PersistentGitHubAuthentication,
+        context: ConversationContextSource,
+    ): ConversationProvider = authentication.conversationProvider(context)
+
+    @Provides @Singleton
+    fun conversationContext(
+        @ApplicationContext context: Context,
+        vehicle: CurrentVehicleEvidence,
+        clock: Clock,
+    ): ConversationContextSource =
+        VehicleConversationContext(
+            AndroidUserName(context)::read,
+            vehicle::snapshot,
+            clock::nowMillis,
+            BuildConfig.DEBUG,
+        )
 }

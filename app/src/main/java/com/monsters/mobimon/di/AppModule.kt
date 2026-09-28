@@ -23,7 +23,6 @@ import com.monsters.mobimon.core.domain.SignalSourceProvider
 import com.monsters.mobimon.core.domain.UtcClock
 import com.monsters.mobimon.core.domain.VehicleFreshnessPolicy
 import com.monsters.mobimon.core.domain.VehicleRepository
-import com.monsters.mobimon.debug.DebugBackgroundTimeProvider
 import com.monsters.mobimon.debug.DebugStore
 import com.monsters.mobimon.debug.DebugVssProvider
 import com.monsters.mobimon.runtime.AppUseStateSource
@@ -49,9 +48,6 @@ data class AppEnvironment(
 object AppModule {
     @Provides
     fun debugVssProvider(debugStore: DebugStore): DebugVssProvider = debugStore
-
-    @Provides
-    fun debugBackgroundTimeProvider(debugStore: DebugStore): DebugBackgroundTimeProvider = debugStore
 
     @Provides
     @Singleton

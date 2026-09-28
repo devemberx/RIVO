@@ -43,6 +43,22 @@ class CopilotConversationProviderTest {
             assertEquals(4, api.exchanges)
         }
 
+    @Test fun connectionRecheckRequiresFreshProviderResponsesDespiteValidCache() =
+        runTest {
+            accessLifetime = 3_600_000
+            assertEquals(ConversationResult.Success("gpt-4o"), provider.connect(1))
+            api.afterExchange = { throw ConversationException(ConversationProblem.NETWORK) }
+            assertEquals(ConversationResult.Failure(ConversationProblem.NETWORK), provider.connect(1))
+            api.afterExchange = {}
+            api.afterModels = { throw ConversationException(ConversationProblem.TIMEOUT) }
+            assertEquals(ConversationResult.Failure(ConversationProblem.TIMEOUT), provider.connect(1))
+            api.afterModels = {}
+            assertEquals(ConversationResult.Success("gpt-4o"), provider.connect(1))
+            assertEquals(4, api.exchanges)
+            assertEquals(3, api.models)
+            assertEquals(0, api.completions)
+        }
+
     @Test fun parkingAndAccountAreRecheckedBetweenNetworkCallsAndBeforeReturningReply() =
         runTest {
             api.afterExchange = { allowed = false }
@@ -135,6 +151,12 @@ class CopilotConversationProviderTest {
                 provider.reply(1, "conversation", "friend:mobi", listOf(ConversationTurn("hello", true))),
             )
             assertEquals(0, api.completions)
+        }
+
+    @Test fun moreThanSixteenExchangesAreAllowedWhenProviderBudgetFits() =
+        runTest {
+            val turns = (0..40).map { ConversationTurn("hello", it % 2 == 0) }
+            assertEquals(ConversationResult.Success("answer"), provider.reply(1, "current", "friend:mobi", turns))
         }
 
     private inner class FakeApi : CopilotApi {

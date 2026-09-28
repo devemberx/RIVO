@@ -12,12 +12,9 @@ import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.ProgressionIdentity
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSourceProvider
-import com.monsters.mobimon.core.domain.UtcClock
 import com.monsters.mobimon.core.domain.VehicleFreshnessPolicy
 import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.domain.VehicleSnapshot
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 
 /** All routes share one display ViewModel in the Activity's store, never a provider connection. */
 class VehiclePresentation(
@@ -25,9 +22,7 @@ class VehiclePresentation(
     private val identity: ProgressionIdentity,
     private val clock: Clock,
     private val freshness: VehicleFreshnessPolicy,
-    private val utcClock: UtcClock,
     private val sourceProvider: SignalSourceProvider = SignalSourceProvider { identity.source },
-    private val backgroundOverride: StateFlow<String?> = MutableStateFlow(null),
 ) {
     @Composable
     fun snapshot(): VehicleSnapshot = reading().snapshot
@@ -43,9 +38,7 @@ class VehiclePresentation(
                             identity,
                             clock,
                             freshness,
-                            utcClock,
                             sourceProvider = sourceProvider,
-                            backgroundOverride = backgroundOverride,
                         )
                     }
                 }

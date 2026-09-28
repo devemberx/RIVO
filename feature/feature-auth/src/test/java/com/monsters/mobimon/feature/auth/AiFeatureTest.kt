@@ -15,6 +15,7 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -49,7 +50,6 @@ import com.monsters.mobimon.core.domain.ProgressionIdentity
 import com.monsters.mobimon.core.domain.PurchaseResult
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
-import com.monsters.mobimon.core.domain.UtcClock
 import com.monsters.mobimon.core.domain.VehicleFreshnessPolicy
 import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.domain.VehicleSnapshot
@@ -82,6 +82,21 @@ class AiFeatureTest {
     private val session = MutableStateFlow<GitHubSession>(GitHubSession.SignedOut)
     private var route by mutableStateOf(AiRoute.COPILOT)
     private var homeReturns = 0
+
+    @Test
+    fun returningHomeClearsUnsentChatInputBeforeReentry() {
+        route = AiRoute.CONVERSATION
+        show(parked = true, authenticated = true)
+        compose.onNodeWithTag("chat-input").performTextInput("unsent text")
+        compose.onNodeWithText("unsent text").assertIsDisplayed()
+
+        compose.onNodeWithContentDescription("뒤로").performClick()
+        compose.runOnIdle { assertEquals(AiRoute.COPILOT, route) }
+        compose.runOnIdle { route = AiRoute.CONVERSATION }
+
+        compose.onNodeWithText("unsent text").assertDoesNotExist()
+        compose.onNodeWithTag("chat-send").assertIsNotEnabled()
+    }
 
     @Test
     fun firstConversationFrameKeepsChatWhileCompanionContextLoads() {
@@ -265,7 +280,6 @@ class AiFeatureTest {
                         0
                     },
                     VehicleFreshnessPolicy(15_000),
-                    UtcClock { 0L },
                 ),
                 object : GitHubAuthentication {
                     override val session = this@AiFeatureTest.session
@@ -288,7 +302,16 @@ class AiFeatureTest {
                     ) = ConversationResult.Failure(ConversationProblem.ACCESS)
                 },
             )
-        val navigator = FeatureNavigator({ route = it as AiRoute }, {}, { homeReturns++ }, {})
+        val navigator =
+            FeatureNavigator(
+                { route = it as AiRoute },
+                { route = AiRoute.COPILOT },
+                {
+                    homeReturns++
+                    route = AiRoute.COPILOT
+                },
+                {},
+            )
         compose.setContent {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
                 MobiMonTheme { feature.Content(route, navigator, Modifier) }

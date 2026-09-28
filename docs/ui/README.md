@@ -1,19 +1,11 @@
 # UI reference exports
 
-The existing full-screen SVGs come from the
+These 2560 × 1440 SVGs are visual references from the
 [v5 Figma page](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-2).
-The index links each export to its source frame. They are visual references, not
-Android assets or evidence that a feature is implemented. See [DESIGN.md](../DESIGN.md)
-for behavior and [ARCHITECTURE.md](../ARCHITECTURE.md) for current support.
+The index links each export to its source frame. See [DESIGN.md](../DESIGN.md)
+for behavior and [ARCHITECTURE.md](../ARCHITECTURE.md) for implementation status.
 
-Every SVG has a 2560 × 1440 viewBox. The screen index lists shell notification
-counts and conversation states; [Design](../DESIGN.md#screens-and-navigation)
-owns their visual/navigation rules. Standard frames show system bars at y=0–96
-and y=1280–1440, leaving 2560 × 1184 app content. The keyboard-input frame shows
-a keyboard in place of the bottom bar. Compare app content using actual device insets.
-
-Keep exports grouped by feature and named for their visible state. Replace a file
-only with a new export from its linked frame. The connected screen includes a
+The connected screen includes a
 [Lucide settings icon](https://github.com/lucide-icons/lucide/blob/0.468.0/icons/settings.svg)
 ([license](licenses/lucide.txt)).
 
@@ -29,9 +21,9 @@ only with a new export from its linked frame. The connected screen includes a
 | [menu.svg](shell/menu.svg) | [Menu with notification row; three alerts](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-3844) |
 | [menu-no-notifications.svg](shell/menu-no-notifications.svg) | [Menu without notification count badge](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=783-1025) |
 | [menu-many-notifications.svg](shell/menu-many-notifications.svg) | [Menu with notification row; five alerts](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=783-1164) |
-| [notifications-empty.svg](shell/notifications-empty.svg) | [Empty notification panel](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=777-350) |
-| [notifications-three.svg](shell/notifications-three.svg) | [Three alerts grouped by vehicle checks and quest rewards](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=777-203) |
-| [notifications-many.svg](shell/notifications-many.svg) | [Five alerts with a scrolling list and fixed header](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=777-470) |
+| [notifications-empty.svg](shell/notifications-empty.svg) | [Compact header with centered bell empty state](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=777-350) |
+| [notifications-three.svg](shell/notifications-three.svg) | [Notifications: three alerts](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=777-203) |
+| [notifications-many.svg](shell/notifications-many.svg) | [Notifications: five alerts](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=777-470) |
 | [settings.svg](shell/settings.svg) | [Settings](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-3641) |
 
 ### Connection

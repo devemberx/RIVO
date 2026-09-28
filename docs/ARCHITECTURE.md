@@ -5,12 +5,10 @@ owns coverage, and [Contributing](../.github/CONTRIBUTING.md) owns workflow.
 
 ## Current foundation
 
-Home, Settings, customization, Vehicle and Quests use Room/DataStore. GitHub device
-authentication restores encrypted credentials; Copilot text chat is experimental.
-Korean dictation uses the installed Android recognition service without bundled
-ASR models. Mobi/Luna artwork, condition rendering and an opt-in overlay exist.
+Local screens use Room/DataStore; GitHub credentials restore from encrypted storage.
+Copilot chat is experimental; Korean dictation uses the installed Android service.
 Real vehicle evidence, background observation and OEM launcher behavior remain
-unverified. Catalogs and [UI exports](ui/README.md) do not prove integrations.
+unverified. [UI exports](ui/README.md) do not prove integration.
 
 ## Scope and decisions
 
@@ -48,184 +46,174 @@ Android adapter seam, but cannot own persistence, DI, UI or feature code.
 
 ## State and lifecycle
 
-Routes collect ViewModel `StateFlow` with `collectAsStateWithLifecycle()` and pass
-state/callbacks to screens. The shell owns navigation and connection origin;
-`FeatureRegistry` rejects missing/duplicate routes. Activity-scoped ViewModels
-survive navigation; menu state and animation geometry are transient.
+Routes collect lifecycle-aware ViewModel state; screens receive state and callbacks.
+The shell owns navigation. Activity ViewModels survive navigation; menus and
+animation geometry are transient.
 
 | State | Owner/lifetime |
 | --- | --- |
 | Profiles, rewards, wallet, inventory, equipment | Room; durable |
-| Motion, Debug, launcher preferences | DataStore; independent keys, Debug/launcher default off |
-| Vehicle connection and AAOS listener | `CompanionRuntime`; one foreground connection |
-| Driving evaluation | Repository memory; simulated, not durable evidence |
-| Preview and animation | Feature/renderer; equipment changes only on commit |
+| Motion, Debug and launcher preferences | DataStore; independent keys, Debug/launcher default off |
+| Vehicle and AAOS connection | `CompanionRuntime`; foreground only |
+| Driving evaluation | Repository memory; simulated, not trusted evidence |
+| Preview and animation | Renderer; equipment changes only on commit |
 
-Read failures retain committed values with explicit retry. Store can preview shared
-appearance while loading, but purchase/equip wait for its inventory. Notifications
-are read-only summaries of selected-card cautions and claimable quests; the shell
-routes them, and repositories remain responsible for reward writes. The current
-shell uses counts and a three-card scrolling popup; the newer left-panel
-[design references](DESIGN.md#screens-and-navigation) are not yet implemented.
-
+Read failures retain committed data; purchase/equip wait for inventory. Notifications
+are read-only summaries; repositories own reward writes.
 [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
-owns rendering only. Shared freshness-filtered condition includes warnings from
-unselected cards; display-only card evidence cannot authorize rewards or commands.
-Decorative backgrounds use local time, independent of vehicle timestamps and quest
-weather. The Debug background override changes display only. Playback stops when
-removed; floating-companion motion preferences do not disable in-app motion.
+owns rendering only. Display evidence and decorative previews cannot authorize commands.
+Decorative Home and Store backgrounds use interpreted VSS time from the vehicle
+snapshot, independent of device time and quest weather. Debug uses the same VSS
+timestamp and interpretation controls; it has no separate background time override.
 
 ### Window geometry
 
-The shell owns safe-drawing insets; sibling menus/Debug panels handle their own
-window. Features use available constraints and reference width scaling, reflowing
-for enlarged text. Conversation additionally handles IME resizing. SVG system bars
-are reference coordinates, not runtime padding. Overlays clamp measured bounds to
-current bars/cutouts after placement, movement, resize or inset changes.
+The shell owns safe insets; separate windows own theirs. Features reflow for enlarged
+text and IME. SVG system bars are references, not runtime padding. Overlays clamp
+measured bounds after placement, movement, resizing or inset changes.
 
 ### Copilot connection UI
 
-`app` binds domain authentication to `core-auth`. The GitHub device flow uses the
-configured public client ID, no client secret and `read:user`; unconfigured builds
-disable sign-in. Polling respects intervals, slowdown and expiry. Leaving,
-backgrounding or losing Park/AAOS allowance cancels pending approval; acceptance
-rechecks authorization.
+`core-auth` owns GitHub device approval and identity validation; unconfigured builds
+disable sign-in. Use the configured public client ID, no client secret and `read:user`
+only. Departure, backgrounding or loss of Park/AAOS allowance cancels
+approval; acceptance rechecks authorization. Authentication alone does not establish
+Copilot readiness. UI never receives tokens or polls providers.
 
-Authentication requires approval, `/user` validation and durable credential storage;
-it does not establish Copilot readiness. UI sees no tokens and does no polling.
-Credentials use atomic AES-256-GCM storage in `noBackupFilesDir` with Android
-Keystore. Tokens never enter UI/domain state, Room, preferences, logs or backups.
-Foreground restoration refreshes expiring credentials. Persist rotated tokens
-before identity validation, invalidate old revisions, and require successful identity
-validation before use. Network errors retain credentials; revocation requires new
-approval. Unreadable storage fails closed. Disconnect clears local credentials/key,
-not the GitHub grant, subscription, points or cosmetics. Preview success is no proof
-of provider approval.
+Credentials use atomic authenticated encryption with Android Keystore outside
+backups. Tokens cannot enter UI/domain state, Room, preferences or logs. Persist
+rotations and invalidate old revisions before validating identity and using tokens.
+Network failures retain credentials; revocation requires approval again; unreadable
+storage fails closed. Disconnect removes local credentials/key, not the GitHub grant,
+subscription or rewards.
 
 ### Keyboard conversation UI
 
-`feature-auth` owns the Activity-memory draft, selection/composition and exchanges.
-Navigation/configuration changes retain them; new chat, profile/account change,
-disconnect or process restart clear them. Initial account validation retains an
-unsent provisional draft. Temporary failures retain draft and attempted turn.
-Leaving, backgrounding, parking loss or companion changes cancel work; generations
-reject late replies. Pending restoration keeps an existing chat visible with Send
-disabled; new signed-out entry opens connection management.
+`feature-auth` keeps drafts and voice in Activity memory. The app injects a singleton
+`ConversationStore` backed by atomic files in the Android user's no-backup app storage.
+Each profile/companion has one current thread, restored after restart or companion
+switch. Display names never identify owners. Loading under a different GitHub account
+replaces that companion's thread before sending; sign-out hides it. New conversation
+atomically replaces the active thread with an empty one, with no archive. Successful
+user/reply pairs commit together using thread ID and revision checks. Read/write
+failures preserve committed bytes and block sending until explicit recovery/reset.
+Home navigation and recording startup preserve the current thread while clearing the
+composer. Account/profile/companion changes clear transient private state; initial
+account validation retains an unsent draft. Failed sends keep the attempted turn for
+Edit/Retry while clearing the composer.
+Sending clears the composer while the turn awaits a reply; canceling that wait restores
+the text for editing. Home clears it even when a reply is pending.
+Departure, backgrounding, parking loss or companion changes cancel work; reject late replies.
+Backgrounding and parking loss alone retain the current draft.
 
-Foreground entry/recheck validates identity and Copilot model access without sending
-a completion. Send requires current authentication, bound profile, fresh Park/AAOS
-allowance, validated internet and readiness. Provider stages and reply acceptance
-recheck ownership and authorization. Checks/replies time out after 30 seconds;
-recheck never replays dialogue. Failed turns require explicit Edit or Retry.
-Account errors open connection guidance; access/usage failures require account
-changes and a later successful check. Cancellation cannot undo provider processing;
-retry may consume additional usage.
+Entry/recheck requires fresh Copilot access and model responses, bypassing cached
+readiness without sending a completion. Transport failures/timeouts use network
+recovery. Send and reply acceptance require current identity/ownership, fresh
+Park/AAOS allowance, validated internet and readiness. Requests are bounded; failed
+turns require explicit Edit/Retry. Cancellation cannot undo provider processing,
+and retry may consume usage.
 
-[OkHttpCopilotApi](../core/core-auth/src/main/java/com/monsters/mobimon/core/auth/OkHttpCopilotApi.kt)
-owns the experimental endpoints and metadata. Select enabled Chat Completions
-`gpt-4o` only, with no fallback or session-token exchange. Access/model cache is
-memory-only, credential-scoped and at most five minutes. Requests use allowlisted
-HTTPS hosts, no redirects and no automatic completion replay, including HTTP 503.
-A 401 invalidates only the matching credential revision. Errors/logs expose fixed
-categories, never provider bodies, dialogue or credentials; Release logging is off.
+[Copilot transport](../core/core-auth/src/main/java/com/monsters/mobimon/core/auth/OkHttpCopilotApi.kt)
+uses enabled `gpt-4o` Chat Completions only, credential-scoped memory caching and
+allowlisted HTTPS hosts. No redirects, fallback, session-token exchange or automatic
+completion replay. A 401 invalidates only its credential revision. Logs/errors must
+not expose provider bodies, dialogue or tokens; Release logging is off.
 
-Send only companion name, fixed instruction and dialogue: no tools, vehicle data
-or reward/ownership commands. Display complete text without reasoning. Enforce
-[ConversationLimits](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/ConversationProvider.kt)
-with room for the reply; require editing/new chat rather than silently dropping
-context. Dialogue never enters durable app storage. Provider retention still applies.
-This HTTP integration has no supported Android SDK or stable service contract;
-fixtures do not prove live access. Never impersonate another OAuth client/editor.
+The system instruction gives Mobi a curious rabbit persona and Luna a quietly caring
+cat persona, using short natural Korean banmal without habitual animal suffixes,
+emojis or stage directions. Each send adds optional bounded AAOS context-user name
+(`QUERY_USERS`, absent without permission) and independently fresh VSS timestamp/period.
+These values are untrusted data, never instructions or ownership identifiers. No other
+vehicle readings, tools or reward commands are sent. Missing context is omitted.
+
+VSS time retains its offset and the scene mapper's period; it is not converted to
+system wall-clock time. A timestamp must have its own monotonic observation within
+60 seconds. Ticker publications never refresh it. Verified real adapters must supply
+that provenance; Debug observations are marked simulated. This is an observation
+freshness policy, not proof that GNSS provides a continuously advancing clock.
+
+Copilot catalog metadata supplies `max_prompt_tokens`, optional combined
+`max_context_window_tokens`, `max_output_tokens` and supported tokenizer. Missing or
+unsupported required metadata fails closed. JTokkit counts all prompt text, persona,
+context and chat framing; reserve the requested reply budget (up to 2,048 tokens,
+bounded by the advertised output maximum). The server remains authoritative: explicit
+context overflow maps to LIMIT with no replay or truncation. The former 16-exchange
+and 48,000-character cumulative caps are removed; 4,000 input and 12,000 reply character
+bounds remain per-message UI/transport limits. Model limits bound current-thread
+growth; New conversation removes its old content locally. Provider retention still
+applies. The experimental transport has no stable service contract; fixtures do not
+prove live access. Never impersonate another OAuth client/editor.
 
 #### Voice input
 
-`app` implements `ConversationSpeechInput` using `SpeechRecognizer`: prefer dedicated
-on-device recognition, otherwise request Korean/offline from the default service.
-Offline preference is advisory; service availability does not prove Korean/offline
-support. Permission and microphone activation are explicit. Voice requires a resumed,
-authenticated, authorized chat but remains usable during Copilot network failures.
+`app` supplies continuous in-memory audio to the installed Android recognition service.
+Offline preference is advisory; availability does not prove Korean/offline support.
+Microphone activation and permission are explicit and require a resumed, authenticated,
+authorized chat. Network recovery dialogs release local capture while preserving the draft.
 
-The app captures mono 16kHz PCM continuously with `AudioRecord` and supplies it
-through `EXTRA_AUDIO_SOURCE` in one segmented recognition request. A bounded memory
-queue separates capture from pipe delivery; slow writes never overwrite queued
-samples. Stop drains the microphone tail and queued PCM, then closes the stream
-instead of calling `stopListening` early. Cancel releases capture/pipe and clears
-queued audio.
-Nothing is written to disk. Overflow or premature service termination ends with an
-error, without a silent fallback to microphone sessions with capture gaps.
+Stop drains captured audio before finalizing an editable draft; only Send submits.
+Errors retain confirmed text, never partial guesses. Cancellation/restrictions retain
+the previous draft and release capture. Requests are bounded; reject late callbacks.
+Overflow, unsupported external audio or premature termination fails explicitly rather
+than silently dropping audio or changing capture mode.
 
-Keep repeated segments and separate confirmed text from partial hypotheses. A full
-final result replaces that request's segments. Service errors or finalization timeout
-retain confirmed text as an editable draft with the failure; partial guesses are
-never promoted. Explicit cancellation/restrictions retain the previous draft instead.
-Only Send submits. Reject callbacks after session cancellation. Startup/capture/
-finalization remain bounded at 20/60/20 seconds; the 12-second pause timer is suspended
-during speech. Ambient RMS and empty segments cannot extend silence.
-
-External PCM support and stream-close completion depend on the service/OEM;
-verify each target before rollout. The app does not replay unconfirmed audio after
-a failure; capture buffers cannot survive process death. Never store/log user audio
-or claim universal loss-free speech; OS/driver overruns remain possible. Physical-device accuracy and microphone
-behavior remain unverified; record actual checks in the PR.
+[Speech implementation](../app/src/main/java/com/monsters/mobimon/speech) owns capture,
+segmentation and timing details. Never store/log user audio. External-source support,
+EOF completion and microphone accuracy require target-service/device verification;
+universal loss-free recognition is not established.
 
 ### Vehicle interaction authorization
 
-Debug uses `.demo`, `mobimon-demo.db`, `demo-profile` and simulated VSS (15-second
-freshness). Release uses `mobimon.db`/`local-profile`. Production requires a verified
-adapter and unavailable data when it is absent. **Current gap:** the Release binding
-still falls back to simulated parked VSS; it is not production verification.
-Debug card defaults/edits are display-only; real/unreported signals inherit none.
+Debug uses separate `.demo` IDs/profiles/database and simulated VSS; Debug card values
+are display-only. Release requires a verified adapter and unavailable data when absent.
+**Current gap:** Release still falls back to simulated parked VSS; this is not
+production verification.
 
-Only fresh, valid nonmoving Park authorizes parked interactions. Motion blocks;
-stationary D/R/N, unknown/stale/unavailable state and AAOS service loss fail closed.
-Use current-display `CarAppUseMonitor` allowance and recheck inside transactions.
-Restrictions preserve committed data while blocking writes.
+Only fresh, valid nonmoving Park and current-display AAOS allowance authorize parked
+interactions. Motion, stationary D/R/N, unknown/stale/unavailable state and service
+loss fail closed; transactions recheck allowance. Restrictions preserve committed data.
 
-`VehicleReading` keeps original evidence separate from freshness-normalized display.
-Commands use original evidence, not display ages. Signals carry source, quality,
-receive time, epoch and increasing sequence; parking, battery and warnings age
-independently. Missing/stale is unavailable, never healthy. Adapters must preserve
-observation time, normalize units/order and avoid mixing clock domains across restarts.
+Commands use original evidence, not freshness-normalized display. Preserve source,
+quality, observation/receive time, epoch and increasing sequence; age signals
+independently. Missing/stale is unavailable, never healthy. Adapters normalize units
+and must not mix clock domains or manufacture fresh observation times.
 
 ## Domain and storage contracts
 
 [AppDatabase](../core/core-database/src/main/java/com/monsters/mobimon/core/database/AppDatabase.kt)
-is schema 4, one instance per process. Do not persist transient vehicle history.
-Observe with `Flow`; suspend writes distinguish rejection, duplicates and failure.
-Inject clocks/IDs and propagate cancellation.
+is schema 4, one instance per process. Observe with `Flow`; suspend writes distinguish
+rejection, duplicates and failure. Inject clocks/IDs and propagate cancellation.
+Do not persist transient vehicle history.
 
-All reward writes atomically validate evidence, ownership/revision and uniqueness:
+Reward writes atomically validate original evidence, ownership/revision and uniqueness:
 
-- Legacy runs fix source/profile/rules/start; completion requires later same-epoch
-  evidence and commits completion, run finish and XP together. A gap can cancel,
-  never complete, a run. Run and profile/quest identities remain unique.
-- Point awards commit occurrence, ledger and balance together; profile/quest/occurrence
-  and ledger references are unique. Return the committed amount only after success.
+- Legacy completion needs later same-epoch evidence and commits run finish, completion
+  and XP together. Evidence gaps cancel rather than complete runs.
+- Point awards commit occurrence, ledger and balance together; occurrence and ledger
+  references are unique. Return only the committed amount.
 - Purchase validates price, compatibility, funds and ownership before debit/grant;
-  Equip requires committed ownership without another debit. Concurrent calls cannot
-  overspend or duplicate items. Debug changes also update ledger/balance atomically.
+  Equip needs committed ownership without another debit. Debug writes are also atomic.
 
-Keep network calls outside transactions. Never split rewards across Room/DataStore
-or replace on conflict. Failures roll back. Migrations preserve identities, evidence,
-rewards and equipment without destructive reset or XP conversion. Register the full
-V1→V4 chain, including original/expanded V3 support; legacy XP remains compatibility data.
+Concurrent calls cannot overspend or duplicate rewards/items. Keep network outside
+transactions; failures roll back. Never split rewards across Room/DataStore or replace
+on conflict. V1→V4 migrations preserve identities, evidence, rewards and equipment,
+including both V3 forms; legacy XP is compatibility data, not converted progression.
 
 ## Planned features
 
 ### Points, cosmetics and quest occurrences
 
-Driving awards check per-quest in-memory evaluation inside the transaction; Debug
-supplies simulated signals/history. Production still needs trusted evidence, real
-occurrence IDs/counts and agreement with weather-scaled amounts. Define recurrence,
-reset clock/zone and interruption explicitly; `completedQuestIds` cannot express
-repeat eligibility. Run extensions must finish with revision/start checks atomically.
+Driving rewards currently use in-memory evaluation and Debug evidence. Production
+needs trusted evidence, real occurrence IDs/counts and agreement with reward amounts.
+Define recurrence, reset clock/zone and interruptions explicitly; completed IDs alone
+cannot represent repeat eligibility. Run extensions must validate revision/start atomically.
 
 ### Shared vehicle condition and overlay
 
 Reuse shared vehicle/appearance streams; gaps/restarts begin a new epoch. Background
-observation is not guaranteed. Overlay/launcher support needs explicit opt-in and
-verified OEM placement, lifecycle and service/permission state. Permission/preference
-alone is insufficient. Verify restarts, failures and restrictions on the target.
+observation is not guaranteed. Overlay/launcher behavior needs explicit opt-in and
+target-OEM validation of placement, lifecycle, restart and permissions; preference
+or permission alone is insufficient.
 
 ### AI conversation and session
 

@@ -123,7 +123,7 @@ class DebugInterpretationRowTest {
         compose.setContent {
             Box(Modifier.width(400.dp)) {
                 DebugInterpretationRow(
-                    label = "backgroundTime",
+                    label = "timeOfDay",
                     value = "Auto",
                     formula = "Local hour",
                     onManualValueChange = {},
@@ -142,6 +142,6 @@ class DebugInterpretationRowTest {
             }
         }
 
-        compose.onNodeWithTag("debug-interpretation-preset-backgroundTime-20:00").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("debug-interpretation-preset-timeOfDay-20:00").performScrollTo().assertIsDisplayed()
     }
 }

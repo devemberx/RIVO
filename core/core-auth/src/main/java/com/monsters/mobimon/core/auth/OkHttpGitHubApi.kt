@@ -130,7 +130,7 @@ internal class OkHttpGitHubApi(
                                 response.use {
                                     when (it.code) {
                                         401 -> fail(AuthenticationProblem.REAUTHENTICATION)
-                                        429 -> fail(AuthenticationProblem.NETWORK)
+                                        408, 429 -> fail(AuthenticationProblem.NETWORK)
                                     }
                                     if (it.code >= 500) fail(AuthenticationProblem.NETWORK)
                                     if (!it.isSuccessful) fail(AuthenticationProblem.PROVIDER)

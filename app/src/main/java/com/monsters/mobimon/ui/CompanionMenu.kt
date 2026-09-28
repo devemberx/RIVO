@@ -3,7 +3,13 @@ package com.monsters.mobimon.ui
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDp
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -63,6 +69,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -74,7 +81,6 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.monsters.mobimon.BuildConfig
 import com.monsters.mobimon.R
-import com.monsters.mobimon.core.navigation.AiRoute
 import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.CompanionRoute
 import com.monsters.mobimon.core.navigation.QuestRoute
@@ -88,7 +94,7 @@ import com.monsters.mobimon.core.ui.mobiMonReferenceTextStyle
 private data class DrawerDestination(
     val label: Int,
     val icon: Int,
-    val route: AppRoute,
+    val route: AppRoute?,
 )
 
 // Keep the SVG at AAOS compatibility density while preventing overlapping 76dp targets.
@@ -97,7 +103,7 @@ private const val MIN_REFERENCE_MENU_SCALE = 76f / 112f
 private val destinations =
     listOf(
         DrawerDestination(R.string.drawer_menu_home, R.drawable.drawer_home, CompanionRoute.HOME),
-        DrawerDestination(R.string.drawer_menu_chat, R.drawable.drawer_chat, AiRoute.CONVERSATION),
+        DrawerDestination(R.string.drawer_menu_notifications, R.drawable.drawer_notification_bell, null),
         DrawerDestination(R.string.drawer_menu_quests, R.drawable.drawer_quest, QuestRoute.QUESTS),
         DrawerDestination(R.string.drawer_menu_vehicle, R.drawable.drawer_vehicle, VehicleRoute.VEHICLE_INFO),
         DrawerDestination(R.string.drawer_menu_appearance, R.drawable.drawer_appearance, CompanionRoute.APPEARANCE),
@@ -110,50 +116,6 @@ private fun drawerProfileName(friendId: String?): Int =
         "friend:luna" -> R.string.drawer_luna_name
         else -> R.string.drawer_no_friend
     }
-
-@Composable
-private fun NotificationBell(
-    count: Int,
-    onClick: () -> Unit,
-    size: androidx.compose.ui.unit.Dp,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    focusRequester: FocusRequester? = null,
-) {
-    val targetSize = size.coerceAtLeast(76.dp)
-    val inset = (targetSize - size) / 2
-    Box(modifier.size(targetSize)) {
-        IconButton(
-            onClick,
-            Modifier
-                .size(targetSize)
-                .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
-                .testTag("menu-notifications"),
-            enabled = enabled,
-        ) {
-            Box(
-                Modifier
-                    .size(size)
-                    .background(Color(0xFF203C58), CircleShape)
-                    .border(1.dp, Color(0xFF64839F), CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painterResource(R.drawable.drawer_notification_bell),
-                    if (count == 0) "알림 열기" else "알림 ${count}건 열기",
-                    Modifier.size(size * 0.45f),
-                    tint = Color(0xFFF4F7FC),
-                )
-            }
-        }
-        MobiMonNotificationBadge(
-            count,
-            size * (43f / 82f),
-            (25 * size.value / 82f).sp,
-            Modifier.offset(x = inset + size * (57f / 82f), y = inset - size * (15f / 82f)),
-        )
-    }
-}
 
 @Composable
 fun CompanionMenu(
@@ -170,10 +132,11 @@ fun CompanionMenu(
 ) {
     val duration = if (LocalMobiMonMotionEnabled.current) NAVIGATION_MOTION_DURATION_MILLIS else 0
     val first = remember { FocusRequester() }
-    val bellFocus = remember { FocusRequester() }
+    val notificationFocus = remember { FocusRequester() }
     val drawer = remember { MutableTransitionState(false) }
     var notificationsOpen by remember { mutableStateOf(false) }
     var openedNotificationsOnce by remember { mutableStateOf(false) }
+    val notificationTransition = updateTransition(notificationsOpen, label = "menuNotificationExpansion")
     LaunchedEffect(visible) {
         drawer.targetState = visible
         if (!visible) {
@@ -181,13 +144,49 @@ fun CompanionMenu(
             openedNotificationsOnce = false
         }
     }
-    LaunchedEffect(notificationsOpen, visible) {
-        if (visible && !notificationsOpen && openedNotificationsOnce) bellFocus.requestFocus()
+    LaunchedEffect(notificationsOpen, notificationTransition.currentState, visible) {
+        if (visible && !notificationsOpen && !notificationTransition.currentState && openedNotificationsOnce) {
+            notificationFocus.requestFocus()
+        }
     }
     if (!drawer.currentState && !drawer.targetState) return
     BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding().testTag("menu-host")) {
         val windowWidth = maxWidth
         val windowHeight = maxHeight
+        val referenceScale = windowWidth.value / 2560f
+        val referenceMenu =
+            windowWidth.value >= 1400 &&
+                windowHeight.value >= 1184 * referenceScale &&
+                LocalDensity.current.fontScale <= 1f &&
+                referenceScale >= MIN_REFERENCE_MENU_SCALE
+        val collapsedWidth = if (referenceMenu) (690 * referenceScale).dp else minOf(520.dp, windowWidth)
+        val notificationScale = minOf(windowWidth.value / 2560f, windowHeight.value / 1184f)
+        val expandedWidth = minOf(windowWidth, maxOf(collapsedWidth, (944 * notificationScale).dp))
+        val notificationWidth by
+            notificationTransition.animateDp(
+                transitionSpec = {
+                    if (duration == 0) {
+                        snap()
+                    } else {
+                        spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMediumLow,
+                        )
+                    }
+                },
+                label = "notificationPanelWidth",
+            ) { if (it) expandedWidth else collapsedWidth }
+        val notificationOpacity by
+            notificationTransition.animateFloat(
+                transitionSpec = {
+                    if (duration == 0) {
+                        snap()
+                    } else {
+                        tween(150, delayMillis = if (targetState) 0 else 100, easing = FastOutSlowInEasing)
+                    }
+                },
+                label = "notificationPanelOpacity",
+            ) { if (it) 1f else 0f }
         Popup(onDismissRequest = {
             if (notificationsOpen) {
                 notificationsOpen = false
@@ -237,15 +236,19 @@ fun CompanionMenu(
                             openedNotificationsOnce = true
                             notificationsOpen = true
                         },
-                        bellFocus,
+                        notificationFocus,
                     )
                 }
-                if (notificationsOpen && visible) {
-                    NotificationPopup(
+                if (visible && (notificationTransition.currentState || notificationTransition.targetState)) {
+                    NotificationPanel(
                         notifications = notifications,
                         windowWidth = windowWidth,
                         windowHeight = windowHeight,
-                        onClose = { notificationsOpen = false },
+                        panelWidth = notificationWidth,
+                        panelOpacity = notificationOpacity,
+                        expanded = notificationsOpen,
+                        onBack = { notificationsOpen = false },
+                        onClose = onClose,
                         onNavigate = onNavigate,
                     )
                 }
@@ -274,7 +277,7 @@ private fun MenuPanel(
     first: FocusRequester,
     notificationCount: Int,
     onOpenNotifications: () -> Unit,
-    bellFocus: FocusRequester,
+    notificationFocus: FocusRequester,
 ) {
     val referenceScale = windowWidth / 2560f
     val reference =
@@ -283,8 +286,6 @@ private fun MenuPanel(
             LocalDensity.current.fontScale <= 1f &&
             referenceScale >= MIN_REFERENCE_MENU_SCALE
     val scale = if (reference) referenceScale else 1f
-    val bellVisualSize = (82 * scale).dp
-    val bellInset = (bellVisualSize.coerceAtLeast(76.dp) - bellVisualSize) / 2
     val width = if (reference) 690 * scale else minOf(520f, windowWidth)
     val shape =
         remember(scale) {
@@ -315,15 +316,8 @@ private fun MenuPanel(
             .width(width.dp)
             .fillMaxHeight()
             .clip(shape)
-            .background(
-                Brush.linearGradient(
-                    listOf(Color(0xFA13294D), Color(0xF218345E)),
-                    end =
-                        with(
-                            LocalDensity.current,
-                        ) { Offset((1064.72f * scale).dp.toPx(), (579.383f * scale).dp.toPx()) },
-                ),
-            ).drawWithContent {
+            .background(Color(0xFF183257))
+            .drawWithContent {
                 drawContent()
                 drawLine(
                     Color(0x6B6F9AD0),
@@ -381,16 +375,8 @@ private fun MenuPanel(
                     scale = scale,
                     color = Color(0xFFB9C9E1),
                 )
-                close(Modifier.offset((586 * scale).dp - 38.dp, (58 * scale).dp - 38.dp))
-                portrait(Modifier.offset((63 * scale).dp, (153 * scale).dp))
-                NotificationBell(
-                    notificationCount,
-                    onOpenNotifications,
-                    bellVisualSize,
-                    Modifier.offset((533 * scale).dp - bellInset, (180 * scale).dp - bellInset),
-                    enabled = visible,
-                    focusRequester = bellFocus,
-                )
+                close(Modifier.offset((590 * scale).dp - 38.dp, (88 * scale).dp - 38.dp))
+                portrait(Modifier.offset((63 * scale).dp, (163 * scale).dp))
                 MobiMonReferenceText(
                     stringResource(drawerProfileName(friendId)),
                     244f,
@@ -410,16 +396,24 @@ private fun MenuPanel(
                     color = Color(0xFF9FB2CE),
                 )
                 destinations.forEachIndexed { index, item ->
-                    val top = if (index == 0) 332f else 336f + 112f * index
+                    val top = 341f + 112f * index
                     MenuDestination(
                         item,
-                        item.route == currentRoute,
+                        item.route != null && item.route == currentRoute,
                         visible,
-                        onNavigate,
+                        { if (item.route == null) onOpenNotifications() else onNavigate(item.route) },
                         Modifier
                             .offset((44 * scale).dp, (top * scale).dp)
                             .width((596 * scale).dp)
                             .then(
+                                if (item.route ==
+                                    null
+                                ) {
+                                    Modifier.focusRequester(notificationFocus).testTag("menu-notifications")
+                                } else {
+                                    Modifier
+                                },
+                            ).then(
                                 if (index ==
                                     0
                                 ) {
@@ -430,10 +424,11 @@ private fun MenuPanel(
                             ),
                         scale,
                         reference = true,
+                        notificationCount = if (item.route == null) notificationCount else 0,
                     )
                 }
                 MenuFooter(
-                    Modifier.align(Alignment.BottomStart).fillMaxWidth().height((181 * scale).dp),
+                    Modifier.align(Alignment.BottomStart).fillMaxWidth().height((173 * scale).dp),
                     scale,
                     true,
                     onVersionClick,
@@ -467,23 +462,28 @@ private fun MenuPanel(
                         )
                         Text(stringResource(R.string.drawer_profile_subtitle), color = Color(0xFF9FB2CE))
                     }
-                    NotificationBell(
-                        notificationCount,
-                        onOpenNotifications,
-                        82.dp,
-                        enabled = visible,
-                        focusRequester = bellFocus,
-                    )
                 }
                 destinations.forEachIndexed { index, item ->
                     MenuDestination(
                         item,
-                        item.route == currentRoute,
+                        item.route != null && item.route == currentRoute,
                         visible,
-                        onNavigate,
-                        Modifier.fillMaxWidth().then(if (index == 0) Modifier.focusRequester(first) else Modifier),
+                        { if (item.route == null) onOpenNotifications() else onNavigate(item.route) },
+                        Modifier
+                            .fillMaxWidth()
+                            .then(if (index == 0) Modifier.focusRequester(first) else Modifier)
+                            .then(
+                                if (item.route ==
+                                    null
+                                ) {
+                                    Modifier.focusRequester(notificationFocus).testTag("menu-notifications")
+                                } else {
+                                    Modifier
+                                },
+                            ),
                         scale,
                         reference = false,
+                        notificationCount = if (item.route == null) notificationCount else 0,
                     )
                 }
                 MenuFooter(Modifier.fillMaxWidth(), scale, false, onVersionClick)
@@ -497,15 +497,18 @@ private fun MenuDestination(
     item: DrawerDestination,
     selected: Boolean,
     enabled: Boolean,
-    onNavigate: (AppRoute) -> Unit,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
     scale: Float = 1f,
     reference: Boolean = false,
+    notificationCount: Int = 0,
 ) {
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape((24 * scale).dp)
     val visualHeight = (94 * scale).dp
     val targetHeight = visualHeight.coerceAtLeast(76.dp)
+    val notificationDescription =
+        if (notificationCount == 0) "알림 열기" else "알림 ${notificationCount}건 열기"
     Box(
         modifier
             .offset(y = if (reference) (visualHeight - targetHeight) / 2 else 0.dp)
@@ -513,7 +516,15 @@ private fun MenuDestination(
             .clip(shape)
             .onFocusChanged { focused = it.isFocused }
             .semantics { this.selected = selected }
-            .clickable(enabled, role = Role.Button) { onNavigate(item.route) },
+            .then(
+                if (item.route ==
+                    null
+                ) {
+                    Modifier.semantics { contentDescription = notificationDescription }
+                } else {
+                    Modifier
+                },
+            ).clickable(enabled, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Row(
@@ -537,14 +548,24 @@ private fun MenuDestination(
                 when (item.route) {
                     CompanionRoute.HOME -> 72
                     CompanionRoute.SETTINGS -> 68
+                    null -> 41
                     else -> 65
                 }
             Box(Modifier.size((72 * scale).dp), contentAlignment = Alignment.Center) {
-                Image(
-                    painterResource(item.icon),
-                    null,
-                    Modifier.offset(y = (1.5f * scale).dp).size((iconSize * scale).dp),
-                )
+                if (item.route == null) {
+                    Icon(
+                        painterResource(item.icon),
+                        null,
+                        Modifier.offset(x = if (reference) (-10 * scale).dp else 0.dp).size((iconSize * scale).dp),
+                        tint = Color(0xFFD7EEF5),
+                    )
+                } else {
+                    Image(
+                        painterResource(item.icon),
+                        null,
+                        Modifier.offset(y = (1.5f * scale).dp).size((iconSize * scale).dp),
+                    )
+                }
             }
             Spacer(Modifier.width((20 * scale).dp))
             Text(
@@ -552,6 +573,14 @@ private fun MenuDestination(
                 style = mobiMonReferenceTextStyle(32f, scale, bold = true),
                 color = if (selected) Color(0xFF82D4FF) else Color(0xFFF1F5FC),
                 modifier = if (reference) Modifier.offset(y = (-1 * scale).dp) else Modifier,
+            )
+        }
+        if (item.route == null) {
+            MobiMonNotificationBadge(
+                notificationCount,
+                (48 * scale).dp,
+                (25 * scale).sp,
+                Modifier.align(Alignment.CenterEnd).offset(x = (-42 * scale).dp),
             )
         }
     }
@@ -574,11 +603,11 @@ private fun MenuFooter(
                     ).size((566 * scale).dp, (2 * scale).dp)
                     .background(Color(0x4787A6CB)),
             )
-            MobiMonReferenceText("MobiMon", 62f, 77f, 34f, scale = scale, bold = true, color = Color(0xFF7287A8))
+            MobiMonReferenceText("MobiMon", 62f, 57f, 34f, scale = scale, bold = true, color = Color(0xFF7287A8))
             MobiMonReferenceText(
                 stringResource(R.string.drawer_tagline),
                 62f,
-                113f,
+                93f,
                 20f,
                 scale = scale,
                 color = Color(0xFF607696),
@@ -586,7 +615,7 @@ private fun MenuFooter(
             MobiMonReferenceText(
                 stringResource(R.string.drawer_version, BuildConfig.VERSION_NAME),
                 62f,
-                153f,
+                133f,
                 20f,
                 scale = scale,
                 color = Color(0xFF607696),
@@ -594,7 +623,7 @@ private fun MenuFooter(
             Icon(
                 painterResource(R.drawable.drawer_footer_car),
                 null,
-                Modifier.offset((517 * scale).dp, (54 * scale).dp).size((100 * scale).dp, (75 * scale).dp),
+                Modifier.offset((517 * scale).dp, (39 * scale).dp).size((100 * scale).dp, (75 * scale).dp),
                 tint = Color(0xFF7189AA),
             )
         }

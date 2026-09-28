@@ -168,7 +168,14 @@ class PersistentGitHubAuthentication internal constructor(
             }
         }
 
-    fun conversationProvider(): ConversationProvider = CopilotConversationProvider.create(this, interactionAllowed)
+    fun conversationProvider(
+        context: com.monsters.mobimon.core.domain.ConversationContextSource =
+            com.monsters.mobimon.core.domain
+                .ConversationContextSource {
+                    com.monsters.mobimon.core.domain
+                        .ConversationContext()
+                },
+    ): ConversationProvider = CopilotConversationProvider.create(this, interactionAllowed, context)
 
     internal suspend fun conversationCredential(accountId: Long): ConversationCredential =
         mutex.withLock {

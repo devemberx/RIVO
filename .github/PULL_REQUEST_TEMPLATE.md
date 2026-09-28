@@ -17,7 +17,7 @@
 
 ## Demo
 
-<!-- Steps, setup, and UI screenshot/clip if relevant. Or 'N/A: reason'. -->
+<!-- Steps and setup. Or 'N/A: reason'. -->
 
 ## Shortcuts and Risks
 

@@ -70,6 +70,10 @@ object JourneyTestModule {
     fun conversation(provider: JourneyConversationProvider): ConversationProvider = provider
 
     @Provides
+    fun conversationStore(storage: JourneyStorage): com.monsters.mobimon.core.domain.ConversationStore =
+        storage.conversations
+
+    @Provides
     fun networkStatus(status: JourneyNetworkStatus): ConversationNetworkStatus = status
 
     @Provides
@@ -113,6 +117,8 @@ class JourneyConversationProvider
             private set
         var replies = 0
             private set
+        val requests = mutableListOf<List<ConversationTurn>>()
+        val conversationIds = mutableListOf<String>()
 
         override suspend fun connect(accountId: Long): ConversationResult<String> {
             connections++
@@ -126,6 +132,8 @@ class JourneyConversationProvider
             messages: List<ConversationTurn>,
         ): ConversationResult<String> {
             replies++
+            requests += messages
+            conversationIds += conversationId
             return ConversationResult.Success("이야기를 들려줘서 고마워요.")
         }
     }
@@ -211,6 +219,9 @@ class JourneyStorage
         @ApplicationContext context: Context,
     ) : AutoCloseable {
         private val directory = Files.createTempDirectory(context.cacheDir.toPath(), "journey-").toFile()
+        val conversations =
+            com.monsters.mobimon.core.database
+                .AtomicConversationStore(File(directory, "chat"))
         private val job = SupervisorJob()
         val database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
         val preferences =

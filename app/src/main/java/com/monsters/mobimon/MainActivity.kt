@@ -10,6 +10,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.monsters.mobimon.core.domain.ConversationProvider
+import com.monsters.mobimon.core.domain.ConversationStore
 import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.core.domain.PointEconomy
 import com.monsters.mobimon.core.domain.PointQuestCatalog
@@ -42,6 +43,8 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var conversation: ConversationProvider
 
+    @Inject lateinit var conversationStore: ConversationStore
+
     @Inject lateinit var networkStatus: ConversationNetworkStatus
 
     @Inject lateinit var speechInput: ConversationSpeechInput
@@ -71,6 +74,7 @@ class MainActivity : ComponentActivity() {
                 points,
                 questCatalog,
                 vehicleCards,
+                conversationStore,
             )
         }
     }

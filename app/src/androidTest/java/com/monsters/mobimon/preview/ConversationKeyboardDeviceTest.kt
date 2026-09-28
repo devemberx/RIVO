@@ -5,8 +5,10 @@ import android.graphics.Bitmap
 import android.provider.Settings
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -89,13 +91,21 @@ class ConversationKeyboardDeviceTest {
     @Test
     fun replyNetworkDialogRechecksWithoutRemovingTheFailedTurn() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val intent = Intent(context, ConversationPreviewActivity::class.java).putExtra("state", "network-failed")
-        ActivityScenario.launch<ConversationPreviewActivity>(intent).use {
-            compose.onNodeWithTag("chat-network-dialog").assertIsDisplayed()
-            compose.onNodeWithTag("chat-network-retry").performClick()
-            compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
-            compose.onNodeWithTag("chat-inline-failure").assertIsDisplayed()
-            assertEquals(3, compose.onAllNodesWithTag("chat-user-bubble").fetchSemanticsNodes().size)
+        for (sample in listOf("network-failed", "timeout-failed")) {
+            val intent = Intent(context, ConversationPreviewActivity::class.java).putExtra("state", sample)
+            ActivityScenario.launch<ConversationPreviewActivity>(intent).use {
+                compose.onNodeWithTag("chat-network-dialog").assertIsDisplayed()
+                compose.onNodeWithText("네트워크 연결을 확인해 주세요").assertIsDisplayed()
+                compose.onNodeWithContentDescription("음성으로 입력").assertDoesNotExist()
+                compose.onNodeWithTag("chat-network-retry").performClick()
+                compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+                compose.onNodeWithTag("chat-inline-failure").assertIsDisplayed()
+                assertEquals(3, compose.onAllNodesWithTag("chat-user-bubble").fetchSemanticsNodes().size)
+                compose.onNodeWithText("다시 보내기").assertIsEnabled()
+                compose.onNodeWithText("내용 수정").assertIsEnabled().performClick()
+                compose.onNodeWithTag("chat-inline-failure").assertDoesNotExist()
+                compose.onNodeWithTag("chat-input").assertTextContains("모비는 뭐가 좋아?")
+            }
         }
     }
 

@@ -2,7 +2,7 @@ package com.monsters.mobimon.core.ui
 
 import androidx.annotation.DrawableRes
 
-/** Normalizes a decorative time label or local hour into a background period. */
+/** Normalizes an interpreted VSS time label or hour into a background period. */
 fun companionTimePeriod(timeOfDay: String?): String {
     val value = timeOfDay?.trim()?.lowercase(java.util.Locale.ROOT)
     return when (value) {
