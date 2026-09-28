@@ -6,6 +6,7 @@ import android.view.View
 import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -214,11 +215,59 @@ class PetAvatarTest {
         val context =
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
-        assertEquals(24, LunaAnimationCache.getOrLoadFrames(context, hasHat = true).size)
-        assertEquals(24, LunaRunAnimationCache.getOrLoadFrames(context, hasHat = true).size)
-        assertEquals(24, LunaHungryAnimationCache.getOrLoadFrames(context, hasHat = true).size)
-        assertEquals(24, LunaSickAnimationCache.getOrLoadFrames(context, hasHat = true).size)
+        assertEquals(24, LunaAnimationCache.getOrLoadFrames(context, appearance = LunaAppearance.HAT).size)
+        assertEquals(24, LunaRunAnimationCache.getOrLoadFrames(context, appearance = LunaAppearance.HAT).size)
+        assertEquals(24, LunaHungryAnimationCache.getOrLoadFrames(context, appearance = LunaAppearance.HAT).size)
+        assertEquals(24, LunaSickAnimationCache.getOrLoadFrames(context, appearance = LunaAppearance.HAT).size)
     }
+
+    @Test
+    fun lunaSunglassesFramesReplaceCachedNormalAndHatArtwork() =
+        kotlinx.coroutines.test.runTest {
+            val context =
+                androidx.test.core.app.ApplicationProvider
+                    .getApplicationContext<android.content.Context>()
+            val loaders =
+                listOf(
+                    LunaAnimationCache::getOrLoadFrames,
+                    LunaRunAnimationCache::getOrLoadFrames,
+                    LunaHungryAnimationCache::getOrLoadFrames,
+                    LunaSickAnimationCache::getOrLoadFrames,
+                )
+            val actions = listOf("idle_breath", "run", "hungry", "sick")
+            loaders.forEachIndexed { index, load ->
+                val normal = load(context, LunaAppearance.NORMAL)
+                val hat = load(context, LunaAppearance.HAT)
+                val sunglasses = load(context, LunaAppearance.SUNGLASSES)
+                assertEquals(24, sunglasses.size)
+                val action = actions[index]
+                val prefix = if (action == "run") "run_left" else action
+                val path = "characters/luna/sunglasses/$action/luna_${prefix}_sunglasses_01.png"
+                val expected =
+                    context.assets.open(path).use {
+                        android.graphics.BitmapFactory.decodeStream(
+                            it,
+                            null,
+                            android.graphics.BitmapFactory
+                                .Options()
+                                .apply { inSampleSize = 2 },
+                        )!!
+                    }
+                assertTrue(
+                    "$action uses approved sunglasses artwork",
+                    sunglasses.first().asAndroidBitmap().sameAs(expected),
+                )
+                expected.recycle()
+                assertTrue(sunglasses !== normal && sunglasses !== hat)
+                assertTrue(sunglasses === load(context, LunaAppearance.SUNGLASSES))
+                assertTrue(sunglasses !== load(context, LunaAppearance.NORMAL))
+            }
+            preloadPetRunSprite(context, "friend:luna", "accessory:luna_sunglasses")
+            assertTrue(
+                LunaRunAnimationCache.peek() ===
+                    LunaRunAnimationCache.getOrLoadFrames(context, LunaAppearance.SUNGLASSES),
+            )
+        }
 
     @Test
     fun itemIconsCropBoundsMatchItemSpans() {
