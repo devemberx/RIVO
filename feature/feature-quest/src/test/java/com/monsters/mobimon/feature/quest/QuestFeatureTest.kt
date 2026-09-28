@@ -101,7 +101,7 @@ class QuestFeatureTest {
         show()
         compose.onNodeWithTag("quest-hidden-btn-claim").performClick()
         compose.onNodeWithTag("quest-reward-success-modal").assertIsDisplayed()
-        compose.onNodeWithText("30포인트를 획득했어요!!").assertIsDisplayed()
+        compose.onNodeWithText("30 P를 받았어요!").assertIsDisplayed()
         assertEquals(vehicle.initial, points.submittedEvidence)
         assertEquals(1, points.awards)
     }

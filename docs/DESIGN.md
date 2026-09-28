@@ -115,6 +115,10 @@ assumed daily reset. Show one committed Points balance; unknown is not zero.
 Celebrate only committed amounts, once per claim; later repository data replaces
 confirmations. Show persisted completion dates. Align point headers with parking
 badges; compact Quest may place balance beside its heading.
+Keep the claim button and quest card in place while saving, with progress shown in
+the button. After commit, show one centered reward popup with a short entrance
+motion, a consistently framed happy companion, and amounts labeled P; reduced
+motion displays the popup immediately.
 
 Quest detail slightly widens the companion panel and shifts the friend as the
 selected content enters from the side; Back reverses the motion and restores the
