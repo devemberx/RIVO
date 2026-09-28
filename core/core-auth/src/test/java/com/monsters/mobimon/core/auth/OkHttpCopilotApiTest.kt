@@ -38,6 +38,38 @@ class OkHttpCopilotApiTest {
             tokenizer = "o200k_base",
         )
 
+    @Test fun genericModelFailuresMentioningToolsAreNotProofOfToolIncompatibility() {
+        val error = JSONObject().put("message", "Unsupported model for this request containing tools")
+        assertEquals(CopilotRejection.UNKNOWN, CopilotRejection.from(error))
+        assertEquals(
+            CopilotRejection.TOOLS_UNSUPPORTED,
+            CopilotRejection.from(JSONObject().put("message", "Unknown parameter: 'tool_choice'")),
+        )
+    }
+
+    @Test fun explicitToolRejectionRetainsOnlyItsClassification() =
+        runBlocking {
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(
+                        400,
+                    ).setBody("""{"error":{"message":"tools are not supported secret-provider-detail"}}"""),
+            )
+            try {
+                api.exchange(access, CopilotChatApi.CHAT_COMPLETIONS, JSONObject().put("tools", org.json.JSONArray()))
+                error("Expected rejection")
+            } catch (error: ConversationException) {
+                assertEquals(ConversationProblem.PROVIDER, error.problem)
+                assertEquals(CopilotRejection.TOOLS_UNSUPPORTED, error.rejection)
+                assertFalse(error.toString().contains("secret-provider-detail"))
+            }
+            assertEquals(1, server.requestCount)
+            val request = server.takeRequest()
+            assertEquals("mobimon", request.getHeader("Copilot-Integration-Id"))
+            assertEquals("MobiMon/0.1", request.getHeader("Editor-Version"))
+            assertEquals("user", request.getHeader("X-Initiator"))
+        }
+
     @Test fun personasGiveEachPetIdentityWithoutHabitualAnimalSuffixes() {
         val mobi =
             CopilotMessageCodec

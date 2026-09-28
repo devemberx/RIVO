@@ -241,7 +241,7 @@ class PersistentGitHubAuthentication internal constructor(
         return replacement
     }
 
-    private fun requireInteraction() {
+    internal fun requireInteraction() {
         if (!interactionAllowed()) throw AuthenticationException(AuthenticationProblem.RESTRICTED)
     }
 
