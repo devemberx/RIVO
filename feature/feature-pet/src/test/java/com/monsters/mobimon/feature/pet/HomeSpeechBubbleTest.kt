@@ -100,7 +100,7 @@ class HomeSpeechBubbleTest {
         show(fontScale = 1.5f)
         val bounds = compose.onNodeWithTag("home-companion-message").fetchSemanticsNode().boundsInRoot
         assertTrue(bounds.width in 390f..800f)
-        assertTrue(bounds.height >= 210f)
+        assertTrue(bounds.height >= 195f)
     }
 
     @Test
@@ -147,7 +147,7 @@ class HomeSpeechBubbleTest {
     @Test
     @Config(qualifiers = "ko-rKR-w800dp-h600dp-mdpi")
     fun wrappedDialogueKeepsTailInPlaceAndCentersBothLines() {
-        val message = mutableStateOf("앗, 나 불렀어? 왜 부른 거야?")
+        val message = mutableStateOf("짠! 모비 준비 완료! 뭐 할까?")
         compose.setContent {
             val current = LocalView.current
             SideEffect { view = current }
@@ -183,6 +183,8 @@ class HomeSpeechBubbleTest {
 
         assertEquals(short.left, wrapped.left, 1f)
         assertEquals(short.top, wrapped.top, 1f)
+        assertEquals(130f, short.height, 2f)
+        assertEquals(173.2f, wrapped.height, 2f)
         assertEquals(43.2f, wrapped.height - short.height, 2f)
         assertEquals(originalTailStart, tailStart())
         compose

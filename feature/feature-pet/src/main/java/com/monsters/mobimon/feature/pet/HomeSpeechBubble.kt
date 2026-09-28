@@ -155,7 +155,7 @@ internal fun HomeSpeechBubbleContent(
     BoxWithConstraints(
         modifier
             .widthIn(min = (260 * bubbleScale).dp, max = (560 * bubbleScale).dp)
-            .heightIn(min = (174.6f * bubbleScale).dp)
+            .heightIn(min = (130f * bubbleScale).dp)
             .testTag("home-companion-message")
             .graphicsLayer {
                 val fraction = if (motionEnabled) progress else 1f
@@ -208,7 +208,7 @@ internal fun HomeSpeechBubbleContent(
             modifier =
                 Modifier
                     .widthIn(min = (260 * bubbleScale).dp)
-                    .heightIn(min = ((174.6f + 43.2f * (lineCount - 1)) * bubbleScale).dp),
+                    .heightIn(min = ((130f + 43.2f * (lineCount - 1)) * bubbleScale).dp),
             contentAlignment = Alignment.Center,
         ) {
             Text(
@@ -230,7 +230,7 @@ internal fun HomeSpeechBubbleContent(
     }
 }
 
-/** The original vector outline, with only its straight body segments extended. */
+/** The original vector outline, with its body corners scaled to the content height. */
 private class HomeSpeechBubbleShape(
     private val scale: Float,
 ) : Shape {
@@ -242,13 +242,28 @@ private class HomeSpeechBubbleShape(
         val unit = with(density) { scale.dp.toPx() }
         val bottom = size.height - 19.8f * unit
         val right = size.width
+        val cornerHeightScale = (bottom / (154.8f * unit)).coerceAtMost(1f)
         val path =
             Path().apply {
                 moveTo(73.8f * unit, 0f)
                 lineTo(right - 73.8f * unit, 0f)
-                cubicTo(right - 31.5f * unit, 0f, right, 31.5f * unit, right, 73.8f * unit)
-                lineTo(right, bottom - 81f * unit)
-                cubicTo(right, bottom - 37.8f * unit, right - 27.9f * unit, bottom, right - 73.8f * unit, bottom)
+                cubicTo(
+                    right - 31.5f * unit,
+                    0f,
+                    right,
+                    31.5f * unit * cornerHeightScale,
+                    right,
+                    73.8f * unit * cornerHeightScale,
+                )
+                lineTo(right, bottom - 81f * unit * cornerHeightScale)
+                cubicTo(
+                    right,
+                    bottom - 37.8f * unit * cornerHeightScale,
+                    right - 27.9f * unit,
+                    bottom,
+                    right - 73.8f * unit,
+                    bottom,
+                )
                 lineTo(79.2f * unit, bottom)
                 cubicTo(
                     61.2f * unit,
@@ -266,9 +281,16 @@ private class HomeSpeechBubbleShape(
                     36.9f * unit,
                     bottom - 15.3f * unit,
                 )
-                cubicTo(13.5f * unit, bottom - 27.9f * unit, 0f, bottom - 52.2f * unit, 0f, bottom - 81f * unit)
-                lineTo(0f, 73.8f * unit)
-                cubicTo(0f, 32.4f * unit, 31.5f * unit, 0f, 73.8f * unit, 0f)
+                cubicTo(
+                    13.5f * unit,
+                    bottom - 27.9f * unit * cornerHeightScale,
+                    0f,
+                    bottom - 52.2f * unit * cornerHeightScale,
+                    0f,
+                    bottom - 81f * unit * cornerHeightScale,
+                )
+                lineTo(0f, 73.8f * unit * cornerHeightScale)
+                cubicTo(0f, 32.4f * unit * cornerHeightScale, 31.5f * unit, 0f, 73.8f * unit, 0f)
                 close()
             }
         return Outline.Generic(path)

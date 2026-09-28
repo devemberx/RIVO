@@ -87,7 +87,7 @@ class CompanionReviewTest {
         assertEquals(1576f, bubble.left, 1f)
         assertEquals(500f, bubble.top, 1f)
         assertTrue("Bubble width adapts to its message", bubble.width in 260f..560f)
-        assertTrue("Bubble keeps its minimum height", bubble.height >= 140f)
+        assertTrue("Bubble keeps its minimum height", bubble.height >= 130f)
         assertSpeechBubbleTextAndProportions()
         val action = compose.onNodeWithTag("home-conversation-action").fetchSemanticsNode().boundsInRoot
         assertEquals(1013.6f, action.left, 1f)
