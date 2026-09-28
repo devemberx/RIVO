@@ -29,8 +29,8 @@ vehicles or replace warnings.
 - On an active Vehicle, Store, or Quest route, losing verified Park shows a
   blocking, route-specific parking interruption dialog over the current screen.
   The restricted badge, pause icon, explanation, preserved-progress note and
-  Home action follow the `수정본_v5` Figma frames (Vehicle `770:2`, Store
-  `770:155`, Quest `770:282`). Hide any underlying selector or reward dialog;
+  Home action follow the [vehicle v6 export](ui/vehicle/parking-required.svg)
+  and `수정본_v5` Figma frames (Store `770:155`, Quest `770:282`). Hide any underlying selector or reward dialog;
   restore the route when verified Park returns if the user has not gone Home.
   Initial unavailable vehicle data stays in each route's ordinary unavailable
   state. Pending writes receive no success presentation after interruption;
@@ -189,9 +189,16 @@ provider deletion. Spoken replies remain planned and must yield to calls/navigat
 
 ## Vehicle information
 
-Six default cards use a gallery that excludes assigned cards; Confirm saves a selected
-alternative locally. Keep card sizes stable and scroll additional choices. Debug values
-are simulations, not vehicle verification.
+The [vehicle v6 exports](ui/README.md#vehicle) define the header edit action, summary,
+cards and selector layout. The companion uses shared `PetAvatar` artwork and motion,
+including equipped accessories and Hungry/Sick condition variants.
+
+Six default cards show condition through icon and text color with accessible status
+labels; the selector excludes assigned cards and saves the selected alternative locally
+after confirmation. Selector tabs use 64 px full pill shapes and centered bold labels.
+Match the visible gaps above and below the tabs to the list-to-footer gap (about 31 px);
+the apply button is 352 px wide. Keep card sizes stable, scroll additional choices, and
+label Debug values as simulations rather than vehicle verification.
 
 Distinguish Info, Normal, Caution and Unavailable. Missing/stale/invalid is never Normal;
 four-wheel Normal requires all readings, while one confirmed warning permits Caution.
