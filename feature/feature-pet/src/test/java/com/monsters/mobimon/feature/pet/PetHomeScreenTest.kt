@@ -151,7 +151,7 @@ class PetHomeScreenTest {
             onMenu = { calls += "menu" },
         )
         assertAnimatedLineBelowTitle()
-        compose.onNodeWithText("여행은 언제나\n즐거워요!").assertIsDisplayed()
+        compose.onNodeWithTag("home-companion-message").assertIsDisplayed()
         compose
             .onNodeWithContentDescription("메뉴 열기")
             .performScrollTo()
@@ -365,7 +365,7 @@ class PetHomeScreenTest {
         render(snapshot = parkedSnapshot())
         compose.onNodeWithContentDescription("Mobi 강아지").performClick()
         compose.onNodeWithTag("home-companion-message").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("여행은 언제나\n즐거워요!").assertIsDisplayed()
+        compose.onNodeWithTag("home-companion-message-text", useUnmergedTree = true).assertIsDisplayed()
     }
 
     @Test

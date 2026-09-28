@@ -259,7 +259,7 @@ fun MobiMonSpeechBubble(
                 style =
                     MaterialTheme.typography.titleMedium.copy(
                         fontFamily = MobiMonFontFamily,
-                        fontWeight = FontWeight.Normal,
+                        fontWeight = FontWeight.Bold,
                         fontSize = 24.sp,
                         lineHeight = 34.sp,
                     ),
