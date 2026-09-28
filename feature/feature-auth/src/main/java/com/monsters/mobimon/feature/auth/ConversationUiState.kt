@@ -14,6 +14,7 @@ data class ConversationMessage(
 data class ConversationUiState(
     val connection: ConversationConnection = ConversationConnection.UNAVAILABLE,
     val messages: List<ConversationMessage> = emptyList(),
+    val storageBusy: Boolean = false,
     val replyPending: Boolean = false,
     val failed: Boolean = false,
     val problem: ConversationProblem? = null,

@@ -90,11 +90,18 @@ subscription or rewards.
 
 ### Keyboard conversation UI
 
-`feature-auth` keeps draft, conversation identity and full provider context in Activity
-memory. Home navigation and recording startup preserve visible messages and provider
-context, while clearing the composer draft. New chat clears all conversation state. Account/profile
-change, disconnect or process restart clears private data; initial account validation
-retains an unsent draft. Failed sends keep the attempted turn for Edit/Retry while clearing the composer.
+`feature-auth` keeps drafts and voice in Activity memory. The app injects a singleton
+`ConversationStore` backed by atomic files in the Android user's no-backup app storage.
+Each profile/companion has one current thread, restored after restart or companion
+switch. Display names never identify owners. Loading under a different GitHub account
+replaces that companion's thread before sending; sign-out hides it. New conversation
+atomically replaces the active thread with an empty one, with no archive. Successful
+user/reply pairs commit together using thread ID and revision checks. Read/write
+failures preserve committed bytes and block sending until explicit recovery/reset.
+Home navigation and recording startup preserve the current thread while clearing the
+composer. Account/profile/companion changes clear transient private state; initial
+account validation retains an unsent draft. Failed sends keep the attempted turn for
+Edit/Retry while clearing the composer.
 Sending clears the composer while the turn awaits a reply; canceling that wait restores
 the text for editing. Home clears it even when a reply is pending.
 Departure, backgrounding, parking loss or companion changes cancel work; reject late replies.
@@ -113,11 +120,30 @@ allowlisted HTTPS hosts. No redirects, fallback, session-token exchange or autom
 completion replay. A 401 invalidates only its credential revision. Logs/errors must
 not expose provider bodies, dialogue or tokens; Release logging is off.
 
-Send only companion name, fixed instruction and dialogue; no tools, vehicle data or
-reward commands. Enforce [ConversationLimits](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/ConversationProvider.kt)
-without silently dropping context. Dialogue is not stored durably; provider retention
-still applies. The integration has no stable service contract; fixtures do not prove
-live access. Never impersonate another OAuth client/editor.
+The system instruction gives Mobi a curious rabbit persona and Luna a quietly caring
+cat persona, using short natural Korean banmal without habitual animal suffixes,
+emojis or stage directions. Each send adds optional bounded AAOS context-user name
+(`QUERY_USERS`, absent without permission) and independently fresh VSS timestamp/period.
+These values are untrusted data, never instructions or ownership identifiers. No other
+vehicle readings, tools or reward commands are sent. Missing context is omitted.
+
+VSS time retains its offset and the scene mapper's period; it is not converted to
+system wall-clock time. A timestamp must have its own monotonic observation within
+60 seconds. Ticker publications never refresh it. Verified real adapters must supply
+that provenance; Debug observations are marked simulated. This is an observation
+freshness policy, not proof that GNSS provides a continuously advancing clock.
+
+Copilot catalog metadata supplies `max_prompt_tokens`, optional combined
+`max_context_window_tokens`, `max_output_tokens` and supported tokenizer. Missing or
+unsupported required metadata fails closed. JTokkit counts all prompt text, persona,
+context and chat framing; reserve the requested reply budget (up to 2,048 tokens,
+bounded by the advertised output maximum). The server remains authoritative: explicit
+context overflow maps to LIMIT with no replay or truncation. The former 16-exchange
+and 48,000-character cumulative caps are removed; 4,000 input and 12,000 reply character
+bounds remain per-message UI/transport limits. Model limits bound current-thread
+growth; New conversation removes its old content locally. Provider retention still
+applies. The experimental transport has no stable service contract; fixtures do not
+prove live access. Never impersonate another OAuth client/editor.
 
 #### Voice input
 

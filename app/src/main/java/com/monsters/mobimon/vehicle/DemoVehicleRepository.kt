@@ -41,6 +41,8 @@ class DemoVehicleRepository(
     private val vssRawSource: VssRawVehicleSource,
     private val scope: CoroutineScope,
 ) : VehicleRepository {
+    private var lastSimulatedTimestamp: String? = null
+    private var simulatedTimeObservedAt: Long? = null
     private val mutableSnapshots =
         MutableStateFlow(
             initialSnapshot(),
@@ -74,6 +76,10 @@ class DemoVehicleRepository(
                                     sequence = nextSequence,
                                     observedAtMillis = observedAt,
                                     source = SignalSource.SIMULATED,
+                                    timeObservedAtMillis =
+                                        simulatedTimeObservation(
+                                            debugState.raw.toVssRawVehicleState(),
+                                        ),
                                     overrides = debugState.overrides.toVssInterpretationOverrides(),
                                 )
                             interpreted.copy(
@@ -93,6 +99,7 @@ class DemoVehicleRepository(
                                     sequence = nextSequence,
                                     observedAtMillis = observedAt,
                                     source = rawSourceSignalSource(),
+                                    timeObservedAtMillis = sourceTimeObservation(),
                                 )
                             interpreted.copy(vssCardSignals = fallbackCardSignals())
                         }
@@ -140,6 +147,7 @@ class DemoVehicleRepository(
                     sequence = current.sequence,
                     observedAtMillis = clock.nowMillis(),
                     source = rawSourceSignalSource(),
+                    timeObservedAtMillis = sourceTimeObservation(),
                 )
             mutableSnapshots.value = interpreted.copy(vssCardSignals = fallbackCardSignals())
             return
@@ -151,6 +159,23 @@ class DemoVehicleRepository(
                 batteryQuality = SignalQuality.UNAVAILABLE,
             )
     }
+
+    @Synchronized
+    private fun simulatedTimeObservation(raw: VssRawVehicleState?): Long? {
+        val timestamp = raw?.currentLocation?.timestamp
+        if (timestamp != lastSimulatedTimestamp) {
+            lastSimulatedTimestamp = timestamp
+            simulatedTimeObservedAt = timestamp?.let { clock.nowMillis() }
+        }
+        return simulatedTimeObservedAt
+    }
+
+    private fun sourceTimeObservation(): Long? =
+        if (vssRawSource is DefaultParkedVssRawVehicleSource) {
+            simulatedTimeObservation(vssRawSource.state.value)
+        } else {
+            vssRawSource.timeObservedAtMillis
+        }
 
     private fun rawSourceSignalSource(): SignalSource =
         if (vssRawSource is DefaultParkedVssRawVehicleSource) {
@@ -168,6 +193,7 @@ class DemoVehicleRepository(
                 sequence = 0,
                 observedAtMillis = clock.nowMillis(),
                 source = rawSourceSignalSource(),
+                timeObservedAtMillis = sourceTimeObservation(),
             )
         return interpreted.copy(vssCardSignals = fallbackCardSignals())
     }

@@ -1,8 +1,12 @@
 package com.monsters.mobimon.core.auth
 
+import com.monsters.mobimon.core.domain.ConversationContext
+import com.monsters.mobimon.core.domain.ConversationContextSource
 import com.monsters.mobimon.core.domain.ConversationProblem
 import com.monsters.mobimon.core.domain.ConversationTurn
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.HttpUrl
@@ -26,6 +30,7 @@ internal class OkHttpCopilotApi(
     client: OkHttpClient,
     private val nowMillis: () -> Long,
     private val userUrl: HttpUrl = "https://api.github.com/copilot_internal/user".toHttpUrl(),
+    private val context: ConversationContextSource = ConversationContextSource { ConversationContext() },
 ) : CopilotApi {
     // Never follow a provider redirect with a credential or automatically replay a paid request.
     private val client =
@@ -90,7 +95,15 @@ internal class OkHttpCopilotApi(
         messages: List<ConversationTurn>,
     ): String {
         val endpoint = model.api ?: fail(ConversationProblem.PROVIDER)
-        val body = CopilotMessageCodec.request(model, friendId, messages).toString().toRequestBody(JSON_MEDIA_TYPE)
+        val body =
+            withContext(Dispatchers.Default) {
+                CopilotMessageCodec
+                    .request(model, friendId, messages, context.current())
+                    .also {
+                        CopilotTokenBudget.requireFits(model, it)
+                    }.toString()
+                    .toRequestBody(JSON_MEDIA_TYPE)
+            }
         // OkHttp can follow a 503 Retry-After: 0 even with connection retries disabled.
         val singleUseBody =
             object : RequestBody() {
@@ -127,12 +140,28 @@ internal class OkHttpCopilotApi(
                 "/responses" in paths -> CopilotChatApi.RESPONSES
                 else -> null
             }
-        val limit = capabilities.optJSONObject("limits")?.optInt("max_output_tokens", 2048) ?: 2048
+        val limits = capabilities.optJSONObject("limits")
+
+        fun positive(key: String): Int? =
+            (limits?.opt(key) as? Number)
+                ?.toDouble()
+                ?.takeIf { it.isFinite() && it >= 1 && it <= Int.MAX_VALUE && it % 1.0 == 0.0 }
+                ?.toInt()
+        val output = positive("max_output_tokens") ?: return null
+        val prompt = positive("max_prompt_tokens") ?: return null
+        val window = positive("max_context_window_tokens")
+        if (limits?.has("max_context_window_tokens") == true && window == null) return null
+        val tokenizer =
+            capabilities.optString("tokenizer").takeIf { it in setOf("o200k_base", "cl100k_base") }
+                ?: return null
         return CopilotModel(
             id,
             endpoint,
             (item.optJSONObject("policy")?.optString("state") ?: "enabled") == "enabled",
-            limit.coerceIn(1, 2048),
+            minOf(output, 2048),
+            prompt,
+            window,
+            tokenizer,
         )
     }
 
@@ -204,6 +233,9 @@ internal class OkHttpCopilotApi(
                                         } else {
                                             CopilotRejection.UNKNOWN
                                         }
+                                    if (!it.isSuccessful && rejection == CopilotRejection.CONTEXT_LIMIT) {
+                                        fail(ConversationProblem.LIMIT)
+                                    }
                                     when (it.code) {
                                         401 -> fail(ConversationProblem.ACCOUNT)
                                         403 -> {

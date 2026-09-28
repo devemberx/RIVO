@@ -12,6 +12,7 @@ internal enum class CopilotRejection {
     NO_ELIGIBLE_MODELS,
     UNSUPPORTED_INTEGRATION,
     NO_HEALTHY_UPSTREAM,
+    CONTEXT_LIMIT,
     UNKNOWN,
     ;
 
@@ -28,6 +29,12 @@ internal enum class CopilotRejection {
                     detail?.optString("code"),
                 ).filterNotNull().joinToString(" ").lowercase().replace('_', ' ')
             return when {
+                listOf(
+                    "context length exceeded",
+                    "context window exceeded",
+                    "maximum context length",
+                    "prompt too long",
+                ).any { it in message } -> CONTEXT_LIMIT
                 "no healthy upstream" in message -> NO_HEALTHY_UPSTREAM
                 listOf("no eligible model", "no available model", "no models available", "no model available")
                     .any { it in message } -> NO_ELIGIBLE_MODELS

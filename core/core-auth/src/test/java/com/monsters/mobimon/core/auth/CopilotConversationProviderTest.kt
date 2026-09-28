@@ -153,6 +153,12 @@ class CopilotConversationProviderTest {
             assertEquals(0, api.completions)
         }
 
+    @Test fun moreThanSixteenExchangesAreAllowedWhenProviderBudgetFits() =
+        runTest {
+            val turns = (0..40).map { ConversationTurn("hello", it % 2 == 0) }
+            assertEquals(ConversationResult.Success("answer"), provider.reply(1, "current", "friend:mobi", turns))
+        }
+
     private inner class FakeApi : CopilotApi {
         var exchanges = 0
         var models = 0

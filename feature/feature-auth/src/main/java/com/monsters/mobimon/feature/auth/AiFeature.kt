@@ -35,6 +35,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.monsters.mobimon.core.domain.AuthenticationProblem
 import com.monsters.mobimon.core.domain.ConversationProblem
 import com.monsters.mobimon.core.domain.ConversationProvider
+import com.monsters.mobimon.core.domain.ConversationStore
 import com.monsters.mobimon.core.domain.CosmeticSlot
 import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.core.domain.GitHubSession
@@ -63,6 +64,7 @@ class AiFeature(
     private val conversation: ConversationProvider,
     private val networkStatus: ConversationNetworkStatus = AssumedOnlineConversationNetworkStatus,
     private val speechInput: ConversationSpeechInput = UnavailableConversationSpeechInput,
+    private val conversationStore: ConversationStore? = null,
 ) : FeatureEntry {
     override val routes = setOf(AiRoute.COPILOT, AiRoute.CONVERSATION)
 
@@ -108,6 +110,7 @@ class AiFeature(
                             conversation,
                             networkStatus,
                             speechInput,
+                            conversationStore,
                         )
                     }
                 }

@@ -76,6 +76,28 @@ class FakeVssRawSource : VssRawVehicleSource {
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DemoVehicleRepositoryTest {
+    @Test fun tickerDoesNotRenewTheVssTimestampObservation() =
+        runTest {
+            val repository =
+                DemoVehicleRepository(
+                    Clock { testScheduler.currentTime },
+                    IdGenerator { "epoch" },
+                    FakeSettingsRepository(),
+                    FakeDebugStore(),
+                    DefaultParkedVssRawVehicleSource(),
+                    backgroundScope,
+                )
+            repository.start()
+            runCurrent()
+            val initial = repository.snapshots.value
+            advanceTimeBy(62_000)
+            runCurrent()
+            assertEquals(initial.vssTimestamp, repository.snapshots.value.vssTimestamp)
+            assertEquals(initial.timeObservedAtMillis, repository.snapshots.value.timeObservedAtMillis)
+            assertTrue(repository.snapshots.value.receivedAtMillis > initial.receivedAtMillis)
+            repository.stop()
+        }
+
     @Test
     fun fallbackAndDebugExposeCardSignalsButRealAdapterDoesNotInventThem() =
         runTest {

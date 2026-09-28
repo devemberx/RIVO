@@ -1,6 +1,7 @@
 package com.monsters.mobimon.core.auth
 
 import com.monsters.mobimon.core.domain.AuthenticationProblem
+import com.monsters.mobimon.core.domain.ConversationContextSource
 import com.monsters.mobimon.core.domain.ConversationLimits
 import com.monsters.mobimon.core.domain.ConversationProblem
 import com.monsters.mobimon.core.domain.ConversationProvider
@@ -47,6 +48,9 @@ internal data class CopilotModel(
     val api: CopilotChatApi?,
     val enabled: Boolean = true,
     val maxOutputTokens: Int = 2048,
+    val maxPromptTokens: Int? = null,
+    val maxContextWindowTokens: Int? = null,
+    val tokenizer: String? = null,
 )
 
 internal interface CopilotApi {
@@ -92,7 +96,6 @@ internal class CopilotConversationProvider(
             if (conversationId.isBlank() ||
                 conversationId.length > 128 ||
                 messages.isEmpty() ||
-                messages.size > ConversationLimits.EXCHANGES * 2 - 1 ||
                 messages.size % 2 != 1 ||
                 messages.withIndex().any { (index, message) ->
                     message.fromUser != (index % 2 == 0) ||
@@ -103,9 +106,7 @@ internal class CopilotConversationProvider(
                         } else {
                             ConversationLimits.REPLY_CHARACTERS
                         }
-                } ||
-                messages.sumOf { it.text.length } + ConversationLimits.REPLY_CHARACTERS >
-                ConversationLimits.HISTORY_CHARACTERS
+                }
             ) {
                 throw ConversationException(ConversationProblem.LIMIT)
             }
@@ -197,6 +198,7 @@ internal class CopilotConversationProvider(
         fun create(
             authentication: PersistentGitHubAuthentication,
             interactionAllowed: () -> Boolean,
+            context: ConversationContextSource,
         ): ConversationProvider {
             val client =
                 OkHttpClient
@@ -212,7 +214,7 @@ internal class CopilotConversationProvider(
                 authentication::conversationCredential,
                 authentication::isCurrent,
                 interactionAllowed,
-                OkHttpCopilotApi(client, System::currentTimeMillis),
+                OkHttpCopilotApi(client, System::currentTimeMillis, context = context),
                 System::currentTimeMillis,
                 authentication::rejectConversationCredential,
             )

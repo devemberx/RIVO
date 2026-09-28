@@ -47,6 +47,9 @@ Keep one row per critical contract group; test sources own detailed cases.
 | Contract | Coverage |
 | --- | --- |
 | Identity/credential lifecycle and bounded, fresh, no-replay transport | [Auth suites](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth); fakes/MockWebServer |
+| Pet persona, catalog/token budget and server context overflow | Auth Copilot suites; Korean/context/output boundaries and no replay |
+| Current-thread reopening, companion/account isolation, reset and stale save rejection | `ConversationStoreTest`, `ConversationViewModelTest`; atomic files and lifecycle fakes |
+| Optional AAOS name and independently fresh VSS time | `VehicleConversationContextTest`, `AndroidUserNameDeviceTest`; shell-adopted QUERY_USERS does not prove OEM signing/provisioning |
 | Keystore encryption, tampering and persistence | [EncryptedCredentialStoreTest](../core/core-auth/src/androidTest/java/com/monsters/mobimon/core/auth/EncryptedCredentialStoreTest.kt); device |
 | Approval guards, recovery and separate Copilot readiness | [Auth feature](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth), [connection journey](../app/src/journeyTest/java/com/monsters/mobimon/CopilotConnectionJourneyTest.kt) |
 

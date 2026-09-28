@@ -57,6 +57,7 @@ import com.monsters.mobimon.R
 import com.monsters.mobimon.core.domain.AppUseState
 import com.monsters.mobimon.core.domain.AuthenticationProblem
 import com.monsters.mobimon.core.domain.ConversationProvider
+import com.monsters.mobimon.core.domain.ConversationStore
 import com.monsters.mobimon.core.domain.CosmeticSlot
 import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.core.domain.GitHubSession
@@ -116,11 +117,12 @@ fun MobiMonApp(
     points: PointEconomy? = null,
     questCatalog: PointQuestCatalog? = null,
     vehicleCards: VehicleCardSelectionStore? = null,
+    conversationStore: ConversationStore? = null,
 ) {
     val state by appUse.states.collectAsStateWithLifecycle()
     val session by authentication.session.collectAsStateWithLifecycle()
     val conversationFactory =
-        remember(authentication, conversation, networkStatus, speechInput) {
+        remember(authentication, conversation, networkStatus, speechInput, conversationStore) {
             viewModelFactory {
                 initializer {
                     ConversationViewModel(
@@ -128,6 +130,7 @@ fun MobiMonApp(
                         conversation,
                         networkStatus,
                         speechInput,
+                        conversationStore,
                     )
                 }
             }

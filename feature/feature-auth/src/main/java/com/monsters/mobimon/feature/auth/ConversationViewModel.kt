@@ -8,13 +8,16 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.monsters.mobimon.core.domain.AuthenticationProblem
+import com.monsters.mobimon.core.domain.ConversationKey
 import com.monsters.mobimon.core.domain.ConversationLimits
 import com.monsters.mobimon.core.domain.ConversationProblem
 import com.monsters.mobimon.core.domain.ConversationProvider
 import com.monsters.mobimon.core.domain.ConversationResult
+import com.monsters.mobimon.core.domain.ConversationStore
 import com.monsters.mobimon.core.domain.ConversationTurn
 import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.core.domain.GitHubSession
+import com.monsters.mobimon.core.domain.StoredConversation
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
@@ -25,12 +28,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import java.util.UUID
 
-/** Activity memory only. Request generations also reject providers that return after cancellation. */
+/** Current thread is durable when a store is supplied; draft and voice remain in Activity memory. */
 class ConversationViewModel(
     private val authentication: GitHubAuthentication,
     private val provider: ConversationProvider,
     private val networkStatus: ConversationNetworkStatus = AssumedOnlineConversationNetworkStatus,
     private val speechInput: ConversationSpeechInput = UnavailableConversationSpeechInput,
+    private val conversationStore: ConversationStore? = null,
 ) : ViewModel() {
     private val mutableState =
         MutableStateFlow(ConversationUiState(voice = VoiceInputState(available = voiceAvailable())))
@@ -52,6 +56,13 @@ class ConversationViewModel(
     private var checkWork: Job? = null
     private var authenticationRetry: Job? = null
     private var history = emptyList<ConversationMessage>()
+    private var stored: StoredConversation? = null
+    private var savingRequest: Long? = null
+    private var storageWork: Job? = null
+    private var storageGeneration = 0L
+
+    private fun storageKey() = profileId?.let { ConversationKey(it, friendId) }
+
     private var confirmedVoiceText = ""
     private var voiceGeneration = 0L
     private var voiceTimeout: Job? = null
@@ -66,6 +77,7 @@ class ConversationViewModel(
             networkStatus.online.collect { online ->
                 if (online) return@collect
                 if (work?.isActive == true) {
+                    if (savingRequest != null) mutableState.value = state.value.copy(storageBusy = true)
                     generation++
                     work?.cancel()
                     work = null
@@ -181,15 +193,11 @@ class ConversationViewModel(
         profile: String,
         friend: String,
     ) {
-        if (profileId != profile) {
+        if (profileId != profile || friendId != friend) {
             clear()
             profileId = profile
-        }
-        if (friendId != friend) {
-            cancelVoice()
-            cancel()
-            conversationId = UUID.randomUUID().toString()
             friendId = friend
+            restoreConversation()
         }
         if (checkAllowed() &&
             state.value.connection == ConversationConnection.UNAVAILABLE &&
@@ -249,6 +257,7 @@ class ConversationViewModel(
     fun edit(value: TextFieldValue) {
         if (!active ||
             !allowed ||
+            state.value.storageBusy ||
             state.value.replyPending ||
             state.value.failed ||
             state.value.voice.capturing ||
@@ -474,6 +483,7 @@ class ConversationViewModel(
             accountId != null &&
             (authentication.session.value as? GitHubSession.Authenticated)?.account?.id == accountId &&
             state.value.connectionProblem in setOf(null, ConversationProblem.NETWORK, ConversationProblem.TIMEOUT) &&
+            !state.value.storageBusy &&
             !state.value.replyPending
 
     fun send(text: String = draft.text) = sendInternal(text, retry = false)
@@ -492,15 +502,13 @@ class ConversationViewModel(
         ) {
             return
         }
-        if (text.length > ConversationLimits.INPUT_CHARACTERS ||
-            history.size >= ConversationLimits.EXCHANGES * 2 ||
-            history.sumOf { it.text.length } + text.length + ConversationLimits.REPLY_CHARACTERS >
-            ConversationLimits.HISTORY_CHARACTERS
-        ) {
+        if (text.length > ConversationLimits.INPUT_CHARACTERS) {
             fail(ConversationProblem.LIMIT)
             return
         }
         val account = accountId ?: return
+        val key = storageKey() ?: return
+        val lease = stored
         cancelVoice()
         returnToVoiceReview = false
         updateVoice(state.value.voice.copy(phase = VoiceInputPhase.IDLE))
@@ -530,6 +538,49 @@ class ConversationViewModel(
                         if (result.value.isBlank() || result.value.length > ConversationLimits.REPLY_CHARACTERS) {
                             fail(ConversationProblem.PROVIDER)
                         } else {
+                            if (conversationStore != null) {
+                                savingRequest = request
+                                val saved =
+                                    try {
+                                        conversationStore.append(key, lease ?: return@launch, text, result.value)
+                                    } catch (cancelled: CancellationException) {
+                                        // A disk commit may have completed before cancellation discarded its result.
+                                        if (key == storageKey() &&
+                                            account == accountId &&
+                                            storageWork?.isActive != true
+                                        ) {
+                                            restoreConversation()
+                                        }
+                                        throw cancelled
+                                    } catch (_: Exception) {
+                                        if (request == generation) {
+                                            storageFailure()
+                                        } else if (key == storageKey() &&
+                                            account == accountId &&
+                                            storageWork?.isActive != true
+                                        ) {
+                                            restoreConversation()
+                                        }
+                                        return@launch
+                                    } finally {
+                                        if (savingRequest == request) savingRequest = null
+                                    }
+                                if (request != generation) {
+                                    if (key == storageKey() &&
+                                        account == accountId &&
+                                        storageWork?.isActive != true
+                                    ) {
+                                        restoreConversation()
+                                    }
+                                    return@launch
+                                }
+                                if (!canInteract() || account != accountId) return@launch
+                                if (saved == null) {
+                                    restoreConversation()
+                                    return@launch
+                                }
+                                stored = saved
+                            }
                             history =
                                 history + user + ConversationMessage((++messageId).toString(), result.value, false)
                             draft = TextFieldValue()
@@ -547,6 +598,10 @@ class ConversationViewModel(
     }
 
     fun retry() {
+        if (state.value.problem == ConversationProblem.STORAGE) {
+            restoreConversation()
+            return
+        }
         if (!canInteract() || work?.isActive == true) return
         failedTurnText()?.let { sendInternal(it, retry = true) }
     }
@@ -638,11 +693,16 @@ class ConversationViewModel(
     }
 
     fun dismissFailure() {
+        if (state.value.problem == ConversationProblem.STORAGE) {
+            newConversation()
+            return
+        }
         if (state.value.failed) resumeEditing()
     }
 
     fun cancel() {
         val pendingTurn = if (state.value.replyPending) unansweredTurnText() else null
+        if (savingRequest != null) mutableState.value = state.value.copy(storageBusy = true)
         generation++
         work?.cancel()
         work = null
@@ -662,7 +722,11 @@ class ConversationViewModel(
     }
 
     fun newConversation() {
-        if (!active || !allowed) return
+        if (!active || !allowed || !interactionAvailable() || state.value.storageBusy) return
+        if (conversationStore != null) {
+            restoreConversation(reset = true)
+            return
+        }
         cancelVoice()
         returnToVoiceReview = false
         updateVoice(state.value.voice.copy(phase = VoiceInputPhase.IDLE))
@@ -678,7 +742,70 @@ class ConversationViewModel(
             )
     }
 
+    private fun restoreConversation(reset: Boolean = false) {
+        val repository = conversationStore ?: return
+        val key = storageKey() ?: return
+        val account = accountId ?: return
+        val previous = stored
+        val unsavedText =
+            if (!reset && state.value.failed) {
+                unansweredTurnText()
+            } else {
+                null
+            }
+        val request = ++storageGeneration
+        storageWork?.cancel()
+        cancelVoice()
+        cancel()
+        mutableState.value = state.value.copy(storageBusy = true)
+        storageWork =
+            viewModelScope.launch {
+                try {
+                    val loaded = if (reset) repository.reset(key, account) else repository.load(key, account)
+                    if (request != storageGeneration || key != storageKey() || account != accountId) return@launch
+                    stored = loaded
+                    conversationId = loaded.id
+                    history = loaded.turns.map { ConversationMessage((++messageId).toString(), it.text, it.fromUser) }
+                    if (reset) draft = TextFieldValue()
+                    val unchanged = loaded.id == previous?.id && loaded.revision == previous.revision
+                    if (unsavedText != null && unchanged) {
+                        draft = TextFieldValue(unsavedText, TextRange(unsavedText.length))
+                    } else if (!unchanged &&
+                        loaded.id == previous?.id &&
+                        draft.text == loaded.turns.getOrNull(loaded.turns.size - 2)?.text
+                    ) {
+                        draft = TextFieldValue()
+                    }
+                    mutableState.value =
+                        state.value.copy(
+                            messages = history,
+                            storageBusy = false,
+                            failed = false,
+                            problem = null,
+                            replyPending = false,
+                        )
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    if (request == storageGeneration) storageFailure()
+                }
+            }
+    }
+
+    private fun storageFailure() {
+        mutableState.value =
+            state.value.copy(
+                storageBusy = false,
+                replyPending = false,
+                failed = true,
+                problem = ConversationProblem.STORAGE,
+            )
+    }
+
     private fun clear() {
+        storageGeneration++
+        storageWork?.cancel()
+        stored = null
         cancelVoice()
         returnToVoiceReview = false
         cancel()
@@ -698,6 +825,7 @@ class ConversationViewModel(
         val provisionalDraft = if (accountId == null && next != null && history.isEmpty()) draft else null
         clear()
         accountId = next
+        restoreConversation()
         if (provisionalDraft != null) draft = provisionalDraft
     }
 
@@ -722,6 +850,10 @@ class ConversationViewModel(
             allowed &&
             interactionAvailable() &&
             state.value.connection == ConversationConnection.READY &&
+            !state.value.storageBusy &&
+            savingRequest == null &&
+            (conversationStore == null || stored != null) &&
+            state.value.problem != ConversationProblem.STORAGE &&
             profileId != null &&
             (authentication.session.value as? GitHubSession.Authenticated)?.account?.id == accountId &&
             accountId != null
