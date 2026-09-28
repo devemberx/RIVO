@@ -1,6 +1,6 @@
 # UI reference exports
 
-These SVGs link to their source frames in Figma. Vehicle screens and the two
+These SVGs link to their source frames in Figma. Vehicle screens and the three
 notification states below use [revised v6](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=855-1393);
 the remaining references use [v5](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-2).
 See [DESIGN.md](../DESIGN.md) for behavior and [ARCHITECTURE.md](../ARCHITECTURE.md)
@@ -22,7 +22,7 @@ The connected screen includes a
 | [menu.svg](shell/menu.svg) | [Menu with notification row; three alerts](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-3844) |
 | [menu-no-notifications.svg](shell/menu-no-notifications.svg) | [Menu without notification count badge](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=783-1025) |
 | [menu-many-notifications.svg](shell/menu-many-notifications.svg) | [Menu with notification row; five alerts](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=783-1164) |
-| [notifications-empty.svg](shell/notifications-empty.svg) | [Compact header with centered bell empty state](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=777-350) |
+| [notifications-empty.svg](shell/notifications-empty.svg) | [Compact header with raised bell empty state · v6](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=855-7910) |
 | [notifications-three.svg](shell/notifications-three.svg) | [Alerts and reward · v6](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=855-8014) |
 | [notifications-many.svg](shell/notifications-many.svg) | [Scrollable alerts · v6](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=855-7763) |
 | [settings.svg](shell/settings.svg) | [Settings](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-3641) |

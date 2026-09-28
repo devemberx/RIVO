@@ -87,6 +87,10 @@ Follow [home.svg](ui/shell/home.svg): keep the centered artwork crop and horizon
 when content height changes. Store crops within cards. Crossfade background/tint
 without tinting controls; notices must not move the main action. Use the animated
 time phrase rather than the export subtitle, with scrolling for enlarged text.
+Home speech uses regular-weight text. On the reference Home scene, keep the
+tail anchored in both axes as longer dialogue grows upward. Scale the body
+curves to its height and center reflowed text inside it. Size the height to
+the displayed line count with consistent vertical padding.
 
 ## Screens and navigation
 
@@ -115,6 +119,12 @@ Keep the claim button and quest card in place while saving, with progress shown 
 the button. After commit, show one centered reward popup with a short entrance
 motion, a consistently framed happy companion, and amounts labeled P; reduced
 motion displays the popup immediately.
+
+Quest detail slightly widens the companion panel and shifts the friend as the
+selected content enters from the side; Back reverses the motion and restores the
+list's scroll position. Keep “작은 도전, 큰 여정” in both views and a fixed gap
+between progress content and reward points in detail. Show a scroll indicator
+only when the list overflows; reduced motion switches the views immediately.
 
 ## Customization
 

@@ -38,6 +38,7 @@ import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.VehicleRoute
 import com.monsters.mobimon.core.presentation.CompanionAppearanceState
 import com.monsters.mobimon.core.presentation.PointBalanceState
+import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonColors
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import org.junit.Assert.assertEquals
@@ -243,6 +244,40 @@ class QuestScreenTest {
     }
 
     @Test
+    fun detailClaimKeepsInlineProgressUntilRewardConfirmation() {
+        val questId = DrivingQuestIds.SEATBELT
+        var questState by mutableStateOf(
+            QuestUiState(isLoading = false, satisfiedDrivingQuestIds = setOf(questId)),
+        )
+        compose.setContent {
+            MobiMonTheme {
+                QuestScreen(
+                    presentation(questState),
+                    { questState = questState.copy(pendingQuestId = it) },
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                )
+            }
+        }
+        compose.onNodeWithTag("quest-card-$questId").performScrollTo().performClick()
+        compose.onNodeWithTag("quest-btn-detail-claim").performClick()
+        compose.onNodeWithTag("quest-btn-detail-claim").assertIsNotEnabled()
+        compose.onNodeWithText("보상 저장 중…").assertIsDisplayed()
+        compose.runOnIdle {
+            questState = questState.copy(completedPointQuestIds = setOf(questId))
+        }
+        compose.onNodeWithTag("quest-btn-detail-claim").assertIsNotEnabled()
+        compose.onNodeWithText("보상 저장 중…").assertIsDisplayed()
+        compose.onNodeWithTag("quest-header-back-button").performClick()
+        compose.onNodeWithTag("quest-btn-claim-$questId").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithText("보상 저장 중…").assertIsDisplayed()
+    }
+
+    @Test
     fun filterSurvivesDetailBackAndSavedStateRestoration() {
         val state =
             presentation(QuestUiState(isLoading = false, completedPointQuestIds = setOf(DrivingQuestIds.SEATBELT)))
@@ -251,12 +286,87 @@ class QuestScreenTest {
             MobiMonTheme { QuestScreen(state, {}, {}, {}, {}, {}, {}, {}) }
         }
         compose.onNodeWithTag("quest-tab-completed").assertIsDisplayed().performClick()
+        compose.onNodeWithTag("quest-scroll-indicator").assertDoesNotExist()
         compose.onNodeWithTag("quest-card-${DrivingQuestIds.SEATBELT}").performScrollTo().performClick()
         restoration.emulateSavedInstanceStateRestore()
         compose.onNodeWithTag("quest-header-back-button").assertIsDisplayed().performClick()
         compose.onNodeWithTag("quest-tab-completed").assertIsDisplayed().assertIsSelected()
         compose.onNodeWithTag("quest-card-${DrivingQuestIds.SAFE_DRIVE}").assertDoesNotExist()
         compose.onNodeWithText("2026.09.14", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun detailMovesCompanionAndKeepsHeadingWithoutFalseScrollIndicator() {
+        render(presentation())
+        val listBounds = compose.onNodeWithTag("quest-companion-panel").getUnclippedBoundsInRoot()
+        val listWidth = (listBounds.right - listBounds.left).value
+        compose.onNodeWithText("작은 도전, 큰 여정").assertIsDisplayed()
+        compose.onNodeWithTag("quest-scroll-indicator").assertIsDisplayed()
+
+        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.BATTERY_CARE}").performScrollTo().performClick()
+        compose.waitForIdle()
+        val detailBounds = compose.onNodeWithTag("quest-companion-panel").getUnclippedBoundsInRoot()
+        val detailWidth = (detailBounds.right - detailBounds.left).value
+        assertTrue("Companion panel grows on detail", detailWidth > listWidth)
+        compose.onNodeWithText("작은 도전, 큰 여정").assertIsDisplayed()
+        compose.onNodeWithTag("quest-detail-card").assertIsDisplayed()
+        compose.onNodeWithTag("quest-scroll-indicator").assertDoesNotExist()
+
+        compose.onNodeWithTag("quest-header-back-button").performClick()
+        compose.waitForIdle()
+        val returnedBounds = compose.onNodeWithTag("quest-companion-panel").getUnclippedBoundsInRoot()
+        assertEquals(listWidth, (returnedBounds.right - returnedBounds.left).value, 1f)
+        compose.onNodeWithText("작은 도전, 큰 여정").assertIsDisplayed()
+        compose.onNodeWithTag("quest-scroll-indicator").assertIsDisplayed()
+    }
+
+    @Test
+    fun returningFromDetailRestoresScrolledListPosition() {
+        render(presentation())
+        val card = compose.onNodeWithTag("quest-card-${DrivingQuestIds.BATTERY_CARE}")
+        val initialTop = card.getUnclippedBoundsInRoot().top.value
+        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.BATTERY_CARE}").performScrollTo()
+        val scrolledTop = card.getUnclippedBoundsInRoot().top.value
+        assertTrue("The selected quest is below the initial viewport", scrolledTop < initialTop)
+
+        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.BATTERY_CARE}").performClick()
+        compose.onNodeWithTag("quest-header-back-button").performClick()
+        compose.waitForIdle()
+
+        assertEquals("Return to the previous list position", scrolledTop, card.getUnclippedBoundsInRoot().top.value, 1f)
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w1280dp-h800dp-mdpi")
+    fun compactListPositionSurvivesDetail() {
+        render(presentation())
+        val card = compose.onNodeWithTag("quest-card-${DrivingQuestIds.BATTERY_CARE}")
+        val initialTop = card.getUnclippedBoundsInRoot().top.value
+        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.BATTERY_CARE}").performScrollTo()
+        val scrolledTop = card.getUnclippedBoundsInRoot().top.value
+        assertTrue("The compact list scrolls to the selected quest", scrolledTop < initialTop)
+
+        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.BATTERY_CARE}").performClick()
+        compose.onNodeWithTag("quest-header-back-button").performClick()
+        compose.waitForIdle()
+
+        assertEquals("Return to the compact list position", scrolledTop, card.getUnclippedBoundsInRoot().top.value, 1f)
+    }
+
+    @Test
+    fun reducedMotionOpensQuestDetailWithoutTransition() {
+        val state = presentation()
+        compose.setContent {
+            CompositionLocalProvider(LocalMobiMonMotionEnabled provides false) {
+                MobiMonTheme { QuestScreen(state, {}, {}, {}, {}, {}, {}, {}) }
+            }
+        }
+        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.BATTERY_CARE}").performScrollTo().performClick()
+        compose.onNodeWithTag("quest-detail-card").assertIsDisplayed()
+        compose.onNodeWithText("작은 도전, 큰 여정").assertIsDisplayed()
+        compose.onNodeWithTag("quest-scroll-indicator").assertDoesNotExist()
+        compose.onNodeWithTag("quest-header-back-button").performClick()
+        compose.onNodeWithText("작은 도전, 큰 여정").assertIsDisplayed()
     }
 
     @Test
@@ -325,6 +435,18 @@ class QuestScreenTest {
         val lastMetric = compose.onNodeWithText("남은 거리").getUnclippedBoundsInRoot()
         val reward = compose.onNodeWithText("보상 ·", substring = true).getUnclippedBoundsInRoot()
         assertTrue("Two metric rows stay above the reward", lastMetric.bottom <= reward.top)
+    }
+
+    @Test
+    fun progressToRewardSpacingIsConsistentAcrossQuestTypes() {
+        render(presentation())
+        for (questId in listOf(DrivingQuestIds.SEATBELT, DrivingQuestIds.CLEAN_DRIVE)) {
+            compose.onNodeWithTag("quest-btn-detail-$questId").performScrollTo().performClick()
+            val progress = compose.onNodeWithTag("quest-detail-progress").getUnclippedBoundsInRoot()
+            val reward = compose.onNodeWithTag("quest-detail-reward").getUnclippedBoundsInRoot()
+            assertEquals("Progress to reward gap for $questId", 40f, (reward.top - progress.bottom).value, 1f)
+            compose.onNodeWithTag("quest-header-back-button").performClick()
+        }
     }
 
     @Test

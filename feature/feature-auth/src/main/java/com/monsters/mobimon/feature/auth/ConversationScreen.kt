@@ -92,7 +92,7 @@ fun ConversationScreen(
     val panelState = if (connectionDialog && state.failed) state.copy(failed = false) else state
     val back = {
         // adjustResize can consume Compose's IME bounds; check the window at the time of the action.
-        if (ViewCompat.getRootWindowInsets(view)?.isVisible(WindowInsetsCompat.Type.ime()) == true) {
+        if (ViewCompat.getRootWindowInsets(view.rootView)?.isVisible(WindowInsetsCompat.Type.ime()) == true) {
             keyboard?.hide()
             focus.clearFocus()
         } else if (state.voice.capturing || state.voice.phase == VoiceInputPhase.PERMISSION) {
