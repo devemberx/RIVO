@@ -73,10 +73,7 @@
   <string name="copilot_keep">연결 유지</string>
   <string name="copilot_disconnect">연결 해제</string>
   <string name="copilot_disconnecting">연결을 해제하고 있어요</string>
-    <string name="conversation_not_connected">AI 연결을 지원하는 환경이 확인되지 않아 대화를 시작할 수 없어요.</string>
     <string name="conversation_connect">연결 안내 열기</string>
-    <string name="conversation_title">대화</string>
-    <string name="ai_context_loading">친구 정보를 불러오는 중이에요.</string>
     <string name="ai_context_failed">친구 정보를 불러오지 못했어요.</string>
     <string name="ai_context_update_failed">친구 정보를 갱신하지 못했어요. 마지막으로 불러온 정보를 표시해요.</string>
     <string name="ai_retry">다시 시도</string>
@@ -143,7 +140,6 @@
     <string name="chat_restricted_error">주차 상태와 앱 이용 허용 상태를 확인해 주세요.\n안전하게 주차한 뒤 다시 시도할 수 있어요.</string>
     <string name="chat_limit_error">메시지는 4,000자까지 보낼 수 있어요.\n대화 길이 한도에 도달하면 새 대화를 시작해 주세요.</string>
     <string name="chat_parking_title">주차 후 대화를 이어가요</string>
-    <string name="chat_parking_required">주차 필요</string>
     <string name="chat_parking_body">대화와 전송은 주차 상태에서만 사용할 수 있어요.</string>
     <string name="chat_parking_instruction">안전한 곳에 주차한 뒤 다시 들어와 주세요.</string>
     <string name="chat_parking_preserved">이전 대화 기록은 보존돼요.</string>
