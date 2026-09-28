@@ -9,6 +9,33 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class VssVehicleInterpreterTest {
+    @Test fun invalidBatterySocIsUnavailableInsteadOfClampedToAValidPercentage() {
+        for (soc in listOf(-1f, 101f, Float.NaN, Float.POSITIVE_INFINITY)) {
+            val snapshot =
+                VssVehicleInterpreter.snapshot(
+                    raw =
+                        VssSignals(
+                            powertrain =
+                                VssSignals.Powertrain(
+                                    tractionBattery =
+                                        VssSignals.Powertrain.TractionBattery(
+                                            stateOfCharge =
+                                                VssSignals.Powertrain.TractionBattery.StateOfCharge(displayed = soc),
+                                        ),
+                                ),
+                        ),
+                    id = "vehicle",
+                    epoch = "epoch",
+                    sequence = 1,
+                    observedAtMillis = 100,
+                    source = SignalSource.REAL,
+                    batteryObservedAtMillis = 100,
+                )
+            assertEquals(null, snapshot.batteryPercent)
+            assertEquals(SignalQuality.UNAVAILABLE, snapshot.batteryQuality)
+        }
+    }
+
     @Test
     fun parkInterpretationRequiresNoMotionZeroSpeedAndParkGear() {
         val cases =
