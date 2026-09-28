@@ -92,6 +92,8 @@ memory. Home navigation and recording startup preserve visible messages and prov
 context, while clearing the composer draft. New chat clears all conversation state. Account/profile
 change, disconnect or process restart clears private data; initial account validation
 retains an unsent draft. Failed sends keep the attempted turn for Edit/Retry while clearing the composer.
+Sending clears the composer while the turn awaits a reply; canceling that wait restores
+the text for editing. Home clears it even when a reply is pending.
 Departure, backgrounding, parking loss or companion changes cancel work; reject late replies.
 Backgrounding and parking loss alone retain the current draft.
 

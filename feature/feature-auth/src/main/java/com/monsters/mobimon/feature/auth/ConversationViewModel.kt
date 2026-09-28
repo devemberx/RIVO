@@ -262,6 +262,7 @@ class ConversationViewModel(
 
     fun clearDraftForHome() {
         cancelVoice()
+        cancel()
         draft = TextFieldValue()
     }
 
@@ -500,13 +501,12 @@ class ConversationViewModel(
             return
         }
         val account = accountId ?: return
-        if (retry) draft = TextFieldValue(text, TextRange(text.length))
         cancelVoice()
         returnToVoiceReview = false
         updateVoice(state.value.voice.copy(phase = VoiceInputPhase.IDLE))
         val request = ++generation
         val user = ConversationMessage((++messageId).toString(), text, true)
-        draft = draft.copy(composition = null)
+        draft = TextFieldValue()
         mutableState.value =
             state.value.copy(messages = history + user, replyPending = true, failed = false, problem = null)
         if (!networkStatus.isOnline()) {
@@ -642,6 +642,7 @@ class ConversationViewModel(
     }
 
     fun cancel() {
+        val pendingTurn = if (state.value.replyPending) unansweredTurnText() else null
         generation++
         work?.cancel()
         work = null
@@ -657,6 +658,7 @@ class ConversationViewModel(
                     },
                 replyPending = false,
             )
+        pendingTurn?.let { draft = TextFieldValue(it, TextRange(it.length)) }
     }
 
     fun newConversation() {
@@ -706,9 +708,11 @@ class ConversationViewModel(
         if (recheckAccess) checkConnection()
     }
 
-    private fun failedTurnText(): String? =
+    private fun failedTurnText(): String? = unansweredTurnText().takeIf { state.value.failed }
+
+    private fun unansweredTurnText(): String? =
         state.value.messages
-            .takeIf { state.value.failed && it.size == history.size + 1 }
+            .takeIf { it.size == history.size + 1 }
             ?.lastOrNull()
             ?.takeIf { it.fromUser }
             ?.text

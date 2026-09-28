@@ -96,6 +96,28 @@ class ConversationViewModelTest {
             assertEquals(listOf("first", "answer", "second"), provider.requests.last().map { it.text })
         }
 
+    @Test fun leavingForHomeWhileWaitingDoesNotRestoreTheSentText() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            provider.answer = { CompletableDeferred<ConversationResult<String>>().await() }
+            model.edit(TextFieldValue("sent before Home"))
+            model.send()
+            runCurrent()
+            assertTrue(model.state.value.replyPending)
+
+            model.clearDraftForHome()
+            model.deactivate()
+
+            assertFalse(model.state.value.replyPending)
+            assertTrue(
+                model.state.value.messages
+                    .isEmpty(),
+            )
+            assertEquals("", model.draft.text)
+        }
+
     @Test fun modelCheckConnectsBeforeSendAndDuplicateSendIsBlocked() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
@@ -112,6 +134,7 @@ class ConversationViewModelTest {
             runCurrent()
             assertEquals(1, provider.requests.size)
             assertTrue(model.state.value.replyPending)
+            assertEquals("", model.draft.text)
             assertEquals(ConversationConnection.READY, model.state.value.connection)
             reply.complete(ConversationResult.Success("hi"))
             runCurrent()
@@ -155,6 +178,28 @@ class ConversationViewModelTest {
             assertEquals(ConversationConnection.READY, model.state.value.connection)
             assertEquals(null, model.state.value.connectionProblem)
             assertEquals("keep this draft", model.draft.text)
+        }
+
+    @Test fun cancellingPendingReplyReturnsItsTextToTheComposer() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            provider.answer = { CompletableDeferred<ConversationResult<String>>().await() }
+            model.edit(TextFieldValue("cancel this message"))
+            model.send()
+            runCurrent()
+
+            assertTrue(model.state.value.replyPending)
+            assertEquals("", model.draft.text)
+            model.cancel()
+
+            assertFalse(model.state.value.replyPending)
+            assertTrue(
+                model.state.value.messages
+                    .isEmpty(),
+            )
+            assertEquals("cancel this message", model.draft.text)
         }
 
     @Test fun parkingLossCancelsLateModelCheck() =

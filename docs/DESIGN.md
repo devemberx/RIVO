@@ -138,6 +138,9 @@ until Edit restores the failed text. Account/access/usage failures
 explain appropriate account recovery. [Parking recovery](ui/conversation/parking-required.svg)
 blocks editing and hides IME; AAOS restrictions remove the screen.
 
+After Send, show the text in its bubble and a waiting hint in the empty composer.
+Canceling the reply returns the text to the composer for editing; Home clears it.
+
 Use [keyboard](ui/conversation/keyboard-input.svg), [recording](ui/conversation/voice-listening.svg)
 and [review](ui/conversation/voice-review.svg) geometry; enlarged text prioritizes chat.
 Microphone/Stop and Send are separate, with Cancel, waveform and disabled Send during
