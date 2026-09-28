@@ -112,6 +112,11 @@ Celebrate only committed amounts, once per claim; later repository data replaces
 confirmations. Show persisted completion dates. Align point headers with parking
 badges; compact Quest may place balance beside its heading.
 
+Quest detail keeps the same companion panel as the list: it widens slightly while
+the friend shifts with it, and the selected quest content enters from the side.
+The list's “작은 도전, 큰 여정” heading stays on the list; detail focuses on the
+selected quest and its progress. Reduced motion switches the views immediately.
+
 ## Customization
 
 Friends, accessories and backgrounds are independent; equipment persists per friend.

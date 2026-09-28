@@ -38,6 +38,7 @@ import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.VehicleRoute
 import com.monsters.mobimon.core.presentation.CompanionAppearanceState
 import com.monsters.mobimon.core.presentation.PointBalanceState
+import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonColors
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import org.junit.Assert.assertEquals
@@ -254,6 +255,43 @@ class QuestScreenTest {
         compose.onNodeWithTag("quest-tab-completed").assertIsDisplayed().assertIsSelected()
         compose.onNodeWithTag("quest-card-${DrivingQuestIds.SAFE_DRIVE}").assertDoesNotExist()
         compose.onNodeWithText("2026.09.14", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun detailMovesCompanionAndKeepsListTaglineOutOfDetail() {
+        render(presentation())
+        val listBounds = compose.onNodeWithTag("quest-companion-panel").getUnclippedBoundsInRoot()
+        val listWidth = (listBounds.right - listBounds.left).value
+        compose.onNodeWithText("작은 도전, 큰 여정").assertIsDisplayed()
+
+        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.BATTERY_CARE}").performScrollTo().performClick()
+        compose.waitForIdle()
+        val detailBounds = compose.onNodeWithTag("quest-companion-panel").getUnclippedBoundsInRoot()
+        val detailWidth = (detailBounds.right - detailBounds.left).value
+        assertTrue("Companion panel grows on detail", detailWidth > listWidth)
+        compose.onNodeWithText("작은 도전, 큰 여정").assertDoesNotExist()
+        compose.onNodeWithTag("quest-detail-card").assertIsDisplayed()
+
+        compose.onNodeWithTag("quest-header-back-button").performClick()
+        compose.waitForIdle()
+        val returnedBounds = compose.onNodeWithTag("quest-companion-panel").getUnclippedBoundsInRoot()
+        assertEquals(listWidth, (returnedBounds.right - returnedBounds.left).value, 1f)
+        compose.onNodeWithText("작은 도전, 큰 여정").assertIsDisplayed()
+    }
+
+    @Test
+    fun reducedMotionOpensQuestDetailWithoutTransition() {
+        val state = presentation()
+        compose.setContent {
+            CompositionLocalProvider(LocalMobiMonMotionEnabled provides false) {
+                MobiMonTheme { QuestScreen(state, {}, {}, {}, {}, {}, {}, {}) }
+            }
+        }
+        compose.onNodeWithTag("quest-btn-detail-${DrivingQuestIds.BATTERY_CARE}").performScrollTo().performClick()
+        compose.onNodeWithTag("quest-detail-card").assertIsDisplayed()
+        compose.onNodeWithText("작은 도전, 큰 여정").assertDoesNotExist()
+        compose.onNodeWithTag("quest-header-back-button").performClick()
+        compose.onNodeWithText("작은 도전, 큰 여정").assertIsDisplayed()
     }
 
     @Test
