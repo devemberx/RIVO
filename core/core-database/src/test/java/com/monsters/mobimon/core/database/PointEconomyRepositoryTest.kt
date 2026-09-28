@@ -81,6 +81,39 @@ class PointEconomyRepositoryTest {
     }
 
     @Test
+    fun starHangerSeedsPurchasesAppliesAndRemovesForBothFriends() =
+        runBlocking {
+            val companion =
+                RoomCompanionRepository(
+                    database,
+                    com.monsters.mobimon.core.domain
+                        .ProgressionIdentity("profile", SignalSource.REAL),
+                    Clock { 10_000 },
+                    IdGenerator { "hanger-${ids.incrementAndGet()}" },
+                    QuestEvaluator(15_000),
+                    CurrentVehicleEvidence { vehicle },
+                    CurrentAppUse { appUse },
+                )
+            companion.initialize()
+            val item = repository.catalog.first().single { it.id == "background:star_hanger" }
+            assertEquals(CosmeticSlot.BACKGROUND, item.slot)
+            assertEquals(200L, item.price)
+            assertNull(item.compatibleFriendId)
+            database.economyDao().credit("profile", 300, Long.MAX_VALUE - 300)
+            assertEquals(PurchaseResult.Purchased(200), repository.purchase(item.id, 200))
+            assertNull(repository.inventory.first().equippedItemIds[CosmeticSlot.BACKGROUND])
+            assertEquals(PurchaseResult.AlreadyOwned, repository.purchase(item.id, 200))
+            assertEquals(EquipResult.Applied, repository.equip(item.id))
+            assertEquals(EquipResult.Applied, repository.equip("friend:luna"))
+            companion.initialize()
+            assertEquals(item.id, repository.inventory.first().equippedItemIds[CosmeticSlot.BACKGROUND])
+            assertEquals(200L, repository.wallet.first().balance)
+            assertEquals(EquipResult.Applied, repository.unequip(CosmeticSlot.BACKGROUND))
+            assertNull(repository.inventory.first().equippedItemIds[CosmeticSlot.BACKGROUND])
+            assertTrue(item.id in repository.inventory.first().ownedItemIds)
+        }
+
+    @Test
     fun purchaseChargesOnceAndEquipRequiresASeparateOwnedItemCommand() =
         runBlocking {
             database.economyDao().insertItem(CosmeticItemEntity("hat", CosmeticSlot.ACCESSORY.name, 30, null))

@@ -95,18 +95,11 @@ keyboard, then dialog/menu, then destination. Menu destinations return Home;
 connection returns to its entry route. Explicit Home opens Home. Menus close through
 close/backdrop/Back/selection, with equipped friend/version and safe footer placement.
 
-[Shell references](ui/README.md#shell) use a mint Home notification indicator,
-positive-only menu count and opaque navy panel opening from the left. Back returns
-to Menu; Close/backdrop returns Home. Keep the header fixed and scroll selected-card
-cautions followed by claimable rewards. Rows open their screens; quest alerts remain
-until reward receipt.
-
-Use the same compact title row in populated and empty states, without an unread
-subtitle or header divider. Populated lists start at y=260 in the 2560 × 1440
-reference. Vehicle checks use amber battery/tire outlines; claimable rewards use
-mint gift outlines. The empty state keeps a centered bell and short message.
-Spacing and close-control geometry live in the SVGs. See
-[current implementation](ARCHITECTURE.md#state-and-lifecycle) for the popup/reference gap.
+[Shell references](ui/README.md#shell) define menu and notification geometry.
+Home shows a notification dot, and Menu shows a count only when positive. Opening
+notifications expands the menu panel; reduced motion switches immediately. Back
+returns to Menu, while Close/backdrop returns Home. The header stays fixed as
+vehicle cautions and claimable rewards scroll; quest alerts remain until receipt.
 
 Unavailable services explain recovery. Pending actions block duplicates; uncertain
 writes reconcile before retry.
@@ -129,6 +122,13 @@ Cancellation spends nothing; applied items have no redundant action. No cash/top
 Keep header, preview, tabs and cards stable during loading; reuse committed appearance
 and show still placeholders. Pending/uncertain writes block duplicates and preserve
 selection. Read/save failures offer inline Retry.
+
+The 200-point `background:star_hanger` (별빛 모빌) uses the supplied body and glow
+canvases on one continuous mesh, suspended from the top center. Chain joints between
+the ribbon, star, moon and tip swing with increasing phase delay; solid ornaments
+retain their shape. Glow follows the same joints and fades in/out independently.
+It occupies the background slot, is shared by both friends, and appears on Home and
+in Store previews; reduced motion shows a still hanger.
 
 ## Conversation
 

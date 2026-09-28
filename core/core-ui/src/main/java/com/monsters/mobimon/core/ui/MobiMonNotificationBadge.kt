@@ -26,9 +26,9 @@ fun MobiMonNotificationBadge(
 ) {
     if (count <= 0) return
     Box(
-        modifier.size(diameter).background(Color(0xFFE6505B), CircleShape).clearAndSetSemantics {},
+        modifier.size(diameter).background(Color(0xFFBDEDF7), CircleShape).clearAndSetSemantics {},
         contentAlignment = Alignment.Center,
     ) {
-        Text(count.toString(), color = Color.White, fontSize = fontSize, fontWeight = FontWeight.Bold)
+        Text(count.toString(), color = Color(0xFF143451), fontSize = fontSize, fontWeight = FontWeight.Bold)
     }
 }

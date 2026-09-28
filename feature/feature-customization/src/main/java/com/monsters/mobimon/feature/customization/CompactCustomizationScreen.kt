@@ -63,6 +63,7 @@ import com.monsters.mobimon.core.ui.MobiMonTab
 import com.monsters.mobimon.core.ui.MobiMonTabs
 import com.monsters.mobimon.core.ui.ParticleType
 import com.monsters.mobimon.core.ui.PetAvatar
+import com.monsters.mobimon.core.ui.StarHanger
 import com.monsters.mobimon.core.ui.companionBackgroundRes
 
 @Composable
@@ -148,7 +149,9 @@ internal fun CompactCustomizationScreen(
                                         ),
                                     ),
                             )
-                            if (previewBackgroundId != null) {
+                            if (previewBackgroundId == "background:star_hanger") {
+                                StarHanger(Modifier.fillMaxSize().testTag("preview-star-hanger"), centered = true)
+                            } else if (previewBackgroundId != null) {
                                 val particleType =
                                     when {
                                         previewBackgroundId.contains("snow") -> ParticleType.SNOW
@@ -298,6 +301,8 @@ internal fun CompactCustomizationScreen(
                                                     ?: CharacterArtwork.itemIcons[item.id]
                                             if (iconAsset != null) {
                                                 CharacterAssetImage(iconAsset, Modifier.size(64.dp))
+                                            } else if (item.id == "background:star_hanger") {
+                                                StarHanger(Modifier.fillMaxSize(), centered = true, isAnimated = false)
                                             } else if (item.slot == CosmeticSlot.BACKGROUND ||
                                                 item.id.startsWith("background:")
                                             ) {
@@ -473,6 +478,7 @@ internal fun cosmeticName(itemId: String): String =
         itemId == "accessory:mobi_goggles" -> stringResource(R.string.pet_item_mobi_goggles)
         itemId == "accessory:luna_cap" -> stringResource(R.string.pet_item_luna_cap)
         itemId == "accessory:luna_sunglasses" -> stringResource(R.string.pet_item_luna_sunglasses)
+        itemId == "background:star_hanger" -> stringResource(R.string.pet_item_star_hanger)
         itemId == "background:star" -> stringResource(R.string.pet_background_star)
         itemId == "background:snow" -> stringResource(R.string.pet_background_snow)
         itemId == "background:petal" -> stringResource(R.string.pet_background_petal)

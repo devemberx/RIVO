@@ -59,9 +59,8 @@ animation geometry are transient.
 | Preview and animation | Renderer; equipment changes only on commit |
 
 Read failures retain committed data; purchase/equip wait for inventory. Notifications
-are read-only summaries; repositories own reward writes. Current notifications use
-a three-card popup; the [left-panel reference](DESIGN.md#screens-and-navigation) is
-not implemented. [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
+are read-only summaries; repositories own reward writes.
+[PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
 owns rendering only. Display evidence and decorative previews cannot authorize commands.
 Decorative Home and Store backgrounds use interpreted VSS time from the vehicle
 snapshot, independent of device time and quest weather. Debug uses the same VSS

@@ -2,12 +2,12 @@ package com.monsters.mobimon.feature.pet
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,39 +39,77 @@ internal fun HomeSpeechBubble(
     modifier: Modifier = Modifier,
     scale: Float = 1f,
     triggerKey: Int = 0,
+    friendId: String? = "friend:mobi",
+    isSick: Boolean = false,
+    isHungry: Boolean = false,
+    backgroundTimeOfDay: String? = null,
 ) {
     val motionEnabled = LocalMobiMonMotionEnabled.current
     val textScale = LocalDensity.current.fontScale.coerceAtLeast(1f)
-    val fontSize = (32.4f * scale).coerceAtLeast(24f)
-    val lineHeight = (43.2f * scale).coerceAtLeast(34f)
+    val fontSize = (38.4f * scale).coerceAtLeast(28f)
+    val lineHeight = fontSize * 1.4f
     // The artwork must stop shrinking when either minimum text dimension is reached.
-    val bubbleScale = maxOf(fontSize / 32.4f, lineHeight / 43.2f) * textScale
+    val bubbleScale = maxOf(scale, fontSize / 38.4f) * textScale
     var visible by remember { mutableStateOf(!motionEnabled) }
     val progress by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
-        animationSpec = if (motionEnabled) spring(dampingRatio = 0.75f, stiffness = 400f) else snap(),
+        animationSpec =
+            if (motionEnabled) {
+                tween(durationMillis = if (visible) 160 else 90)
+            } else {
+                snap()
+            },
         label = "home_speech_bubble_entrance",
     )
-    LaunchedEffect(triggerKey, motionEnabled) {
+
+    val deckManager = remember { PetSpeechDeckManager() }
+    var currentText by remember { mutableStateOf("") }
+    var previousTriggerKey by remember { mutableStateOf(triggerKey) }
+
+    LaunchedEffect(triggerKey, friendId, isSick, isHungry, backgroundTimeOfDay, motionEnabled) {
+        val isTap = triggerKey > 0 && triggerKey != previousTriggerKey
+        previousTriggerKey = triggerKey
+
         if (!motionEnabled) {
+            val pool =
+                PetSpeechPhrases.getPool(
+                    friendId = friendId,
+                    isTap = isTap,
+                    isSick = isSick,
+                    isHungry = isHungry,
+                    timeOfDay = backgroundTimeOfDay,
+                )
+            currentText = deckManager.nextPhrase(pool)
             visible = true
             return@LaunchedEffect
         }
+
+        var currentIsTap = isTap
         while (isActive) {
-            if (triggerKey > 0) {
+            if (currentIsTap) {
                 visible = false
-                delay(16L)
+                delay(100L)
             }
+            val pool =
+                PetSpeechPhrases.getPool(
+                    friendId = friendId,
+                    isTap = currentIsTap,
+                    isSick = isSick,
+                    isHungry = isHungry,
+                    timeOfDay = backgroundTimeOfDay,
+                )
+            currentText = deckManager.nextPhrase(pool)
             visible = true
             delay(4500L)
             visible = false
-            delay(Random.nextLong(30_000L, 60_000L))
+            currentIsTap = false
+            delay(Random.nextLong(10_000L, 15_000L))
         }
     }
     Box(
         modifier
-            .width((324 * bubbleScale).dp)
-            .heightIn(min = (174.6f * bubbleScale).dp)
+            .widthIn(min = (260 * bubbleScale).dp, max = (560 * bubbleScale).dp)
+            .heightIn(min = (140 * bubbleScale).dp)
             .testTag("home-companion-message")
             .graphicsLayer {
                 val fraction = if (motionEnabled) progress else 1f
@@ -88,20 +126,22 @@ internal fun HomeSpeechBubble(
             contentScale = ContentScale.FillBounds,
         )
         Text(
-            stringResource(R.string.pet_home_message),
+            currentText.ifEmpty { stringResource(R.string.pet_home_message) },
             modifier =
-                Modifier.padding(
-                    start = (58.5f * bubbleScale).dp,
-                    end = (36 * bubbleScale).dp,
-                    top = (26 * bubbleScale).dp,
-                    bottom = (46 * bubbleScale).dp,
-                ),
+                Modifier
+                    .testTag("home-companion-message-text")
+                    .padding(
+                        start = (58.5f * bubbleScale).dp,
+                        end = (36 * bubbleScale).dp,
+                        top = (26 * bubbleScale).dp,
+                        bottom = (46 * bubbleScale).dp,
+                    ),
             style =
                 MaterialTheme.typography.bodyLarge.copy(
                     fontSize = fontSize.sp,
                     lineHeight = lineHeight.sp,
                     letterSpacing = (0.2f * scale).sp,
-                    fontWeight = FontWeight.Normal,
+                    fontWeight = FontWeight.Bold,
                 ),
             color = MobiMonColors.onButton,
         )

@@ -73,23 +73,23 @@ class MobiMonContentTest {
         compose.onNodeWithText("Open menu").performClick()
         compose.onNodeWithContentDescription("알림 1건 열기").performClick()
         compose.onNodeWithTag("notification-quest-first").performClick()
-        compose.onNodeWithTag("notification-popup").assertDoesNotExist()
+        compose.onNodeWithTag("notification-panel").assertDoesNotExist()
         compose.onNodeWithText("Route QUESTS").assertExists()
     }
 
     @Test
-    fun notificationPopupReturnsFocusToBell() {
+    fun notificationPanelBackReturnsFocusToMenuRow() {
         show()
         compose.onNodeWithText("Open menu").performClick()
         compose.onNodeWithText("홈").assertIsFocused()
         compose.onNodeWithContentDescription("알림 열기").performClick()
-        compose.onNodeWithTag("notification-close").assertIsFocused()
-        compose.onNodeWithContentDescription("알림 닫기").performClick()
+        compose.onNodeWithTag("notification-back").assertIsFocused()
+        compose.onNodeWithContentDescription("메뉴로 돌아가기").performClick()
         compose.onNodeWithTag("menu-notifications").assertIsFocused()
     }
 
     @Test
-    fun menuRoutesConversationAndDismissesFromBackdrop() {
+    fun menuRoutesNotificationsAndDismissesFromBackdrop() {
         show()
         compose.onNodeWithText("Open menu").performClick()
         compose.onNodeWithTag("menu-backdrop").performTouchInput {
@@ -97,8 +97,10 @@ class MobiMonContentTest {
         }
         compose.onNodeWithTag("companion-menu").assertDoesNotExist()
         compose.onNodeWithText("Open menu").performClick()
-        clickMenuItem("대화하기")
-        compose.onNodeWithText("Route COPILOT").assertExists()
+        clickMenuItem("알림")
+        compose.onNodeWithTag("notification-panel").assertExists()
+        compose.onNodeWithContentDescription("알림 닫기").performClick()
+        compose.onNodeWithTag("companion-menu").assertDoesNotExist()
     }
 
     @Test
@@ -117,8 +119,7 @@ class MobiMonContentTest {
         compose.onNodeWithText("Back").performClick()
         compose.onNodeWithText("Route SETTINGS").assertExists()
         compose.runOnIdle { authenticated.value = true }
-        compose.onNodeWithText("Open menu").performClick()
-        clickMenuItem("대화하기")
+        compose.onNodeWithText("Chat").performClick()
         compose.onNodeWithText("Route CONVERSATION").assertExists()
         compose.runOnIdle { authenticated.value = false }
         compose.onNodeWithText("Route CONVERSATION").assertDoesNotExist()
@@ -163,8 +164,7 @@ class MobiMonContentTest {
         }
         compose.onNodeWithText("Open menu").performClick()
         clickMenuItem("설정")
-        compose.onNodeWithText("Open menu").performClick()
-        clickMenuItem("대화하기")
+        compose.onNodeWithText("Chat").performClick()
         compose.onNodeWithText("Route COPILOT").assertExists()
         compose.onNodeWithText("Route CONVERSATION").assertDoesNotExist()
         compose.runOnIdle { startReady = true }
@@ -404,7 +404,7 @@ class MobiMonContentTest {
         assertTrue(panel.width <= host.width)
         assertTrue(panel.height <= host.height)
         compose.onNodeWithContentDescription("닫기").assertWidthIsAtLeast(76.dp).assertHeightIsAtLeast(76.dp)
-        listOf("홈", "대화하기", "퀘스트", "차량 상태", "꾸미기", "설정").forEach { label ->
+        listOf("홈", "알림", "퀘스트", "차량 상태", "꾸미기", "설정").forEach { label ->
             compose.onNodeWithText(label).assertHeightIsAtLeast(76.dp).assertWidthIsAtLeast(76.dp)
         }
         compose.onNodeWithText("홈").assertIsFocused()
