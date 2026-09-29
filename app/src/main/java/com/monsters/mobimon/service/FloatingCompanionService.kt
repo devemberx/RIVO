@@ -14,6 +14,7 @@ import android.os.SystemClock
 import android.provider.Settings
 import android.view.Gravity
 import android.view.MotionEvent
+import android.view.View
 import android.view.WindowInsets
 import android.view.WindowManager
 import androidx.compose.foundation.layout.Box
@@ -34,6 +35,7 @@ import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import com.monsters.mobimon.MobiMonApplication
 import com.monsters.mobimon.R
 import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.domain.VehicleRepository
@@ -45,6 +47,7 @@ import com.monsters.mobimon.core.ui.MOBI_RUN_FRAME_DURATION_MS
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.preloadPetRunSprite
+import com.monsters.mobimon.runtime.CompanionRuntime
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -79,11 +82,14 @@ class FloatingCompanionService : Service() {
 
     @Inject lateinit var vehicleRepository: VehicleRepository
 
+    @Inject lateinit var runtime: CompanionRuntime
+
     private var windowManager: WindowManager? = null
     private var composeView: ComposeView? = null
     private var overlayParams: WindowManager.LayoutParams? = null
     private var lifecycleOwner: OverlayLifecycleOwner? = null
     private var isViewAttached = false
+    private var appInForeground = true
 
     private var isMoving by mutableStateOf(false)
     private var movingLeft by mutableStateOf(true)
@@ -111,10 +117,19 @@ class FloatingCompanionService : Service() {
             stopSelf()
             return
         }
+        val foregroundState = (application as MobiMonApplication).activityInForeground
+        appInForeground = foregroundState.value
+        runtime.startOverlay()
         startInForeground()
         initOverlayView()
         observeSettings()
         observeVehicleState()
+        serviceScope.launch {
+            foregroundState.collect { inForeground ->
+                appInForeground = inForeground
+                updateOverlayVisibility()
+            }
+        }
     }
 
     override fun onStartCommand(
@@ -223,6 +238,7 @@ class FloatingCompanionService : Service() {
                     ) {
                         MobiMonTheme {
                             val appearanceState = companionAppearance.state()
+                            val appearanceReady = appearanceState.inventory != null || appearanceState.failed
                             latestFriendId = appearanceState.friendId
                             latestAccessoryId = appearanceState.accessoryId
                             latestOutfitId = appearanceState.outfitId
@@ -248,19 +264,21 @@ class FloatingCompanionService : Service() {
                                         .padding(8.dp),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                PetAvatar(
-                                    modifier = Modifier.fillMaxSize(),
-                                    appearanceKey = "GOLDEN",
-                                    friendId = activeFriendId,
-                                    accessoryId = activeAccessoryId,
-                                    outfitId = activeOutfitId,
-                                    backgroundId = null,
-                                    isAnimated = true,
-                                    isMoving = isMoving,
-                                    movingLeft = movingLeft,
-                                    vehicleWarning = vehicleWarning,
-                                    vehicleHungry = vehicleHungry,
-                                )
+                                if (appearanceReady) {
+                                    PetAvatar(
+                                        modifier = Modifier.fillMaxSize(),
+                                        appearanceKey = "GOLDEN",
+                                        friendId = if (isMoving) activeFriendId else latestFriendId,
+                                        accessoryId = if (isMoving) activeAccessoryId else latestAccessoryId,
+                                        outfitId = if (isMoving) activeOutfitId else latestOutfitId,
+                                        backgroundId = null,
+                                        isAnimated = true,
+                                        isMoving = isMoving,
+                                        movingLeft = movingLeft,
+                                        vehicleWarning = vehicleWarning,
+                                        vehicleHungry = vehicleHungry,
+                                    )
+                                }
                             }
                         }
                     }
@@ -283,7 +301,7 @@ class FloatingCompanionService : Service() {
             overlayParams = params
             view.requestApplyInsets()
             constrainPosition(view, params, overlayWindowManager)
-            startWandering(view, params, overlayWindowManager)
+            updateOverlayVisibility()
         } catch (_: Exception) {
             stopSelf()
         }
@@ -540,14 +558,29 @@ class FloatingCompanionService : Service() {
     }
 
     private fun restartWandering() {
+        if (!FloatingCompanionVisibility.shouldShow(appInForeground)) return
         val view = composeView ?: return
         val params = overlayParams ?: return
         val wm = windowManager ?: return
         startWandering(view, params, wm)
     }
 
+    private fun updateOverlayVisibility() {
+        val view = composeView ?: return
+        if (FloatingCompanionVisibility.shouldShow(appInForeground)) {
+            view.visibility = View.VISIBLE
+            restartWandering()
+        } else {
+            view.visibility = View.GONE
+            wanderJob?.cancel()
+            wanderJob = null
+            isMoving = false
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
+        runtime.stopOverlay()
         wanderJob?.cancel()
         wanderJob = null
         serviceScope.cancel()
@@ -568,6 +601,10 @@ class FloatingCompanionService : Service() {
         } catch (_: Exception) {
         }
     }
+}
+
+internal object FloatingCompanionVisibility {
+    fun shouldShow(appInForeground: Boolean): Boolean = !appInForeground
 }
 
 internal object FloatingCompanionWanderMath {

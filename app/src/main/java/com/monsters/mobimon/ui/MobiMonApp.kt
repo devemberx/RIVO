@@ -181,6 +181,7 @@ fun MobiMonApp(
     MobiMonContent(
         entries = entries,
         notificationItems = alerts,
+        onQuestNotificationClick = { questModel?.requestOpenQuest(it) },
         appUseState = state,
         activeFriendId = activeFriendId,
         activeAccessoryId = appearance.accessoryId,
@@ -240,6 +241,7 @@ fun MobiMonContent(
     entries: Set<FeatureEntry>,
     modifier: Modifier = Modifier,
     notificationItems: List<NotificationItem> = emptyList(),
+    onQuestNotificationClick: (String) -> Unit = {},
     appUseState: AppUseState = AppUseState.UNAVAILABLE,
     activeFriendId: String? = null,
     activeAccessoryId: String? = null,
@@ -442,6 +444,10 @@ fun MobiMonContent(
                         notifications = notificationItems,
                         onClose = navigator.back,
                         onNavigate = navigator.navigate,
+                        onNotificationClick = { item ->
+                            if (item.kind == NotificationKind.QUEST) onQuestNotificationClick(item.id)
+                            navigator.navigate(item.route)
+                        },
                         onVersionClick = {
                             if (
                                 appUseState == AppUseState.ALLOWED &&

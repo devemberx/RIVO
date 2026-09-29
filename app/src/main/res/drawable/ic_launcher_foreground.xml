@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Keep the original shared artwork and its proportions within the adaptive safe circle. -->
+<!-- The system expands adaptive layers by 1.5x, so 20% fills the AAOS circle without clipping the face. -->
 <inset xmlns:android="http://schemas.android.com/apk/res/android"
-    android:inset="18%">
+    android:inset="20%">
     <bitmap
-        android:src="@drawable/mobimon_mobi"
+        android:src="@drawable/mobimon_launcher"
         android:gravity="fill"
         android:filter="true" />
 </inset>

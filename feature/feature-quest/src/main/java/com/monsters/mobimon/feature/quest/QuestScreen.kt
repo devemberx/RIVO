@@ -66,6 +66,7 @@ fun QuestScreen(
     onRetryWallet: () -> Unit,
     onRetryAppearance: () -> Unit,
     onNavigateRoute: (AppRoute) -> Unit,
+    onClearRequestedQuest: () -> Unit = {},
     modifier: Modifier = Modifier,
     onBack: () -> Unit = {},
     onHome: (() -> Unit)? = null,
@@ -76,6 +77,19 @@ fun QuestScreen(
     var selectedTab by rememberSaveable { mutableStateOf(QuestFilterTab.ALL) }
     val listScrollState = rememberScrollState()
     val detailScrollState = rememberScrollState()
+
+    androidx.compose.runtime.LaunchedEffect(state.requestedQuestId) {
+        if (state.requestedQuestId != null) {
+            selectedQuestId = state.requestedQuestId
+            onClearRequestedQuest()
+        }
+    }
+
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        listScrollState.scrollTo(0)
+        detailScrollState.scrollTo(0)
+    }
+
     val selectedQuest = state.quests.firstOrNull { it.id == selectedQuestId }
     BackHandler(enabled = !parkingRequired) {
         if (selectedQuest != null) {
