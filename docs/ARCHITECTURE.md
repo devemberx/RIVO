@@ -119,6 +119,12 @@ allowlisted HTTPS hosts. No redirects, fallback, session-token exchange or autom
 completion replay. A 401 invalidates only its credential revision. Logs/errors must
 not expose provider bodies, dialogue or tokens; Release logging is off.
 
+The opt-in [Debug tool probe](../core/core-auth/src/debug/java/com/monsters/mobimon/core/auth/CopilotToolProbe.kt)
+uses the same guarded credentials and HTTP transport with synthetic data, outside
+conversation storage. It checks two automatic tool round trips and forced selection
+separately; only reproduced live results establish compatibility. The shell-only
+Debug entry cancels on pause and has no Release component.
+
 The system instruction gives Mobi a curious rabbit persona and Luna a quietly caring
 cat persona, using short natural Korean banmal without habitual animal suffixes,
 emojis or stage directions. Each send adds optional bounded AAOS context-user name

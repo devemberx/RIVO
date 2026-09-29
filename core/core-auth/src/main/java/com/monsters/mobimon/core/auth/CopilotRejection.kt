@@ -13,6 +13,7 @@ internal enum class CopilotRejection {
     UNSUPPORTED_INTEGRATION,
     NO_HEALTHY_UPSTREAM,
     CONTEXT_LIMIT,
+    TOOLS_UNSUPPORTED,
     UNKNOWN,
     ;
 
@@ -29,6 +30,11 @@ internal enum class CopilotRejection {
                     detail?.optString("code"),
                 ).filterNotNull().joinToString(" ").lowercase().replace('_', ' ')
             return when {
+                Regex(
+                    """\b(tools|tool choice|function calling) (?:is |are )?(?:not supported|unsupported)\b|""" +
+                        """\b(?:unsupported|unknown parameter|unrecognized request argument)[: ]+["']?""" +
+                        """(tools|tool choice|function calling)\b""",
+                ).containsMatchIn(message) -> TOOLS_UNSUPPORTED
                 listOf(
                     "context length exceeded",
                     "context window exceeded",

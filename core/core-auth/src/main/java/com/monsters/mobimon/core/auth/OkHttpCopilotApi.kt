@@ -95,15 +95,22 @@ internal class OkHttpCopilotApi(
         messages: List<ConversationTurn>,
     ): String {
         val endpoint = model.api ?: fail(ConversationProblem.PROVIDER)
-        val body =
+        val payload =
             withContext(Dispatchers.Default) {
-                CopilotMessageCodec
-                    .request(model, friendId, messages, context.current())
-                    .also {
-                        CopilotTokenBudget.requireFits(model, it)
-                    }.toString()
-                    .toRequestBody(JSON_MEDIA_TYPE)
+                CopilotMessageCodec.request(model, friendId, messages, context.current()).also {
+                    CopilotTokenBudget.requireFits(model, it)
+                }
             }
+        return CopilotMessageCodec.reply(endpoint, exchange(access, endpoint, payload))
+    }
+
+    // Internal wire seam also used by the opt-in Debug protocol probe. Callers enforce their budget.
+    internal suspend fun exchange(
+        access: CopilotAccess,
+        endpoint: CopilotChatApi,
+        payload: JSONObject,
+    ): JSONObject {
+        val body = withContext(Dispatchers.Default) { payload.toString().toRequestBody(JSON_MEDIA_TYPE) }
         // OkHttp can follow a 503 Retry-After: 0 even with connection retries disabled.
         val singleUseBody =
             object : RequestBody() {
@@ -115,14 +122,12 @@ internal class OkHttpCopilotApi(
 
                 override fun writeTo(sink: BufferedSink) = body.writeTo(sink)
             }
-        val json =
-            request(
-                CopilotRequestStage.COMPLETION,
-                builder(access, endpoint.path)
-                    .header("X-Initiator", "user")
-                    .post(singleUseBody),
-            )
-        return CopilotMessageCodec.reply(endpoint, json)
+        return request(
+            CopilotRequestStage.COMPLETION,
+            builder(access, endpoint.path)
+                .header("X-Initiator", "user")
+                .post(singleUseBody),
+        )
     }
 
     private fun validModelId(id: String) = id.matches(Regex("[A-Za-z0-9._:/-]{1,128}"))
@@ -239,7 +244,7 @@ internal class OkHttpCopilotApi(
                                     when (it.code) {
                                         401 -> fail(ConversationProblem.ACCOUNT)
                                         403 -> {
-                                            fail(
+                                            throw ConversationException(
                                                 if (rejection ==
                                                     CopilotRejection.RATE_LIMIT
                                                 ) {
@@ -247,13 +252,16 @@ internal class OkHttpCopilotApi(
                                                 } else {
                                                     ConversationProblem.ACCESS
                                                 },
+                                                rejection,
                                             )
                                         }
                                         402, 429 -> fail(ConversationProblem.USAGE)
                                         408, 504 -> fail(ConversationProblem.TIMEOUT)
                                         in 500..599 -> fail(ConversationProblem.SERVICE)
                                     }
-                                    if (!it.isSuccessful) fail(ConversationProblem.PROVIDER)
+                                    if (!it.isSuccessful) {
+                                        throw ConversationException(ConversationProblem.PROVIDER, rejection)
+                                    }
                                     val source = it.body?.source() ?: fail(ConversationProblem.PROVIDER)
                                     if (source.request(1_048_577)) fail(ConversationProblem.PROVIDER)
                                     JSONObject(source.readUtf8())
@@ -267,7 +275,11 @@ internal class OkHttpCopilotApi(
                                     is IOException -> ConversationProblem.NETWORK
                                     else -> ConversationProblem.PROVIDER
                                 }
-                            if (continuation.isActive) continuation.resumeWithException(ConversationException(problem))
+                            if (continuation.isActive) {
+                                continuation.resumeWithException(
+                                    if (error is ConversationException) error else ConversationException(problem),
+                                )
+                            }
                         }
                     }
                 },

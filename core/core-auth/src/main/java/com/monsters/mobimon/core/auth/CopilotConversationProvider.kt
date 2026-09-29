@@ -34,6 +34,7 @@ internal class CopilotAccess(
 
 internal class ConversationException(
     val problem: ConversationProblem,
+    val rejection: CopilotRejection = CopilotRejection.UNKNOWN,
 ) : Exception(problem.name)
 
 internal enum class CopilotChatApi(
@@ -200,16 +201,7 @@ internal class CopilotConversationProvider(
             interactionAllowed: () -> Boolean,
             context: ConversationContextSource,
         ): ConversationProvider {
-            val client =
-                OkHttpClient
-                    .Builder()
-                    .connectTimeout(5, TimeUnit.SECONDS)
-                    .readTimeout(20, TimeUnit.SECONDS)
-                    .callTimeout(25, TimeUnit.SECONDS)
-                    .followRedirects(false)
-                    .followSslRedirects(false)
-                    .retryOnConnectionFailure(false)
-                    .build()
+            val client = httpClient()
             return CopilotConversationProvider(
                 authentication::conversationCredential,
                 authentication::isCurrent,
@@ -219,5 +211,16 @@ internal class CopilotConversationProvider(
                 authentication::rejectConversationCredential,
             )
         }
+
+        internal fun httpClient(): OkHttpClient =
+            OkHttpClient
+                .Builder()
+                .connectTimeout(5, TimeUnit.SECONDS)
+                .readTimeout(20, TimeUnit.SECONDS)
+                .callTimeout(25, TimeUnit.SECONDS)
+                .followRedirects(false)
+                .followSslRedirects(false)
+                .retryOnConnectionFailure(false)
+                .build()
     }
 }
