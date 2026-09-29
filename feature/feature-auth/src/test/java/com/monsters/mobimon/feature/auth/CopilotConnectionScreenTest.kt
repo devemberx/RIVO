@@ -31,6 +31,7 @@ import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import com.monsters.mobimon.core.domain.AuthenticationProblem
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -240,6 +241,39 @@ class CopilotConnectionScreenTest {
             compose.onNodeWithText("@test-user").assertExists()
             compose.onNodeWithText("연결이 완료됐어요.").assertDoesNotExist()
         }
+    }
+
+    @Test
+    fun networkFailureOffersRecheckWithoutClearingConnectionInformation() {
+        val actions = mutableListOf<CopilotAction>()
+        show(CopilotUiState.AuthenticationStatus(problem = AuthenticationProblem.NETWORK), actions::add)
+
+        compose.onNodeWithText("계정 연결").assertDoesNotExist()
+        compose.onNodeWithText("이용 확인").assertDoesNotExist()
+        compose.onNodeWithText("대화 시작").assertDoesNotExist()
+        val panel = compose.onNodeWithTag("copilot-panel").fetchSemanticsNode().boundsInRoot
+        val heading =
+            compose
+                .onNodeWithText("GitHub 계정 인증")
+                .assertIsDisplayed()
+                .fetchSemanticsNode()
+                .boundsInRoot
+        assertEquals(panel.left + 64f, heading.left, 1f)
+        assertEquals(panel.top + 64f, heading.top, 1f)
+        compose.onNodeWithText("네트워크 연결을 확인해 주세요. 저장된 연결 정보는 유지돼요.").assertIsDisplayed()
+        compose.onNodeWithText("연결 정보 지우기").assertDoesNotExist()
+        click("다시 확인")
+        assertEquals(listOf(CopilotAction.RECHECK), actions)
+    }
+
+    @Test
+    fun storageFailureStillOffersLocalConnectionClearing() {
+        val actions = mutableListOf<CopilotAction>()
+        show(CopilotUiState.AuthenticationStatus(problem = AuthenticationProblem.STORAGE), actions::add)
+
+        compose.onNodeWithText("계정 연결").assertIsDisplayed()
+        click("연결 정보 지우기")
+        assertEquals(listOf(CopilotAction.DISCONNECT), actions)
     }
 
     @Test

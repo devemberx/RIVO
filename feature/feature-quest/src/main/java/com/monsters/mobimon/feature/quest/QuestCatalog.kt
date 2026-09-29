@@ -29,13 +29,19 @@ internal class QuestCatalog(
         snapshot: VehicleSnapshot?,
         text: (Int) -> String,
     ): QuestScreenState {
+        val visibleCompletedIds =
+            if (state.pendingQuestId != null && state.rewardSuccess == null) {
+                state.completedPointQuestIds - state.pendingQuestId
+            } else {
+                state.completedPointQuestIds
+            }
         val quests =
             drivingContent
                 .mapNotNull { content ->
                     val definition = catalog.find(content.id) ?: return@mapNotNull null
                     val status =
                         when (content.id) {
-                            in state.completedPointQuestIds -> QuestItemStatus.COMPLETED
+                            in visibleCompletedIds -> QuestItemStatus.COMPLETED
                             in state.satisfiedDrivingQuestIds -> QuestItemStatus.CLAIMABLE
                             else -> QuestItemStatus.IN_PROGRESS
                         }
@@ -64,13 +70,17 @@ internal class QuestCatalog(
                             },
                         targetRoute = VehicleRoute.VEHICLE_INFO,
                         progressDetail = buildProgressDetail(content.id, state.driveEvaluation, snapshot),
-                        completedAtUtcMillis = state.completedPointQuestDates[content.id],
+                        completedAtUtcMillis =
+                            state.completedPointQuestDates[content.id]?.takeIf {
+                                content.id in
+                                    visibleCompletedIds
+                            },
                     )
                 }.sortedBy { it.status.sortPriority }
         val hiddenQuests =
             hiddenContent
                 .filter { content ->
-                    content.id !in state.completedPointQuestIds &&
+                    content.id !in visibleCompletedIds &&
                         content.id !in state.dismissedHiddenQuestIds &&
                         content.isSatisfied(appearance)
                 }.mapNotNull { content ->

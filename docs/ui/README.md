@@ -1,9 +1,10 @@
 # UI reference exports
 
-These 2560 × 1440 SVGs are visual references from the
-[v5 Figma page](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-2).
-The index links each export to its source frame. See [DESIGN.md](../DESIGN.md)
-for behavior and [ARCHITECTURE.md](../ARCHITECTURE.md) for implementation status.
+These SVGs link to their source frames in Figma. Vehicle screens and the three
+notification states below use [revised v6](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=855-1393);
+the remaining references use [v5](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-2).
+See [DESIGN.md](../DESIGN.md) for behavior and [ARCHITECTURE.md](../ARCHITECTURE.md)
+for implementation status.
 
 The connected screen includes a
 [Lucide settings icon](https://github.com/lucide-icons/lucide/blob/0.468.0/icons/settings.svg)
@@ -21,9 +22,9 @@ The connected screen includes a
 | [menu.svg](shell/menu.svg) | [Menu with notification row; three alerts](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-3844) |
 | [menu-no-notifications.svg](shell/menu-no-notifications.svg) | [Menu without notification count badge](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=783-1025) |
 | [menu-many-notifications.svg](shell/menu-many-notifications.svg) | [Menu with notification row; five alerts](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=783-1164) |
-| [notifications-empty.svg](shell/notifications-empty.svg) | [Compact header with centered bell empty state](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=777-350) |
-| [notifications-three.svg](shell/notifications-three.svg) | [Notifications: three alerts](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=777-203) |
-| [notifications-many.svg](shell/notifications-many.svg) | [Notifications: five alerts](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=777-470) |
+| [notifications-empty.svg](shell/notifications-empty.svg) | [Compact header with raised bell empty state · v6](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=855-7910) |
+| [notifications-three.svg](shell/notifications-three.svg) | [Alerts and reward · v6](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=855-8014) |
+| [notifications-many.svg](shell/notifications-many.svg) | [Scrollable alerts · v6](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=855-7763) |
 | [settings.svg](shell/settings.svg) | [Settings](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-3641) |
 
 ### Connection
@@ -72,9 +73,12 @@ The connected screen includes a
 
 | Reference | Visible state |
 | --- | --- |
-| [charging-required.svg](vehicle/charging-required.svg) | [Charging required / hungry](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-890) |
-| [tire-warning.svg](vehicle/tire-warning.svg) | [Tire warning / sick](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-999) |
-| [checked-items-normal.svg](vehicle/checked-items-normal.svg) | [Checked items normal / default](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-1099) |
+| [charging-required.svg](vehicle/charging-required.svg) | [Low battery · v6](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=855-9562) |
+| [tire-warning.svg](vehicle/tire-warning.svg) | [Low tire pressure · v6](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=855-2734) |
+| [checked-items-normal.svg](vehicle/checked-items-normal.svg) | [Normal · v6](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=855-2873) |
+| [card-selection.svg](vehicle/card-selection.svg) | [Card selection · v6](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=855-3173) |
+| [parking-required.svg](vehicle/parking-required.svg) | [Parking required · v6](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=855-3475) |
+| [card-catalog.svg](vehicle/card-catalog.svg) | [30 cards and VSS signals · v6](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=855-3017) |
 
 ### Quests
 

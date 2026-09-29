@@ -1,7 +1,7 @@
 # Product design
 
 MobiMon is a parked companion for vehicle information, conversation, quests and
-personalization. [V5 exports](ui/README.md) own screen geometry;
+personalization. [UI exports](ui/README.md) own screen geometry;
 [Architecture](ARCHITECTURE.md) separates implementation from integration gaps.
 
 ## Concept
@@ -29,8 +29,8 @@ vehicles or replace warnings.
 - On an active Vehicle, Store, or Quest route, losing verified Park shows a
   blocking, route-specific parking interruption dialog over the current screen.
   The restricted badge, pause icon, explanation, preserved-progress note and
-  Home action follow the `수정본_v5` Figma frames (Vehicle `770:2`, Store
-  `770:155`, Quest `770:282`). Hide any underlying selector or reward dialog;
+  Home action follow the [vehicle v6 export](ui/vehicle/parking-required.svg)
+  and `수정본_v5` Figma frames (Store `770:155`, Quest `770:282`). Hide any underlying selector or reward dialog;
   restore the route when verified Park returns if the user has not gone Home.
   Initial unavailable vehicle data stays in each route's ordinary unavailable
   state. Pending writes receive no success presentation after interruption;
@@ -87,6 +87,10 @@ Follow [home.svg](ui/shell/home.svg): keep the centered artwork crop and horizon
 when content height changes. Store crops within cards. Crossfade background/tint
 without tinting controls; notices must not move the main action. Use the animated
 time phrase rather than the export subtitle, with scrolling for enlarged text.
+Home speech uses regular-weight text. On the reference Home scene, keep the
+tail anchored in both axes as longer dialogue grows upward. Scale the body
+curves to its height and center reflowed text inside it. Size the height to
+the displayed line count with consistent vertical padding.
 
 ## Screens and navigation
 
@@ -111,6 +115,16 @@ assumed daily reset. Show one committed Points balance; unknown is not zero.
 Celebrate only committed amounts, once per claim; later repository data replaces
 confirmations. Show persisted completion dates. Align point headers with parking
 badges; compact Quest may place balance beside its heading.
+Keep the claim button and quest card in place while saving, with progress shown in
+the button. After commit, show one centered reward popup with a short entrance
+motion, a consistently framed happy companion, and amounts labeled P; reduced
+motion displays the popup immediately.
+
+Quest detail slightly widens the companion panel and shifts the friend as the
+selected content enters from the side; Back reverses the motion and restores the
+list's scroll position. Keep “작은 도전, 큰 여정” in both views and a fixed gap
+between progress content and reward points in detail. Show a scroll indicator
+only when the list overflows; reduced motion switches the views immediately.
 
 ## Customization
 
@@ -170,14 +184,21 @@ Network popups release the microphone and retain unsent drafts or failed turns.
 
 Exports may show older recovery copy or visible history; use the current session
 behavior with their geometry. Footer names GitHub Copilot, discloses transmitted
-conversation, available name/time and AI uncertainty. Local clearing does not promise
+conversation, available name/time/vehicle condition signals, debugger test values and AI uncertainty. Local clearing does not promise
 provider deletion. Spoken replies remain planned and must yield to calls/navigation.
 
 ## Vehicle information
 
-Six default cards use a gallery that excludes assigned cards; Confirm saves a selected
-alternative locally. Keep card sizes stable and scroll additional choices. Debug values
-are simulations, not vehicle verification.
+The [vehicle v6 exports](ui/README.md#vehicle) define the header edit action, summary,
+cards and selector layout. The companion uses shared `PetAvatar` artwork and motion,
+including equipped accessories and Hungry/Sick condition variants.
+
+Six default cards show condition through icon and text color with accessible status
+labels; the selector excludes assigned cards and saves the selected alternative locally
+after confirmation. Selector tabs use 64 px full pill shapes and centered bold labels.
+Match the visible gaps above and below the tabs to the list-to-footer gap (about 31 px);
+the apply button is 352 px wide. Keep card sizes stable, scroll additional choices, and
+label Debug values as simulations rather than vehicle verification.
 
 Distinguish Info, Normal, Caution and Unavailable. Missing/stale/invalid is never Normal;
 four-wheel Normal requires all readings, while one confirmed warning permits Caution.
@@ -199,7 +220,9 @@ hide expired codes. Unconfigured builds disable sign-in. Follow the
 
 [Verified success](ui/connection/connected.svg) shows the account and equipped friend's
 conversation action plus Settings. Explain local persistence and separate Copilot
-readiness. Failures offer retry/local clearing; Disconnect confirms local-only removal.
+readiness. Network failures omit connection steps and offer retry without local
+clearing; other authentication failures retain the steps and clearing option.
+Disconnect confirms local-only removal.
 Reuse shared loading/failure panels where exports are absent.
 
 ## Motion

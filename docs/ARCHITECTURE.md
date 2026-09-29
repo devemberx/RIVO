@@ -128,14 +128,25 @@ Debug entry cancels on pause and has no Release component.
 The system instruction gives Mobi a curious rabbit persona and Luna a quietly caring
 cat persona, using short natural Korean banmal without habitual animal suffixes,
 emojis or stage directions. Each send adds optional bounded AAOS context-user name
-(`QUERY_USERS`, absent without permission) and independently fresh VSS timestamp/period.
-These values are untrusted data, never instructions or ownership identifiers. No other
-vehicle readings, tools or reward commands are sent. Missing context is omitted.
+(`QUERY_USERS`, absent without permission) and independently fresh VSS timestamp.
+These values are untrusted data, never instructions or ownership identifiers. Battery
+SOC is also sent using the shared freshness policy; unavailable battery is explicit.
+Each send reads the runtime debugger setting: enabled selects labeled test readings
+in either build, disabled accepts only real-source readings. Source mismatches are
+unavailable during switching; simulated fallback is never sent with the debugger off.
+Pet condition and its current hunger/sickness evidence use the same classifier as
+the display, including valid warning signals. Derived readings are labeled separately
+from raw signal paths; explanations cannot invent historical causes or diagnoses.
+No vehicle tools or reward commands are sent. Debugger warning inputs are available
+in both build variants while the debugger is enabled.
 
-VSS time retains its offset and the scene mapper's period; it is not converted to
-system wall-clock time. A timestamp must have its own monotonic observation within
-60 seconds. Ticker publications never refresh it. Verified real adapters must supply
-that provenance; Debug observations are marked simulated. This is an observation
+Chat time uses the original VSS timestamp's hours, minutes, seconds and UTC offset;
+the scene mapper's period is not sent or substituted for an exact time. It is not
+converted to system wall-clock time. A timestamp must have its own monotonic observation within
+60 seconds. Ticker publications never refresh it. Real adapters must supply time and
+battery observation timestamps through `VssRawVehicleSource`; missing battery provenance
+is unavailable, and ticker publications cannot refresh it. Debugger readings are
+marked simulated. This is an observation
 freshness policy, not proof that GNSS provides a continuously advancing clock.
 
 Copilot catalog metadata supplies `max_prompt_tokens`, optional combined

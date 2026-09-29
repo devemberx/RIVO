@@ -43,8 +43,8 @@ internal object VehicleCardCatalog {
     val cards: List<VehicleCardSpec> =
         listOf(
             card("battery", "배터리 잔량", "구동 배터리 표시 잔량", "${BATTERY}StateOfCharge.Displayed"),
-            card("battery-health", "배터리 건강도", "표준 조건에서 계산한 건강도", "${BATTERY}StateOfHealth"),
-            card("battery-range", "주행 가능 거리", "배터리 기반 남은 거리", "${BATTERY}Range"),
+            card("battery-health", "배터리 건강도", "표준 조건 기준의 건강도", "${BATTERY}StateOfHealth"),
+            card("battery-range", "주행 가능 거리", "배터리 기반 예상 거리", "${BATTERY}Range"),
             card("battery-time", "배터리 남은 시간", "방전까지 남은 예상 시간", "${BATTERY}TimeRemaining"),
             card("battery-error", "배터리 오류", "배터리 진단 코드", "${BATTERY}ErrorCodes"),
             card("driver-door", "운전석 문 잠금", "문 잠금 상태", "Vehicle.Cabin.Door.Row1.DriverSide.IsLocked"),
@@ -289,16 +289,20 @@ internal object VehicleCardCatalog {
                     percent()
                 }
             "battery-range", "distance" -> number()?.let { "${(it / 1000).toInt()} km" }
-            "battery-time" -> number()?.let { "${(it / 3600).toInt()}시간" }
+            "battery-time" ->
+                number()?.let {
+                    val minutes = (it / 60).toLong()
+                    if (minutes % 60 == 0L) "${minutes / 60}시간" else "${minutes / 60}시간 ${minutes % 60}분"
+                }
             "charging-time" ->
                 boolean(spec.vssPaths[1])?.let { charging ->
                     if (charging) number()?.let { "${(it / 3600).toInt()}시간" } else "충전 안 함"
                 }
             "service-time" -> number()?.let { "${(it / 86400).toInt()}일" }
             "service-distance" -> number()?.let { "${it.toInt()} km" }
-            "battery-error" -> signals[spec.vssPaths.first()]?.let { if (it.isBlank()) "없음" else it }
+            "battery-error" -> signals[spec.vssPaths.first()]?.let { if (it.isBlank()) "오류 없음" else it }
             "driver-door" -> state("잠김", "열림")
-            "service-due" -> state("정비 필요", "정상")
+            "service-due" -> state("정비 필요", "필요 없음")
             "brake-fluid" -> anyWheelWarning()?.let { if (it == "경고 있음") "부족" else "정상" }
             "low-beam", "brake-light", "abs", "pad-warning", "tire-low" ->
                 if (spec.vssPaths.size > 1) anyWheelWarning() else state("경고 있음", "경고 없음")

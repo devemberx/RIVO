@@ -83,12 +83,8 @@ class DemoVehicleRepository(
                                     overrides = debugState.overrides.toVssInterpretationOverrides(),
                                 )
                             interpreted.copy(
-                                vssCardSignals =
-                                    if (BuildConfig.DEBUG) {
-                                        debugState.cardExtraSignals + debugState.raw.toCardSignalValues()
-                                    } else {
-                                        emptyMap()
-                                    },
+                                isDebuggerOverride = true,
+                                vssCardSignals = debugState.cardExtraSignals + debugState.raw.toCardSignalValues(),
                             )
                         } else {
                             val interpreted =
@@ -100,6 +96,7 @@ class DemoVehicleRepository(
                                     observedAtMillis = observedAt,
                                     source = rawSourceSignalSource(),
                                     timeObservedAtMillis = sourceTimeObservation(),
+                                    batteryObservedAtMillis = sourceBatteryObservation(observedAt),
                                 )
                             interpreted.copy(vssCardSignals = fallbackCardSignals())
                         }
@@ -184,16 +181,21 @@ class DemoVehicleRepository(
             SignalSource.REAL
         }
 
+    private fun sourceBatteryObservation(now: Long): Long? =
+        if (vssRawSource is DefaultParkedVssRawVehicleSource) now else vssRawSource.batteryObservedAtMillis
+
     private fun initialSnapshot(): VehicleSnapshot {
+        val observedAt = clock.nowMillis()
         val interpreted =
             VssVehicleInterpreter.snapshot(
                 raw = vssRawSource.state.value,
                 id = INITIAL_SNAPSHOT_ID,
                 epoch = INITIAL_SNAPSHOT_EPOCH,
                 sequence = 0,
-                observedAtMillis = clock.nowMillis(),
+                observedAtMillis = observedAt,
                 source = rawSourceSignalSource(),
                 timeObservedAtMillis = sourceTimeObservation(),
+                batteryObservedAtMillis = sourceBatteryObservation(observedAt),
             )
         return interpreted.copy(vssCardSignals = fallbackCardSignals())
     }

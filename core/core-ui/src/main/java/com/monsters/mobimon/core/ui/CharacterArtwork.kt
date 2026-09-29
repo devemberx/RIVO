@@ -82,26 +82,20 @@ object CharacterArtwork {
 
     val happyCharacters =
         mapOf(
-            "friend:mobi" to CharacterAsset(R.drawable.mobimon_mobi_happy, translationYFraction = -35.24f / 1254f),
-            "friend:luna" to CharacterAsset(R.drawable.mobimon_luna_happy, visualScale = 0.87f),
+            "friend:mobi" to CharacterAsset(R.drawable.mobimon_mobi_happy, AssetCrop(244, 96, 2156, 2272)),
+            "friend:luna" to CharacterAsset(R.drawable.mobimon_luna_happy, AssetCrop(49, 50, 1166, 1158)),
         )
 
     val happyEquippedLooks =
         mapOf(
             "accessory:mobi_headphones" to
-                CharacterAsset(R.drawable.mobimon_mobi_headphones_happy, translationYFraction = -35.24f / 1254f),
+                CharacterAsset(R.drawable.mobimon_mobi_headphones_happy, AssetCrop(129, 64, 1008, 1139)),
             "accessory:mobi_goggles" to
-                CharacterAsset(R.drawable.mobimon_mobi_goggles_happy, translationYFraction = -35.24f / 1254f),
+                CharacterAsset(R.drawable.mobimon_mobi_goggles_happy, AssetCrop(152, 58, 985, 1159)),
             "accessory:luna_cap" to
-                CharacterAsset(
-                    R.drawable.mobimon_luna_cap_happy,
-                    visualScale = 0.87f,
-                ),
+                CharacterAsset(R.drawable.mobimon_luna_cap_happy, AssetCrop(49, 17, 1205, 1237)),
             "accessory:luna_sunglasses" to
-                CharacterAsset(
-                    R.drawable.mobimon_luna_sunglasses_happy,
-                    visualScale = 0.87f,
-                ),
+                CharacterAsset(R.drawable.mobimon_luna_sunglasses_happy, AssetCrop(49, 50, 1166, 1204)),
         )
 
     fun preview(

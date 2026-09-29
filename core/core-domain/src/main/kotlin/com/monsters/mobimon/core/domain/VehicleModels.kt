@@ -60,4 +60,6 @@ data class VehicleSnapshot(
     val batteryAgeMillis: Long? = null,
     /** Display-only VSS readings from the isolated simulation; absent paths are unavailable. */
     val vssCardSignals: Map<String, String> = emptyMap(),
+    /** Explicit debugger input, distinct from a simulated fallback when no adapter exists. */
+    val isDebuggerOverride: Boolean = false,
 )
