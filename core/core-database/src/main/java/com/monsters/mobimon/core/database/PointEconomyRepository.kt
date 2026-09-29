@@ -227,11 +227,37 @@ class PointEconomyRepository(
                 ) {
                     return@withTransaction PointAwardResult.InteractionRestricted
                 }
-                if (current != displayedSnapshot) return@withTransaction PointAwardResult.EvidenceChanged
-                // Gate driving quests on their per-quest evidence; hidden quests (null) stay ungated.
+
+                // Gate driving quests on their per-quest evidence; hidden quests rely on appearance.
+                val isHiddenQuest = questId.startsWith("quest_hidden_")
                 val drivingResult = drivingEvaluator.evaluateById(questId, _driveEvaluation.value)
-                if (drivingResult != null && !drivingResult.isSatisfied) {
-                    return@withTransaction PointAwardResult.ConditionNotMet
+                if (!isHiddenQuest) {
+                    if (current != displayedSnapshot) return@withTransaction PointAwardResult.EvidenceChanged
+                    if (drivingResult != null &&
+                        !drivingResult.isSatisfied
+                    ) {
+                        return@withTransaction PointAwardResult.ConditionNotMet
+                    }
+                } else {
+                    val activeFriend = dao.equipped(profileId, "FRIEND")?.itemId ?: "friend:mobi"
+                    val valid =
+                        when (questId) {
+                            com.monsters.mobimon.core.domain.DrivingQuestIds.HIDDEN_COSTUME -> {
+                                dao.equipped(profileId, "ACCESSORY:$activeFriend") != null ||
+                                    dao.equipped(profileId, "ACCESSORY") != null ||
+                                    dao.equipped(profileId, "OUTFIT:$activeFriend") != null ||
+                                    dao.equipped(profileId, "OUTFIT") != null
+                            }
+                            com.monsters.mobimon.core.domain.DrivingQuestIds.HIDDEN_BACKGROUND -> {
+                                val bg = dao.equipped(profileId, "BACKGROUND")?.itemId
+                                bg != null && bg != "none" && bg != "background:default"
+                            }
+                            com.monsters.mobimon.core.domain.DrivingQuestIds.HIDDEN_NEW_FRIEND -> {
+                                activeFriend != "friend:mobi"
+                            }
+                            else -> true
+                        }
+                    if (!valid) return@withTransaction PointAwardResult.ConditionNotMet
                 }
                 val awardedPoints = drivingResult?.earnedPoints ?: definition.rewardPoints
                 val basePoints = drivingResult?.basePoints ?: definition.rewardPoints

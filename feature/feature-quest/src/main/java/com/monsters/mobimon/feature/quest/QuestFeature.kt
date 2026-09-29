@@ -83,6 +83,7 @@ class QuestFeature(
             onRetryWallet = walletModel::retry,
             onRetryAppearance = appearanceModel::retry,
             onNavigateRoute = navigator.navigate,
+            onClearRequestedQuest = model::clearRequestedQuest,
             onBack = navigator.back,
             onHome = navigator.returnHome,
             modifier = modifier,

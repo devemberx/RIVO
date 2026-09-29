@@ -7,23 +7,52 @@ class CompanionRuntime(
     private val vehicleRepository: VehicleRepository,
     private val appUse: AppUseLifecycle,
 ) {
-    private var running = false
+    private var appRunning = false
+    private var overlayRunning = false
+    private var vehicleRunning = false
 
     @Synchronized
     fun start() {
-        if (!running) {
+        if (!appRunning) {
             appUse.start()
-            vehicleRepository.start()
-            running = true
+            appRunning = true
+            updateVehicleObservation()
         }
     }
 
     @Synchronized
     fun stop() {
-        if (running) {
-            vehicleRepository.stop()
+        if (appRunning) {
             appUse.stop()
-            running = false
+            appRunning = false
+            updateVehicleObservation()
+        }
+    }
+
+    @Synchronized
+    fun startOverlay() {
+        if (!overlayRunning) {
+            overlayRunning = true
+            updateVehicleObservation()
+        }
+    }
+
+    @Synchronized
+    fun stopOverlay() {
+        if (overlayRunning) {
+            overlayRunning = false
+            updateVehicleObservation()
+        }
+    }
+
+    private fun updateVehicleObservation() {
+        val shouldRun = appRunning || overlayRunning
+        if (shouldRun && !vehicleRunning) {
+            vehicleRepository.start()
+            vehicleRunning = true
+        } else if (!shouldRun && vehicleRunning) {
+            vehicleRepository.stop()
+            vehicleRunning = false
         }
     }
 }

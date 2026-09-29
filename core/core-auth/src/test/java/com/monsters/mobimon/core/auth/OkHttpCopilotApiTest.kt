@@ -70,6 +70,22 @@ class OkHttpCopilotApiTest {
             assertEquals("user", request.getHeader("X-Initiator"))
         }
 
+    @Test fun forbiddenToolRejectionRetainsItsClassification() =
+        runBlocking {
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(403)
+                    .setBody("""{"error":{"message":"tools are not supported"}}"""),
+            )
+            try {
+                api.exchange(access, CopilotChatApi.CHAT_COMPLETIONS, JSONObject().put("tools", org.json.JSONArray()))
+                error("Expected rejection")
+            } catch (error: ConversationException) {
+                assertEquals(ConversationProblem.ACCESS, error.problem)
+                assertEquals(CopilotRejection.TOOLS_UNSUPPORTED, error.rejection)
+            }
+        }
+
     @Test fun personasGiveEachPetIdentityWithoutHabitualAnimalSuffixes() {
         val mobi =
             CopilotMessageCodec
