@@ -85,6 +85,11 @@ fun QuestScreen(
         }
     }
 
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        listScrollState.scrollTo(0)
+        detailScrollState.scrollTo(0)
+    }
+
     val selectedQuest = state.quests.firstOrNull { it.id == selectedQuestId }
     BackHandler(enabled = !parkingRequired) {
         if (selectedQuest != null) {
