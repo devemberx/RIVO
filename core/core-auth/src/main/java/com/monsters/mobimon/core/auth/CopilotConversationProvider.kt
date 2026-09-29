@@ -112,47 +112,59 @@ internal class CopilotConversationProvider(
         friendId: String,
         messages: List<ConversationTurn>,
     ): ConversationResult<String> =
-        withTimeoutOrNull(30_000) {
-            operation(accountId) { lease ->
-                if (conversationId.isBlank() ||
-                    conversationId.length > 128 ||
-                    messages.isEmpty() ||
-                    messages.size % 2 != 1 ||
-                    messages.withIndex().any { (index, message) ->
-                        message.fromUser != (index % 2 == 0) ||
-                            message.text.isBlank() ||
-                            message.text.length >
-                            if (message.fromUser) {
-                                ConversationLimits.INPUT_CHARACTERS
-                            } else {
-                                ConversationLimits.REPLY_CHARACTERS
-                            }
-                    }
-                ) {
-                    throw ConversationException(ConversationProblem.LIMIT)
-                }
-                coroutineScope {
-                    val monitor =
-                        if (tools.tools.isNotEmpty()) {
-                            launch {
-                                while (true) {
-                                    delay(100)
-                                    guard(lease)
-                                }
-                            }
+        if (tools.tools.isEmpty()) {
+            replyOnce(accountId, conversationId, friendId, messages)
+        } else {
+            withTimeoutOrNull(30_000) {
+                replyOnce(accountId, conversationId, friendId, messages)
+            } ?: ConversationResult.Failure(ConversationProblem.TIMEOUT)
+        }
+
+    private suspend fun replyOnce(
+        accountId: Long,
+        conversationId: String,
+        friendId: String,
+        messages: List<ConversationTurn>,
+    ): ConversationResult<String> =
+        operation(accountId) { lease ->
+            if (conversationId.isBlank() ||
+                conversationId.length > 128 ||
+                messages.isEmpty() ||
+                messages.size % 2 != 1 ||
+                messages.withIndex().any { (index, message) ->
+                    message.fromUser != (index % 2 == 0) ||
+                        message.text.isBlank() ||
+                        message.text.length >
+                        if (message.fromUser) {
+                            ConversationLimits.INPUT_CHARACTERS
                         } else {
-                            null
+                            ConversationLimits.REPLY_CHARACTERS
                         }
-                    try {
-                        prepare(lease)
-                        guard(lease)
-                        api.completeWithTools(access!!, selectedModel!!, friendId, messages, tools) { guard(lease) }
-                    } finally {
-                        monitor?.cancel()
+                }
+            ) {
+                throw ConversationException(ConversationProblem.LIMIT)
+            }
+            coroutineScope {
+                val monitor =
+                    if (tools.tools.isNotEmpty()) {
+                        launch {
+                            while (true) {
+                                delay(100)
+                                guard(lease)
+                            }
+                        }
+                    } else {
+                        null
                     }
+                try {
+                    prepare(lease)
+                    guard(lease)
+                    api.completeWithTools(access!!, selectedModel!!, friendId, messages, tools) { guard(lease) }
+                } finally {
+                    monitor?.cancel()
                 }
             }
-        } ?: ConversationResult.Failure(ConversationProblem.TIMEOUT)
+        }
 
     private suspend fun prepare(
         lease: ConversationCredential,
