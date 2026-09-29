@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.SystemClock
 import com.monsters.mobimon.core.domain.AuthenticationProblem
 import com.monsters.mobimon.core.domain.ConversationProvider
+import com.monsters.mobimon.core.domain.ConversationTools
 import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.core.domain.GitHubSession
 import com.monsters.mobimon.core.domain.GitHubSignIn
@@ -175,7 +176,8 @@ class PersistentGitHubAuthentication internal constructor(
                     com.monsters.mobimon.core.domain
                         .ConversationContext()
                 },
-    ): ConversationProvider = CopilotConversationProvider.create(this, interactionAllowed, context)
+        tools: ConversationTools = ConversationTools.None,
+    ): ConversationProvider = CopilotConversationProvider.create(this, interactionAllowed, context, tools)
 
     internal suspend fun conversationCredential(accountId: Long): ConversationCredential =
         mutex.withLock {

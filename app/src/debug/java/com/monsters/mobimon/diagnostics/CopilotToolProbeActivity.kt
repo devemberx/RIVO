@@ -25,6 +25,7 @@ import androidx.lifecycle.lifecycleScope
 import com.monsters.mobimon.MainActivity
 import com.monsters.mobimon.core.auth.PersistentGitHubAuthentication
 import com.monsters.mobimon.core.auth.probeToolCalling
+import com.monsters.mobimon.core.auth.probeToolFoundation
 import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.core.domain.GitHubSession
 import com.monsters.mobimon.core.ui.MobiMonButton
@@ -55,7 +56,13 @@ class CopilotToolProbeActivity : ComponentActivity() {
                         verticalArrangement = Arrangement.spacedBy(24.dp),
                     ) {
                         Text("Copilot 도구 호출 진단 · Debug")
-                        Text("gpt-4o · 합성 질문 · 실제 Copilot 사용량 발생 · 자동 왕복 2회와 강제 호출 1회")
+                        Text(
+                            if (intent.getBooleanExtra("tool_foundation", false)) {
+                                "gpt-4o 고정 · 공용 도구 실행 기반 검증 · 합성 질문 2회 · 실제 사용량 발생"
+                            } else {
+                                "gpt-4o 고정 · 합성 질문 · 실제 사용량 발생 · 도구 자동 선택 2회와 강제 지정 1회"
+                            },
+                        )
                         Text(
                             if (session is GitHubSession.Authenticated) {
                                 "GitHub 로그인 확인됨"
@@ -98,7 +105,12 @@ class CopilotToolProbeActivity : ComponentActivity() {
             lifecycleScope.launch {
                 running = true
                 try {
-                    val result = realAuthentication.probeToolCalling { event -> append(event.toString()) }
+                    val result =
+                        if (intent.getBooleanExtra("tool_foundation", false)) {
+                            realAuthentication.probeToolFoundation { usage -> append(usage.toString()) }
+                        } else {
+                            realAuthentication.probeToolCalling { event -> append(event.toString()) }
+                        }
                     append(result.toString())
                 } catch (cancelled: CancellationException) {
                     append("CANCELLED")

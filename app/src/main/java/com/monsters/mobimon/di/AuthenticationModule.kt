@@ -11,6 +11,7 @@ import com.monsters.mobimon.core.domain.Clock
 import com.monsters.mobimon.core.domain.ConversationContextSource
 import com.monsters.mobimon.core.domain.ConversationProvider
 import com.monsters.mobimon.core.domain.ConversationStore
+import com.monsters.mobimon.core.domain.ConversationTools
 import com.monsters.mobimon.core.domain.CurrentAppUse
 import com.monsters.mobimon.core.domain.CurrentVehicleEvidence
 import com.monsters.mobimon.core.domain.DrivingState
@@ -63,7 +64,8 @@ object AuthenticationModule {
     fun conversation(
         authentication: PersistentGitHubAuthentication,
         context: ConversationContextSource,
-    ): ConversationProvider = authentication.conversationProvider(context)
+        tools: ConversationTools,
+    ): ConversationProvider = authentication.conversationProvider(context, tools)
 
     @Provides @Singleton
     fun conversationContext(
