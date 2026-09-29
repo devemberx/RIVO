@@ -124,6 +124,7 @@ fun CompanionMenu(
     onClose: () -> Unit,
     onNavigate: (AppRoute) -> Unit,
     notifications: List<NotificationItem> = emptyList(),
+    onNotificationClick: (NotificationItem) -> Unit = { onNavigate(it.route) },
     onVersionClick: () -> Unit = {},
     activeFriendId: String? = null,
     accessoryId: String? = null,
@@ -249,7 +250,15 @@ fun CompanionMenu(
                         expanded = notificationsOpen,
                         onBack = { notificationsOpen = false },
                         onClose = onClose,
-                        onNavigate = onNavigate,
+                        onNotificationClick = { item ->
+                            if (item.kind ==
+                                NotificationKind.QUEST
+                            ) {
+                                onNotificationClick(item)
+                            } else {
+                                onNavigate(item.route)
+                            }
+                        },
                     )
                 }
             }

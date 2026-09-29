@@ -120,4 +120,5 @@ data class QuestScreenState(
     val observationFailed: Boolean = false,
     val errorMessage: String? = null,
     val rewardSuccess: QuestRewardSuccess? = null,
+    val requestedQuestId: String? = null,
 )
