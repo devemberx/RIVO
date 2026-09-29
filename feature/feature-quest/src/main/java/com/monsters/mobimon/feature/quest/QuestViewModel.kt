@@ -43,6 +43,7 @@ data class QuestUiState(
     val observationFailed: Boolean = false,
     val message: QuestMessage? = null,
     val rewardSuccess: QuestRewardSuccess? = null,
+    val requestedQuestId: String? = null,
 ) {
     val isBusy: Boolean get() = pendingQuestId != null
 }
@@ -189,6 +190,14 @@ class QuestViewModel(
 
     private fun show(message: QuestMessage) {
         mutableState.update { it.copy(message = message) }
+    }
+
+    fun requestOpenQuest(questId: String) {
+        mutableState.update { it.copy(requestedQuestId = questId) }
+    }
+
+    fun clearRequestedQuest() {
+        mutableState.update { it.copy(requestedQuestId = null) }
     }
 }
 
