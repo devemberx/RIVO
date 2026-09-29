@@ -321,6 +321,7 @@ private fun QuestContent(
                 QuestDetailCard(
                     quest = currentQuest,
                     canClaim = state.canClaim,
+                    isClaimPending = state.pendingQuestId == currentQuest.id,
                     scale = scale,
                     onBackToList = { if (active) onSelectQuest(null) },
                     onExecute = { if (active) onNavigateRoute(currentQuest.targetRoute) },
@@ -335,6 +336,7 @@ private fun QuestContent(
                     selectedTab = selectedTab,
                     onSelectTab = { if (active) onSelectTab(it) },
                     canClaim = state.canClaim,
+                    pendingQuestId = state.pendingQuestId,
                     isCompact = isCompact,
                     onSelectQuest = { if (active) onSelectQuest(it) },
                     onClaimReward = { if (active) onClaimReward(it) },

@@ -51,7 +51,7 @@ Keep one row per critical contract group; test sources own detailed cases.
 | Bounded tool execution, strict arguments, whole-turn budgets, cancellation, identity and Park changes | [Tool conversation tests](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth/CopilotToolConversationTest.kt); synthetic live foundation probe remains separate evidence |
 | Pet persona, catalog/token budget and server context overflow | Auth Copilot suites; Korean/context/output boundaries and no replay |
 | Current-thread reopening, companion/account isolation, reset and stale save rejection | `ConversationStoreTest`, `ConversationViewModelTest`; atomic files and lifecycle fakes |
-| Optional AAOS name and independently fresh VSS time | `VehicleConversationContextTest`, `AndroidUserNameDeviceTest`; shell-adopted QUERY_USERS does not prove OEM signing/provisioning |
+| Optional AAOS name, exact VSS time, battery/condition evidence and runtime debugger selection | `VehicleConversationContextTest`, `VehicleChatSourceTest` (Debug/Release), `VehicleChatPayloadTest`, `AndroidUserNameDeviceTest`; fake adapters do not prove OEM integration or provisioning |
 | Keystore encryption, tampering and persistence | [EncryptedCredentialStoreTest](../core/core-auth/src/androidTest/java/com/monsters/mobimon/core/auth/EncryptedCredentialStoreTest.kt); device |
 | Approval guards, recovery and separate Copilot readiness | [Auth feature](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth), [connection journey](../app/src/journeyTest/java/com/monsters/mobimon/CopilotConnectionJourneyTest.kt) |
 
@@ -62,7 +62,7 @@ Keep one row per critical contract group; test sources own detailed cases.
 | Committed data, independent retry and appearance | Presentation, [Store](../feature/feature-customization/src/test/java/com/monsters/mobimon/feature/customization), [Home/Settings](../feature/feature-pet/src/test/java/com/monsters/mobimon/feature/pet) |
 | Claims, duplicates and reward reconciliation | [Quests](../feature/feature-quest/src/test/java/com/monsters/mobimon/feature/quest), database suites |
 | Card availability/selection and unselected warnings | [Vehicle](../feature/feature-vehicle-info/src/test/java/com/monsters/mobimon/feature/vehicle), domain/presentation and Debug suites |
-| Shared artwork, badges, motion and geometry | [Core UI](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui), owning feature suites |
+| Shared artwork, badges, motion and geometry | [Core UI](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui), owning feature suites and [native vehicle captures](../app/src/androidTest/java/com/monsters/mobimon/vehicle/VehicleLayoutDeviceTest.kt) |
 | Star hanger purchase/apply/removal, both friends, animated glow and reduced motion | `PointEconomyRepositoryTest.starHangerSeedsPurchasesAppliesAndRemovesForBothFriends`, `CustomizationCatalogTest.starHangerPreviewDoesNotEquipUntilAppliedAndIsAvailableToBothFriends`, `StarHangerTest`; item-only rendered reviews in `core-ui/build/reports/star-hanger/` |
 | Active Vehicle/Store/Quest Park-loss dialogs, blocked input and recovery | [Shared UI](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui/MobiMonParkingInterruptionTest.kt), owning feature suites |
 | Shell routes, notifications, launcher identity and overlay bounds | [Shell](../app/src/test/java/com/monsters/mobimon/ui), [service](../app/src/test/java/com/monsters/mobimon/service), Debug and connection suites |

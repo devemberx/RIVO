@@ -37,6 +37,7 @@ internal fun QuestDetailCard(
     quest: QuestItemUiModel,
     scale: Float,
     canClaim: Boolean,
+    isClaimPending: Boolean = false,
     onBackToList: () -> Unit,
     onExecute: () -> Unit,
     onClaimReward: () -> Unit,
@@ -47,7 +48,7 @@ internal fun QuestDetailCard(
     val isClaimable = quest.status == QuestItemStatus.CLAIMABLE
 
     if (!isCompact) {
-        QuestReferenceDetailCard(quest, scale, canClaim, onExecute, onClaimReward, modifier)
+        QuestReferenceDetailCard(quest, scale, canClaim, isClaimPending, onExecute, onClaimReward, modifier)
         return
     }
 
@@ -242,7 +243,10 @@ internal fun QuestDetailCard(
                     )
                     Spacer(Modifier.width(16.dp * scale))
                     Text(
-                        text = stringResource(R.string.quest_action_claim),
+                        text =
+                            stringResource(
+                                if (isClaimPending) R.string.quest_saving_short else R.string.quest_action_claim,
+                            ),
                         style = questTextStyle(38f, scale, bold = true, color = Colors.onButton),
                     )
                 }
@@ -284,6 +288,7 @@ private fun QuestReferenceDetailCard(
     quest: QuestItemUiModel,
     scale: Float,
     canClaim: Boolean,
+    isClaimPending: Boolean,
     onExecute: () -> Unit,
     onClaimReward: () -> Unit,
     modifier: Modifier = Modifier,
@@ -316,7 +321,7 @@ private fun QuestReferenceDetailCard(
     val actionLabel =
         when {
             isCompleted -> R.string.quest_action_already_claimed
-            isClaimable -> R.string.quest_action_claim
+            isClaimable -> if (isClaimPending) R.string.quest_saving_short else R.string.quest_action_claim
             else -> R.string.quest_action_execute
         }
     Box(

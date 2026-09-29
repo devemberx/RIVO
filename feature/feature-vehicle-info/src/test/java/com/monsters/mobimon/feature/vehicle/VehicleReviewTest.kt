@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
+import com.monsters.mobimon.core.domain.VehicleCardVssDefaults
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.domain.VehicleWarning
 import com.monsters.mobimon.core.domain.WarningSeverity
@@ -58,10 +59,9 @@ class VehicleReviewTest {
         show({ samples().first().second }, fontScale = 1.5f)
 
         listOf(
-            "정상",
-            "확인된 공기압 상태",
-            "주의 경고 없음",
-            "앞유리 워셔액 잔량",
+            "확인된 공기압 기준",
+            "확인된 경고 신호 기준",
+            "워셔액이 충분해요",
         ).forEach(::assertTextFullyVisible)
     }
 
@@ -91,7 +91,7 @@ class VehicleReviewTest {
         show({ samples().first().second }, fontScale = 1f)
 
         val reference = compose.onNodeWithTag("vehicle-reference").getUnclippedBoundsInRoot()
-        val finalCardText = compose.onNodeWithText("주의 경고 없음").getUnclippedBoundsInRoot()
+        val finalCardText = compose.onNodeWithText("확인된 경고 신호 기준").getUnclippedBoundsInRoot()
 
         assertTrue(
             "Final metric row should settle near the lower content area",
@@ -104,8 +104,8 @@ class VehicleReviewTest {
         show({ samples().first().second }, fontScale = 1f)
 
         val card = compose.onNodeWithTag("vehicle-card-slot-1").getUnclippedBoundsInRoot()
-        val supporting = compose.onNodeWithText("배터리 82%", useUnmergedTree = true).getUnclippedBoundsInRoot()
-        assertEquals(228f, (supporting.top - card.top).value, 8f)
+        val supporting = compose.onNodeWithText("배터리가 충분해요", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertEquals(219f, (supporting.top - card.top).value, 2f)
     }
 
     @Test
@@ -158,11 +158,23 @@ class VehicleReviewTest {
 
     @Test
     fun cardSelectorProducesReviewImage() {
-        show({ samples().first().second }, fontScale = 1f)
+        show({ samples().first().second.copy(vssCardSignals = VehicleCardVssDefaults.values) }, fontScale = 1f)
         compose.onNodeWithTag("vehicle-card-slot-1").performTouchInput { longClick() }
         compose.onNodeWithTag("vehicle-card-selector").assertIsDisplayed()
         val directory = File("build/reports/vehicle-ui").apply { mkdirs() }
         capture(view, File(directory, "reference-card-selector.png"))
+    }
+
+    @Test
+    fun enlargedTextSelectorKeepsHeaderAndSelectionVisible() {
+        show({ samples().first().second.copy(vssCardSignals = VehicleCardVssDefaults.values) }, fontScale = 2f)
+        compose.onNodeWithTag("vehicle-card-slot-1").performTouchInput { longClick() }
+
+        assertTextFullyVisible("바꿀 위치와 새 정보를 선택해 주세요.")
+        val directory = File("build/reports/vehicle-ui").apply { mkdirs() }
+        capture(view, File(directory, "enlarged-text-card-selector.png"))
+        val footer = compose.onNodeWithTag("vehicle-dialog-footer").getUnclippedBoundsInRoot()
+        assertTrue("Selected card names need room to grow with text", footer.bottom - footer.top > 98.dp)
     }
 
     private fun renderReviewImages(
@@ -278,7 +290,9 @@ class VehicleReviewTest {
                 quality = SignalQuality.VALID,
                 batteryPercent = 82,
                 tirePressureStatus = "OK",
-                outsideTemperature = 23,
+                outsideTemperature = 18,
+                speed = 0,
+                gear = "P",
                 isRaining = false,
                 attentionLevel = 85,
                 isEmergencyBraking = false,
@@ -310,7 +324,7 @@ class VehicleReviewTest {
                                 item = "타이어",
                                 location = "왼쪽 앞바퀴",
                                 severity = WarningSeverity.CAUTION,
-                                description = "왼쪽 앞바퀴 공기압을 확인해 주세요.",
+                                description = "앞왼쪽 타이어를 확인해 주세요.",
                                 nextAction = "타이어 공기압을 점검해 주세요.",
                                 observedAtMillis = 10_000,
                             ),

@@ -17,6 +17,7 @@ import com.monsters.mobimon.core.domain.CurrentVehicleEvidence
 import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.core.domain.ProgressionIdentity
+import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSourceProvider
 import com.monsters.mobimon.core.domain.VehicleFreshnessPolicy
@@ -25,6 +26,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.flow.first
 import java.io.File
 import javax.inject.Singleton
 
@@ -70,11 +72,14 @@ object AuthenticationModule {
         @ApplicationContext context: Context,
         vehicle: CurrentVehicleEvidence,
         clock: Clock,
+        settings: SettingsRepository,
+        freshness: VehicleFreshnessPolicy,
     ): ConversationContextSource =
         VehicleConversationContext(
             AndroidUserName(context)::read,
             vehicle::snapshot,
             clock::nowMillis,
-            BuildConfig.DEBUG,
+            { settings.settings.first().debugModeEnabled },
+            freshness,
         )
 }

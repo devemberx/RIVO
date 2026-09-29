@@ -110,6 +110,29 @@ class VehicleCardCatalogTest {
     }
 
     @Test
+    fun remainingBatteryTimePreservesMinutesAndMissingReadings() {
+        val path = "Vehicle.Powertrain.TractionBattery.TimeRemaining"
+
+        fun value(raw: String) =
+            VehicleCardCatalog
+                .reading(
+                    "battery-time",
+                    snapshot().copy(
+                        vssCardSignals =
+                            mapOf(
+                                path to raw,
+                            ),
+                    ),
+                )?.value
+        assertEquals("6시간 40분", value("24000"))
+        assertEquals("1시간", value("3600"))
+        assertEquals("0시간 1분", value("60"))
+        assertNull(value("-1"))
+        assertNull(value("NaN"))
+        assertNull(VehicleCardCatalog.reading("battery-time", snapshot())?.value)
+    }
+
+    @Test
     fun chargingTimeRequiresChargingState() {
         val signals = VehicleCardVssDefaults.values.toMutableMap()
         assertEquals(

@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,8 +36,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -50,16 +53,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -75,6 +86,7 @@ import com.monsters.mobimon.core.domain.WarningSeverity
 import com.monsters.mobimon.core.presentation.parkingBadgeConfirmed
 import com.monsters.mobimon.core.ui.MobiMonColors
 import com.monsters.mobimon.core.ui.MobiMonDimensions
+import com.monsters.mobimon.core.ui.MobiMonFontFamily
 import com.monsters.mobimon.core.ui.MobiMonParkingInterruption
 import com.monsters.mobimon.core.ui.MobiMonParkingStatusBadge
 import com.monsters.mobimon.core.ui.PetAvatar
@@ -131,51 +143,115 @@ fun VehicleInfoScreen(
     fun openSelector(slot: Int) {
         if (parkingRequired) return
         dialogSlot = slot
-        draftCardId = null
+        draftCardId = VehicleCardCatalog.cards.firstOrNull { it.id !in currentCards }?.id
     }
 
-    Box(Modifier.fillMaxSize()) {
-        BoxWithConstraints(
-            modifier =
-                modifier
-                    .fillMaxSize()
-                    .background(VehicleScreenBackground)
-                    .focusProperties { canFocus = !parkingRequired }
-                    .semantics { paneTitle = title },
-        ) {
-            val fontScale = LocalDensity.current.fontScale
-            val reference = maxWidth >= 1400.dp && maxHeight >= 760.dp && fontScale <= 1.2f
-            val scale = if (reference) maxWidth.value / 2560f else 0.75f
-            val contentHeight = maxHeight
+    ProvideTextStyle(LocalTextStyle.current.copy(letterSpacing = 0.sp)) {
+        Box(Modifier.fillMaxSize()) {
+            BoxWithConstraints(
+                modifier =
+                    modifier
+                        .fillMaxSize()
+                        .background(VehicleScreenBackground)
+                        .focusProperties { canFocus = !parkingRequired }
+                        .semantics { paneTitle = title },
+            ) {
+                val fontScale = LocalDensity.current.fontScale
+                val reference = maxWidth >= 1400.dp && maxHeight >= 760.dp && fontScale <= 1.2f
+                val scale = if (reference) maxWidth.value / 2560f else 0.75f
+                val contentHeight = maxHeight
 
-            if (reference) {
-                CompositionLocalProvider(LocalVehicleDesignScale provides scale) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Box(Modifier.fillMaxSize().testTag("vehicle-reference")) {
-                            VehicleHeader(
-                                snapshot = snapshot,
-                                friendId = friendId,
-                                onBack = onBack,
-                                onHome = onHome,
-                                scale = scale,
-                                modifier =
-                                    Modifier
-                                        .offset(72.dp * scale, 36.dp * scale)
-                                        .size(2416.dp * scale, 104.dp * scale),
-                            )
-                            Column(
-                                modifier =
-                                    Modifier
-                                        .offset(72.dp * scale, 156.dp * scale)
-                                        .size(2416.dp * scale, contentHeight - 172.dp * scale)
-                                        .verticalScroll(rememberScrollState()),
-                                verticalArrangement = Arrangement.spacedBy(28.dp * scale),
-                            ) {
-                                val metricsPanelHeight = 872.dp * scale
-                                VehicleStatusBanner(snapshot, mood, friendId)
+                if (reference) {
+                    CompositionLocalProvider(LocalVehicleDesignScale provides scale) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Box(Modifier.fillMaxSize().testTag("vehicle-reference")) {
+                                VehicleHeader(
+                                    snapshot = snapshot,
+                                    friendId = friendId,
+                                    onBack = onBack,
+                                    onHome = onHome,
+                                    onEditCards = { openSelector(0) },
+                                    scale = scale,
+                                    modifier =
+                                        Modifier
+                                            .offset(72.dp * scale, 36.dp * scale)
+                                            .size(2416.dp * scale, 104.dp * scale),
+                                )
+                                Column(
+                                    modifier =
+                                        Modifier
+                                            .offset(72.dp * scale, 172.dp * scale)
+                                            .size(2416.dp * scale, contentHeight - 188.dp * scale)
+                                            .verticalScroll(rememberScrollState()),
+                                    verticalArrangement = Arrangement.spacedBy(32.dp * scale),
+                                ) {
+                                    val metricsPanelHeight = 852.dp * scale
+                                    VehicleStatusBanner(snapshot, mood, friendId)
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().height(metricsPanelHeight),
+                                        horizontalArrangement = Arrangement.spacedBy(28.dp * scale),
+                                        verticalAlignment = Alignment.Top,
+                                    ) {
+                                        CompanionStatusPanel(
+                                            mood = mood,
+                                            friendId = friendId,
+                                            accessoryId = accessoryId,
+                                            outfitId = outfitId,
+                                            backgroundId = backgroundId,
+                                            tireWarning =
+                                                VehicleCardCatalog.status(
+                                                    "tire",
+                                                    snapshot,
+                                                ) == VehicleCardStatus.CAUTION,
+                                            modifier = Modifier.width(680.dp * scale).fillMaxHeight(),
+                                            panelHeight = metricsPanelHeight,
+                                        )
+                                        VehicleCardGrid(
+                                            snapshot = snapshot,
+                                            readings = readings,
+                                            cards = currentCards,
+                                            onLongPress = ::openSelector,
+                                            modifier = Modifier.weight(1f),
+                                            targetHeight = metricsPanelHeight,
+                                        )
+                                    }
+                                    if (snapshot.warnings.isNotEmpty()) WarningList(snapshot.warnings)
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    val compactScale = (maxWidth.value / 1400f).coerceIn(0.55f, 0.9f)
+                    val isWide = maxWidth >= 980.dp
+                    Column(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 24.dp, vertical = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(24.dp),
+                    ) {
+                        VehicleHeader(
+                            snapshot = snapshot,
+                            friendId = friendId,
+                            onBack = onBack,
+                            onHome = onHome,
+                            onEditCards = { openSelector(0) },
+                            scale = compactScale,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Column(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                                    .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(24.dp),
+                        ) {
+                            VehicleStatusBanner(snapshot, mood, friendId)
+                            if (isWide) {
                                 Row(
-                                    modifier = Modifier.fillMaxWidth().height(metricsPanelHeight),
-                                    horizontalArrangement = Arrangement.spacedBy(28.dp * scale),
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(28.dp),
                                     verticalAlignment = Alignment.Top,
                                 ) {
                                     CompanionStatusPanel(
@@ -185,70 +261,19 @@ fun VehicleInfoScreen(
                                         outfitId = outfitId,
                                         backgroundId = backgroundId,
                                         tireWarning =
-                                            VehicleCardCatalog.status("tire", snapshot) == VehicleCardStatus.CAUTION,
-                                        modifier = Modifier.weight(0.4f).fillMaxHeight(),
-                                        panelHeight = metricsPanelHeight,
+                                            VehicleCardCatalog.status("tire", snapshot) ==
+                                                VehicleCardStatus.CAUTION,
+                                        modifier = Modifier.weight(0.4f),
                                     )
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        VehicleCardGrid(
-                                            snapshot = snapshot,
-                                            readings = readings,
-                                            cards = currentCards,
-                                            onLongPress = ::openSelector,
-                                            modifier = Modifier.fillMaxWidth(),
-                                            targetHeight = 800.dp * scale,
-                                        )
-                                        Spacer(Modifier.height(30.dp * scale))
-                                        Text(
-                                            text = stringResource(R.string.vehicle_card_change_hint),
-                                            color = MobiMonColors.muted,
-                                            style = MaterialTheme.typography.titleMedium,
-                                            modifier =
-                                                Modifier
-                                                    .align(
-                                                        Alignment.End,
-                                                    ).testTag("vehicle-card-change-hint"),
-                                        )
-                                    }
+                                    VehicleCardGrid(
+                                        snapshot = snapshot,
+                                        readings = readings,
+                                        cards = currentCards,
+                                        onLongPress = ::openSelector,
+                                        modifier = Modifier.weight(1f),
+                                    )
                                 }
-                                if (snapshot.warnings.isNotEmpty()) WarningList(snapshot.warnings)
-                            }
-                        }
-                    }
-                }
-            } else {
-                val compactScale = (maxWidth.value / 1400f).coerceIn(0.55f, 0.9f)
-                val isWide = maxWidth >= 980.dp
-                Column(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 24.dp, vertical = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp),
-                ) {
-                    VehicleHeader(
-                        snapshot = snapshot,
-                        friendId = friendId,
-                        onBack = onBack,
-                        onHome = onHome,
-                        scale = compactScale,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Column(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                                .verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(24.dp),
-                    ) {
-                        VehicleStatusBanner(snapshot, mood, friendId)
-                        if (isWide) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(28.dp),
-                                verticalAlignment = Alignment.Top,
-                            ) {
+                            } else {
                                 CompanionStatusPanel(
                                     mood = mood,
                                     friendId = friendId,
@@ -256,84 +281,62 @@ fun VehicleInfoScreen(
                                     outfitId = outfitId,
                                     backgroundId = backgroundId,
                                     tireWarning =
-                                        VehicleCardCatalog.status("tire", snapshot) == VehicleCardStatus.CAUTION,
-                                    modifier = Modifier.weight(0.4f),
+                                        VehicleCardCatalog.status("tire", snapshot) ==
+                                            VehicleCardStatus.CAUTION,
+                                    modifier = Modifier.fillMaxWidth(),
                                 )
                                 VehicleCardGrid(
                                     snapshot = snapshot,
                                     readings = readings,
                                     cards = currentCards,
                                     onLongPress = ::openSelector,
-                                    modifier = Modifier.weight(1f),
+                                    modifier = Modifier.fillMaxWidth(),
                                 )
                             }
-                        } else {
-                            CompanionStatusPanel(
-                                mood = mood,
-                                friendId = friendId,
-                                accessoryId = accessoryId,
-                                outfitId = outfitId,
-                                backgroundId = backgroundId,
-                                tireWarning = VehicleCardCatalog.status("tire", snapshot) == VehicleCardStatus.CAUTION,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                            VehicleCardGrid(
+                            if (snapshot.warnings.isNotEmpty()) WarningList(snapshot.warnings)
+                        }
+                    }
+                }
+                if (!parkingRequired) {
+                    dialogSlot?.let { slot ->
+                        CompositionLocalProvider(LocalVehicleDesignScale provides if (reference) scale else 1f) {
+                            VehicleCardSelector(
                                 snapshot = snapshot,
-                                readings = readings,
                                 cards = currentCards,
-                                onLongPress = ::openSelector,
-                                modifier = Modifier.fillMaxWidth(),
+                                selectedSlot = slot,
+                                selectedCardId = draftCardId,
+                                onSlotSelected = { next ->
+                                    dialogSlot = next
+                                    draftCardId = VehicleCardCatalog.cards.firstOrNull { it.id !in currentCards }?.id
+                                },
+                                onCardSelected = { draftCardId = it },
+                                onDismiss = { dialogSlot = null },
+                                onConfirm = {
+                                    val chosen = draftCardId
+                                    if (!parkingRequired &&
+                                        chosen != null &&
+                                        chosen !in currentCards &&
+                                        VehicleCardCatalog.cards.any { it.id == chosen }
+                                    ) {
+                                        currentCards = currentCards.toMutableList().also { it[slot] = chosen }
+                                        onCardSelectionConfirmed(currentCards)
+                                    }
+                                    dialogSlot = null
+                                },
                             )
                         }
-                        Text(
-                            text = stringResource(R.string.vehicle_card_change_hint),
-                            color = MobiMonColors.muted,
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.fillMaxWidth().testTag("vehicle-card-change-hint"),
-                        )
-                        if (snapshot.warnings.isNotEmpty()) WarningList(snapshot.warnings)
                     }
                 }
             }
-            if (!parkingRequired) {
-                dialogSlot?.let { slot ->
-                    CompositionLocalProvider(LocalVehicleDesignScale provides if (reference) scale else 1f) {
-                        VehicleCardSelector(
-                            snapshot = snapshot,
-                            cards = currentCards,
-                            selectedSlot = slot,
-                            selectedCardId = draftCardId,
-                            onSlotSelected = { next ->
-                                dialogSlot = next
-                                draftCardId = null
-                            },
-                            onCardSelected = { draftCardId = it },
-                            onDismiss = { dialogSlot = null },
-                            onConfirm = {
-                                val chosen = draftCardId
-                                if (!parkingRequired &&
-                                    chosen != null &&
-                                    chosen !in currentCards &&
-                                    VehicleCardCatalog.cards.any { it.id == chosen }
-                                ) {
-                                    currentCards = currentCards.toMutableList().also { it[slot] = chosen }
-                                    onCardSelectionConfirmed(currentCards)
-                                }
-                                dialogSlot = null
-                            },
-                        )
-                    }
-                }
+            if (parkingRequired) {
+                MobiMonParkingInterruption(
+                    title = stringResource(R.string.vehicle_parking_popup_title),
+                    body = stringResource(R.string.vehicle_parking_popup_body),
+                    instruction = stringResource(R.string.vehicle_parking_popup_instruction),
+                    preserved = stringResource(R.string.vehicle_parking_popup_preserved),
+                    onHome = onHome ?: onBack,
+                )
             }
-        }
-        if (parkingRequired) {
-            MobiMonParkingInterruption(
-                title = stringResource(R.string.vehicle_parking_popup_title),
-                body = stringResource(R.string.vehicle_parking_popup_body),
-                instruction = stringResource(R.string.vehicle_parking_popup_instruction),
-                preserved = stringResource(R.string.vehicle_parking_popup_preserved),
-                onHome = onHome ?: onBack,
-            )
         }
     }
 }
@@ -344,6 +347,7 @@ internal fun VehicleHeader(
     friendId: String,
     onBack: () -> Unit,
     onHome: (() -> Unit)?,
+    onEditCards: () -> Unit,
     scale: Float,
     modifier: Modifier = Modifier,
 ) {
@@ -366,12 +370,12 @@ internal fun VehicleHeader(
                 painter = painterResource(CoreUiR.drawable.mobimon_icon_back),
                 contentDescription = stringResource(CoreUiR.string.mobimon_back),
                 tint = MobiMonColors.text,
-                modifier = Modifier.size(iconSize),
+                modifier = Modifier.size(iconSize * 0.67f),
             )
         }
         Spacer(Modifier.width(if (scale >= 0.7f) 32.dp * scale else 16.dp))
 
-        Column(modifier = Modifier.weight(1f)) {
+        Column(modifier = Modifier.weight(1f).offset(y = (-9).dp * scale)) {
             Text(
                 text = stringResource(R.string.vehicle_destination_title),
                 color = MobiMonColors.text,
@@ -396,6 +400,34 @@ internal fun VehicleHeader(
             )
         }
 
+        Surface(
+            modifier =
+                Modifier
+                    .size(280.dp * scale, if (scale >= 0.7f) 76.dp * scale else MobiMonDimensions.touchTarget)
+                    .align(Alignment.Top)
+                    .clickable(onClick = onEditCards)
+                    .testTag("vehicle-card-edit-button"),
+            color = VehiclePanelBackground,
+            contentColor = MobiMonColors.text,
+            shape = RoundedCornerShape(50),
+            border = BorderStroke(1.dp * scale, Color(0xFF64839F)),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp * scale, Alignment.CenterHorizontally),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.vehicle_icon_edit),
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp * scale),
+                    tint = MobiMonColors.text,
+                )
+                Text(stringResource(R.string.vehicle_card_edit), fontSize = (30f * scale).sp)
+            }
+        }
+        Spacer(Modifier.width(32.dp * scale))
+
         MobiMonParkingStatusBadge(
             confirmed = snapshot.parkingBadgeConfirmed,
             modifier = Modifier.align(Alignment.Top),
@@ -412,68 +444,49 @@ private fun VehicleStatusBanner(
     modifier: Modifier = Modifier,
 ) {
     val designScale = LocalVehicleDesignScale.current
+    val tireWarning =
+        mood == VehicleMood.WARNING && VehicleCardCatalog.status("tire", snapshot) == VehicleCardStatus.CAUTION
+    val lowBattery =
+        mood == VehicleMood.ATTENTION &&
+            (snapshot.batteryQuality ?: snapshot.quality) == SignalQuality.VALID &&
+            snapshot.batteryPercent?.let { it in 0..19 } == true
+    val title =
+        stringResource(
+            when {
+                tireWarning -> R.string.vehicle_banner_sick_title
+                lowBattery -> R.string.vehicle_banner_low_battery_title
+                else -> mood.bannerTitleRes
+            },
+        ).replace("모비", if (friendId == "friend:luna") "루나" else "모비")
+    val description =
+        if (tireWarning) {
+            snapshot.warnings
+                .firstOrNull { it.item.contains("타이어") && it.quality == SignalQuality.VALID }
+                ?.description ?: stringResource(R.string.vehicle_banner_sick_tire_desc)
+        } else {
+            stringResource(if (lowBattery) R.string.vehicle_banner_low_battery_desc else mood.bannerDescriptionRes)
+        }
     StatusSurface(
         background = mood.bannerBackground,
         border = mood.accent,
-        modifier = modifier.fillMaxWidth().testTag("vehicle-status-banner"),
-        contentPadding = PaddingValues(horizontal = 28.dp * designScale, vertical = 24.dp * designScale),
+        modifier = modifier.fillMaxWidth().heightIn(min = 104.dp * designScale).testTag("vehicle-status-banner"),
+        contentPadding = PaddingValues(horizontal = 32.dp * designScale, vertical = 22.dp * designScale),
         corner = 20.dp * designScale,
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            if (mood == VehicleMood.WARNING &&
-                VehicleCardCatalog.status("tire", snapshot) == VehicleCardStatus.CAUTION
-            ) {
-                BannerText(
-                    title =
-                        stringResource(R.string.vehicle_banner_sick_title).replace(
-                            "모비",
-                            if (friendId ==
-                                "friend:luna"
-                            ) {
-                                "루나"
-                            } else {
-                                "모비"
-                            },
-                        ),
-                    description = stringResource(R.string.vehicle_banner_sick_tire_desc),
-                    accent = mood.accent,
-                )
-            } else if (mood == VehicleMood.ATTENTION &&
-                (snapshot.batteryQuality ?: snapshot.quality) == SignalQuality.VALID &&
-                snapshot.batteryPercent?.let { it in 0..19 } == true
-            ) {
-                BannerText(
-                    title =
-                        stringResource(R.string.vehicle_banner_low_battery_title).replace(
-                            "모비",
-                            if (friendId ==
-                                "friend:luna"
-                            ) {
-                                "루나"
-                            } else {
-                                "모비"
-                            },
-                        ),
-                    description = stringResource(R.string.vehicle_banner_low_battery_desc),
-                    accent = mood.accent,
-                )
-            } else {
-                BannerText(
-                    title =
-                        stringResource(mood.bannerTitleRes).replace(
-                            "모비",
-                            if (friendId ==
-                                "friend:luna"
-                            ) {
-                                "루나"
-                            } else {
-                                "모비"
-                            },
-                        ),
-                    description = stringResource(mood.bannerDescriptionRes),
-                    accent = mood.accent,
-                )
-            }
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp * designScale)) {
+            BannerText(
+                title = title,
+                description = description,
+                accent = mood.accent,
+                icon =
+                    if (lowBattery) {
+                        R.drawable.vehicle_icon_summary_battery
+                    } else if (tireWarning) {
+                        R.drawable.vehicle_icon_summary_tire
+                    } else {
+                        R.drawable.vehicle_icon_summary_check
+                    },
+            )
             if (snapshot.quality == SignalQuality.STALE) {
                 snapshot.parkingAgeMillis?.let {
                     Text(lastCheckedText(it), color = MobiMonColors.muted, style = MaterialTheme.typography.bodySmall)
@@ -488,28 +501,48 @@ private fun BannerText(
     title: String,
     description: String,
     accent: Color,
+    icon: Int,
 ) {
     val designScale = LocalVehicleDesignScale.current
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(22.dp * designScale),
-    ) {
-        Text(
-            text = title,
-            color = accent,
-            fontSize = (40f * designScale).sp,
-            fontWeight = FontWeight.Bold,
-        )
-        Text(
-            text = "|",
-            color = accent.copy(alpha = 0.55f),
-            fontSize = (32f * designScale).sp,
-        )
-        Text(
-            text = description,
-            color = MobiMonColors.text,
-            fontSize = (30f * designScale).sp,
-        )
+    BoxWithConstraints {
+        if (maxWidth < 900.dp * designScale) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Icon(painterResource(icon), null, Modifier.size(36.dp), tint = accent)
+                    Text(title, color = accent, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                }
+                Text(description, color = MobiMonColors.text, fontSize = 22.sp)
+            }
+        } else {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(24.dp * designScale),
+            ) {
+                Icon(
+                    painter = painterResource(icon),
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp * designScale),
+                    tint = accent,
+                )
+                Text(
+                    text = title,
+                    modifier = Modifier.offset(y = 3.dp * designScale),
+                    color = accent,
+                    fontSize = (38f * designScale).sp,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.width(8.dp * designScale))
+                Text(
+                    text = description,
+                    modifier = Modifier.offset(y = 2.dp * designScale),
+                    color = MobiMonColors.text,
+                    fontSize = (30f * designScale).sp,
+                )
+            }
+        }
     }
 }
 
@@ -525,57 +558,38 @@ private fun CompanionStatusPanel(
     panelHeight: Dp = VehiclePanelHeight,
 ) {
     val designScale = LocalVehicleDesignScale.current
+    val compact = panelHeight < 700.dp * designScale
     StatusSurface(
         background = VehiclePanelBackground,
-        border = VehicleBorder,
+        border = Color.Transparent,
         modifier = modifier.height(panelHeight),
-        contentPadding = PaddingValues(horizontal = 28.dp * designScale, vertical = 32.dp * designScale),
-        corner = 24.dp * designScale,
+        contentPadding = PaddingValues(0.dp),
+        corner = 44.dp * designScale,
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(26.dp * designScale),
-        ) {
+        Box(Modifier.fillMaxSize()) {
+            Text(
+                text = stringResource(R.string.vehicle_companion_overview_title),
+                color = MobiMonColors.text,
+                fontSize = (if (compact) 30f else 40f).times(designScale).sp,
+                fontWeight = FontWeight.Bold,
+                modifier =
+                    Modifier.align(Alignment.TopCenter).padding(
+                        top =
+                            (if (compact) 28.dp else 26.dp) * designScale,
+                    ),
+            )
             PetAvatar(
                 modifier =
-                    Modifier.size(
-                        if (designScale < 1f) {
-                            624.dp * designScale
-                        } else {
-                            (panelHeight - 240.dp).coerceIn(220.dp, 624.dp)
-                        },
-                    ),
+                    Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = (if (compact) 88.dp else 100.dp) * designScale)
+                        .size(if (compact) panelHeight - 200.dp * designScale else 624.dp * designScale),
                 friendId = friendId,
                 accessoryId = accessoryId,
                 outfitId = outfitId,
                 backgroundId = backgroundId,
                 vehicleWarning = mood == VehicleMood.WARNING,
                 vehicleHungry = mood == VehicleMood.ATTENTION,
-                artworkOverride =
-                    when (friendId) {
-                        "friend:mobi" ->
-                            when (mood) {
-                                VehicleMood.GOOD -> R.drawable.mobi_vehicle_normal
-                                else -> null
-                            }
-                        "friend:luna" ->
-                            when (mood) {
-                                VehicleMood.GOOD -> R.drawable.luna_vehicle_normal
-                                VehicleMood.ATTENTION -> R.drawable.luna_vehicle_hungry
-                                VehicleMood.WARNING -> R.drawable.luna_vehicle_sick
-                                else -> null
-                            }
-                        else -> null
-                    },
-            )
-            StatusPill(
-                text = stringResource(mood.badgeRes),
-                foreground = mood.accent,
-                background = mood.badgeBackground,
-                border = mood.accent,
-                modifier = Modifier.width(230.dp * designScale),
-                centered = true,
             )
             Text(
                 text =
@@ -587,9 +601,14 @@ private fun CompanionStatusPanel(
                         },
                     ).replace("모비", if (friendId == "friend:luna") "루나" else "모비"),
                 color = MobiMonColors.text,
-                fontSize = (32f * designScale).sp,
+                fontSize = (if (compact) 26f else 36f).times(designScale).sp,
                 textAlign = TextAlign.Center,
                 fontWeight = FontWeight.Bold,
+                modifier =
+                    Modifier.align(Alignment.BottomCenter).padding(
+                        bottom =
+                            (if (compact) 24.dp else 46.dp) * designScale,
+                    ),
             )
         }
     }
@@ -611,8 +630,8 @@ private fun VehicleCardGrid(
     BoxWithConstraints(modifier) {
         val columns =
             when {
-                maxWidth >= minimumCardWidth * 3 + 48.dp * designScale -> 3
-                maxWidth >= minimumCardWidth * 2 + 24.dp * designScale -> 2
+                maxWidth >= minimumCardWidth * 3 + 68.dp * designScale -> 3
+                maxWidth >= minimumCardWidth * 2 + 34.dp * designScale -> 2
                 else -> 1
             }
         Column(
@@ -627,7 +646,7 @@ private fun VehicleCardGrid(
             rows.forEachIndexed { rowIndex, row ->
                 Row(
                     modifier = Modifier.fillMaxWidth().height(rowHeight),
-                    horizontalArrangement = Arrangement.spacedBy(24.dp * designScale),
+                    horizontalArrangement = Arrangement.spacedBy(35.dp * designScale),
                 ) {
                     row.forEachIndexed { columnIndex, cardId ->
                         val slot = rowIndex * columns + columnIndex
@@ -690,7 +709,7 @@ private fun VehicleCard(
                         )
                     },
                 badge = stringResource(status.labelRes),
-                badgeTone = status.tone,
+                badgeTone = if (current == false) VehicleTone.MUTED else status.tone,
                 modifier = modifier,
                 testTag = "vehicle-card-charging",
             )
@@ -702,7 +721,15 @@ private fun VehicleCard(
                 value = level?.let { "$it%" } ?: stringResource(R.string.vehicle_unknown_short),
                 supporting =
                     if (level != null) {
-                        stringResource(R.string.vehicle_washer_detail)
+                        stringResource(
+                            if (level <
+                                20
+                            ) {
+                                R.string.vehicle_washer_low_detail
+                            } else {
+                                R.string.vehicle_washer_enough
+                            },
+                        )
                     } else {
                         stringResource(R.string.vehicle_washer_unavailable)
                     },
@@ -710,11 +737,18 @@ private fun VehicleCard(
                 badgeTone = status.tone,
                 modifier = modifier,
                 testTag = "vehicle-card-washer",
-            )
+            ) {
+                if (level != null) BatteryBar(level, status.tone)
+            }
         }
         else -> {
             val spec = VehicleCardCatalog.find(cardId) ?: return
             val reading = VehicleCardCatalog.reading(cardId, snapshot) ?: return
+            val percent =
+                reading.value
+                    ?.removeSuffix("%")
+                    ?.toIntOrNull()
+                    ?.takeIf { it in 0..100 }
             MetricCard(
                 title = spec.title,
                 value = reading.value ?: stringResource(R.string.vehicle_unknown_short),
@@ -730,7 +764,11 @@ private fun VehicleCard(
                 badgeTone = status.tone,
                 modifier = modifier,
                 testTag = "vehicle-card-$cardId",
-            )
+            ) {
+                if (cardId == "battery-health" && percent != null) {
+                    BatteryBar(percent, status.tone)
+                }
+            }
         }
     }
 }
@@ -749,6 +787,7 @@ private fun VehicleCardSelector(
     val readings = snapshot.toVehicleInfoUiState()
     val designScale = LocalVehicleDesignScale.current
     val availableCards = VehicleCardCatalog.cards.filterNot { it.id in cards }
+    val gridState = rememberLazyGridState()
     BackHandler(onBack = onDismiss)
     BoxWithConstraints(
         Modifier
@@ -769,41 +808,88 @@ private fun VehicleCardSelector(
             }
         val dialogWidth =
             if (wide) {
-                (1900.dp * designScale).coerceAtMost(maxWidth - 32.dp)
+                (1836.dp * designScale).coerceAtMost(maxWidth - 32.dp)
             } else {
                 maxWidth - 32.dp
             }
-        val dialogHeight = (1080.dp * designScale).coerceAtMost(maxHeight - 32.dp)
+        val dialogHeight = (1038.dp * designScale).coerceAtMost(maxHeight - 32.dp)
         Surface(
-            modifier = Modifier.width(dialogWidth).height(dialogHeight).testTag("vehicle-card-selector"),
-            color = VehicleScreenBackground,
+            modifier =
+                Modifier
+                    .offset(x = if (wide) 1.dp * designScale else 0.dp, y = if (wide) (-25).dp * designScale else 0.dp)
+                    .width(dialogWidth)
+                    .height(dialogHeight)
+                    .testTag("vehicle-card-selector"),
+            color = Color(0xFF102238),
             contentColor = MobiMonColors.text,
-            shape = RoundedCornerShape(32.dp * designScale),
-            border = BorderStroke(2.dp, VehicleBorder),
+            shape = RoundedCornerShape(44.dp * designScale),
+            border = BorderStroke(1.5.dp * designScale, Color(0xFF64839F)),
         ) {
             Column(
-                modifier = Modifier.fillMaxSize().padding(if (wide) 48.dp * designScale else 20.dp),
-                verticalArrangement = Arrangement.spacedBy(18.dp * designScale),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(
+                            start = if (wide) 64.dp * designScale else 20.dp,
+                            end = if (wide) 64.dp * designScale else 20.dp,
+                            top = if (wide) 48.dp * designScale else 20.dp,
+                            bottom = if (wide) 44.dp * designScale else 20.dp,
+                        ),
+                verticalArrangement = Arrangement.spacedBy(if (wide) 0.dp else 24.dp),
             ) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    Modifier.fillMaxWidth().then(
+                        if (wide) Modifier.heightIn(min = 117.184.dp * designScale) else Modifier,
+                    ),
+                    verticalAlignment = Alignment.Top,
+                ) {
                     Column(Modifier.weight(1f)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(24.dp * designScale),
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.vehicle_selector_edit),
+                                contentDescription = null,
+                                tint = Color(0xFFB9CADD),
+                                modifier = Modifier.size(48.dp * designScale),
+                            )
+                            Text(
+                                stringResource(R.string.vehicle_card_selector_title),
+                                color = MobiMonColors.text,
+                                fontSize = (44f * designScale).sp,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
                         Text(
-                            stringResource(R.string.vehicle_card_selector_title),
-                            color = MobiMonColors.text,
-                            fontSize = (48f * designScale).sp,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Text(
-                            stringResource(R.string.vehicle_card_selector_description, selectedSlot + 1),
+                            stringResource(R.string.vehicle_card_selector_description),
+                            modifier = Modifier.offset(y = 1.dp * designScale),
                             color = MobiMonColors.muted,
+                            fontSize = (30f * designScale).sp,
+                        )
+                    }
+                    Column(Modifier.offset(y = (-8).dp * designScale), horizontalAlignment = Alignment.End) {
+                        val closeLabel = stringResource(R.string.vehicle_card_selector_close)
+                        IconButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.size(76.dp * designScale).semantics { contentDescription = closeLabel },
+                        ) {
+                            Icon(
+                                painterResource(R.drawable.vehicle_selector_close),
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp * designScale),
+                                tint = Color(0xFFB9CADD),
+                            )
+                        }
+                        Text(
+                            stringResource(R.string.vehicle_card_selector_count, availableCards.size),
+                            color = Color(0xFFB9CADD),
                             fontSize = (28f * designScale).sp,
                         )
                     }
-                    IconButton(onClick = onDismiss) {
-                        Text("×", color = MobiMonColors.text, style = MaterialTheme.typography.headlineMedium)
-                    }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp * designScale)) {
+                if (wide) Spacer(Modifier.height(16.dp * designScale))
+                Row(horizontalArrangement = Arrangement.spacedBy(24.6.dp * designScale)) {
                     cards.forEachIndexed { index, id ->
                         val active = index == selectedSlot
                         Surface(
@@ -811,82 +897,97 @@ private fun VehicleCardSelector(
                                 Modifier
                                     .weight(
                                         1f,
-                                    ).height(72.dp * designScale)
+                                    ).height(64.dp * designScale)
                                     .clickable { onSlotSelected(index) }
                                     .testTag("vehicle-dialog-slot-${index + 1}"),
-                            color = if (active) NeutralBadgeBackground else VehiclePanelBackground,
+                            color = if (active) Color(0xFF87DAF5) else VehiclePanelBackground,
                             border =
                                 BorderStroke(
-                                    if (active) 3.dp else 1.dp,
-                                    if (active) MobiMonColors.accent else VehicleBorder,
+                                    1.5.dp * designScale,
+                                    if (active) Color(0xFF87DAF5) else Color(0xFF64839F),
                                 ),
-                            shape = RoundedCornerShape(16.dp * designScale),
+                            shape = CircleShape,
                         ) {
                             Row(
-                                Modifier.padding(8.dp * designScale),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp * designScale),
+                                Modifier.fillMaxSize(),
+                                horizontalArrangement =
+                                    Arrangement.spacedBy(16.dp * designScale, Alignment.CenterHorizontally),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
                                     "${index + 1}",
-                                    color = MobiMonColors.accent,
-                                    fontSize = (24f * designScale).sp,
+                                    color = if (active) VehicleScreenBackground else Color(0xFFB9CADD),
+                                    fontSize = (28f * designScale).sp,
                                     fontWeight = FontWeight.Bold,
-                                    modifier =
-                                        Modifier
-                                            .background(
-                                                NeutralBadgeBackground,
-                                                RoundedCornerShape(10.dp * designScale),
-                                            ).padding(horizontal = 12.dp * designScale, vertical = 6.dp * designScale),
                                 )
                                 Text(
                                     VehicleCardCatalog.find(id)?.title.orEmpty(),
-                                    color = MobiMonColors.text,
-                                    fontSize = (22f * designScale).sp,
+                                    color = if (active) VehicleScreenBackground else Color(0xFFB9CADD),
+                                    fontSize = (26f * designScale).sp,
+                                    fontWeight = FontWeight.Bold,
                                     maxLines = 1,
                                 )
                             }
                         }
                     }
                 }
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        stringResource(R.string.vehicle_card_selector_available),
-                        color = MobiMonColors.text,
-                        fontSize = (30f * designScale).sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Text(
-                        stringResource(R.string.vehicle_card_selector_count, availableCards.size),
-                        color = MobiMonColors.muted,
-                        fontSize = (24f * designScale).sp,
-                    )
-                }
+                if (wide) Spacer(Modifier.height(30.844.dp * designScale))
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(choiceColumns),
+                    state = gridState,
+                    contentPadding = PaddingValues(top = if (wide) 2.dp * designScale else 0.dp),
                     modifier =
                         Modifier
                             .weight(1f)
                             .fillMaxWidth()
-                            .then(
-                                if (wide) {
-                                    Modifier.padding(
-                                        start = 42.dp * designScale,
-                                        end = 76.dp * designScale,
+                            .testTag("vehicle-dialog-list")
+                            .drawWithContent {
+                                drawContent()
+                                if (wide && availableCards.size > choiceColumns) {
+                                    val inset = 12.dp.toPx() * designScale
+                                    val trackHeight = size.height - inset
+                                    val thumbHeight = 114.dp.toPx() * designScale
+                                    val rowHeight = 438.dp.toPx() * designScale
+                                    val rows = (availableCards.size + choiceColumns - 1) / choiceColumns
+                                    val scrollRange =
+                                        (rows * rowHeight - 24.dp.toPx() * designScale - size.height)
+                                            .coerceAtLeast(
+                                                1f,
+                                            )
+                                    val scrollOffset =
+                                        gridState.firstVisibleItemIndex / choiceColumns * rowHeight +
+                                            gridState.firstVisibleItemScrollOffset
+                                    val x = size.width + 24.dp.toPx() * designScale
+                                    val width = 6.dp.toPx() * designScale
+                                    drawRoundRect(
+                                        Color(0xFF203C58),
+                                        Offset(x, inset),
+                                        Size(width, trackHeight),
+                                        CornerRadius(
+                                            width / 2,
+                                        ),
                                     )
-                                } else {
-                                    Modifier
-                                },
-                            ).testTag("vehicle-dialog-list"),
-                    horizontalArrangement = Arrangement.spacedBy(24.dp * designScale),
-                    verticalArrangement = Arrangement.spacedBy(20.dp * designScale),
+                                    drawRoundRect(
+                                        Color(0xFFB9CADD),
+                                        Offset(
+                                            x,
+                                            inset +
+                                                (trackHeight - thumbHeight) *
+                                                (scrollOffset / scrollRange).coerceIn(0f, 1f),
+                                        ),
+                                        Size(width, thumbHeight),
+                                        CornerRadius(width / 2),
+                                    )
+                                }
+                            },
+                    horizontalArrangement = Arrangement.spacedBy(34.dp * designScale),
+                    verticalArrangement = Arrangement.spacedBy(24.dp * designScale),
                 ) {
                     itemsIndexed(availableCards, key = { _, card -> card.id }) { index, card ->
                         val selected = selectedCardId == card.id
                         Box(
                             Modifier
-                                .height(if (wide) 388.dp * designScale else VehicleCardHeight)
+                                .height(if (wide) 414.dp * designScale else VehicleCardHeight)
                                 .clickable { onCardSelected(card.id) }
                                 .testTag("vehicle-dialog-option-${card.id}"),
                         ) {
@@ -894,69 +995,134 @@ private fun VehicleCardSelector(
                             if (selected) {
                                 Box(
                                     Modifier.matchParentSize().border(
-                                        4.dp,
-                                        MobiMonColors.accent,
-                                        RoundedCornerShape(24.dp),
+                                        3.dp * designScale,
+                                        Color(0xFF87DAF5),
+                                        RoundedCornerShape(24.dp * designScale),
                                     ),
                                 )
+                                Row(
+                                    modifier =
+                                        Modifier
+                                            .align(Alignment.TopStart)
+                                            .padding(start = 32.dp * designScale, top = 28.dp * designScale)
+                                            .clearAndSetSemantics {},
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp * designScale),
+                                ) {
+                                    Text(
+                                        card.title,
+                                        color = Color.Transparent,
+                                        fontSize = (30f * designScale).sp,
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                    Icon(
+                                        painter = painterResource(R.drawable.vehicle_icon_check),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(48.dp * designScale),
+                                        tint = Color(0xFF87DAF5),
+                                    )
+                                }
                             }
-                            Text(
-                                "${index + 1}",
-                                modifier =
-                                    Modifier
-                                        .align(Alignment.TopStart)
-                                        .background(
-                                            VehicleScreenBackground.copy(alpha = 0.72f),
-                                            RoundedCornerShape(
-                                                16.dp * designScale,
-                                            ),
-                                        ).padding(horizontal = 12.dp * designScale, vertical = 4.dp * designScale),
-                                color = MobiMonColors.text,
-                                fontSize = (22f * designScale).sp,
-                            )
                         }
                     }
                 }
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text =
-                            selectedCardId?.let { id ->
-                                stringResource(
-                                    R.string.vehicle_card_selector_selected,
-                                    selectedSlot + 1,
-                                    VehicleCardCatalog.find(id)?.title.orEmpty(),
+                if (wide) Spacer(Modifier.height(20.dp * designScale))
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .then(if (wide) Modifier.heightIn(min = 98.dp * designScale) else Modifier)
+                        .testTag("vehicle-dialog-footer"),
+                    verticalAlignment = Alignment.Bottom,
+                ) {
+                    Column(Modifier.weight(1f).align(Alignment.Top).offset(y = 2.dp * designScale)) {
+                        Text(
+                            stringResource(R.string.vehicle_card_selector_slot, selectedSlot + 1),
+                            color = Color(0xFFB9CADD),
+                            fontSize = (28f * designScale).sp,
+                        )
+                        val currentTitle = VehicleCardCatalog.find(cards[selectedSlot])?.title.orEmpty()
+                        val nextTitle = selectedCardId?.let { VehicleCardCatalog.find(it)?.title }
+                        if (nextTitle != null) {
+                            val selectionLabel =
+                                stringResource(R.string.vehicle_card_selector_selected, currentTitle, nextTitle)
+                            Row(
+                                modifier = Modifier.clearAndSetSemantics { contentDescription = selectionLabel },
+                                horizontalArrangement = Arrangement.spacedBy(24.dp * designScale),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    currentTitle,
+                                    color = MobiMonColors.text,
+                                    fontSize = (36f * designScale).sp,
+                                    fontWeight = FontWeight.Bold,
                                 )
-                            } ?: stringResource(R.string.vehicle_card_selector_choose),
-                        color = MobiMonColors.muted,
-                        fontSize = (26f * designScale).sp,
-                        modifier = Modifier.weight(1f),
-                    )
+                                Icon(
+                                    painterResource(R.drawable.vehicle_selector_arrow),
+                                    null,
+                                    Modifier.size(
+                                        48.dp * designScale,
+                                    ),
+                                    tint = MobiMonColors.muted,
+                                )
+                                Text(
+                                    nextTitle,
+                                    color = MobiMonColors.text,
+                                    fontSize = (36f * designScale).sp,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                            }
+                        } else {
+                            Text(
+                                stringResource(R.string.vehicle_card_selector_choose),
+                                color = MobiMonColors.text,
+                                fontSize =
+                                    (
+                                        36f *
+                                            designScale
+                                    ).sp,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
                     OutlinedButton(
                         onClick = onDismiss,
                         modifier =
                             Modifier
                                 .then(
                                     if (wide) {
-                                        Modifier.width(172.dp * designScale).height(
-                                            68.dp * designScale,
+                                        Modifier.width(200.dp * designScale).height(
+                                            80.dp * designScale,
                                         )
                                     } else {
                                         Modifier
                                     },
                                 ).testTag("vehicle-dialog-cancel"),
+                        shape = RoundedCornerShape(50),
+                        border = BorderStroke(1.5.dp * designScale, Color(0xFF64839F)),
+                        colors =
+                            ButtonDefaults.outlinedButtonColors(
+                                contentColor = MobiMonColors.text,
+                                containerColor = VehiclePanelBackground,
+                            ),
+                        contentPadding = PaddingValues(0.dp),
                     ) {
-                        Text(stringResource(R.string.vehicle_card_selector_cancel))
+                        Text(
+                            stringResource(R.string.vehicle_card_selector_cancel),
+                            modifier = Modifier.offset(y = (-2).dp * designScale),
+                            style = selectorButtonTextStyle(32f * designScale),
+                        )
                     }
-                    Spacer(Modifier.width(16.dp * designScale))
+                    Spacer(Modifier.width(24.dp * designScale))
                     Button(
                         onClick = onConfirm,
                         enabled = availableCards.any { it.id == selectedCardId },
+                        contentPadding = PaddingValues(0.dp),
                         modifier =
                             Modifier
                                 .then(
                                     if (wide) {
-                                        Modifier.width(280.dp * designScale).height(
-                                            68.dp * designScale,
+                                        Modifier.width(352.dp * designScale).height(
+                                            80.dp * designScale,
                                         )
                                     } else {
                                         Modifier
@@ -964,17 +1130,37 @@ private fun VehicleCardSelector(
                                 ).testTag("vehicle-dialog-confirm"),
                         colors =
                             ButtonDefaults.buttonColors(
-                                containerColor = MobiMonColors.accent,
+                                containerColor = Color(0xFFF7F2E7),
                                 contentColor = VehicleScreenBackground,
                             ),
+                        shape = RoundedCornerShape(50),
                     ) {
-                        Text(stringResource(R.string.vehicle_card_selector_confirm))
+                        Icon(
+                            painter = painterResource(R.drawable.vehicle_selector_check),
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp * designScale),
+                        )
+                        Spacer(Modifier.width(12.dp * designScale))
+                        Text(
+                            stringResource(R.string.vehicle_card_selector_confirm),
+                            style = selectorButtonTextStyle(30f * designScale),
+                            maxLines = 1,
+                        )
                     }
                 }
             }
         }
     }
 }
+
+private fun selectorButtonTextStyle(size: Float) =
+    TextStyle(
+        fontFamily = MobiMonFontFamily,
+        fontSize = size.sp,
+        lineHeight = (size * 1.25f).sp,
+        fontWeight = FontWeight.Bold,
+        platformStyle = PlatformTextStyle(includeFontPadding = false),
+    )
 
 @Composable
 private fun BatteryCard(
@@ -989,7 +1175,10 @@ private fun BatteryCard(
     MetricCard(
         title = stringResource(R.string.vehicle_battery_card_title),
         value = battery?.let { "$it%" } ?: stringResource(R.string.vehicle_unknown_short),
-        supporting = battery?.let { stringResource(R.string.vehicle_battery, it) } ?: statusText,
+        supporting =
+            battery?.let {
+                stringResource(if (it < 20) R.string.vehicle_battery_low_detail else R.string.vehicle_battery_enough)
+            } ?: statusText,
         modifier = modifier,
         testTag = "vehicle-card-battery",
         badge = stringResource(status.labelRes),
@@ -1052,6 +1241,18 @@ private fun TireCard(
 ) {
     val warning = readings.tireWarning
     val low = status == VehicleCardStatus.CAUTION
+    val warningLocation =
+        if (low) {
+            when (warning?.location) {
+                "왼쪽 앞바퀴", "앞왼쪽" -> stringResource(R.string.vehicle_tire_front_left)
+                "오른쪽 앞바퀴", "앞오른쪽" -> stringResource(R.string.vehicle_tire_front_right)
+                "왼쪽 뒷바퀴", "뒤왼쪽" -> stringResource(R.string.vehicle_tire_rear_left)
+                "오른쪽 뒷바퀴", "뒤오른쪽" -> stringResource(R.string.vehicle_tire_rear_right)
+                else -> null
+            }
+        } else {
+            null
+        }
     MetricCard(
         title = stringResource(R.string.vehicle_tire_card_title),
         value =
@@ -1061,7 +1262,8 @@ private fun TireCard(
                 else -> readings.tireStatus ?: stringResource(R.string.vehicle_unknown_short)
             },
         supporting =
-            warning?.description ?: stringResource(
+            warningLocation?.let { stringResource(R.string.vehicle_tire_low_at_location, it) }
+                ?: warning?.description ?: stringResource(
                 if (low) {
                     R.string.vehicle_tire_low_detail
                 } else {
@@ -1121,14 +1323,19 @@ private fun DriverAssistCard(
                             R.string.vehicle_front_distance,
                             readings.frontDistance,
                         )
-                    readings.assistChecked -> stringResource(R.string.vehicle_assist_no_issue)
+                    readings.assistChecked -> stringResource(R.string.vehicle_assist_checked_detail)
                     else -> stringResource(R.string.vehicle_assist_unavailable)
                 }
             }
         }
     MetricCard(
         title = stringResource(R.string.vehicle_assist_card_title),
-        value = readings.attentionLevel?.let { "$it" } ?: stringResource(R.string.vehicle_unknown_short),
+        value =
+            when (status) {
+                VehicleCardStatus.NORMAL -> stringResource(R.string.vehicle_assist_no_issue)
+                VehicleCardStatus.CAUTION -> stringResource(R.string.vehicle_attention_needed)
+                else -> readings.attentionLevel?.let { "$it" } ?: stringResource(R.string.vehicle_unknown_short)
+            },
         supporting = issue,
         modifier = modifier,
         testTag = "vehicle-card-assist",
@@ -1240,9 +1447,27 @@ private fun MetricCard(
     content: @Composable () -> Unit = {},
 ) {
     val designScale = LocalVehicleDesignScale.current
+    val statusColor =
+        when (badgeTone) {
+            VehicleTone.SUCCESS -> SuccessAccent
+            VehicleTone.WARNING -> WarningAccent
+            VehicleTone.MUTED -> Color(0xFF91A7BD)
+            VehicleTone.NEUTRAL -> MobiMonColors.text
+        }
+    val supportingColor =
+        if (badgeTone == VehicleTone.NEUTRAL) MobiMonColors.muted else statusColor
+    val cardId = testTag?.removePrefix("vehicle-card-")
+    val valueSize =
+        when (cardId) {
+            "battery", "washer", "environment", "battery-health" -> 76f
+            "tire" -> 68f
+            "charging", "assist", "battery-range", "battery-time" -> 56f
+            else -> 64f
+        }
+    val icon = vehicleCardIcon(cardId)
     StatusSurface(
         background = VehiclePanelBackground,
-        border = VehicleBorder,
+        border = Color.Transparent,
         modifier =
             modifier
                 .heightIn(min = VehicleCardHeight * designScale)
@@ -1258,43 +1483,45 @@ private fun MetricCard(
             if (figmaLayout) {
                 Text(
                     text = title,
-                    modifier = Modifier.align(Alignment.TopStart).offset(y = (-4).dp * designScale),
+                    modifier = Modifier.align(Alignment.TopStart).offset(y = 2.dp * designScale),
                     color = MobiMonColors.muted,
                     fontSize = (30f * designScale).sp,
                     fontWeight = FontWeight.Bold,
                 )
-                badge?.let {
-                    StatusPill(
-                        text = it,
-                        foreground = badgeTone.foreground,
-                        background = badgeTone.background,
-                        border = badgeTone.border,
-                        modifier =
-                            Modifier
-                                .align(Alignment.TopEnd)
-                                .offset(y = (-4).dp * designScale)
-                                .then(if (testTag != null) Modifier.testTag("$testTag-status") else Modifier),
-                    )
-                }
+                Icon(
+                    painter = painterResource(icon),
+                    contentDescription = badge,
+                    tint = if (badgeTone == VehicleTone.NEUTRAL) Color(0xFFB9CADD) else statusColor,
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopEnd)
+                            .offset(x = (-4).dp * designScale, y = (-8).dp * designScale)
+                            .size(80.dp * designScale)
+                            .then(if (testTag != null) Modifier.testTag("$testTag-status") else Modifier),
+                )
                 if (valueContent != null) {
-                    Box(Modifier.offset(y = 78.dp * designScale)) { valueContent() }
+                    Box(Modifier.offset(y = 94.dp * designScale)) { valueContent() }
                 } else {
                     Text(
                         text = value,
-                        color = MobiMonColors.text,
-                        fontSize = (58f * designScale).sp,
+                        color = statusColor,
+                        fontSize = (valueSize * designScale).sp,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.offset(y = 78.dp * designScale),
+                        modifier =
+                            Modifier.offset(
+                                y =
+                                    (126f - valueSize / 2f + if (valueSize >= 76f) -2f else 2f).dp * designScale,
+                            ),
                     )
                 }
                 Text(
                     text = supporting,
-                    color = MobiMonColors.muted,
+                    color = supportingColor,
                     fontSize = (28f * designScale).sp,
-                    modifier = Modifier.offset(y = 196.dp * designScale),
+                    modifier = Modifier.offset(y = 187.dp * designScale),
                 )
                 Column(
-                    Modifier.offset(y = 314.dp * designScale),
+                    Modifier.offset(y = 297.dp * designScale),
                     verticalArrangement = Arrangement.spacedBy(8.dp * designScale),
                 ) { content() }
             } else {
@@ -1314,29 +1541,29 @@ private fun MetricCard(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                         )
-                        badge?.let {
-                            StatusPill(
-                                text = it,
-                                foreground = badgeTone.foreground,
-                                background = badgeTone.background,
-                                border = badgeTone.border,
-                                modifier = if (testTag != null) Modifier.testTag("$testTag-status") else Modifier,
-                            )
-                        }
+                        Icon(
+                            painter = painterResource(icon),
+                            contentDescription = badge,
+                            tint = if (badgeTone == VehicleTone.NEUTRAL) Color(0xFFB9CADD) else statusColor,
+                            modifier =
+                                Modifier
+                                    .size(48.dp)
+                                    .then(if (testTag != null) Modifier.testTag("$testTag-status") else Modifier),
+                        )
                     }
                     if (valueContent != null) {
                         valueContent()
                     } else {
                         Text(
                             text = value,
-                            color = MobiMonColors.text,
+                            color = statusColor,
                             style = MaterialTheme.typography.displaySmall,
                             fontWeight = FontWeight.Bold,
                         )
                     }
                     Text(
                         text = supporting,
-                        color = MobiMonColors.muted,
+                        color = supportingColor,
                         style = MaterialTheme.typography.bodySmall,
                     )
                     content()
@@ -1357,7 +1584,7 @@ private fun BatteryBar(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(16.dp * designScale)
+                .height(14.dp * designScale)
                 .clip(RoundedCornerShape(8.dp * designScale))
                 .background(MobiMonColors.raised),
     ) {
@@ -1365,40 +1592,9 @@ private fun BatteryBar(
             modifier =
                 Modifier
                     .fillMaxWidth(clamped / 100f)
-                    .height(16.dp * designScale)
+                    .height(14.dp * designScale)
                     .clip(RoundedCornerShape(8.dp * designScale))
-                    .background(tone.foreground),
-        )
-    }
-}
-
-@Composable
-private fun StatusPill(
-    text: String,
-    foreground: Color,
-    background: Color,
-    border: Color,
-    modifier: Modifier = Modifier,
-    centered: Boolean = false,
-) {
-    val designScale = LocalVehicleDesignScale.current
-    Surface(
-        modifier = modifier,
-        color = background,
-        contentColor = foreground,
-        shape = RoundedCornerShape(28.dp * designScale),
-        border = BorderStroke(1.dp, border),
-    ) {
-        Text(
-            text = text,
-            modifier =
-                Modifier
-                    .then(if (centered) Modifier.fillMaxWidth() else Modifier)
-                    .padding(horizontal = 18.dp * designScale, vertical = 8.dp * designScale),
-            fontSize = (24f * designScale).sp,
-            fontWeight = FontWeight.Bold,
-            color = foreground,
-            textAlign = if (centered) TextAlign.Center else TextAlign.Start,
+                    .background(if (tone == VehicleTone.NEUTRAL) Color(0xFFB9CADD) else tone.foreground),
         )
     }
 }
@@ -1479,78 +1675,63 @@ private fun VehicleSnapshot.drivingStatusTextRes(): Int =
     }
 
 private enum class VehicleMood(
-    val badgeRes: Int,
     val companionTextRes: Int,
     val bannerTitleRes: Int,
     val bannerDescriptionRes: Int,
     val accent: Color,
     val bannerBackground: Color,
-    val badgeBackground: Color,
 ) {
     GOOD(
-        R.string.vehicle_mood_good_badge,
         R.string.vehicle_mood_good_companion,
         R.string.vehicle_banner_good_title,
         R.string.vehicle_banner_good_desc,
         SuccessAccent,
         SuccessBackground,
-        SuccessBadgeBackground,
     ),
     PARTIAL(
-        R.string.vehicle_mood_partial_badge,
         R.string.vehicle_mood_partial_companion,
         R.string.vehicle_banner_partial_title,
         R.string.vehicle_banner_partial_desc,
         MobiMonColors.accent,
         NeutralBackground,
-        NeutralBadgeBackground,
     ),
     ATTENTION(
-        R.string.vehicle_mood_hungry_badge,
         R.string.vehicle_mood_hungry_companion,
-        R.string.vehicle_banner_low_battery_title,
+        R.string.vehicle_banner_hungry_title,
         R.string.vehicle_banner_hungry_desc,
         WarningAccent,
         WarningBackground,
-        WarningBadgeBackground,
     ),
     WARNING(
-        R.string.vehicle_mood_warning_badge,
         R.string.vehicle_mood_warning_companion,
         R.string.vehicle_banner_warning_title,
         R.string.vehicle_banner_warning_desc,
         WarningAccent,
         WarningBackground,
-        WarningBadgeBackground,
     ),
     STALE(
-        R.string.vehicle_mood_stale_badge,
         R.string.vehicle_mood_stale_companion,
         R.string.vehicle_banner_stale_title,
         R.string.vehicle_banner_stale_desc,
         WarningAccent,
         WarningBackground,
-        WarningBadgeBackground,
     ),
     UNKNOWN(
-        R.string.vehicle_mood_unknown_badge,
         R.string.vehicle_mood_unknown_companion,
         R.string.vehicle_banner_unknown_title,
         R.string.vehicle_banner_unknown_desc,
         MobiMonColors.accent,
         NeutralBackground,
-        NeutralBadgeBackground,
     ),
 }
 
 private enum class VehicleTone(
     val foreground: Color,
-    val background: Color,
-    val border: Color,
 ) {
-    SUCCESS(SuccessAccent, SuccessBadgeBackground, SuccessAccent),
-    WARNING(WarningAccent, WarningBadgeBackground, WarningAccent),
-    NEUTRAL(MobiMonColors.accent, NeutralBadgeBackground, MobiMonColors.border),
+    SUCCESS(SuccessAccent),
+    WARNING(WarningAccent),
+    MUTED(Color(0xFF91A7BD)),
+    NEUTRAL(Color(0xFFB9CADD)),
 }
 
 private val VehicleCardStatus.labelRes: Int
@@ -1570,14 +1751,51 @@ private val VehicleCardStatus.tone: VehicleTone
             VehicleCardStatus.CAUTION -> VehicleTone.WARNING
         }
 
+private fun vehicleCardIcon(cardId: String?): Int =
+    when (cardId) {
+        "charging" -> R.drawable.vehicle_icon_charging
+        "tire" -> R.drawable.vehicle_icon_tire
+        "washer" -> R.drawable.vehicle_icon_washer
+        "environment" -> R.drawable.vehicle_icon_environment
+        "assist" -> R.drawable.vehicle_icon_assist
+        "battery" -> R.drawable.vehicle_catalog_battery
+        "battery-health" -> R.drawable.vehicle_catalog_battery_health
+        "battery-range" -> R.drawable.vehicle_catalog_battery_range
+        "battery-time" -> R.drawable.vehicle_catalog_battery_time
+        "battery-error" -> R.drawable.vehicle_catalog_battery_error
+        "driver-door" -> R.drawable.vehicle_catalog_driver_door
+        "service-due" -> R.drawable.vehicle_catalog_service_due
+        "charging-time" -> R.drawable.vehicle_catalog_charging_time
+        "service-distance" -> R.drawable.vehicle_catalog_service_distance
+        "service-time" -> R.drawable.vehicle_catalog_service_time
+        "brake-fluid" -> R.drawable.vehicle_catalog_brake_fluid
+        "low-beam" -> R.drawable.vehicle_catalog_low_beam
+        "brake-light" -> R.drawable.vehicle_catalog_brake_light
+        "parking-brake" -> R.drawable.vehicle_catalog_parking_brake
+        "tire-low" -> R.drawable.vehicle_catalog_tire_low
+        "driver-belt" -> R.drawable.vehicle_catalog_driver_belt
+        "pad-wear" -> R.drawable.vehicle_catalog_pad_wear
+        "pad-warning" -> R.drawable.vehicle_catalog_pad_warning
+        "abs" -> R.drawable.vehicle_catalog_abs
+        "hood" -> R.drawable.vehicle_catalog_hood
+        "trunk" -> R.drawable.vehicle_catalog_trunk
+        "washer-low" -> R.drawable.vehicle_catalog_washer_low
+        "air-temperature" -> R.drawable.vehicle_catalog_air_temperature
+        "rain-intensity" -> R.drawable.vehicle_catalog_rain_intensity
+        "cabin-temperature" -> R.drawable.vehicle_catalog_cabin_temperature
+        "distance" -> R.drawable.vehicle_catalog_distance
+        "dtc-count" -> R.drawable.vehicle_catalog_dtc_count
+        "fatigue" -> R.drawable.vehicle_catalog_fatigue
+        "distraction" -> R.drawable.vehicle_catalog_distraction
+        "breakdown" -> R.drawable.vehicle_catalog_breakdown
+        else -> R.drawable.vehicle_catalog_service_due
+    }
+
 private val SuccessAccent = Color(0xFF71E5C5)
-private val SuccessBackground = Color(0xFF102B28)
-private val SuccessBadgeBackground = Color(0xFF123733)
-private val WarningAccent = Color(0xFFFBBF24)
+private val SuccessBackground = Color(0xFF142D2B)
+private val WarningAccent = Color(0xFFFFD18A)
 private val WarningBackground = Color(0xFF251E14)
-private val WarningBadgeBackground = Color(0xFF2E2213)
 private val NeutralBackground = Color(0xFF10243A)
-private val NeutralBadgeBackground = Color(0xFF142A42)
 internal val VehicleScreenBackground = MobiMonColors.background
 private val VehiclePanelBackground = Color(0xFF142A42)
 private val VehicleBorder = Color(0xFF2A4968)

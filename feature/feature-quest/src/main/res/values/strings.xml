@@ -4,6 +4,7 @@
     <string name="quest_parking_popup_instruction">안전한 곳에 주차한 뒤 다시 들어와 주세요.</string>
     <string name="quest_parking_popup_preserved">완료한 퀘스트와 포인트는 그대로 유지돼요.</string>
     <string name="quest_saving">진행 상황을 저장하고 있어요.</string>
+    <string name="quest_saving_short">보상 저장 중…</string>
     <string name="quest_refresh_required">차량 상태나 퀘스트가 바뀌었어요. 최신 내용을 확인하고 다시 눌러 주세요.</string>
     <string name="quest_condition_not_met">아직 완료 조건을 충족하지 못했어요. 주행 기록을 확인해 주세요.</string>
     <string name="quest_unsupported">이 퀘스트는 아직 준비 중이에요.</string>
@@ -72,11 +73,11 @@
     <string name="quest_detail_time_hours_minutes_format">%1$d시간 %2$d분</string>
     <string name="quest_modal_badge">퀘스트 완료</string>
     <string name="quest_modal_badge_weather_bonus">퀘스트 완료 · 날씨 보너스</string>
-    <string name="quest_modal_title">%1$d포인트를 획득했어요!!</string>
+    <string name="quest_modal_title">%1$d P를 받았어요!</string>
     <string name="quest_modal_subtitle">작은 도전으로 모비와 함께 성장했어요.</string>
-    <string name="quest_modal_weather_bonus">날씨 보너스로 %1$d포인트를 더 받았어요!</string>
-    <string name="quest_modal_chip">보상 · %1$d Point</string>
-    <string name="quest_modal_chip_weather_bonus">보상 · %1$d Point (날씨 보너스 +%2$d)</string>
+    <string name="quest_modal_weather_bonus">날씨 보너스 +%1$d P</string>
+    <string name="quest_modal_chip">보상 · %1$d P</string>
+    <string name="quest_modal_chip_weather_bonus">보상 · %1$d P (날씨 보너스 +%2$d P)</string>
 
 
     <string name="quest_schedule_per_drive_short">주행 당</string>
