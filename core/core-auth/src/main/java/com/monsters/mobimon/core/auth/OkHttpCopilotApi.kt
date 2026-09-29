@@ -265,7 +265,7 @@ internal class OkHttpCopilotApi(
                                     when (it.code) {
                                         401 -> fail(ConversationProblem.ACCOUNT)
                                         403 -> {
-                                            fail(
+                                            throw ConversationException(
                                                 if (rejection ==
                                                     CopilotRejection.RATE_LIMIT
                                                 ) {
@@ -273,6 +273,7 @@ internal class OkHttpCopilotApi(
                                                 } else {
                                                     ConversationProblem.ACCESS
                                                 },
+                                                rejection,
                                             )
                                         }
                                         402, 429 -> fail(ConversationProblem.USAGE)

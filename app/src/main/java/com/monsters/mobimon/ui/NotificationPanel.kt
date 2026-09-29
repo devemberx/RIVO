@@ -44,7 +44,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monsters.mobimon.R
-import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.ui.MobiMonReferenceText
 
 private val panelColor = Color(0xFF183257)
@@ -64,7 +63,7 @@ internal fun NotificationPanel(
     expanded: Boolean,
     onBack: () -> Unit,
     onClose: () -> Unit,
-    onNavigate: (AppRoute) -> Unit,
+    onNotificationClick: (NotificationItem) -> Unit,
 ) {
     val scale = minOf(windowWidth.value / 2560f, windowHeight.value / 1184f)
     val backFocus = remember { FocusRequester() }
@@ -95,7 +94,7 @@ internal fun NotificationPanel(
                 backFocus = backFocus,
                 onBack = onBack,
                 onClose = onClose,
-                onNavigate = onNavigate,
+                onNotificationClick = onNotificationClick,
             )
         }
     }
@@ -110,7 +109,7 @@ private fun NotificationPanelContent(
     backFocus: FocusRequester,
     onBack: () -> Unit,
     onClose: () -> Unit,
-    onNavigate: (AppRoute) -> Unit,
+    onNotificationClick: (NotificationItem) -> Unit,
 ) {
     val closeSize = (76 * scale).dp.coerceAtLeast(76.dp)
     val closeX = (panelWidth - (138 * scale).dp).coerceAtMost(panelWidth - closeSize).coerceAtLeast(0.dp)
@@ -154,7 +153,7 @@ private fun NotificationPanelContent(
     if (notifications.isEmpty()) {
         NotificationEmptyState(scale, panelWidth)
     } else {
-        NotificationList(notifications, scale, panelWidth, windowHeight, onNavigate)
+        NotificationList(notifications, scale, panelWidth, windowHeight, onNotificationClick)
     }
 }
 
@@ -202,7 +201,7 @@ private fun NotificationList(
     scale: Float,
     panelWidth: Dp,
     windowHeight: Dp,
-    onNavigate: (AppRoute) -> Unit,
+    onNotificationClick: (NotificationItem) -> Unit,
 ) {
     val vehicle = notifications.filter { it.kind == NotificationKind.VEHICLE }
     val quests = notifications.filter { it.kind == NotificationKind.QUEST }
@@ -218,7 +217,7 @@ private fun NotificationList(
             NotificationSection("차량 확인", vehicleColor, scale)
             Spacer(Modifier.height((16 * scale).dp))
             vehicle.forEachIndexed { index, item ->
-                NotificationCard(item, scale, contentWidth) { onNavigate(item.route) }
+                NotificationCard(item, scale, contentWidth) { onNotificationClick(item) }
                 if (index != vehicle.lastIndex) Spacer(Modifier.height((16 * scale).dp))
             }
         }
@@ -227,7 +226,7 @@ private fun NotificationList(
             NotificationSection("퀘스트 보상", questColor, scale)
             Spacer(Modifier.height((16 * scale).dp))
             quests.forEachIndexed { index, item ->
-                NotificationCard(item, scale, contentWidth) { onNavigate(item.route) }
+                NotificationCard(item, scale, contentWidth) { onNotificationClick(item) }
                 if (index != quests.lastIndex) Spacer(Modifier.height((16 * scale).dp))
             }
         }

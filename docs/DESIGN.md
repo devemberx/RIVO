@@ -243,5 +243,6 @@ stay still; Home speech replays on entry/tap/interval, not data updates.
 ## Vehicle launcher
 
 Outside-app companion requires explicit opt-in and overlay permission. Intended
-placement is vehicle Home; verify actual placement/lifecycle under the
+placement is vehicle Home; it hides while MobiMon is foreground and returns when
+the app moves to the background without restarting the service. Verify actual placement/lifecycle under the
 [platform contract](ARCHITECTURE.md#shared-vehicle-condition-and-overlay).

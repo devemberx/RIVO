@@ -104,6 +104,7 @@ internal class QuestCatalog(
             observationFailed = state.observationFailed,
             errorMessage = state.message?.let { text(it.textResource()) },
             rewardSuccess = state.rewardSuccess,
+            requestedQuestId = state.requestedQuestId,
         )
     }
 }
