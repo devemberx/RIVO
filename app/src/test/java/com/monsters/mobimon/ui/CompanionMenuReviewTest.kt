@@ -50,7 +50,7 @@ class CompanionMenuReviewTest {
     @get:Rule val compose = createComposeRule()
 
     @Test fun menuReferenceRender() {
-        show()
+        show(notifications = referenceAlerts())
         val panel = compose.onNodeWithTag("companion-menu").fetchSemanticsNode().boundsInRoot
         assertEquals(690f, panel.width, 1f)
         assertEquals(1184f, panel.height, 1f)
@@ -66,6 +66,7 @@ class CompanionMenuReviewTest {
         assertEquals(50f, close.top, 1f)
         val alerts = compose.onNodeWithTag("menu-notifications").fetchSemanticsNode().boundsInRoot
         assertEquals(453f, alerts.top, 1f)
+        assertMenuIconAndBadgeAligned()
         compose.onNodeWithText("v0.1.0").assertIsDisplayed()
         capture("menu")
     }
@@ -229,6 +230,7 @@ class CompanionMenuReviewTest {
     @Config(qualifiers = "ko-rKR-w1792dp-h829dp-mdpi")
     fun notificationCountRemainsVisibleInReflowedMenu() {
         show(fontScale = 1.5f, notifications = referenceAlerts())
+        assertMenuIconAndBadgeAligned()
         val row = compose.onNodeWithTag("menu-notifications").fetchSemanticsNode().boundsInRoot
         compose.runOnIdle {
             val bitmap = popupBitmap()
@@ -245,6 +247,13 @@ class CompanionMenuReviewTest {
                 bitmap.recycle()
             }
         }
+    }
+
+    @Test
+    @Config(qualifiers = "ko-rKR-w393dp-h852dp-mdpi")
+    fun compactMenuAlignsBellAndCountWithOtherControls() {
+        show(notifications = referenceAlerts())
+        assertMenuIconAndBadgeAligned()
     }
 
     @Test
@@ -328,6 +337,27 @@ class CompanionMenuReviewTest {
             NotificationItem("tire", "타이어 공기압 확인이 필요해요", NotificationKind.VEHICLE),
             NotificationItem("pre-drive", "차량 건강검진 완료", NotificationKind.QUEST),
         )
+
+    private fun assertMenuIconAndBadgeAligned() {
+        val home = compose.onNodeWithTag("menu-home-icon", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        val bell =
+            compose
+                .onNodeWithTag(
+                    "menu-notification-icon",
+                    useUnmergedTree = true,
+                ).fetchSemanticsNode()
+                .boundsInRoot
+        val close = compose.onNodeWithContentDescription("닫기").fetchSemanticsNode().boundsInRoot
+        val badge =
+            compose
+                .onNodeWithTag(
+                    "menu-notification-count",
+                    useUnmergedTree = true,
+                ).fetchSemanticsNode()
+                .boundsInRoot
+        assertEquals(home.center.x, bell.center.x, 1f)
+        assertEquals(close.center.x, badge.center.x, 1f)
+    }
 
     private fun capture(
         name: String,
