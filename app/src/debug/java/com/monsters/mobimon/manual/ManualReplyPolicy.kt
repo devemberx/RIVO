@@ -107,7 +107,11 @@ internal object ManualReplyPolicy : ConversationReplyPolicy {
                 }
             }
             reader.endObject()
-            require(reader.peek() == JsonToken.END_DOCUMENT && seen == setOf("status", "text", "sourceIds"))
+            // Some providers omit the unused array on ordinary chat; cited answers must still declare it.
+            val hasExpectedFields =
+                seen == setOf("status", "text", "sourceIds") ||
+                    (status == "CONVERSATION" && seen == setOf("status", "text"))
+            require(reader.peek() == JsonToken.END_DOCUMENT && hasExpectedFields)
         }
         require(
             !text.isNullOrBlank() &&

@@ -53,6 +53,8 @@ internal object ManualConversationTools {
         {"status":"CONVERSATION|ANSWERED|NEEDS_CLARIFICATION|NO_EVIDENCE|OUT_OF_SCOPE","text":"...","sourceIds":[]}
         CONVERSATION is a direct reply without a tool call, for ordinary chat or discussion of explicitly supplied context.
         CONVERSATION has empty sourceIds and no manual claims or invented observations. It is not a fallback for missing evidence.
+        Include sourceIds even when empty. Ordinary-chat response example:
+        {"status":"CONVERSATION","text":"응, 듣고 있어. 편하게 이야기해.","sourceIds":[]}
         ANSWERED is a manual-grounded reply requiring this-turn evidence, also when combining manual help with ordinary chat.
         Cite EACH used manual source inline as [ne1-0000] using actual returned IDs.
         Use the smallest source set that supports the answer; do not cite redundant sources.

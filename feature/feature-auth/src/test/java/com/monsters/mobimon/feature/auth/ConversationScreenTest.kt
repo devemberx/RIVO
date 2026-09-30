@@ -1164,6 +1164,10 @@ class ConversationScreenTest {
             compose.mainClock.advanceTimeBy(160)
             val movingTop = bubble.fetchSemanticsNode().boundsInRoot.top
             assertTrue("Failed message did not move downward", movingTop > initialTop)
+            assertTrue(
+                "Failed message travelled toward the composer instead of fading nearby",
+                movingTop - initialTop <= 32f,
+            )
             compose.runOnIdle { assertEquals("", draft.text) }
             compose.mainClock.advanceTimeBy(200)
             compose.runOnIdle { assertEquals("다시 고칠 질문", draft.text) }

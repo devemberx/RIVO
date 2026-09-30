@@ -42,8 +42,12 @@ import javax.inject.Inject
 class CopilotToolProbeActivity : ComponentActivity() {
     @Inject lateinit var authentication: GitHubAuthentication
 
-    private val manualStart get() = intent.getIntExtra("manual_start", 1).coerceIn(1, 30)
-    private val manualCount get() = intent.getIntExtra("manual_count", 31 - manualStart).coerceIn(1, 31 - manualStart)
+    private val manualStart get() = intent.getIntExtra("manual_start", 1).coerceIn(1, ManualEvaluation.CASE_COUNT)
+    private val manualCount get() =
+        intent.getIntExtra("manual_count", ManualEvaluation.CASE_COUNT + 1 - manualStart).coerceIn(
+            1,
+            ManualEvaluation.CASE_COUNT + 1 - manualStart,
+        )
 
     private var job: Job? = null
     private var running by mutableStateOf(false)

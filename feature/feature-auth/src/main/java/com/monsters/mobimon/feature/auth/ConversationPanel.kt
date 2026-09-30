@@ -948,27 +948,20 @@ private fun ConversationMessages(
                     if (message.id !in seenMessageIds) seenMessageIds.add(message.id)
                     entered = true
                 }
-                val progress by animateFloatAsState(
-                    targetValue = if (entered || !motionEnabled) 1f else 0f,
-                    animationSpec = tween(280, easing = FastOutSlowInEasing),
-                    label = "message arrival",
-                )
-                val entryProgress = progress
+                val progress =
+                    animateFloatAsState(
+                        targetValue = if (entered || !motionEnabled) 1f else 0f,
+                        animationSpec = tween(280, easing = FastOutSlowInEasing),
+                        label = "message arrival",
+                    )
                 Column(
                     Modifier.graphicsLayer {
                         val returning = if (message.id == returningMessageId) returnProgress() else 0f
-                        val item = scroll.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
-                        val spaceBelow =
-                            (scroll.layoutInfo.viewportEndOffset - (item?.offset ?: 0) - (item?.size ?: 0))
-                                .coerceAtLeast(
-                                    0,
-                                )
-                        alpha = entryProgress * (1f - returning)
-                        translationY =
-                            (1f - entryProgress) * 24.dp.toPx() * scale +
-                            returning * (spaceBelow + (if (reference) 100.dp else 80.dp).toPx() * scale)
-                        scaleX = 0.97f + entryProgress * 0.03f - returning * 0.05f
-                        scaleY = 0.97f + entryProgress * 0.03f - returning * 0.05f
+                        val visibleProgress = progress.value * (1f - returning)
+                        alpha = visibleProgress
+                        translationY = (1f - visibleProgress) * 24.dp.toPx() * scale
+                        scaleX = 0.97f + visibleProgress * 0.03f
+                        scaleY = 0.97f + visibleProgress * 0.03f
                     },
                 ) {
                     MessageBubble(

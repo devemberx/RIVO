@@ -20,13 +20,15 @@ import java.io.File
 
 /** Explicit synthetic evaluation only. No real chat input, conversation storage, credentials or provider bodies. */
 internal object ManualEvaluation {
+    const val CASE_COUNT = 32
+
     suspend fun run(
         authentication: PersistentGitHubAuthentication,
         assets: AssetManager,
         cacheDirectory: File,
         progress: (String) -> Unit,
         startCase: Int = 1,
-        count: Int = 30,
+        count: Int = CASE_COUNT,
     ): String {
         val account = (authentication.session.value as? GitHubSession.Authenticated)?.account ?: return "ACCOUNT"
         val cases =
@@ -73,7 +75,22 @@ internal object ManualEvaluation {
                         JSONObject()
                             .put("jsonObject", envelope != null)
                             .put("fieldCount", envelope?.length() ?: 0)
-                            .put("sourceIds", JSONArray(safeIds))
+                            .put("hasStatus", envelope?.opt("status") is String)
+                            .put("hasText", envelope?.opt("text") is String)
+                            .put("hasSourceIds", ids != null)
+                            .put(
+                                "statusKind",
+                                envelope?.optString("status")?.takeIf {
+                                    it in
+                                        setOf(
+                                            "CONVERSATION",
+                                            "ANSWERED",
+                                            "NEEDS_CLARIFICATION",
+                                            "NO_EVIDENCE",
+                                            "OUT_OF_SCOPE",
+                                        )
+                                } ?: "OTHER",
+                            ).put("sourceIds", JSONArray(safeIds))
                             .put(
                                 "inlineIds",
                                 JSONArray(Regex("\\[ne1-[0-9]{4}]").findAll(text).map { it.value }.toList()),

@@ -21,7 +21,7 @@ class ManualRetrievalEvaluationTest {
         runTest {
             val assets = ApplicationProvider.getApplicationContext<Application>().assets
             val cases = assets.open("manuals/evaluation.json").bufferedReader().use { JSONArray(it.readText()) }
-            assertEquals(30, cases.length())
+            assertEquals(ManualEvaluation.CASE_COUNT, cases.length())
             val retriever = AssetManualRetriever(assets)
             val rows = JSONArray()
             var evidenceCases = 0

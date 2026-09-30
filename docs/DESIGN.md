@@ -139,7 +139,8 @@ bullets for multiple tips and numbered steps when order matters. Keep relevant
 conditions/warnings and place citations beside supported claims. Manual answers
 show a regular-weight source heading with smaller entries/markers; raw tool output stays hidden. Follow new replies unless
 reading history; the return button shows typing dots or a down arrow. Render
-strong Markdown emphasis, animate failed-turn Edit unless motion is reduced,
+strong Markdown emphasis; failed-turn Edit reverses the short arrival motion
+in place unless motion is reduced,
 and keep companion artwork clear of its caption when the keyboard opens.
 
 ## Vehicle information

@@ -301,5 +301,24 @@
     "query": "내일 서울 날씨 알려줘.",
     "expectedChunkIds": [],
     "history": []
+  },
+  {
+    "id": "e31",
+    "kind": "conversation",
+    "question": "오늘 하루 이야기 할래",
+    "query": "오늘 하루 이야기 할래",
+    "expectedChunkIds": [],
+    "history": []
+  },
+  {
+    "id": "e32",
+    "kind": "conversation",
+    "question": "오늘 하루 이야기 할래",
+    "query": "오늘 하루 이야기 할래",
+    "expectedChunkIds": [],
+    "history": [
+      "안녕",
+      "안녕! 오늘은 어떻게 지냈어?"
+    ]
   }
 ]

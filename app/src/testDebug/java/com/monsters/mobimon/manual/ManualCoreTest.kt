@@ -91,6 +91,42 @@ class ManualCoreTest {
         }
     }
 
+    @Test fun ordinaryConversationCanOmitUnusedSourcesButCannotDiscardEvidence() {
+        val text = "응, 듣고 있어. 편하게 이야기해."
+        val withoutSources = JSONObject().put("status", "CONVERSATION").put("text", text).toString()
+        assertEquals(ConversationResult.Success(text), ManualReplyPolicy.accept(withoutSources, null))
+        assertEquals(
+            ConversationResult.Failure(ConversationProblem.PROVIDER),
+            ManualReplyPolicy.accept(withoutSources, evidence),
+        )
+        for (marker in listOf("[1]", "[ne1-0020]")) {
+            val forged = JSONObject(withoutSources).put("text", "$text $marker").toString()
+            assertEquals(
+                ConversationResult.Failure(ConversationProblem.PROVIDER),
+                ManualReplyPolicy.accept(forged, null),
+            )
+        }
+    }
+
+    @Test fun omittedConversationSourcesDoNotRelaxOtherEnvelopeChecks() {
+        val withoutSources = JSONObject().put("status", "CONVERSATION").put("text", "오늘 이야기를 들려줘.")
+        val invalid =
+            listOf(
+                JSONObject(withoutSources.toString()).put("sourceIds", JSONObject.NULL).toString(),
+                JSONObject(withoutSources.toString()).put("sourceIds", "").toString(),
+                JSONObject(withoutSources.toString()).put("extra", true).toString(),
+            ) +
+                listOf("ANSWERED", "NEEDS_CLARIFICATION", "OUT_OF_SCOPE", "NO_EVIDENCE", "UNKNOWN").map {
+                    JSONObject(withoutSources.toString()).put("status", it).toString()
+                }
+        for (json in invalid) {
+            assertEquals(
+                ConversationResult.Failure(ConversationProblem.PROVIDER),
+                ManualReplyPolicy.accept(json, null),
+            )
+        }
+    }
+
     @Test fun rejectsUnknownMissingDuplicateAndNumericCitations() {
         val variants =
             listOf(
