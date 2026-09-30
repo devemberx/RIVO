@@ -106,6 +106,7 @@ fun CustomizationScreen(
     val selected = presentation.selected
     val activeFriend = inventory?.equippedItemIds?.get(CosmeticSlot.FRIEND) ?: "friend:mobi"
     val otherFriend = tab == CosmeticSlot.ACCESSORY && presentation.preview.friendId != activeFriend
+    val switchFriend = otherFriend && presentation.selectedOwned
     val busy =
         saving ||
             purchasing ||
@@ -121,17 +122,16 @@ fun CustomizationScreen(
             !loadFailed &&
             !catalogLoadFailed &&
             !busy &&
-            (!presentation.selectedEquipped || otherFriend) &&
+            (!presentation.selectedEquipped || switchFriend) &&
             (
-                otherFriend ||
-                    presentation.selectedOwned ||
+                presentation.selectedOwned ||
                     (!pointLoadFailed && pointBalance != null && pointBalance >= selected.price)
             )
     val action =
         when {
             busy -> "적용 중…"
             selected == null -> "아이템을 골라 주세요"
-            otherFriend -> "${storeFriendName(presentation.preview.friendId)}와 함께하기"
+            switchFriend -> "${storeFriendName(presentation.preview.friendId)}와 함께하기"
             presentation.selectedEquipped ->
                 when (tab) {
                     CosmeticSlot.FRIEND -> "동행 중"
@@ -203,8 +203,8 @@ fun CustomizationScreen(
                 onAction = {
                     if (enabled) {
                         when {
-                            otherFriend -> onEquipFriend(presentation.preview.friendId)
                             !presentation.selectedOwned -> confirmingId = selected.id
+                            switchFriend -> onEquipFriend(presentation.preview.friendId)
                             selected.slot == CosmeticSlot.FRIEND -> onEquipFriend(selected.id)
                             else -> onEquipItem(selected.id)
                         }
@@ -315,6 +315,7 @@ internal fun storePreviewDescription(
     selectedItemId: String?,
     previewFriend: String,
     equipped: Boolean,
+    category: StoreSpaceCategory = StoreSpaceCategory.BACKGROUNDS,
 ): String =
     when (tab) {
         CosmeticSlot.FRIEND ->
@@ -337,7 +338,14 @@ internal fun storePreviewDescription(
                 "background:star" -> stringResource(R.string.pet_preview_desc_background_star)
                 "background:snow" -> stringResource(R.string.pet_preview_desc_background_snow)
                 "background:petal" -> stringResource(R.string.pet_preview_desc_background_petal)
-                else -> stringResource(R.string.pet_preview_desc_background_none)
+                else ->
+                    stringResource(
+                        when (category) {
+                            StoreSpaceCategory.BACKGROUNDS -> R.string.pet_preview_desc_background_none
+                            StoreSpaceCategory.EFFECTS -> R.string.pet_preview_desc_effect_none
+                            StoreSpaceCategory.PROPS -> R.string.pet_preview_desc_prop_none
+                        },
+                    )
             }
         else ->
             if (equipped) "내 친구에게 작은 선물을" else "아직 적용되지 않았어요"

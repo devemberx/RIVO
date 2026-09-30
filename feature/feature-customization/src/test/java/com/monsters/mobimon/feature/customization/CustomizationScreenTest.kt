@@ -273,6 +273,51 @@ class CustomizationScreenTest {
         compose.onNodeWithTag("preview-character").assertExists()
     }
 
+    @Test fun unownedAccessoryCanBePurchasedWhilePreviewingAnotherFriend() {
+        var purchases = 0
+        var friendSwitches = 0
+        val catalog =
+            listOf(
+                CosmeticItem("friend:mobi", CosmeticSlot.FRIEND, 0),
+                CosmeticItem("friend:luna", CosmeticSlot.FRIEND, 0),
+                CosmeticItem("accessory:luna_sunglasses", CosmeticSlot.ACCESSORY, 300, "friend:luna"),
+            )
+        compose.setContent {
+            var selectedId by androidx.compose.runtime.remember { mutableStateOf<String?>(null) }
+            MobiMonTheme {
+                CustomizationScreen(
+                    inventory =
+                        CosmeticInventory(
+                            setOf("friend:mobi", "friend:luna"),
+                            mapOf(CosmeticSlot.FRIEND to "friend:mobi"),
+                        ),
+                    catalog = catalog,
+                    selectedItemId = selectedId,
+                    purchasing = false,
+                    purchaseFailed = false,
+                    onSelectItem = { selectedId = it },
+                    onPurchaseItem = { id, price ->
+                        org.junit.Assert.assertEquals("accessory:luna_sunglasses", id)
+                        org.junit.Assert.assertEquals(300L, price)
+                        purchases++
+                    },
+                    onEquipItem = {},
+                    onEquipFriend = { friendSwitches++ },
+                    pointBalance = 300,
+                    pointLoadFailed = false,
+                )
+            }
+        }
+
+        compose.onNodeWithTag("store-tab-ACCESSORY").performClick()
+        compose.onNodeWithText("루나").performClick()
+        compose.onNodeWithText("루나 선글라스").performClick()
+        compose.onNodeWithText("300 P로 구매하기").assertIsEnabled().performClick()
+        compose.onNodeWithText("구매하기").performClick()
+        org.junit.Assert.assertEquals(1, purchases)
+        org.junit.Assert.assertEquals(0, friendSwitches)
+    }
+
     @Test fun observationFailureOffersRetryWithCommittedInventoryVisible() {
         var retries = 0
         compose.setContent {
@@ -330,7 +375,7 @@ class CustomizationScreenTest {
             .assertIsDisplayed()
             .performClick()
         org.junit.Assert.assertEquals(1, retries)
-        compose.onNodeWithTag("preview-character").assertIsDisplayed().assertContentDescriptionEquals("Mobi 강아지")
+        compose.onNodeWithTag("preview-character").assertIsDisplayed().assertContentDescriptionEquals("Mobi 토끼")
     }
 
     @Test fun enlargedTextKeepsRecoveryReachableByScrolling() {
@@ -409,7 +454,7 @@ class CustomizationScreenTest {
 
         compose.onNodeWithTag("store-tab-ACCESSORY").performClick()
         compose.onNodeWithTag("shop-items").assertIsDisplayed().performScrollToIndex(0)
-        compose.onNodeWithText("기본 (미착용)").assertIsDisplayed().performClick()
+        compose.onNodeWithText("장식 없음").assertIsDisplayed().performClick()
         compose.onNodeWithText("이 모습 적용").assertIsDisplayed().performClick()
         org.junit.Assert.assertEquals("none:accessory", unequippedSlot)
     }

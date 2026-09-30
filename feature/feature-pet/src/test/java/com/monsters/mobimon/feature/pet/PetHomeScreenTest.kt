@@ -92,8 +92,8 @@ class PetHomeScreenTest {
     @Test
     fun friendNameIsAccessibleWithoutAnExtraVisibleCaption() {
         render(snapshot = parkedSnapshot())
-        compose.onNodeWithContentDescription("Mobi 강아지").assertExists()
-        compose.onNodeWithText("Mobi · 강아지").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Mobi 토끼").assertExists()
+        compose.onNodeWithText("Mobi · 토끼").assertDoesNotExist()
     }
 
     @Test
@@ -111,10 +111,10 @@ class PetHomeScreenTest {
                 )
             }
         }
-        compose.onNodeWithContentDescription("Mobi 강아지").assertExists()
+        compose.onNodeWithContentDescription("Mobi 토끼").assertExists()
         compose.runOnIdle { friend.value = "friend:luna" }
         compose.onNodeWithContentDescription("Luna 고양이").assertExists()
-        compose.onNodeWithContentDescription("Mobi 강아지").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Mobi 토끼").assertDoesNotExist()
     }
 
     @Test
@@ -216,7 +216,7 @@ class PetHomeScreenTest {
     fun losingAndRecoveringVehicleDataKeepsCommittedCompanionAndTruthfulParking() {
         val snapshot = mutableStateOf(parkedSnapshot())
         render(pointBalance = 0, snapshotSource = { snapshot.value })
-        val friend = compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot
+        val friend = compose.onNodeWithContentDescription("Mobi 토끼").fetchSemanticsNode().boundsInRoot
         compose.runOnIdle {
             snapshot.value =
                 snapshot.value.copy(
@@ -225,7 +225,7 @@ class PetHomeScreenTest {
                     drivingState = DrivingState.UNKNOWN,
                 )
         }
-        assertEquals(friend, compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot)
+        assertEquals(friend, compose.onNodeWithContentDescription("Mobi 토끼").fetchSemanticsNode().boundsInRoot)
         compose.onNodeWithText("주차 후 이용").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("배터리 72%").assertDoesNotExist()
         compose.onNodeWithText("대화하기 · 연결 불가").performScrollTo().assertIsNotEnabled()
@@ -268,7 +268,7 @@ class PetHomeScreenTest {
         }
 
         compose.onNodeWithText("주행 중에는 상호작용이 제한돼요.").assertDoesNotExist()
-        val friendBoundsParked = compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot
+        val friendBoundsParked = compose.onNodeWithContentDescription("Mobi 토끼").fetchSemanticsNode().boundsInRoot
         val buttonBoundsParked = compose.onNodeWithText("대화하기 · 연결 불가").fetchSemanticsNode().boundsInRoot
 
         compose.runOnIdle { allowed.value = false }
@@ -276,7 +276,7 @@ class PetHomeScreenTest {
         compose.onNodeWithText("주행 중에는 상호작용이 제한돼요.").assertIsDisplayed()
         assertEquals(
             friendBoundsParked,
-            compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot,
+            compose.onNodeWithContentDescription("Mobi 토끼").fetchSemanticsNode().boundsInRoot,
         )
         assertEquals(buttonBoundsParked, compose.onNodeWithText("대화하기 · 연결 불가").fetchSemanticsNode().boundsInRoot)
     }
@@ -336,7 +336,7 @@ class PetHomeScreenTest {
     fun emptySelectionDoesNotDisplayAnUnownedDefaultFriend() {
         render(friendId = null, inventoryLoaded = true)
         compose.onNodeWithText("선택한 친구가 없어요", substring = true).performScrollTo().assertIsDisplayed()
-        compose.onNodeWithContentDescription("Mobi 강아지").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Mobi 토끼").assertDoesNotExist()
     }
 
     @Test
@@ -351,7 +351,7 @@ class PetHomeScreenTest {
         var retries = 0
         render(inventoryLoadFailed = true, onRetry = { retries++ })
         compose.onNodeWithText("소유한 아이템을 확인할 수 없어요.").assertExists()
-        compose.onNodeWithContentDescription("Mobi 강아지").assertExists()
+        compose.onNodeWithContentDescription("Mobi 토끼").assertExists()
         compose.onNodeWithText("다시 시도").performScrollTo().performClick()
         assertEquals(1, retries)
     }
@@ -388,7 +388,7 @@ class PetHomeScreenTest {
     @Test
     fun tappingPetTriggersSpeechBubbleInteraction() {
         render(snapshot = parkedSnapshot())
-        compose.onNodeWithContentDescription("Mobi 강아지").performClick()
+        compose.onNodeWithContentDescription("Mobi 토끼").performClick()
         compose.onNodeWithTag("home-companion-message").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("home-companion-message-text", useUnmergedTree = true).assertIsDisplayed()
     }

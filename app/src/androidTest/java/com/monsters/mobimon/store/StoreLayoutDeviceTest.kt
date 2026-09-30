@@ -10,10 +10,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -28,6 +30,7 @@ import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import com.monsters.mobimon.feature.customization.CustomizationScreen
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -54,6 +57,7 @@ class StoreLayoutDeviceTest {
             CosmeticItem("friend:mobi", CosmeticSlot.FRIEND, 0),
             CosmeticItem("friend:luna", CosmeticSlot.FRIEND, 0),
             CosmeticItem("accessory:mobi_headphones", CosmeticSlot.ACCESSORY, 300, "friend:mobi"),
+            CosmeticItem("accessory:luna_sunglasses", CosmeticSlot.ACCESSORY, 300, "friend:luna"),
             CosmeticItem("background:star", CosmeticSlot.BACKGROUND, 200),
             CosmeticItem("background:snow", CosmeticSlot.BACKGROUND, 200),
             CosmeticItem("background:star_hanger", CosmeticSlot.BACKGROUND, 200),
@@ -62,12 +66,13 @@ class StoreLayoutDeviceTest {
     private fun render(
         balance: Long = 1200,
         fontScale: Float = 1f,
+        motionEnabled: Boolean = false,
     ) {
         compose.setContent {
             val current = LocalView.current
             SideEffect { view = current }
             CompositionLocalProvider(
-                LocalMobiMonMotionEnabled provides false,
+                LocalMobiMonMotionEnabled provides motionEnabled,
                 LocalDensity provides Density(LocalDensity.current.density, fontScale),
             ) {
                 MobiMonTheme {
@@ -81,8 +86,42 @@ class StoreLayoutDeviceTest {
         }
     }
 
+    @Test fun lunaIsCatAndAppearsInFriendAndClothesPreviews() {
+        render(motionEnabled = true)
+        compose.onNodeWithTag("preview-character").assertContentDescriptionEquals("Luna 고양이")
+        assertTrue(
+            compose
+                .onAllNodesWithTag(
+                    "luna-animation-frame-normal",
+                    useUnmergedTree = true,
+                ).fetchSemanticsNodes()
+                .size >=
+                2,
+        )
+        capture("friends-luna-first-frame")
+        awaitLunaFrame("normal")
+        capture("friends-luna")
+        compose.onNodeWithTag("store-tab-ACCESSORY").performClick()
+        compose.onNodeWithText("루나").performClick()
+        compose.onNodeWithText("루나 선글라스").performClick()
+        compose.onNodeWithTag("preview-character").assertContentDescriptionEquals("Luna 고양이")
+        compose.onNodeWithText("300 P로 구매하기").assertIsEnabled()
+        assertTrue(
+            compose
+                .onAllNodesWithTag(
+                    "luna-animation-frame-sunglasses",
+                    useUnmergedTree = true,
+                ).fetchSemanticsNodes()
+                .isNotEmpty(),
+        )
+        capture("clothes-luna-first-frame")
+        awaitLunaFrame("sunglasses")
+        capture("clothes-luna-sunglasses")
+    }
+
     @Test fun purchaseRequiresConfirmationAndCommittedOwnership() {
         render()
+        awaitLunaFrame("normal")
         capture("friends")
         compose.onNodeWithTag("store-tab-ACCESSORY").performClick()
         compose.onNodeWithText("모비 헤드폰").performClick()
@@ -164,5 +203,14 @@ class StoreLayoutDeviceTest {
         val dir = File(instrumentation.targetContext.filesDir, "test-screenshots/store").apply { mkdirs() }
         File(dir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
         bitmap.recycle()
+    }
+
+    private fun awaitLunaFrame(appearance: String) {
+        compose.waitUntil(10_000) {
+            compose
+                .onAllNodesWithTag("luna-animation-frame-$appearance", useUnmergedTree = true)
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
     }
 }

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -41,6 +42,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monsters.mobimon.core.domain.CosmeticInventory
@@ -148,7 +150,7 @@ internal fun StoreContent(
                             if (tab == CosmeticSlot.FRIEND) {
                                 storeFriendName(presentation.preview.friendId)
                             } else {
-                                presentation.selected?.let { cosmeticName(it.id) }.orEmpty()
+                                presentation.selected?.let { cosmeticName(it.id, category) }.orEmpty()
                             },
                             color = MobiMonColors.text,
                             fontSize = (44f * scale).sp,
@@ -161,9 +163,11 @@ internal fun StoreContent(
                                 presentation.selected?.id,
                                 presentation.preview.friendId,
                                 presentation.selectedEquipped,
+                                category,
                             ),
                             color = MobiMonColors.muted,
                             fontSize = (28f * scale).sp,
+                            textAlign = TextAlign.End,
                             modifier = Modifier.weight(0.66f),
                         )
                     }
@@ -270,7 +274,7 @@ internal fun StoreContent(
                 Row(
                     Modifier
                         .width(256.dp * scale)
-                        .heightIn(min = 76.dp)
+                        .heightIn(min = 76.dp * scale)
                         .clip(RoundedCornerShape(16.dp * scale))
                         .background(if (ownedOnly) MobiMonColors.accent else MobiMonColors.panel)
                         .border(1.dp, MobiMonColors.border, RoundedCornerShape(16.dp * scale))
@@ -325,13 +329,22 @@ internal fun StoreContent(
                 Box(Modifier.fillMaxWidth().height(1.dp).background(MobiMonColors.border.copy(alpha = 0.3f)))
                 Spacer(Modifier.height(24.dp * scale))
             } else {
-                Spacer(Modifier.height(44.dp * scale))
+                Spacer(Modifier.height(26.dp * scale))
             }
             LazyVerticalGrid(
-                columns = GridCells.Fixed(if (compact) 2 else 3),
+                columns =
+                    GridCells.Fixed(
+                        if (compact ||
+                            (tab == CosmeticSlot.BACKGROUND && category == StoreSpaceCategory.BACKGROUNDS)
+                        ) {
+                            2
+                        } else {
+                            3
+                        },
+                    ),
                 modifier =
                     Modifier
-                        .fillMaxWidth()
+                        .then(if (compact) Modifier.fillMaxWidth() else Modifier.width(1160.dp * scale))
                         .then(
                             if (compact) Modifier.height(500.dp) else Modifier.weight(1f),
                         ).selectableGroup()
@@ -359,6 +372,8 @@ internal fun StoreContent(
                         inventory?.isEquippedForFriend(item, presentation.preview.friendId) == true,
                         item.id == presentation.selected?.id,
                         tab,
+                        category,
+                        timeOfDay,
                         scale,
                         { onSelect(item.id) },
                         selectionEnabled,
@@ -397,7 +412,7 @@ private fun StoreSubTab(
     ) {
         Text(
             label,
-            Modifier.padding(vertical = 20.dp * scale),
+            Modifier.padding(vertical = 16.dp * scale),
             color = if (selected) MobiMonColors.accent else MobiMonColors.muted,
             fontSize = (32f * scale).sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
@@ -419,6 +434,8 @@ private fun StoreCard(
     equipped: Boolean,
     selected: Boolean,
     tab: CosmeticSlot,
+    category: StoreSpaceCategory,
+    timeOfDay: String?,
     scale: Float,
     onClick: () -> Unit,
     enabled: Boolean,
@@ -443,6 +460,8 @@ private fun StoreCard(
                                 328
                             } else if (tab == CosmeticSlot.ACCESSORY) {
                                 144
+                            } else if (category == StoreSpaceCategory.BACKGROUNDS) {
+                                295
                             } else {
                                 184
                             }
@@ -451,11 +470,11 @@ private fun StoreCard(
                     .background(MobiMonColors.raised),
                 contentAlignment = Alignment.Center,
             ) {
-                StoreItemArtwork(item, Modifier.fillMaxSize().padding(12.dp * scale))
+                StoreItemArtwork(item, category, timeOfDay, Modifier.fillMaxSize().padding(12.dp * scale))
             }
             Spacer(Modifier.height(20.dp * scale))
             Text(
-                if (item.slot == CosmeticSlot.FRIEND) storeFriendName(item.id) else cosmeticName(item.id),
+                if (item.slot == CosmeticSlot.FRIEND) storeFriendName(item.id) else cosmeticName(item.id, category),
                 color = MobiMonColors.text,
                 fontSize = (34f * scale).sp,
                 fontWeight = FontWeight.Bold,
@@ -485,14 +504,29 @@ private fun StoreCard(
 @Composable
 private fun StoreItemArtwork(
     item: CosmeticItem,
+    category: StoreSpaceCategory,
+    timeOfDay: String?,
     modifier: Modifier = Modifier,
 ) {
     when {
+        item.isRemoval && item.slot == CosmeticSlot.BACKGROUND && category == StoreSpaceCategory.BACKGROUNDS ->
+            Image(
+                painterResource(companionBackgroundRes(timeOfDay)),
+                null,
+                modifier,
+                contentScale = ContentScale.Crop,
+            )
         item.isRemoval ->
             Box(modifier, contentAlignment = Alignment.Center) {
                 Icon(painterResource(R.drawable.store_none), null, Modifier.size(48.dp), tint = MobiMonColors.muted)
             }
-        item.slot == CosmeticSlot.FRIEND -> PetAvatar(modifier, friendId = item.id)
+        item.slot == CosmeticSlot.FRIEND ->
+            PetAvatar(
+                modifier,
+                friendId = item.id,
+                isAnimated =
+                    item.id == "friend:luna",
+            )
         item.id == "background:star_hanger" -> StarHanger(modifier, centered = true, isAnimated = false)
         item.id == "background:starlight_yarn_basket" ->
             StarlightYarnBasket(
@@ -519,10 +553,21 @@ private fun StorePreview(
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(modifier.clip(RoundedCornerShape(24.dp))) {
+        val zoomBackground = tab == CosmeticSlot.FRIEND || tab == CosmeticSlot.ACCESSORY
         Image(
             painterResource(companionBackgroundRes(timeOfDay)),
             null,
-            Modifier.fillMaxSize().testTag("preview-background"),
+            (
+                if (zoomBackground) {
+                    Modifier
+                        .align(
+                            Alignment.Center,
+                        ).offset(y = (-20).dp)
+                        .requiredSize(maxWidth * 1.7f, maxHeight * 1.7f)
+                } else {
+                    Modifier.fillMaxSize()
+                }
+            ).testTag("preview-background"),
             contentScale = ContentScale.Crop,
         )
         if (tab != CosmeticSlot.FRIEND) {
@@ -540,7 +585,7 @@ private fun StorePreview(
                     )
             }
         }
-        val characterSize = minOf(maxWidth, maxHeight) * 0.72f
+        val characterSize = minOf(maxWidth, maxHeight) * 0.75f
         if (!ready) {
             Box(
                 Modifier
@@ -556,7 +601,7 @@ private fun StorePreview(
                 Modifier
                     .align(
                         Alignment.TopCenter,
-                    ).offset(y = maxHeight * 0.19f)
+                    ).offset(y = maxHeight * 0.17f)
                     .size(characterSize)
                     .testTag("preview-character"),
                 friendId = preview.friendId,

@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
@@ -26,7 +27,10 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.monsters.mobimon.core.domain.CosmeticInventory
 import com.monsters.mobimon.core.domain.CosmeticItem
 import com.monsters.mobimon.core.domain.CosmeticSlot
@@ -383,6 +387,22 @@ class StoreReferenceScreenTest {
                     storePreviewDescription(CosmeticSlot.ACCESSORY, "accessory:mobi_goggles", "friend:mobi", false)
                 descriptions["none:background"] =
                     storePreviewDescription(CosmeticSlot.BACKGROUND, "none:background", "friend:mobi", true)
+                descriptions["none:effect"] =
+                    storePreviewDescription(
+                        CosmeticSlot.BACKGROUND,
+                        "none:background",
+                        "friend:mobi",
+                        true,
+                        StoreSpaceCategory.EFFECTS,
+                    )
+                descriptions["none:prop"] =
+                    storePreviewDescription(
+                        CosmeticSlot.BACKGROUND,
+                        "none:background",
+                        "friend:mobi",
+                        true,
+                        StoreSpaceCategory.PROPS,
+                    )
                 descriptions["background:star"] =
                     storePreviewDescription(CosmeticSlot.BACKGROUND, "background:star", "friend:mobi", false)
                 descriptions["background:snow"] =
@@ -391,17 +411,86 @@ class StoreReferenceScreenTest {
                     storePreviewDescription(CosmeticSlot.BACKGROUND, "background:petal", "friend:mobi", false)
             }
         }
-        assertEquals("우리들의 작은 친구 모비에요", descriptions["friend:mobi"])
-        assertEquals("귀여운 애교쟁이 루나랍니다냥", descriptions["friend:luna"])
-        assertEquals("내추럴한 모습이에요", descriptions["none:accessory"])
-        assertEquals("함께 항해를 떠나볼까요?", descriptions["accessory:luna_cap"])
-        assertEquals("눈부실 때는 선글라스만한게 없죠~", descriptions["accessory:luna_sunglasses"])
-        assertEquals("노이즈캔슬링으로 운전에 집중!", descriptions["accessory:mobi_headphones"])
-        assertEquals("빈티지 느낌에는 고글만한게 없죠~", descriptions["accessory:mobi_goggles"])
-        assertEquals("깔끔한 배경화면이에요", descriptions["none:background"])
-        assertEquals("반짝반짝 별이 내려요~", descriptions["background:star"])
-        assertEquals("소복소복 눈이 내려요~", descriptions["background:snow"])
-        assertEquals("살랑살랑 꽃이 내려요~", descriptions["background:petal"])
+        assertEquals("별빛 핸들을 꼭 쥔 사랑스러운 친구예요.", descriptions["friend:mobi"])
+        assertEquals("동그란 눈과 별빛 핸들을 가진 고양이 친구예요.", descriptions["friend:luna"])
+        assertEquals("장식을 벗고 친구 본래의 모습을 보여줘요.", descriptions["none:accessory"])
+        assertEquals("캡틴 모자로 루나에게 모험의 분위기를 더해요.", descriptions["accessory:luna_cap"])
+        assertEquals("루나의 눈가에 별 포인트를 더하는 선글라스예요.", descriptions["accessory:luna_sunglasses"])
+        assertEquals("별 포인트의 헤드폰으로 모비를 꾸며 보세요.", descriptions["accessory:mobi_headphones"])
+        assertEquals("빈티지 고글로 모비에게 멋을 더해요.", descriptions["accessory:mobi_goggles"])
+        assertEquals("호수 공원의 밤하늘과 풍경을 느껴 보세요.", descriptions["none:background"])
+        assertEquals("특수효과 없이 공간의 풍경을 보여줘요.", descriptions["none:effect"])
+        assertEquals("소품 없이 공간을 깔끔하게 보여줘요.", descriptions["none:prop"])
+        assertEquals("작은 별빛으로 공간에 반짝임을 더해요.", descriptions["background:star"])
+        assertEquals("하얀 눈송이로 공간에 겨울 분위기를 더해요.", descriptions["background:snow"])
+        assertEquals("흩날리는 꽃잎으로 공간에 봄기운을 더해요.", descriptions["background:petal"])
+    }
+
+    @Test fun figmaCatalogSizesAndSpaceDefaults() {
+        val catalog =
+            listOf(
+                CosmeticItem("friend:mobi", CosmeticSlot.FRIEND, 0),
+                CosmeticItem("friend:luna", CosmeticSlot.FRIEND, 0),
+                CosmeticItem("accessory:mobi_headphones", CosmeticSlot.ACCESSORY, 300, "friend:mobi"),
+                CosmeticItem("background:star", CosmeticSlot.BACKGROUND, 200),
+            )
+        compose.setContent {
+            var selected by remember { mutableStateOf<String?>(null) }
+            MobiMonTheme {
+                CustomizationScreen(
+                    CosmeticInventory(setOf("friend:mobi", "friend:luna"), mapOf(CosmeticSlot.FRIEND to "friend:mobi")),
+                    catalog,
+                    selected,
+                    false,
+                    false,
+                    { selected = it },
+                    { _, _ -> },
+                    {},
+                    {},
+                    1200,
+                    false,
+                )
+            }
+        }
+        val friend = compose.onNodeWithTag("store-item-friend:mobi").getUnclippedBoundsInRoot()
+        assertEquals(1312f, friend.left.value, 2f)
+        assertEquals(376f, (friend.right - friend.left).value, 2f)
+        assertEquals(456f, friend.top.value, 3f)
+        val friendBackground = compose.onNodeWithTag("preview-background").getUnclippedBoundsInRoot()
+        assertEquals(2026f, (friendBackground.right - friendBackground.left).value, 3f)
+        val filter = compose.onNodeWithTag("store-owned-filter").getUnclippedBoundsInRoot()
+        assertEquals(2232f, filter.left.value, 2f)
+        assertEquals(330f, filter.top.value, 2f)
+        assertEquals(256f, (filter.right - filter.left).value, 2f)
+        assertEquals(76f, (filter.bottom - filter.top).value, 2f)
+        val labelLayouts = mutableListOf<TextLayoutResult>()
+        compose
+            .onNodeWithText("보유만", useUnmergedTree = true)
+            .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(labelLayouts) }
+        assertEquals(
+            28.sp,
+            labelLayouts
+                .single()
+                .layoutInput.style.fontSize,
+        )
+
+        compose.onNodeWithTag("store-tab-ACCESSORY").performClick()
+        val clothes = compose.onNodeWithTag("store-item-none:accessory").getUnclippedBoundsInRoot()
+        assertEquals(376f, (clothes.right - clothes.left).value, 2f)
+        assertEquals(536f, clothes.top.value, 3f)
+        compose.onAllNodesWithText("장식 없음").assertCountEquals(2)
+
+        compose.onNodeWithTag("store-tab-BACKGROUND").performClick()
+        val spaceBackground = compose.onNodeWithTag("preview-background").getUnclippedBoundsInRoot()
+        assertEquals(1192f, (spaceBackground.right - spaceBackground.left).value, 2f)
+        val background = compose.onNodeWithTag("store-item-none:background").getUnclippedBoundsInRoot()
+        assertEquals(572f, (background.right - background.left).value, 2f)
+        assertEquals(536f, background.top.value, 3f)
+        compose.onAllNodesWithText("호수 공원").assertCountEquals(2)
+        compose.onNodeWithText("특수효과").performClick()
+        compose.onAllNodesWithText("효과 없음").assertCountEquals(2)
+        compose.onNodeWithText("소품").performClick()
+        compose.onAllNodesWithText("소품 없음").assertCountEquals(2)
     }
 
     @Test fun catalogFailureRetainsPreviewAndOffersRetryBeforeApplying() {
@@ -570,7 +659,11 @@ class StoreReferenceScreenTest {
             compose.runOnIdle {
                 val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
                 view.draw(Canvas(bitmap))
-                colors += bitmap.getPixel(view.width / 4, view.height / 3)
+                val points = listOf(0.12f to 0.22f, 0.26f to 0.34f, 0.42f to 0.28f)
+                colors +=
+                    points.fold(1) { hash, (x, y) ->
+                        hash * 31 + bitmap.getPixel((view.width * x).toInt(), (view.height * y).toInt())
+                    }
                 bitmap.recycle()
             }
         }

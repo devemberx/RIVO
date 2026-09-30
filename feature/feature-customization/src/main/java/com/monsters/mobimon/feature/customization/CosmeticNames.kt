@@ -4,9 +4,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 
 @Composable
-internal fun cosmeticName(itemId: String): String =
+internal fun cosmeticName(
+    itemId: String,
+    category: StoreSpaceCategory = StoreSpaceCategory.BACKGROUNDS,
+): String =
     when {
-        itemId.startsWith("none") -> stringResource(R.string.pet_item_none)
+        itemId == "none:accessory" -> stringResource(R.string.pet_item_none)
+        itemId == "none:background" ->
+            stringResource(
+                when (category) {
+                    StoreSpaceCategory.BACKGROUNDS -> R.string.pet_background_default
+                    StoreSpaceCategory.EFFECTS -> R.string.pet_effect_none
+                    StoreSpaceCategory.PROPS -> R.string.pet_prop_none
+                },
+            )
         itemId == "friend:mobi" -> stringResource(R.string.pet_friend_mobi)
         itemId == "friend:luna" -> stringResource(R.string.pet_friend_luna)
         itemId == "accessory:mobi_headphones" -> stringResource(R.string.pet_item_mobi_headphones)
