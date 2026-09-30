@@ -155,7 +155,7 @@ class VehicleFeatureTest {
 
         compose.onNodeWithText("다시 시도").performClick()
 
-        compose.onNodeWithContentDescription("Mobi 강아지").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithContentDescription("Mobi 토끼").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("친구 정보를 갱신하지 못했어요.").assertDoesNotExist()
         compose.runOnIdle {
             assertEquals(2, points.subscriptions)

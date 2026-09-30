@@ -46,6 +46,7 @@ class DecorativeMotionTest {
                 }
             }
         }
+        awaitLunaAnimation("luna")
         val firstMobi = pixels("mobi")
         val firstLuna = pixels("luna")
         compose.mainClock.advanceTimeBy(320)
@@ -53,6 +54,7 @@ class DecorativeMotionTest {
         assertTrue("Luna breathes with motion enabled", firstLuna != pixels("luna"))
 
         updateStateAndDraw { motionEnabled = false }
+        awaitLunaAnimation("luna")
         val reducedMobi = pixels("mobi")
         val reducedLuna = pixels("luna")
         compose.mainClock.advanceTimeBy(320)
@@ -125,6 +127,7 @@ class DecorativeMotionTest {
                 )
             }
         }
+        listOf("luna_hat_idle", "luna_hat_moving", "luna_hat_hungry", "luna_hat_sick").forEach(::awaitLunaAnimation)
         val firstIdle = pixels("luna_hat_idle")
         val firstMoving = pixels("luna_hat_moving")
         val firstHungry = pixels("luna_hat_hungry")
@@ -152,11 +155,14 @@ class DecorativeMotionTest {
                 isMoving = moving,
             )
         }
+        awaitLunaAnimation("luna")
         val normal = pixels("luna")
         updateStateAndDraw { accessory = "accessory:luna_sunglasses" }
         assertTrue("Equipping sunglasses changes rendered artwork", normal != pixels("luna"))
+        awaitLunaAnimation("luna")
         for (state in listOf(PetEmotion.IDLE, PetEmotion.HUNGRY, PetEmotion.SICK)) {
             updateStateAndDraw { emotion = state }
+            awaitLunaAnimation("luna")
             val first = pixels("luna")
             compose.mainClock.advanceTimeBy(320)
             assertTrue("Sunglasses animate in $state", first != pixels("luna"))
@@ -166,6 +172,7 @@ class DecorativeMotionTest {
             emotion = PetEmotion.IDLE
             moving = true
         }
+        awaitLunaAnimation("luna")
         val run = pixels("luna")
         compose.mainClock.advanceTimeBy(320)
         assertTrue("Sunglasses run animation advances", run != pixels("luna"))
@@ -399,6 +406,15 @@ class DecorativeMotionTest {
         compose.mainClock.advanceTimeByFrame()
     }
 
+    private fun awaitLunaAnimation(tag: String) {
+        val first = pixels(tag)
+        compose.waitUntil(10_000) {
+            compose.mainClock.advanceTimeBy(320)
+            first != pixels(tag)
+        }
+        compose.mainClock.advanceTimeByFrame()
+    }
+
     private fun updateStateAndDraw(update: () -> Unit) {
         compose.runOnIdle {
             update()
@@ -458,6 +474,8 @@ class DecorativeMotionTest {
                 )
             }
         }
+        awaitLunaAnimation("luna-hungry")
+        awaitLunaAnimation("luna-sick")
         val firstMobiHungry = pixels("mobi-hungry")
         val firstHungry = pixels("luna-hungry")
         val firstSick = pixels("luna-sick")
@@ -485,6 +503,8 @@ class DecorativeMotionTest {
                 )
             }
         }
+        awaitLunaAnimation("luna-moving-hungry")
+        awaitLunaAnimation("luna-moving-sick")
         val firstHungry = pixels("luna-moving-hungry")
         val firstSick = pixels("luna-moving-sick")
         compose.mainClock.advanceTimeBy(320)

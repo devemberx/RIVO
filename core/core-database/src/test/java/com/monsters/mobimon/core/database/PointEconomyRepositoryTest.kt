@@ -165,6 +165,51 @@ class PointEconomyRepositoryTest {
         }
 
     @Test
+    fun purchaseForOwnedInactiveFriendPreservesEquipmentAndChargesOnce() =
+        runBlocking {
+            val dao = database.economyDao()
+            dao.insertItem(CosmeticItemEntity("friend:mobi", "FRIEND", 0, null))
+            dao.insertItem(CosmeticItemEntity("friend:luna", "FRIEND", 0, null))
+            dao.insertItem(CosmeticItemEntity("accessory:luna_sunglasses", "ACCESSORY", 30, "friend:luna"))
+            dao.insertOwned(OwnedCosmeticEntity("profile", "friend:mobi"))
+            dao.insertOwned(OwnedCosmeticEntity("profile", "friend:luna"))
+            dao.putEquipped(EquippedCosmeticEntity("profile", "FRIEND", "friend:mobi"))
+
+            assertEquals(PurchaseResult.Purchased(70), repository.purchase("accessory:luna_sunglasses", 30))
+            val inventory = repository.inventory.first()
+            assertTrue("accessory:luna_sunglasses" in inventory.ownedItemIds)
+            assertEquals(mapOf(CosmeticSlot.FRIEND to "friend:mobi"), inventory.equippedItemIds)
+            assertTrue(inventory.equippedByFriend.isEmpty())
+            assertEquals(PurchaseResult.AlreadyOwned, repository.purchase("accessory:luna_sunglasses", 30))
+            assertEquals(70L, repository.wallet.first().balance)
+            assertEquals(1, dao.ledger("profile").size)
+
+            assertEquals(EquipResult.Incompatible, repository.equip("accessory:luna_sunglasses"))
+            assertEquals(EquipResult.Applied, repository.equip("friend:luna"))
+            assertEquals(EquipResult.Applied, repository.equip("accessory:luna_sunglasses"))
+            assertEquals(
+                "accessory:luna_sunglasses",
+                repository.inventory.first().equippedItemIds[CosmeticSlot.ACCESSORY],
+            )
+            assertEquals(70L, repository.wallet.first().balance)
+        }
+
+    @Test
+    fun purchaseRejectsAccessoryForFriendOwnedOnlyByAnotherProfile() =
+        runBlocking {
+            val dao = database.economyDao()
+            database.companionDao().insertProfile(PetProfileEntity("other", "GOLDEN", 80))
+            dao.insertItem(CosmeticItemEntity("friend:luna", "FRIEND", 0, null))
+            dao.insertItem(CosmeticItemEntity("accessory:luna_sunglasses", "ACCESSORY", 30, "friend:luna"))
+            dao.insertOwned(OwnedCosmeticEntity("other", "friend:luna"))
+
+            assertEquals(PurchaseResult.Incompatible, repository.purchase("accessory:luna_sunglasses", 30))
+            assertEquals(100L, repository.wallet.first().balance)
+            assertNull(dao.owned("profile", "accessory:luna_sunglasses"))
+            assertTrue(dao.ledger("profile").isEmpty())
+        }
+
+    @Test
     fun purchaseRejectsRestrictedOrUnknownInteractionWithoutDebit() =
         runBlocking {
             database.economyDao().insertItem(CosmeticItemEntity("hat", CosmeticSlot.ACCESSORY.name, 30, null))

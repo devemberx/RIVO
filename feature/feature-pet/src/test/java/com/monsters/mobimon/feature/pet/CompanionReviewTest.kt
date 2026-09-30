@@ -71,7 +71,7 @@ class CompanionReviewTest {
 
     @Test fun homeReferenceRender() {
         homeRender("Night")
-        val avatar = compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot
+        val avatar = compose.onNodeWithContentDescription("Mobi 토끼").fetchSemanticsNode().boundsInRoot
         assertEquals(980f, avatar.left, 1f)
         assertEquals(372f, avatar.top, 1f)
         assertEquals(600f, avatar.width, 1f)
@@ -101,7 +101,7 @@ class CompanionReviewTest {
     fun sharedVehicleWarningChangesHomeArtworkWithoutMovingItsSlot() {
         val warning = mutableStateOf(false)
         val view = render("home-warning-before") { ReviewHome("Night", warning.value) }
-        val bounds = compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot
+        val bounds = compose.onNodeWithContentDescription("Mobi 토끼").fetchSemanticsNode().boundsInRoot
 
         fun avatarPixels(): Int {
             var hash = 0
@@ -120,11 +120,11 @@ class CompanionReviewTest {
         val normal = avatarPixels()
         compose.runOnIdle { warning.value = true }
         compose.waitUntil(5000) { avatarPixels() != normal }
-        assertEquals(bounds, compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot)
+        assertEquals(bounds, compose.onNodeWithContentDescription("Mobi 토끼").fetchSemanticsNode().boundsInRoot)
         capture(view, "home-warning-collapsed")
         compose.runOnIdle { warning.value = false }
         compose.waitUntil(5000) { avatarPixels() == normal }
-        assertEquals(bounds, compose.onNodeWithContentDescription("Mobi 강아지").fetchSemanticsNode().boundsInRoot)
+        assertEquals(bounds, compose.onNodeWithContentDescription("Mobi 토끼").fetchSemanticsNode().boundsInRoot)
     }
 
     @Test fun sunriseHomeReferenceRender() = homeRender("Sunrise")
