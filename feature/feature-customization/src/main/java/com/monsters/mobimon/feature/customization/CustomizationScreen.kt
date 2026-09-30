@@ -209,29 +209,30 @@ fun CustomizationScreen(
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier.fillMaxSize().testTag("preview-background"),
                                 )
-                                if (background == "background:star_hanger") {
-                                    StarHanger(
-                                        Modifier.fillMaxSize().testTag("store-preview-star-hanger"),
-                                        centered = true,
-                                    )
-                                } else if (background != null) {
-                                    val particleType =
-                                        when {
-                                            background.contains(
-                                                "snow",
-                                            ) -> com.monsters.mobimon.core.ui.ParticleType.SNOW
-                                            background.contains(
-                                                "petal",
-                                            ) ||
+                                if (tab != CosmeticSlot.FRIEND) {
+                                    if (background == "background:star_hanger") {
+                                        StarHanger(
+                                            Modifier.fillMaxSize().testTag("store-preview-star-hanger"),
+                                        )
+                                    } else if (background != null) {
+                                        val particleType =
+                                            when {
                                                 background.contains(
-                                                    "flower",
-                                                ) -> com.monsters.mobimon.core.ui.ParticleType.PETAL
-                                            else -> com.monsters.mobimon.core.ui.ParticleType.STAR
-                                        }
-                                    com.monsters.mobimon.core.ui.FallingParticlesEffect(
-                                        particleType = particleType,
-                                        modifier = Modifier.fillMaxSize().testTag("store-preview-particles"),
-                                    )
+                                                    "snow",
+                                                ) -> com.monsters.mobimon.core.ui.ParticleType.SNOW
+                                                background.contains(
+                                                    "petal",
+                                                ) ||
+                                                    background.contains(
+                                                        "flower",
+                                                    ) -> com.monsters.mobimon.core.ui.ParticleType.PETAL
+                                                else -> com.monsters.mobimon.core.ui.ParticleType.STAR
+                                            }
+                                        com.monsters.mobimon.core.ui.FallingParticlesEffect(
+                                            particleType = particleType,
+                                            modifier = Modifier.fillMaxSize().testTag("store-preview-particles"),
+                                        )
+                                    }
                                 }
                                 val characterSize = minOf(maxWidth, maxHeight) * 0.58f
                                 val topOffset = maxHeight * 0.21f

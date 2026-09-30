@@ -20,6 +20,12 @@ import org.robolectric.annotation.Config
 @Config(manifest = Config.NONE)
 class FloatingCompanionServiceTest {
     @Test
+    fun overlayHidesOnlyWhileMobiMonIsInForeground() {
+        assertFalse(FloatingCompanionVisibility.shouldShow(appInForeground = true))
+        assertTrue(FloatingCompanionVisibility.shouldShow(appInForeground = false))
+    }
+
+    @Test
     fun wanderingDisallowedWhenReducedMotionOrWarningOrHungry() {
         assertTrue(
             FloatingCompanionWanderMath.isWanderingAllowed(

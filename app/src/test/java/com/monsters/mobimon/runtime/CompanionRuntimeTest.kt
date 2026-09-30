@@ -26,6 +26,24 @@ class CompanionRuntimeTest {
         runtime.stop()
     }
 
+    @Test
+    fun overlayKeepsVehicleObservationAliveWhileAppIsBackgrounded() {
+        val vehicle = RecordingVehicleRepository()
+        val appUse = RecordingAppUse()
+        val runtime = CompanionRuntime(vehicle, appUse)
+
+        runtime.start()
+        runtime.startOverlay()
+        runtime.stop()
+
+        assertEquals(1, vehicle.starts)
+        assertEquals(0, vehicle.stops)
+        assertEquals(1, appUse.stops)
+
+        runtime.stopOverlay()
+        assertEquals(1, vehicle.stops)
+    }
+
     private class RecordingAppUse : AppUseLifecycle {
         var starts = 0
         var stops = 0

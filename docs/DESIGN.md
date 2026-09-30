@@ -32,6 +32,7 @@ vehicles or replace warnings.
   Home action follow the [vehicle v6 export](ui/vehicle/parking-required.svg)
   and `수정본_v5` Figma frames (Store `770:155`, Quest `770:282`). Hide any underlying selector or reward dialog;
   restore the route when verified Park returns if the user has not gone Home.
+  Dim the route's restricted parking badge with the rest of the background.
   Initial unavailable vehicle data stays in each route's ordinary unavailable
   state. Pending writes receive no success presentation after interruption;
   committed inventory and rewards continue to come from repository observation.
@@ -240,5 +241,6 @@ stay still; Home speech replays on entry/tap/interval, not data updates.
 ## Vehicle launcher
 
 Outside-app companion requires explicit opt-in and overlay permission. Intended
-placement is vehicle Home; verify actual placement/lifecycle under the
+placement is vehicle Home; it hides while MobiMon is foreground and returns when
+the app moves to the background without restarting the service. Verify actual placement/lifecycle under the
 [platform contract](ARCHITECTURE.md#shared-vehicle-condition-and-overlay).
