@@ -14,9 +14,6 @@ The connected screen includes a
 
 ### Shell
 
-In the menu references, the bell shares the navigation icon centerline and uses a
-4.5 px outline; the notification count badge is centered beneath the close control.
-
 | Reference | Visible state |
 | --- | --- |
 | [home.svg](shell/home.svg) | [Home with notification indicator; three alerts](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-3973) |
