@@ -109,7 +109,7 @@ fun StarHanger(
     val paint = remember { Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG) }
     val vertices = remember(phase) { starHangerMesh(phase) }
     Canvas(modifier.clipToBounds()) {
-        val height = minOf(size.height * (if (centered) 0.92f else 0.62f), size.width * 1.2f)
+        val height = minOf(size.height * (if (centered) 0.92f else 0.45f), size.width * (if (centered) 1.2f else 0.6f))
         val scale = height / HANGER_HEIGHT
         val left = size.width * (if (centered) 0.5f else 0.75f) - HANGER_WIDTH * scale / 2f
         drawIntoCanvas { canvas ->

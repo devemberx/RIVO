@@ -121,4 +121,6 @@ data class QuestScreenState(
     val errorMessage: String? = null,
     val rewardSuccess: QuestRewardSuccess? = null,
     val requestedQuestId: String? = null,
+    val vehicleWarning: Boolean = false,
+    val vehicleHungry: Boolean = false,
 )

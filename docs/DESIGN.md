@@ -32,6 +32,7 @@ vehicles or replace warnings.
   Home action follow the [vehicle v6 export](ui/vehicle/parking-required.svg)
   and `수정본_v5` Figma frames (Store `770:155`, Quest `770:282`). Hide any underlying selector or reward dialog;
   restore the route when verified Park returns if the user has not gone Home.
+  Dim the route's restricted parking badge with the rest of the background.
   Initial unavailable vehicle data stays in each route's ordinary unavailable
   state. Pending writes receive no success presentation after interruption;
   committed inventory and rewards continue to come from repository observation.

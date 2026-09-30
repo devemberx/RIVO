@@ -149,22 +149,24 @@ internal fun CompactCustomizationScreen(
                                         ),
                                     ),
                             )
-                            if (previewBackgroundId == "background:star_hanger") {
-                                StarHanger(Modifier.fillMaxSize().testTag("preview-star-hanger"), centered = true)
-                            } else if (previewBackgroundId != null) {
-                                val particleType =
-                                    when {
-                                        previewBackgroundId.contains("snow") -> ParticleType.SNOW
-                                        previewBackgroundId.contains(
-                                            "petal",
-                                        ) ||
-                                            previewBackgroundId.contains("flower") -> ParticleType.PETAL
-                                        else -> ParticleType.STAR
-                                    }
-                                FallingParticlesEffect(
-                                    particleType = particleType,
-                                    modifier = Modifier.fillMaxSize().testTag("preview-background-particles"),
-                                )
+                            if (activeTab != CosmeticSlot.FRIEND) {
+                                if (previewBackgroundId == "background:star_hanger") {
+                                    StarHanger(Modifier.fillMaxSize().testTag("preview-star-hanger"))
+                                } else if (previewBackgroundId != null) {
+                                    val particleType =
+                                        when {
+                                            previewBackgroundId.contains("snow") -> ParticleType.SNOW
+                                            previewBackgroundId.contains(
+                                                "petal",
+                                            ) ||
+                                                previewBackgroundId.contains("flower") -> ParticleType.PETAL
+                                            else -> ParticleType.STAR
+                                        }
+                                    FallingParticlesEffect(
+                                        particleType = particleType,
+                                        modifier = Modifier.fillMaxSize().testTag("preview-background-particles"),
+                                    )
+                                }
                             }
                         }
                         if (inventory != null && activeTab != CosmeticSlot.BACKGROUND) {
