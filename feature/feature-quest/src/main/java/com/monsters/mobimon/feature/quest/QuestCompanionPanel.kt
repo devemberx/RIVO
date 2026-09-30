@@ -44,6 +44,8 @@ internal fun QuestCompanionPanel(
     scale: Float,
     isDetail: Boolean,
     isCompleted: Boolean,
+    vehicleWarning: Boolean,
+    vehicleHungry: Boolean,
     modifier: Modifier = Modifier,
     isCompact: Boolean = false,
 ) {
@@ -93,6 +95,8 @@ internal fun QuestCompanionPanel(
                 accessoryId = accessoryId,
                 outfitId = outfitId,
                 backgroundId = backgroundId,
+                vehicleWarning = vehicleWarning,
+                vehicleHungry = vehicleHungry,
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -147,6 +151,8 @@ internal fun QuestCompanionPanel(
                 accessoryId = accessoryId,
                 outfitId = outfitId,
                 backgroundId = backgroundId,
+                vehicleWarning = vehicleWarning,
+                vehicleHungry = vehicleHungry,
             )
             Text(
                 text = stringResource(R.string.quest_companion_quote),

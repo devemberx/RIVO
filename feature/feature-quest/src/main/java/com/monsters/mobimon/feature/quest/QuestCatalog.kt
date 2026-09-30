@@ -9,6 +9,8 @@ import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.navigation.VehicleRoute
 import com.monsters.mobimon.core.presentation.CompanionAppearanceState
 import com.monsters.mobimon.core.presentation.PointBalanceState
+import com.monsters.mobimon.core.presentation.VehicleCondition
+import com.monsters.mobimon.core.presentation.vehicleCondition
 
 internal class QuestCatalog(
     private val catalog: PointQuestCatalog,
@@ -29,6 +31,7 @@ internal class QuestCatalog(
         snapshot: VehicleSnapshot?,
         text: (Int) -> String,
     ): QuestScreenState {
+        val vehicleCondition = snapshot?.vehicleCondition()
         val visibleCompletedIds =
             if (state.pendingQuestId != null && state.rewardSuccess == null) {
                 state.completedPointQuestIds - state.pendingQuestId
@@ -105,6 +108,8 @@ internal class QuestCatalog(
             errorMessage = state.message?.let { text(it.textResource()) },
             rewardSuccess = state.rewardSuccess,
             requestedQuestId = state.requestedQuestId,
+            vehicleWarning = vehicleCondition == VehicleCondition.WARNING,
+            vehicleHungry = vehicleCondition == VehicleCondition.LOW_BATTERY,
         )
     }
 }
