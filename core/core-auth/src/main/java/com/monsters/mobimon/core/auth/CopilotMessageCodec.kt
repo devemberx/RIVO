@@ -44,7 +44,7 @@ internal object CopilotMessageCodec {
                         "No tools are available. "
                     }
                 ) +
-                "For time and battery questions, answer using only the current context values. " +
+                "For current time and current battery level questions, answer using only the current context values. " +
                 "When asked what time it is, give vss_clock (hours, minutes and seconds) with vss_utc_offset. " +
                 "Use the offset in the original VSS timestamp, never the device timezone. " +
                 "Do not replace an exact time with morning, afternoon, evening or night. " +

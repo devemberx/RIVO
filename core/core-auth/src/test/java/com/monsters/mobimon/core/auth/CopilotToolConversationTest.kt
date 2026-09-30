@@ -111,6 +111,18 @@ class CopilotToolConversationTest {
             assertEquals("gpt-4o", requests.single().getString("model"))
         }
 
+    @Test fun toolEnabledDirectConversationRequestsJsonObjectOutput() =
+        runTest {
+            val reply = "{\"status\":\"CONVERSATION\",\"text\":\"좋은 이야기\",\"sourceIds\":[]}"
+            answer = { response(text = reply) }
+            assertEquals(
+                ConversationResult.Success(reply),
+                runTurn(history = listOf(ConversationTurn("기분 좋아지는 이야기 해줘.", true))),
+            )
+            assertEquals("json_object", requests.single().getJSONObject("response_format").getString("type"))
+            assertEquals(0, executed)
+        }
+
     @Test fun malformedUnknownAndMultipleCallsNeverExecute() =
         runTest {
             val invalid =

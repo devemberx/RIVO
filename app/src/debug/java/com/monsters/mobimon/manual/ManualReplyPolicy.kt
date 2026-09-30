@@ -14,6 +14,9 @@ internal object ManualReplyPolicy : ConversationReplyPolicy {
         text: String,
         result: ConversationToolResult.Found?,
     ): ConversationResult<String> {
+        if (result == null && text.trim() == "{}") {
+            return ConversationResult.Success("무슨 뜻인지 잘 모르겠어. 다시 말해 줄래?")
+        }
         val reply =
             try {
                 parse(text)
@@ -36,15 +39,16 @@ internal object ManualReplyPolicy : ConversationReplyPolicy {
                         ?: return ConversationResult.Failure(ConversationProblem.NO_EVIDENCE)
                 if (reply.ids.isEmpty() ||
                     reply.ids.distinct().size != reply.ids.size ||
-                    reply.ids.any { it !in sources } ||
-                    markers.distinct() != reply.ids.map { "[$it]" }
+                    reply.ids.any { it !in sources }
                 ) {
                     return failure()
                 }
-                var rendered = reply.text
+                val appendSingleCitation = reply.ids.size == 1 && markers.isEmpty()
+                if (!appendSingleCitation && markers.distinct() != reply.ids.map { "[$it]" }) return failure()
+                var rendered = if (appendSingleCitation) "${reply.text} [${reply.ids.single()}]" else reply.text
                 reply.ids.forEachIndexed { index, id -> rendered = rendered.replace("[$id]", "[${index + 1}]") }
                 val citations = reply.ids.mapIndexed { index, id -> "[${index + 1}] ${sources.getValue(id).citation}" }
-                ConversationResult.Success("$rendered\n\n출처: 2027 한국형 아이오닉 5 취급설명서\n${citations.joinToString("\n")}")
+                ConversationResult.Success("$rendered\n\n출처 : 2027 한국형 아이오닉 5 취급설명서\n${citations.joinToString("\n")}")
             }
             "NEEDS_CLARIFICATION", "OUT_OF_SCOPE" -> {
                 if (reply.ids.isNotEmpty() || markers.isNotEmpty() || reply.text.length > 1000) {

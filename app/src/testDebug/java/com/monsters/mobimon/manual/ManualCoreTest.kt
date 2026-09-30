@@ -47,6 +47,31 @@ class ManualCoreTest {
         )
     }
 
+    @Test fun oneCurrentSourceWithoutInlineMarkerReceivesAppOwnedCitation() {
+        assertEquals(
+            ConversationResult.Success(
+                "완속 충전 방법을 확인해 봐. [1]\n\n출처 : 2027 한국형 아이오닉 5 취급설명서\n" +
+                    "[1] 완속 충전 · PDF 18-20쪽",
+            ),
+            ManualReplyPolicy.accept(reply("ANSWERED", "완속 충전 방법을 확인해 봐.", listOf("ne1-0020")), evidence),
+        )
+    }
+
+    @Test fun multipleCurrentSourcesStillRequireInlineMarkers() {
+        val twoSources =
+            ConversationToolResult.Found(
+                "private source",
+                evidence.evidence + ConversationEvidence("ne1-0021", "급속 충전 · PDF 21쪽"),
+            )
+        assertEquals(
+            ConversationResult.Failure(ConversationProblem.PROVIDER),
+            ManualReplyPolicy.accept(
+                reply("ANSWERED", "충전 방법을 확인해 봐.", listOf("ne1-0020", "ne1-0021")),
+                twoSources,
+            ),
+        )
+    }
+
     @Test fun ordinaryConversationNeedsNoManualEvidenceAndCannotMasqueradeAsACitedReply() {
         for (text in listOf("오늘 많이 피곤했구나. 잠깐 나랑 쉬어 가자.", "지금 배터리 잔량은 내가 직접 확인할 수 없어.")) {
             assertEquals(
@@ -70,7 +95,6 @@ class ManualCoreTest {
         val variants =
             listOf(
                 reply("ANSWERED", "설명 [ne1-9999]", listOf("ne1-9999")),
-                reply("ANSWERED", "설명", listOf("ne1-0020")),
                 reply("ANSWERED", "설명 [ne1-0020]", emptyList()),
                 reply("ANSWERED", "설명 [1]", listOf("ne1-0020")),
                 reply("ANSWERED", "설명 [ne1-0020]", listOf("ne1-0020", "ne1-0020")),
@@ -82,6 +106,17 @@ class ManualCoreTest {
                 ManualReplyPolicy.accept(it, evidence),
             )
         }
+    }
+
+    @Test fun emptyObjectWithoutEvidenceAsksForClarificationButNeverTurnsEvidenceIntoAReply() {
+        assertEquals(
+            ConversationResult.Success("무슨 뜻인지 잘 모르겠어. 다시 말해 줄래?"),
+            ManualReplyPolicy.accept("{}", null),
+        )
+        assertEquals(
+            ConversationResult.Failure(ConversationProblem.PROVIDER),
+            ManualReplyPolicy.accept("{}", evidence),
+        )
     }
 
     @Test fun rejectsBrokenEnvelopesWithoutPlainTextFallback() {
@@ -176,6 +211,18 @@ class ManualCoreTest {
                 assertEquals(query, ManualSearchResult.NoEvidence, retriever.search(query))
             }
         }
+
+    @Test fun manualAnswersKeepTheCompanionVoice() {
+        val instruction =
+            ManualConversationTools
+                .create(
+                    object : com.monsters.mobimon.core.domain.ManualRetriever {
+                        override suspend fun search(query: String) = ManualSearchResult.NoEvidence
+                    },
+                ).instruction
+        assertTrue(instruction.contains("manual answers in natural, warm Korean banmal"))
+        assertTrue(instruction.contains("Do not switch to a formal assistant persona"))
+    }
 
     @Test fun toolKeepsSourcesStructuredAndUsesVerifiedPageMetadata() =
         runTest {

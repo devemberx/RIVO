@@ -80,7 +80,7 @@ internal object ManualEvaluation {
                             )
                     base.replyPolicy.accept(text, evidence).also { accepted ->
                         if (accepted is ConversationResult.Success) {
-                            status = JSONObject(text).getString("status")
+                            status = JSONObject(text).optString("status").ifBlank { "CLARIFIED_EMPTY" }
                         }
                     }
                 },
