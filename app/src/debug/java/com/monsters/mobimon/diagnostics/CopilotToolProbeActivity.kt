@@ -30,6 +30,7 @@ import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.core.domain.GitHubSession
 import com.monsters.mobimon.core.ui.MobiMonButton
 import com.monsters.mobimon.core.ui.MobiMonTheme
+import com.monsters.mobimon.manual.ManualEvaluation
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -40,6 +41,13 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class CopilotToolProbeActivity : ComponentActivity() {
     @Inject lateinit var authentication: GitHubAuthentication
+
+    private val manualStart get() = intent.getIntExtra("manual_start", 1).coerceIn(1, ManualEvaluation.CASE_COUNT)
+    private val manualCount get() =
+        intent.getIntExtra("manual_count", ManualEvaluation.CASE_COUNT + 1 - manualStart).coerceIn(
+            1,
+            ManualEvaluation.CASE_COUNT + 1 - manualStart,
+        )
 
     private var job: Job? = null
     private var running by mutableStateOf(false)
@@ -57,7 +65,9 @@ class CopilotToolProbeActivity : ComponentActivity() {
                     ) {
                         Text("Copilot 도구 호출 진단 · Debug")
                         Text(
-                            if (intent.getBooleanExtra("tool_foundation", false)) {
+                            if (intent.getBooleanExtra("manual_rag", false)) {
+                                "gpt-4o 고정 · 매뉴얼 합성 질문 $manualStart 번부터 $manualCount 회 · 실제 사용량 발생"
+                            } else if (intent.getBooleanExtra("tool_foundation", false)) {
                                 "gpt-4o 고정 · 공용 도구 실행 기반 검증 · 합성 질문 2회 · 실제 사용량 발생"
                             } else {
                                 "gpt-4o 고정 · 합성 질문 · 실제 사용량 발생 · 도구 자동 선택 2회와 강제 지정 1회"
@@ -106,7 +116,16 @@ class CopilotToolProbeActivity : ComponentActivity() {
                 running = true
                 try {
                     val result =
-                        if (intent.getBooleanExtra("tool_foundation", false)) {
+                        if (intent.getBooleanExtra("manual_rag", false)) {
+                            ManualEvaluation.run(
+                                realAuthentication,
+                                assets,
+                                cacheDir,
+                                ::append,
+                                manualStart,
+                                manualCount,
+                            )
+                        } else if (intent.getBooleanExtra("tool_foundation", false)) {
                             realAuthentication.probeToolFoundation { usage -> append(usage.toString()) }
                         } else {
                             realAuthentication.probeToolCalling { event -> append(event.toString()) }

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "corpusId": "ioniq5_2027_ko",
+  "modelYear": 2027,
+  "market": "A99",
+  "language": "ko_KR",
+  "projectCode": "NE1",
+  "title": "2027 한국형 아이오닉 5 취급설명서",
+  "sourceUrl": "https://ownersmanual.hyundai.com/full_pdf/NE1/2027/ko_KR",
+  "sourceSha256": "4525f59eb85737ca87c3e0e0b43de9f36cb48ad2d5456f708f5861a0d6de9b1c",
+  "downloadedAt": "2026-09-29",
+  "documentRevision": null,
+  "publicationDate": "2026-09-17",
+  "pdfCreationDate": "D:20260820164717+09'00'",
+  "pdfPageCount": 565,
+  "extractorVersion": "ne1-pdf-outline-v2",
+  "extractorLibrary": "PyMuPDF==1.28.2",
+  "chunkCount": 533,
+  "chunksSha256": "48990b77ecd170a73cad54fab0d3590e9588cb7d7ec33415f5e9e430bd125835",
+  "aliasesSha256": "e6d0659a691ea996d6c7b7ef7f4834a91212d99b5bdde8a29296e39959a81ab4",
+  "curationVersion": "driver-use-v1",
+  "curationSha256": "c6ffeb36ff363c16dcf67782929d6ff1690f364b68b044be4607abbc59132fc2"
+}

@@ -55,7 +55,10 @@ internal object CopilotToolCodec {
                 ),
             )
         }
-        request.put("tools", definitions).put("tool_choice", "auto")
+        request
+            .put("tools", definitions)
+            .put("tool_choice", "auto")
+            .put("response_format", JSONObject().put("type", "json_object"))
     }
 
     fun reply(

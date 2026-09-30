@@ -1,12 +1,17 @@
 package com.monsters.mobimon.feature.auth
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.view.View
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertHeightIsAtLeast
@@ -56,7 +61,9 @@ import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.domain.WriteResult
 import com.monsters.mobimon.core.navigation.AiRoute
 import com.monsters.mobimon.core.navigation.FeatureNavigator
+import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
 import com.monsters.mobimon.core.presentation.VehiclePresentation
+import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
@@ -65,11 +72,13 @@ import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 import java.io.IOException
 
 @RunWith(RobolectricTestRunner::class)
@@ -82,6 +91,8 @@ class AiFeatureTest {
     private val session = MutableStateFlow<GitHubSession>(GitHubSession.SignedOut)
     private var route by mutableStateOf(AiRoute.COPILOT)
     private var homeReturns = 0
+    private lateinit var vehicleSnapshots: MutableStateFlow<VehicleSnapshot>
+    private lateinit var view: View
 
     @Test
     fun returningHomeClearsUnsentChatInputBeforeReentry() {
@@ -108,6 +119,36 @@ class AiFeatureTest {
         compose.onNodeWithText("친구 정보를 불러오는 중이에요.").assertDoesNotExist()
         compose.runOnIdle { points.initialInventoryGate?.complete(Unit) }
         compose.onNodeWithTag("chat-panel").assertIsDisplayed()
+    }
+
+    @Test
+    fun conversationKeepsEquippedFriendWhenProfileLoadFails() {
+        pets.initializationFailure = IOException("profile unavailable")
+        points.savedInventory.value = equippedFriend("friend:luna")
+        route = AiRoute.CONVERSATION
+
+        show(parked = true, authenticated = true)
+
+        compose.onNodeWithText("루나와 쉬어 가요.").assertIsDisplayed()
+    }
+
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Test
+    fun conversationAvatarChangesWithHungryAndSickVehicleSignals() {
+        route = AiRoute.CONVERSATION
+        show(parked = true, authenticated = true)
+        val normal = avatarPixels()
+
+        compose.runOnIdle { vehicleSnapshots.value = vehicleSnapshots.value.copy(batteryPercent = 10) }
+        val hungry = avatarPixels()
+
+        compose.runOnIdle { vehicleSnapshots.value = vehicleSnapshots.value.copy(tirePressureStatus = "NG") }
+        val sick = avatarPixels()
+
+        val hungryPixels = normal.indices.count { normal[it] != hungry[it] }
+        val sickPixels = hungry.indices.count { hungry[it] != sick[it] }
+        assertTrue("Hungry changed $hungryPixels of ${normal.size} pixels", hungryPixels > normal.size / 100)
+        assertTrue("Sick changed $sickPixels of ${hungry.size} pixels", sickPixels > hungry.size / 100)
     }
 
     @Test
@@ -250,20 +291,26 @@ class AiFeatureTest {
     ) {
         session.value =
             if (authenticated) GitHubSession.Authenticated(GitHubAccount(1, "sample")) else GitHubSession.SignedOut
+        vehicleSnapshots =
+            MutableStateFlow(
+                VehicleSnapshot(
+                    "unavailable",
+                    "test",
+                    0,
+                    0,
+                    SignalSource.REAL,
+                    if (parked) DrivingState.PARKED else DrivingState.UNKNOWN,
+                    if (parked) SignalQuality.VALID else SignalQuality.UNAVAILABLE,
+                    batteryPercent = 80,
+                    tirePressureStatus = "OK",
+                    isEmergencyBraking = false,
+                    isDrowsy = false,
+                    isDistracted = false,
+                ),
+            )
         val vehicle =
             object : VehicleRepository {
-                override val snapshots =
-                    MutableStateFlow(
-                        VehicleSnapshot(
-                            "unavailable",
-                            "test",
-                            0,
-                            0,
-                            SignalSource.REAL,
-                            if (parked) DrivingState.PARKED else DrivingState.UNKNOWN,
-                            if (parked) SignalQuality.VALID else SignalQuality.UNAVAILABLE,
-                        ),
-                    )
+                override val snapshots = vehicleSnapshots
 
                 override fun start() = error("Feature must not start a provider")
 
@@ -272,7 +319,6 @@ class AiFeatureTest {
         val feature =
             AiFeature(
                 pets,
-                points,
                 VehiclePresentation(
                     vehicle,
                     ProgressionIdentity("saved", SignalSource.REAL),
@@ -281,6 +327,7 @@ class AiFeatureTest {
                     },
                     VehicleFreshnessPolicy(15_000),
                 ),
+                CompanionAppearancePresentation(points),
                 object : GitHubAuthentication {
                     override val session = this@AiFeatureTest.session
                     override val configured = false
@@ -313,10 +360,32 @@ class AiFeatureTest {
                 {},
             )
         compose.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
+            val currentView = LocalView.current
+            SideEffect { view = currentView }
+            CompositionLocalProvider(
+                LocalDensity provides Density(LocalDensity.current.density, fontScale),
+                LocalMobiMonMotionEnabled provides false,
+            ) {
                 MobiMonTheme { feature.Content(route, navigator, Modifier) }
             }
         }
+    }
+
+    private fun avatarPixels(): List<Int> {
+        val area = compose.onNodeWithTag("chat-avatar").fetchSemanticsNode().boundsInRoot
+        lateinit var pixels: List<Int>
+        compose.runOnIdle {
+            val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            view.draw(Canvas(bitmap))
+            val width = area.width.toInt()
+            val height = area.height.toInt()
+            pixels =
+                IntArray(width * height)
+                    .also { bitmap.getPixels(it, 0, width, area.left.toInt(), area.top.toInt(), width, height) }
+                    .toList()
+            bitmap.recycle()
+        }
+        return pixels
     }
 
     private class FakePets : PetRepository {
