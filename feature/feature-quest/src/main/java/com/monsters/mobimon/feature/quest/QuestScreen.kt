@@ -80,7 +80,12 @@ fun QuestScreen(
 
     androidx.compose.runtime.LaunchedEffect(state.requestedQuestId) {
         if (state.requestedQuestId != null) {
-            selectedQuestId = state.requestedQuestId
+            val isHiddenQuest = state.hiddenQuests.any { it.id == state.requestedQuestId }
+            if (isHiddenQuest && !state.parkedVerified) {
+                if (onHome != null) onHome() else onBack()
+            } else {
+                selectedQuestId = state.requestedQuestId
+            }
             onClearRequestedQuest()
         }
     }
