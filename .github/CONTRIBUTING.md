@@ -55,7 +55,14 @@ python3 scripts/github/validate_issue.py --title 'Restore the session on startup
 
 ## Verification
 
-For code or build changes, format first and review the resulting diff:
+Choose local checks using [TESTING.md](../docs/TESTING.md#when-to-run-tests).
+For documentation, comments, whitespace and non-runtime metadata, review content
+and links and run `git diff --check`; skip Gradle tests, builds and device tests.
+For format-only source changes, run the relevant format/static check and
+`git diff --check`; skip tests. If behavior may have changed, use the checks below.
+
+For behavior or build changes, format first, review the diff and run the canonical
+checks:
 
 ```bash
 ./gradlew ktlintFormat
@@ -63,24 +70,20 @@ For code or build changes, format first and review the resulting diff:
 git diff --check
 ```
 
-Add or update tests for changed behavior. Follow [TESTING.md](../docs/TESTING.md)
-for test placement and Fakes. Check affected flows on a device or emulator when
-changing UI, permissions, or platform integrations.
-
-With a compatible device or emulator, run the Room, Keystore and shared app journeys:
+Add or update focused tests for changed behavior in the owning module. Check
+affected flows on a device or emulator for UI, permissions and platform
+integrations. With a compatible device or emulator, the canonical device suites
+are:
 
 ```bash
 ./gradlew :core:core-database:connectedDebugAndroidTest :core:core-auth:connectedDebugAndroidTest :app:connectedDebugAndroidTest
 ```
 
-CI runs local checks and AAOS API 34-ext9 device tests in parallel. Both jobs
-must pass through `Android checks`. See the
-[AAOS environment guide](../docs/TESTING.md#ci-aaos-environment) for host validation,
-local reproduction and the limits of simulated device coverage.
-
-For documentation-only changes, verify the content and relative links and run
-`git diff --check`; an Android build is unnecessary. Record every check performed,
-including skipped device or integration checks and their reasons, in the PR.
+CI runs local and AAOS API 34-ext9 device suites in parallel; both must pass
+through `Android checks` for pull requests, including documentation-only ones.
+See the [AAOS environment guide](../docs/TESTING.md#ci-aaos-environment) for
+host validation and simulated-device limits. Record checks actually run and why
+any device/integration check was skipped in the PR.
 
 ## Dependency changes
 

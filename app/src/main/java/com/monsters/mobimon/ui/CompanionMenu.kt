@@ -565,14 +565,25 @@ private fun MenuDestination(
                     Icon(
                         painterResource(item.icon),
                         null,
-                        Modifier.offset(x = if (reference) (-10 * scale).dp else 0.dp).size((iconSize * scale).dp),
+                        Modifier.size((iconSize * scale).dp).testTag("menu-notification-icon"),
                         tint = Color(0xFFD7EEF5),
                     )
                 } else {
+                    val imageTag =
+                        if (item.route ==
+                            CompanionRoute.HOME
+                        ) {
+                            Modifier.testTag("menu-home-icon")
+                        } else {
+                            Modifier
+                        }
                     Image(
                         painterResource(item.icon),
                         null,
-                        Modifier.offset(y = (1.5f * scale).dp).size((iconSize * scale).dp),
+                        Modifier
+                            .offset(y = (1.5f * scale).dp)
+                            .size((iconSize * scale).dp)
+                            .then(imageTag),
                     )
                 }
             }
@@ -584,13 +595,11 @@ private fun MenuDestination(
                 modifier = if (reference) Modifier.offset(y = (-1 * scale).dp) else Modifier,
             )
         }
-        if (item.route == null) {
-            MobiMonNotificationBadge(
-                notificationCount,
-                (48 * scale).dp,
-                (25 * scale).sp,
-                Modifier.align(Alignment.CenterEnd).offset(x = (-42 * scale).dp),
-            )
+        if (item.route == null && notificationCount > 0) {
+            val badgeInset = if (reference) 26 * scale else 14f
+            Box(Modifier.align(Alignment.CenterEnd).offset(x = (-badgeInset).dp).testTag("menu-notification-count")) {
+                MobiMonNotificationBadge(notificationCount, (48 * scale).dp, (25 * scale).sp)
+            }
         }
     }
 }
