@@ -31,6 +31,46 @@ class PetAvatarTest {
     val compose = createComposeRule()
 
     @Test
+    fun mobiShowsItsSpriteOnTheFirstRenderedFrame() {
+        MobiSpriteCache.clear()
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            MobiMonTheme {
+                PetAvatar(friendId = "friend:mobi", accessoryId = "accessory:mobi_headphones")
+            }
+        }
+
+        compose.onNodeWithTag("mobi-animation-frame-headphones", useUnmergedTree = true).assertExists()
+    }
+
+    @Test
+    fun mobiStillCardUsesTheFirstSpriteWithoutLoadingTheAtlas() {
+        MobiSpriteCache.clear()
+        compose.setContent {
+            MobiMonTheme {
+                PetAvatar(friendId = "friend:mobi", accessoryId = "accessory:mobi_goggles", isAnimated = false)
+            }
+        }
+
+        compose.onNodeWithTag("mobi-animation-frame-goggles", useUnmergedTree = true).assertExists()
+        assertNull(MobiSpriteCache.peek("accessory:mobi_goggles"))
+    }
+
+    @Test
+    fun mobiFirstFramesMatchTheirAnimationAtlases() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        listOf(null, "accessory:mobi_headphones", "accessory:mobi_goggles").forEach { accessory ->
+            val atlas = requireNotNull(MobiSpriteCache.getOrLoad(context, accessory)).asAndroidBitmap()
+            val first = requireNotNull(MobiSpriteCache.firstFrame(context, accessory)).asAndroidBitmap()
+            val expected = Bitmap.createBitmap(atlas, 0, 0, atlas.width / 6, atlas.height / 4)
+            assertTrue("First frame must match atlas for $accessory", expected.sameAs(first))
+            expected.recycle()
+        }
+    }
+
+    @Test
     fun lunaShowsItsSpriteOnTheFirstRenderedFrame() {
         LunaAnimationCache.clear()
         compose.mainClock.autoAdvance = false
@@ -114,7 +154,7 @@ class PetAvatarTest {
         assertEquals(627 * 4, sprite.height)
         assertTrue(sprite === MobiSpriteCache.getOrLoad(context))
         assertEquals(
-            listOf("mobi_idle_breath_normal_sprite.png"),
+            listOf("mobi_idle_breath_normal_01.png", "mobi_idle_breath_normal_sprite.png"),
             context.assets.list("characters/mobi/normal/idle_breath")!!.toList(),
         )
 

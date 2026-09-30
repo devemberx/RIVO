@@ -57,6 +57,7 @@ class StoreLayoutDeviceTest {
             CosmeticItem("friend:mobi", CosmeticSlot.FRIEND, 0),
             CosmeticItem("friend:luna", CosmeticSlot.FRIEND, 0),
             CosmeticItem("accessory:mobi_headphones", CosmeticSlot.ACCESSORY, 300, "friend:mobi"),
+            CosmeticItem("accessory:mobi_goggles", CosmeticSlot.ACCESSORY, 300, "friend:mobi"),
             CosmeticItem("accessory:luna_sunglasses", CosmeticSlot.ACCESSORY, 300, "friend:luna"),
             CosmeticItem("background:star", CosmeticSlot.BACKGROUND, 200),
             CosmeticItem("background:snow", CosmeticSlot.BACKGROUND, 200),
@@ -84,6 +85,24 @@ class StoreLayoutDeviceTest {
                 }
             }
         }
+    }
+
+    @Test fun mobiUsesSpriteFramesInFriendAndClothesPreviews() {
+        selected = "friend:mobi"
+        render(motionEnabled = true)
+        compose.onNodeWithTag("preview-character").assertContentDescriptionEquals("Mobi 토끼")
+        assertEquals(
+            2,
+            compose.onAllNodesWithTag("mobi-animation-frame-normal", useUnmergedTree = true).fetchSemanticsNodes().size,
+        )
+        capture("friends-mobi-first-frame")
+        compose.onNodeWithTag("store-tab-ACCESSORY").performClick()
+        compose.onNodeWithText("모비 헤드폰").performClick()
+        compose.onNodeWithTag("mobi-animation-frame-headphones", useUnmergedTree = true).assertExists()
+        capture("clothes-mobi-headphones-first-frame")
+        compose.onNodeWithText("모비 고글").performClick()
+        compose.onNodeWithTag("mobi-animation-frame-goggles", useUnmergedTree = true).assertExists()
+        capture("clothes-mobi-goggles-first-frame")
     }
 
     @Test fun lunaIsCatAndAppearsInFriendAndClothesPreviews() {

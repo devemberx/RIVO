@@ -100,8 +100,8 @@ shows it immediately. Quest detail preserves list scroll on Back and keeps
 uses a preview with its action on the left and a catalog on the right. Backgrounds
 use two columns; friends, clothes, effects and props use three. Clothes can preview
 each friend; Space groups the existing background slot into backgrounds, effects
-and props. Luna shows its first sprite frame immediately, then animates when
-the remaining frames load. The owned filter limits the catalog.
+and props. Both friends show their first sprite frame immediately, then animate
+when the remaining frames load; still cards use the same first frame. The owned filter limits the catalog.
 Purchase confirmation shows price and remaining points before committing; pending
 writes retain selection. Enlarged text uses scrolling panels.
 
