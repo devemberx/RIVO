@@ -119,6 +119,23 @@ allowlisted HTTPS hosts. No redirects, fallback, session-token exchange or autom
 completion replay. A 401 invalidates only its credential revision. Logs/errors must
 not expose provider bodies, dialogue or tokens; Release logging is off.
 
+The opt-in [Debug tool probe](../core/core-auth/src/debug/java/com/monsters/mobimon/core/auth/CopilotToolProbe.kt)
+uses the same guarded credentials and HTTP transport with synthetic data, outside
+conversation storage. It checks two automatic tool round trips and forced selection
+separately; only reproduced live results establish compatibility. The shell-only
+Debug entry cancels on pause and has no Release component. Its foundation mode exercises
+the shared provider with a synthetic tool and exact local-value acceptance policy.
+
+[Local tool contracts](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/ConversationTools.kt)
+are pure Kotlin and explicitly bound by build variant; both app registries are currently
+empty. An enabled registry uses fixed gpt-4o with automatic tool selection, at most two
+model requests and one local execution within one 30-second turn. The adapter validates
+the allowlist, bounded string arguments and call IDs, rejects multiple/repeated calls,
+and checks identity and Park/AAOS allowance throughout pending work. Failed tools stop
+before further generation; every final response passes the injected acceptance policy.
+Protocol messages and evidence remain in turn memory; only accepted final text reaches
+existing atomic conversation storage.
+
 The system instruction gives Mobi a curious rabbit persona and Luna a quietly caring
 cat persona, using short natural Korean banmal without habitual animal suffixes,
 emojis or stage directions. Each send adds optional bounded AAOS context-user name
@@ -131,8 +148,9 @@ unavailable during switching; simulated fallback is never sent with the debugger
 Pet condition and its current hunger/sickness evidence use the same classifier as
 the display, including valid warning signals. Derived readings are labeled separately
 from raw signal paths; explanations cannot invent historical causes or diagnoses.
-No vehicle tools or reward commands are sent. Debugger warning inputs are available
-in both build variants while the debugger is enabled.
+Both tool registries remain empty at this stage; no vehicle tools or reward commands
+are sent. Debugger warning inputs are available in both build variants while the
+debugger is enabled.
 
 Chat time uses the original VSS timestamp's hours, minutes, seconds and UTC offset;
 the scene mapper's period is not sent or substituted for an exact time. It is not
@@ -146,7 +164,9 @@ freshness policy, not proof that GNSS provides a continuously advancing clock.
 Copilot catalog metadata supplies `max_prompt_tokens`, optional combined
 `max_context_window_tokens`, `max_output_tokens` and supported tokenizer. Missing or
 unsupported required metadata fails closed. JTokkit counts all prompt text, persona,
-context and chat framing; reserve the requested reply budget (up to 2,048 tokens,
+context and chat framing; tool requests also count serialized schemas, calls, IDs,
+arguments and results with protocol slack. Per-turn numeric usage sums are separate
+from per-request estimates; absent provider usage stays unknown. Reserve the requested reply budget (up to 2,048 tokens,
 bounded by the advertised output maximum). The server remains authoritative: explicit
 context overflow maps to LIMIT with no replay or truncation. The former 16-exchange
 and 48,000-character cumulative caps are removed; 4,000 input and 12,000 reply character

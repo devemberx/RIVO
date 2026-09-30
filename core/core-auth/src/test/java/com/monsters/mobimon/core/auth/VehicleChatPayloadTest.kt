@@ -6,6 +6,7 @@ import com.monsters.mobimon.core.domain.ConversationTurn
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -14,6 +15,26 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class VehicleChatPayloadTest {
+    @Test fun enablingLocalToolsPreservesVehicleEvidenceAndLimitsToolAuthority() {
+        val body =
+            CopilotMessageCodec.request(
+                CopilotModel("gpt-4o", CopilotChatApi.CHAT_COMPLETIONS),
+                "friend:mobi",
+                listOf(ConversationTurn("배터리 상태가 어때?", true)),
+                ConversationContext(batteryPercent = 42, petCondition = "NORMAL"),
+                toolsEnabled = true,
+            )
+        val instruction = body.getJSONArray("messages").getJSONObject(0).getString("content")
+        val payload = JSONObject(instruction.substringAfter("Optional context data (JSON): "))
+        assertTrue(instruction.contains("Use only the declared read-only local tools."))
+        assertTrue(
+            instruction.contains("For time and battery questions, answer using only the current context values."),
+        )
+        assertTrue(instruction.contains("You have no authority to control vehicles"))
+        assertEquals(42, payload.getJSONObject("battery").getInt("percent"))
+        assertEquals("NORMAL", payload.getString("pet_condition"))
+    }
+
     @Test fun exactTimeUsesOriginalVssOffsetEvenWhenInterpretationDisagrees() {
         val payload =
             data(

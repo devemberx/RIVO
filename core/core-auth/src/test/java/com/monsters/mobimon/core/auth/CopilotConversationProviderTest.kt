@@ -3,6 +3,7 @@ package com.monsters.mobimon.core.auth
 import com.monsters.mobimon.core.domain.ConversationProblem
 import com.monsters.mobimon.core.domain.ConversationResult
 import com.monsters.mobimon.core.domain.ConversationTurn
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.Assert.assertEquals
@@ -159,15 +160,30 @@ class CopilotConversationProviderTest {
             assertEquals(ConversationResult.Success("answer"), provider.reply(1, "current", "friend:mobi", turns))
         }
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @Test
+    fun toolFreeReplyCanFinishAfterThirtySecondsAcrossSeparateRequests() =
+        runTest {
+            api.afterExchange = { delay(12_000) }
+            api.afterModels = { delay(12_000) }
+            api.afterComplete = { delay(12_000) }
+
+            assertEquals(
+                ConversationResult.Success("answer"),
+                provider.reply(1, "conversation", "friend:mobi", listOf(ConversationTurn("hello", true))),
+            )
+            assertEquals(36_000L, testScheduler.currentTime)
+        }
+
     private inner class FakeApi : CopilotApi {
         var exchanges = 0
         var models = 0
         var completions = 0
         var availableModels = listOf(CopilotModel("gpt-4o", CopilotChatApi.CHAT_COMPLETIONS))
         var completedModelId: String? = null
-        var afterExchange: () -> Unit = {}
-        var afterModels: () -> Unit = {}
-        var afterComplete: () -> Unit = {}
+        var afterExchange: suspend () -> Unit = {}
+        var afterModels: suspend () -> Unit = {}
+        var afterComplete: suspend () -> Unit = {}
 
         override suspend fun authorize(githubToken: String): CopilotAccess {
             exchanges++

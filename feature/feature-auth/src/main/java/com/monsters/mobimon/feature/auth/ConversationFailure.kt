@@ -14,6 +14,8 @@ internal fun conversationFailureNote(problem: ConversationProblem?): Int =
         ConversationProblem.RESTRICTED -> R.string.chat_restricted_error
         ConversationProblem.STORAGE -> R.string.chat_storage_error
         ConversationProblem.LIMIT -> R.string.chat_limit_error
+        ConversationProblem.NO_EVIDENCE -> R.string.chat_no_evidence
+        ConversationProblem.TOOL_UNAVAILABLE -> R.string.chat_tool_unavailable
         null -> R.string.chat_inline_failure_note
     }
 
