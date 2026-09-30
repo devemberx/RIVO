@@ -1,18 +1,9 @@
 package com.monsters.mobimon.feature.auth
 
 import androidx.lifecycle.ViewModelStore
-import com.monsters.mobimon.core.domain.CosmeticInventory
-import com.monsters.mobimon.core.domain.CosmeticItem
-import com.monsters.mobimon.core.domain.CosmeticSlot
-import com.monsters.mobimon.core.domain.EquipResult
 import com.monsters.mobimon.core.domain.PetAppearance
 import com.monsters.mobimon.core.domain.PetProfile
 import com.monsters.mobimon.core.domain.PetRepository
-import com.monsters.mobimon.core.domain.PointAwardResult
-import com.monsters.mobimon.core.domain.PointEconomy
-import com.monsters.mobimon.core.domain.PointWallet
-import com.monsters.mobimon.core.domain.PurchaseResult
-import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.domain.WriteResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -22,7 +13,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
@@ -42,7 +32,6 @@ class AiCompanionViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val store = ViewModelStore()
     private val pets = FakePets()
-    private val inventory = CosmeticInventory(setOf("friend:mobi"), mapOf(CosmeticSlot.FRIEND to "friend:mobi"))
 
     @Before fun setUp() {
         Dispatchers.setMain(dispatcher)
@@ -53,27 +42,15 @@ class AiCompanionViewModelTest {
         Dispatchers.resetMain()
     }
 
-    @Test fun profileAndInventoryAreSufficientForCommittedAiContext() =
+    @Test fun readsCommittedProfileAndDoesNotDuplicateActiveObserversOnRetry() =
         runTest(dispatcher) {
-            val model =
-                AiCompanionViewModel(pets, FakePoints(flowOf(inventory)))
-                    .also { store.put("ai", it) }
+            val model = model()
             runCurrent()
-
             assertFalse(model.state.value.failed)
-            assertEquals(pets.profile.value, model.state.value.profile)
-            assertEquals(inventory, model.state.value.inventory)
-        }
-
-    @Test fun readsCommittedContextAndDoesNotDuplicateActiveObserversOnRetry() =
-        runTest(dispatcher) {
-            val model = model(flowOf(inventory))
-            runCurrent()
-            assertEquals(pets.profile.value, model.state.value.profile)
-            assertEquals(inventory, model.state.value.inventory)
+            assertEquals(pets.savedProfile.value, model.state.value.profile)
 
             model.retry()
-            pets.profile.value = PetProfile("saved", appearance = PetAppearance.CREAM)
+            pets.savedProfile.value = PetProfile("saved", appearance = PetAppearance.CREAM)
             runCurrent()
 
             assertEquals(
@@ -84,28 +61,26 @@ class AiCompanionViewModelTest {
             assertEquals(1, pets.initializations)
         }
 
-    @Test fun observationFailureRetainsCommittedContextAndRetryReconnects() =
+    @Test fun observationFailureRetainsCommittedProfileAndRetryReconnects() =
         runTest(dispatcher) {
             val fail = Channel<Unit>(Channel.CONFLATED)
             var subscriptions = 0
-            val model =
-                model(
-                    flow {
-                        subscriptions++
-                        emit(inventory)
-                        if (subscriptions == 1) {
-                            fail.receive()
-                            throw IOException("temporary inventory read failure")
-                        }
-                        awaitCancellation()
-                    },
-                )
+            pets.profile =
+                flow {
+                    subscriptions++
+                    emit(pets.savedProfile.value)
+                    if (subscriptions == 1) {
+                        fail.receive()
+                        throw IOException("temporary profile read failure")
+                    }
+                    awaitCancellation()
+                }
+            val model = model()
             runCurrent()
             fail.send(Unit)
             runCurrent()
             assertTrue(model.state.value.failed)
-            assertEquals(inventory, model.state.value.inventory)
-            assertEquals(pets.profile.value, model.state.value.profile)
+            assertEquals(pets.savedProfile.value, model.state.value.profile)
 
             model.retry()
             runCurrent()
@@ -116,7 +91,7 @@ class AiCompanionViewModelTest {
     @Test fun cancelledInitializationIsNotReportedAsStorageFailure() =
         runTest(dispatcher) {
             pets.initializationFailure = CancellationException("owner ended")
-            val model = model(flowOf(inventory))
+            val model = model()
             runCurrent()
             assertFalse(model.state.value.failed)
             assertNull(model.state.value.profile)
@@ -124,14 +99,14 @@ class AiCompanionViewModelTest {
             pets.initializationFailure = null
             model.retry()
             runCurrent()
-            assertEquals(pets.profile.value, model.state.value.profile)
+            assertEquals(pets.savedProfile.value, model.state.value.profile)
         }
 
-    private fun model(inventory: Flow<CosmeticInventory>) =
-        AiCompanionViewModel(pets, FakePoints(inventory)).also { store.put("ai", it) }
+    private fun model() = AiCompanionViewModel(pets).also { store.put("ai", it) }
 
     private class FakePets : PetRepository {
-        override val profile = MutableStateFlow(PetProfile("saved"))
+        val savedProfile = MutableStateFlow(PetProfile("saved"))
+        override var profile: Flow<PetProfile> = savedProfile
         var initializations = 0
         var initializationFailure: Exception? = null
 
@@ -141,24 +116,5 @@ class AiCompanionViewModelTest {
         }
 
         override suspend fun setAppearance(appearance: PetAppearance) = WriteResult.Failure
-    }
-
-    private class FakePoints(
-        override val inventory: Flow<CosmeticInventory>,
-    ) : PointEconomy {
-        override val wallet = flowOf(PointWallet(0))
-        override val catalog = flowOf(emptyList<CosmeticItem>())
-
-        override suspend fun purchase(
-            itemId: String,
-            expectedPrice: Long,
-        ) = PurchaseResult.ItemUnavailable
-
-        override suspend fun equip(itemId: String) = EquipResult.ItemUnavailable
-
-        override suspend fun awardQuest(
-            questId: String,
-            displayedSnapshot: VehicleSnapshot,
-        ) = PointAwardResult.QuestUnavailable
     }
 }

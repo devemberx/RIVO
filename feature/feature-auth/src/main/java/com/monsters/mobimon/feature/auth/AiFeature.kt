@@ -36,17 +36,16 @@ import com.monsters.mobimon.core.domain.AuthenticationProblem
 import com.monsters.mobimon.core.domain.ConversationProblem
 import com.monsters.mobimon.core.domain.ConversationProvider
 import com.monsters.mobimon.core.domain.ConversationStore
-import com.monsters.mobimon.core.domain.CosmeticSlot
 import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.core.domain.GitHubSession
 import com.monsters.mobimon.core.domain.PetRepository
-import com.monsters.mobimon.core.domain.PointEconomy
 import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.navigation.AiRoute
 import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.CompanionRoute
 import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.navigation.FeatureNavigator
+import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
 import com.monsters.mobimon.core.presentation.VehicleCondition
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.core.presentation.parkedVerified
@@ -60,8 +59,8 @@ import kotlinx.coroutines.awaitCancellation
 /** AI-owned routes keep authentication separate from conversation readiness. */
 class AiFeature(
     private val pets: PetRepository,
-    private val points: PointEconomy,
     private val vehicle: VehiclePresentation,
+    private val appearance: CompanionAppearancePresentation,
     private val authentication: GitHubAuthentication,
     private val conversation: ConversationProvider,
     private val networkStatus: ConversationNetworkStatus = AssumedOnlineConversationNetworkStatus,
@@ -98,9 +97,11 @@ class AiFeature(
         }
         val qrCode = githubQrCode((authenticationState as? CopilotUiState.Waiting)?.verificationUri)
         val factory =
-            remember(this) { viewModelFactory { initializer { AiCompanionViewModel(pets, points) } } }
+            remember(this) { viewModelFactory { initializer { AiCompanionViewModel(pets) } } }
         val model: AiCompanionViewModel = viewModel(factory = factory)
         val companion by model.state.collectAsStateWithLifecycle()
+        val appearanceModel = appearance.model()
+        val equipped by appearanceModel.state.collectAsStateWithLifecycle()
         val profile = companion.profile
         val session by authentication.session.collectAsStateWithLifecycle()
         val online by networkStatus.online.collectAsStateWithLifecycle()
@@ -148,7 +149,7 @@ class AiFeature(
                 microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
             }
         }
-        val friendId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.FRIEND) ?: "friend:mobi"
+        val friendId = equipped.friendId
         LaunchedEffect(conversationModel, profile?.id, friendId) {
             profile?.id?.let { conversationModel.bind(it, friendId) }
         }
@@ -175,7 +176,7 @@ class AiFeature(
             }
         }
         Column(modifier.fillMaxSize()) {
-            if (companion.failed && (route != AiRoute.CONVERSATION || snapshot.parkedVerified)) {
+            if ((companion.failed || equipped.failed) && (route != AiRoute.CONVERSATION || snapshot.parkedVerified)) {
                 Row(
                     Modifier.fillMaxWidth().padding(MobiMonDimensions.contentPadding),
                     horizontalArrangement = Arrangement.spacedBy(MobiMonDimensions.contentGap),
@@ -194,7 +195,12 @@ class AiFeature(
                         Modifier.weight(1f),
                         isError = true,
                     )
-                    MobiMonButton(onClick = model::retry) { Text(stringResource(R.string.ai_retry)) }
+                    MobiMonButton(onClick = {
+                        model.retry()
+                        appearanceModel.retry()
+                    }) {
+                        Text(stringResource(R.string.ai_retry))
+                    }
                 }
             }
             if (route == AiRoute.CONVERSATION) {
@@ -253,10 +259,11 @@ class AiFeature(
                     interactionAllowed = snapshot.parkedVerified,
                     parkingBadgeConfirmed = snapshot.parkingBadgeConfirmed,
                     simulatedVehicle = snapshot.source == SignalSource.SIMULATED,
-                    friendId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.FRIEND) ?: "friend:mobi",
+                    friendId = friendId,
                     appearanceKey = profile?.appearance?.name ?: "GOLDEN",
-                    accessoryId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.ACCESSORY),
-                    outfitId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.OUTFIT),
+                    accessoryId = equipped.accessoryId,
+                    outfitId = equipped.outfitId,
+                    backgroundId = equipped.backgroundId,
                     vehicleWarning = vehicleCondition == VehicleCondition.WARNING,
                     vehicleHungry = vehicleCondition == VehicleCondition.LOW_BATTERY,
                     onRetry = {
@@ -303,11 +310,11 @@ class AiFeature(
                 interactionAllowed = snapshot.parkedVerified,
                 parkingBadgeConfirmed = snapshot.parkingBadgeConfirmed,
                 simulatedVehicle = snapshot.source == SignalSource.SIMULATED,
-                friendId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.FRIEND) ?: "friend:mobi",
+                friendId = friendId,
                 appearanceKey = profile?.appearance?.name ?: "GOLDEN",
-                accessoryId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.ACCESSORY),
-                outfitId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.OUTFIT),
-                backgroundId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.BACKGROUND),
+                accessoryId = equipped.accessoryId,
+                outfitId = equipped.outfitId,
+                backgroundId = equipped.backgroundId,
                 vehicleWarning = vehicleCondition == VehicleCondition.WARNING,
                 vehicleHungry = vehicleCondition == VehicleCondition.LOW_BATTERY,
             )

@@ -3,7 +3,6 @@ package com.monsters.mobimon
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasAnyAncestor
@@ -122,8 +121,7 @@ class CopilotConnectionJourneyTest {
         ActivityScenario.launch(MainActivity::class.java).use {
             waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
             compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
-            waitFor(hasTestTag("chat-input"))
-            compose.onNodeWithTag("chat-input").assertIsEnabled()
+            waitFor(hasTestTag("chat-input") and isEnabled())
             vehicle.publish(DrivingState.UNKNOWN, SignalQuality.UNAVAILABLE)
             waitFor(hasTestTag("chat-parking-dialog"))
             compose.onNodeWithTag("chat-input").assertDoesNotExist()
