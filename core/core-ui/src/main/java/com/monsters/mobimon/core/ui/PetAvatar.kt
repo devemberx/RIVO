@@ -288,12 +288,53 @@ fun PetAvatar(
     vehicleHungry: Boolean = false,
     artworkOverride: Int? = null,
 ) {
+    PetAvatar(
+        modifier = modifier,
+        appearanceKey = appearanceKey,
+        friendId = friendId,
+        accessoryId = accessoryId,
+        outfitId = outfitId,
+        backgroundId = backgroundId,
+        isAnimated = isAnimated,
+        emotion = emotion,
+        isMoving = isMoving,
+        movingLeft = movingLeft,
+        vehicleWarning = vehicleWarning,
+        vehicleHungry = vehicleHungry,
+        artworkOverride = artworkOverride,
+        isDisappearing = false,
+        onDisappeared = {},
+    )
+}
+
+@Composable
+fun PetAvatar(
+    modifier: Modifier = Modifier,
+    appearanceKey: String = "GOLDEN",
+    friendId: String = "friend:mobi",
+    accessoryId: String? = null,
+    outfitId: String? = null,
+    backgroundId: String? = null,
+    isAnimated: Boolean = true,
+    emotion: PetEmotion = PetEmotion.IDLE,
+    isMoving: Boolean = false,
+    movingLeft: Boolean = true,
+    vehicleWarning: Boolean = false,
+    vehicleHungry: Boolean = false,
+    artworkOverride: Int? = null,
+    isDisappearing: Boolean = false,
+    onDisappeared: () -> Unit = {},
+) {
     val cat = friendId == "friend:luna"
     val cream = appearanceKey == "CREAM"
     val motionEnabled = isAnimated && LocalMobiMonMotionEnabled.current
     // Reduced motion keeps the gentle idle breath and drops travel animation only.
     val runEnabled = isAnimated && isMoving && LocalMobiMonMotionEnabled.current
     val description = stringResource(if (cat) R.string.mobimon_luna_description else R.string.mobimon_mobi_description)
+    if (isDisappearing && friendId != "friend:mobi" && !isMoving) {
+        LaunchedEffect(Unit) { onDisappeared() }
+        return
+    }
     if (artworkOverride != null) {
         Box(modifier = modifier.size(120.dp).semantics { contentDescription = description }) {
             Image(
@@ -356,7 +397,9 @@ fun PetAvatar(
                 val showMobiRun = (runEnabled || mobiHopCompleting) && isAnimated
 
                 when {
-                    isSick || isHungry ->
+                    isDisappearing && !showMobiRun ->
+                        MobiDisappearAnimation(Modifier.fillMaxSize(), onDisappeared)
+                    (isSick || isHungry) && !isDisappearing ->
                         MobiIdleBreathAnimation(
                             modifier = Modifier.fillMaxSize(),
                             accessoryId = equippedAccessory,

@@ -91,7 +91,7 @@ class SpeechBubbleShape(
                 val maxTailY = (bodyBottom - cr).coerceAtLeast(minTailY)
                 val tailBottomY = (bodyBottom - tailOffsetY).coerceIn(minTailY, maxTailY)
                 val tailTopY = tailBottomY - th
-                val tailTipY = tailTopY + th * 0.5f
+                val tailTipY = tailTopY + th * 0.8f
 
                 lineTo(bodyLeft, tailBottomY)
 
