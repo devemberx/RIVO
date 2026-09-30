@@ -198,6 +198,7 @@ fun QuestScreen(
                     }
                     val hiddenQuest = state.hiddenQuests.firstOrNull()
                     if (!parkingRequired &&
+                        state.parkedVerified &&
                         hiddenQuest != null &&
                         state.rewardSuccess == null &&
                         !state.isLoading &&
