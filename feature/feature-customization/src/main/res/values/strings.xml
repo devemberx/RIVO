@@ -45,4 +45,6 @@
     <string name="customization_catalog_failed">아이템 목록을 불러오지 못했어요.</string>
     <string name="pet_item_star_hanger">별빛 모빌</string>
     <string name="pet_preview_desc_star_hanger">살랑살랑 흔들리며 반짝이는 별빛 모빌</string>
+    <string name="pet_item_yarn_basket">별빛 털실 바구니</string>
+    <string name="pet_preview_desc_yarn_basket">별은 반짝, 방울은 살랑, 털실은 데굴데굴</string>
 </resources>
