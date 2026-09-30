@@ -134,11 +134,8 @@ unsent drafts. Keep the Copilot disclosure below the composer: transmitted dialo
 available context/debug values and AI uncertainty. Local clearing does not promise
 provider deletion. Spoken replies remain planned.
 
-Manual answers keep the companion voice; references use a bold heading and
-smaller entries/markers while raw tool results stay hidden. Follow new replies
-unless reading history; the return icon shows typing dots or a down arrow.
-Render strong Markdown emphasis, animate Edit with reduced-motion support and
-keep companion artwork clear of its caption when the keyboard opens.
+Manual answers show app-generated source references; tool protocol and raw
+search results stay hidden from chat bubbles.
 
 ## Vehicle information
 
