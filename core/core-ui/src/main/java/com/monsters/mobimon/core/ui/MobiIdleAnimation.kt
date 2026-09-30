@@ -393,6 +393,7 @@ fun MobiRunAnimation(
     onHopFinished: () -> Unit = {},
 ) {
     if (!LocalMobiMonMotionEnabled.current) {
+        LaunchedEffect(isMoving) { if (!isMoving) onHopFinished() }
         CharacterAssetImage(fallbackAsset, modifier, contentDescription)
         return
     }
@@ -406,6 +407,7 @@ fun MobiRunAnimation(
     }
     val sheet = sprite
     if (sheet == null) {
+        LaunchedEffect(isMoving) { if (!isMoving) onHopFinished() }
         CharacterAssetImage(fallbackAsset, modifier, contentDescription)
         return
     }

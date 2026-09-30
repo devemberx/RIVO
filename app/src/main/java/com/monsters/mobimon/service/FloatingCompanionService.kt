@@ -37,7 +37,9 @@ import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.monsters.mobimon.MobiMonApplication
 import com.monsters.mobimon.R
+import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.SettingsRepository
+import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
 import com.monsters.mobimon.core.presentation.VehicleCondition
@@ -84,6 +86,8 @@ class FloatingCompanionService : Service() {
 
     @Inject lateinit var runtime: CompanionRuntime
 
+    @Inject lateinit var temporaryParkingControl: TemporaryParkingControl
+
     private var windowManager: WindowManager? = null
     private var composeView: ComposeView? = null
     private var overlayParams: WindowManager.LayoutParams? = null
@@ -91,6 +95,10 @@ class FloatingCompanionService : Service() {
     private var isViewAttached = false
     private var appInForeground = true
 
+    private var parked = false
+    private var hidden = true
+    private var exitPending = false
+    private var isDisappearing by mutableStateOf(false)
     private var isMoving by mutableStateOf(false)
     private var movingLeft by mutableStateOf(true)
     private var vehicleWarning by mutableStateOf(false)
@@ -248,8 +256,9 @@ class FloatingCompanionService : Service() {
                                 latestAccessoryId,
                                 latestOutfitId,
                                 isMoving,
+                                isDisappearing,
                             ) {
-                                if (!isMoving) {
+                                if (!isMoving && !isDisappearing) {
                                     activeFriendId = latestFriendId
                                     activeAccessoryId = latestAccessoryId
                                     activeOutfitId = latestOutfitId
@@ -268,15 +277,31 @@ class FloatingCompanionService : Service() {
                                     PetAvatar(
                                         modifier = Modifier.fillMaxSize(),
                                         appearanceKey = "GOLDEN",
-                                        friendId = if (isMoving) activeFriendId else latestFriendId,
-                                        accessoryId = if (isMoving) activeAccessoryId else latestAccessoryId,
-                                        outfitId = if (isMoving) activeOutfitId else latestOutfitId,
+                                        friendId = if (isMoving || isDisappearing) activeFriendId else latestFriendId,
+                                        accessoryId =
+                                            if (isMoving ||
+                                                isDisappearing
+                                            ) {
+                                                activeAccessoryId
+                                            } else {
+                                                latestAccessoryId
+                                            },
+                                        outfitId = if (isMoving || isDisappearing) activeOutfitId else latestOutfitId,
                                         backgroundId = null,
                                         isAnimated = true,
                                         isMoving = isMoving,
                                         movingLeft = movingLeft,
-                                        vehicleWarning = vehicleWarning,
-                                        vehicleHungry = vehicleHungry,
+                                        isDisappearing = isDisappearing,
+                                        onDisappeared = {
+                                            if (!parked) {
+                                                hidden = true
+                                                isDisappearing = false
+                                                exitPending = false
+                                                updateOverlayVisibility()
+                                            }
+                                        },
+                                        vehicleWarning = vehicleWarning && !isMoving,
+                                        vehicleHungry = vehicleHungry && !isMoving,
                                     )
                                 }
                             }
@@ -299,6 +324,7 @@ class FloatingCompanionService : Service() {
             isViewAttached = true
             composeView = view
             overlayParams = params
+            temporaryParkingControl.attach(windowContext, serviceScope)
             view.requestApplyInsets()
             constrainPosition(view, params, overlayWindowManager)
             updateOverlayVisibility()
@@ -320,6 +346,7 @@ class FloatingCompanionService : Service() {
         var isDragging = false
 
         view.setOnTouchListener { _, event ->
+            if (!parked || exitPending || isDisappearing) return@setOnTouchListener true
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     wanderJob?.cancel()
@@ -374,6 +401,7 @@ class FloatingCompanionService : Service() {
         wm: WindowManager,
         initialDelayMs: Long = 4000L,
     ) {
+        if (!parked || exitPending || isDisappearing || hidden) return
         wanderJob?.cancel()
         wanderJob = null
         isMoving = false
@@ -386,7 +414,13 @@ class FloatingCompanionService : Service() {
                     isMoving = false
                     val idleDuration = Random.nextLong(3500L, 7000L)
                     delay(idleDuration)
-                    if (!isActive) break
+                    if (!isActive ||
+                        !parked ||
+                        exitPending ||
+                        !FloatingCompanionWanderMath.isWanderingAllowed(reducedMotion, vehicleWarning, vehicleHungry)
+                    ) {
+                        break
+                    }
 
                     constrainPosition(view, params, wm)
                     val bounds = movementBounds(view, wm)
@@ -429,7 +463,13 @@ class FloatingCompanionService : Service() {
                     val targetFriend = latestFriendId
                     val targetAccessory = latestAccessoryId ?: latestOutfitId
                     preloadPetRunSprite(this@FloatingCompanionService, targetFriend, targetAccessory)
-                    if (!isActive) break
+                    if (!isActive ||
+                        !parked ||
+                        exitPending ||
+                        !FloatingCompanionWanderMath.isWanderingAllowed(reducedMotion, vehicleWarning, vehicleHungry)
+                    ) {
+                        break
+                    }
 
                     activeFriendId = targetFriend
                     activeAccessoryId = latestAccessoryId
@@ -478,6 +518,10 @@ class FloatingCompanionService : Service() {
                     }
 
                     isMoving = false
+                    if (exitPending) {
+                        beginDisappearance()
+                        break
+                    }
                 }
             }
     }
@@ -545,6 +589,25 @@ class FloatingCompanionService : Service() {
         serviceScope.launch {
             vehicleRepository.snapshots
                 .collect { snapshot ->
+                    val nowParked =
+                        snapshot.gear == "P" &&
+                            snapshot.drivingState == DrivingState.PARKED &&
+                            snapshot.quality == SignalQuality.VALID
+                    if (parked != nowParked) {
+                        parked = nowParked
+                        if (parked) {
+                            exitPending = false
+                            isDisappearing = false
+                            hidden = false
+                            updateOverlayVisibility()
+                        } else if (!hidden && !appInForeground) {
+                            exitPending = true
+                            if (!isMoving) beginDisappearance()
+                        } else {
+                            hidden = true
+                            updateOverlayVisibility()
+                        }
+                    }
                     val condition = snapshot.vehicleCondition()
                     val newWarning = (condition == VehicleCondition.WARNING)
                     val newHungry = (condition == VehicleCondition.LOW_BATTERY)
@@ -557,7 +620,14 @@ class FloatingCompanionService : Service() {
         }
     }
 
+    private fun beginDisappearance() {
+        if (parked || hidden || isDisappearing) return
+        // Do not cancel the active travel job: PetAvatar finishes its last hop before the exit.
+        isDisappearing = true
+    }
+
     private fun restartWandering() {
+        if (!parked || hidden || exitPending || isDisappearing || isMoving) return
         if (!FloatingCompanionVisibility.shouldShow(appInForeground)) return
         val view = composeView ?: return
         val params = overlayParams ?: return
@@ -567,11 +637,17 @@ class FloatingCompanionService : Service() {
 
     private fun updateOverlayVisibility() {
         val view = composeView ?: return
-        if (FloatingCompanionVisibility.shouldShow(appInForeground)) {
+        temporaryParkingControl.setVisible(!appInForeground)
+        if (FloatingCompanionVisibility.shouldShow(appInForeground) && !hidden) {
             view.visibility = View.VISIBLE
             restartWandering()
         } else {
             view.visibility = View.GONE
+            if (!parked) {
+                hidden = true
+                exitPending = false
+                isDisappearing = false
+            }
             wanderJob?.cancel()
             wanderJob = null
             isMoving = false
@@ -581,6 +657,7 @@ class FloatingCompanionService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         runtime.stopOverlay()
+        temporaryParkingControl.detach()
         wanderJob?.cancel()
         wanderJob = null
         serviceScope.cancel()
