@@ -1,6 +1,5 @@
 package com.monsters.mobimon.core.ui
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -46,6 +45,8 @@ import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 
 /** Keeps first-entry loading or already-restricted routes separate from a live parking interruption. */
 @Composable
@@ -69,8 +70,15 @@ fun MobiMonParkingInterruption(
     modifier: Modifier = Modifier,
 ) {
     val homeFocus = remember { FocusRequester() }
-    BackHandler { }
-    BoxWithConstraints(
+    Dialog(
+        onDismissRequest = {},
+        properties = DialogProperties(
+            dismissOnBackPress = false,
+            dismissOnClickOutside = false,
+            usePlatformDefaultWidth = false
+        )
+    ) {
+        BoxWithConstraints(
         modifier
             .fillMaxSize()
             .onPreviewKeyEvent { event ->
@@ -169,6 +177,7 @@ fun MobiMonParkingInterruption(
             }
         }
         LaunchedEffect(homeFocus, wide) { homeFocus.requestFocus() }
+    }
     }
 }
 
