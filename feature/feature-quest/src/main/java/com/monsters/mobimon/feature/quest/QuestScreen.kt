@@ -48,6 +48,8 @@ import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.presentation.PointBalanceState
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
@@ -80,7 +82,12 @@ fun QuestScreen(
 
     androidx.compose.runtime.LaunchedEffect(state.requestedQuestId) {
         if (state.requestedQuestId != null) {
-            selectedQuestId = state.requestedQuestId
+            val isHiddenQuest = state.hiddenQuests.any { it.id == state.requestedQuestId }
+            if (isHiddenQuest && !state.parkedVerified) {
+                if (onHome != null) onHome() else onBack()
+            } else {
+                selectedQuestId = state.requestedQuestId
+            }
             onClearRequestedQuest()
         }
     }
@@ -198,6 +205,7 @@ fun QuestScreen(
                     }
                     val hiddenQuest = state.hiddenQuests.firstOrNull()
                     if (!parkingRequired &&
+                        state.parkedVerified &&
                         hiddenQuest != null &&
                         state.rewardSuccess == null &&
                         !state.isLoading &&
@@ -253,13 +261,23 @@ fun QuestScreen(
             }
         }
         if (parkingRequired) {
-            MobiMonParkingInterruption(
-                title = stringResource(R.string.quest_parking_popup_title),
-                body = stringResource(R.string.quest_parking_popup_body),
-                instruction = stringResource(R.string.quest_parking_popup_instruction),
-                preserved = stringResource(R.string.quest_parking_popup_preserved),
-                onHome = onHome ?: onBack,
-            )
+            Dialog(
+                onDismissRequest = {},
+                properties =
+                    DialogProperties(
+                        dismissOnBackPress = false,
+                        dismissOnClickOutside = false,
+                        usePlatformDefaultWidth = false,
+                    ),
+            ) {
+                MobiMonParkingInterruption(
+                    title = stringResource(R.string.quest_parking_popup_title),
+                    body = stringResource(R.string.quest_parking_popup_body),
+                    instruction = stringResource(R.string.quest_parking_popup_instruction),
+                    preserved = stringResource(R.string.quest_parking_popup_preserved),
+                    onHome = onHome ?: onBack,
+                )
+            }
         }
     }
 }
