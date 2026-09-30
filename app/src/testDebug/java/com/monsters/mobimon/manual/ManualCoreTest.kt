@@ -212,16 +212,16 @@ class ManualCoreTest {
             }
         }
 
-    @Test fun manualAnswersKeepTheCompanionVoice() {
-        val instruction =
-            ManualConversationTools
-                .create(
-                    object : com.monsters.mobimon.core.domain.ManualRetriever {
-                        override suspend fun search(query: String) = ManualSearchResult.NoEvidence
-                    },
-                ).instruction
-        assertTrue(instruction.contains("manual answers in natural, warm Korean banmal"))
-        assertTrue(instruction.contains("Do not switch to a formal assistant persona"))
+    @Test fun citedListsPreserveParagraphsEmphasisAndRepeatedSourceMarkers() {
+        val text = "핵심부터 확인해 보자.\n\n- **첫 항목**: 설명 [ne1-0020]\n- **둘째 항목**: 주의 [ne1-0020]"
+        val result = ManualReplyPolicy.accept(reply("ANSWERED", text, listOf("ne1-0020")), evidence)
+        assertEquals(
+            ConversationResult.Success(
+                text.replace("[ne1-0020]", "[1]") +
+                    "\n\n출처 : 2027 한국형 아이오닉 5 취급설명서\n[1] 완속 충전 · PDF 18-20쪽",
+            ),
+            result,
+        )
     }
 
     @Test fun toolKeepsSourcesStructuredAndUsesVerifiedPageMetadata() =

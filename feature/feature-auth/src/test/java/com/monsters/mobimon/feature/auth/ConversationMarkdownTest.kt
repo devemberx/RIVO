@@ -25,7 +25,7 @@ class ConversationMarkdownTest {
         val compactLines = parsed.spanStyles.filter { it.item.fontSize == 0.8.em }
         val markers = parsed.spanStyles.filter { it.item.fontSize == 0.7.em }
 
-        assertEquals(listOf("관리 방법", heading), bold.map { parsed.text.substring(it.start, it.end) })
+        assertEquals(listOf("관리 방법"), bold.map { parsed.text.substring(it.start, it.end) })
         assertEquals(listOf(entry), compactLines.map { parsed.text.substring(it.start, it.end) })
         assertEquals(listOf("[1]", "[1]"), markers.map { parsed.text.substring(it.start, it.end) })
         assertTrue(parseConversationMarkdown("선택지 [1]").spanStyles.isEmpty())
@@ -33,10 +33,9 @@ class ConversationMarkdownTest {
 
     @Test fun previouslyStoredSourceHeadingStillReceivesSourceStyling() {
         val parsed = parseConversationMarkdown("안내 [1].\n\n출처: 취급설명서\n[1] 충전 관리")
-        val bold = parsed.spanStyles.single { it.item.fontWeight == FontWeight.Bold }
         val compact = parsed.spanStyles.single { it.item.fontSize == 0.8.em }
 
-        assertEquals("출처: 취급설명서", parsed.text.substring(bold.start, bold.end))
+        assertTrue(parsed.spanStyles.none { it.item.fontWeight == FontWeight.Bold })
         assertEquals("[1] 충전 관리", parsed.text.substring(compact.start, compact.end))
     }
 

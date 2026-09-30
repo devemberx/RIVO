@@ -30,7 +30,6 @@ internal fun parseConversationMarkdown(text: String): AnnotatedString {
     val heading = sourceHeading.find(rendered.text)?.groups?.get(1) ?: return rendered
     return buildAnnotatedString {
         append(rendered)
-        addStyle(SpanStyle(fontWeight = FontWeight.Bold), heading.range.first, heading.range.last + 1)
         sourceEntry.findAll(rendered.text, heading.range.last + 1).forEach { match ->
             addStyle(SpanStyle(fontSize = 0.8.em), match.range.first, match.range.last + 1)
         }

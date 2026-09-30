@@ -134,8 +134,10 @@ unsent drafts. Keep the Copilot disclosure below the composer: transmitted dialo
 available context/debug values and AI uncertainty. Local clearing does not promise
 provider deletion. Spoken replies remain planned.
 
-Manual answers keep the companion voice and show a bold source heading with
-smaller entries/markers; raw tool output stays hidden. Follow new replies unless
+Replies keep a friendly companion voice: short paragraphs for explanations,
+bullets for multiple tips and numbered steps when order matters. Keep relevant
+conditions/warnings and place citations beside supported claims. Manual answers
+show a regular-weight source heading with smaller entries/markers; raw tool output stays hidden. Follow new replies unless
 reading history; the return button shows typing dots or a down arrow. Render
 strong Markdown emphasis, animate failed-turn Edit unless motion is reduced,
 and keep companion artwork clear of its caption when the keyboard opens.
