@@ -106,8 +106,9 @@ Purchase confirmation shows price and remaining points before committing; pendin
 writes retain selection. Enlarged text uses scrolling panels.
 
 Friends, accessories and backgrounds are independent; equipment persists per
-friend. Preview stays local until Apply. Purchase grants ownership, not equipment;
-owned items Apply without another charge. Show compatibility, price, balance and
+friend. Preview stays local until Apply. Items can be purchased for either owned
+friend without switching companions; purchase grants ownership, not equipment.
+Owned items Apply without another charge. Show compatibility, price, balance and
 shortfall. Cancellation spends nothing; pending writes block duplicates, retain
 selection and offer Retry on failure. There is no cash/top-up/conversion.
 

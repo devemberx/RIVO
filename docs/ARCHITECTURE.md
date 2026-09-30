@@ -151,9 +151,10 @@ transient vehicle history out of storage.
 Reward transactions atomically validate evidence, ownership/revision and occurrence
 uniqueness. Run completion commits finish, completion and legacy XP together; point
 awards commit occurrence, ledger and balance together. Purchase validates price,
-compatibility, funds and ownership before debit/grant; Equip requires committed
-ownership without another debit. Concurrent calls cannot overspend or duplicate
-rewards/items. Keep network outside transactions; failures roll back. Never
+funds, item ownership and ownership of any compatible friend before debit/grant;
+the friend need not be active. Equip requires committed item ownership and the
+compatible active friend without another debit. Concurrent calls cannot overspend
+or duplicate rewards/items. Keep network outside transactions; failures roll back. Never
 split rewards across Room/DataStore or replace committed data on conflict. V1–V4
 migrations preserve identities, evidence, rewards and equipment, including both V3
 forms; legacy XP is compatibility data, not progression.

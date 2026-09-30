@@ -129,7 +129,9 @@ class PointEconomyRepository(
                 if (dao.owned(profileId, itemId) != null) return@withTransaction PurchaseResult.AlreadyOwned
                 if (item.price < 0) return@withTransaction PurchaseResult.ItemUnavailable
                 if (item.price != expectedPrice) return@withTransaction PurchaseResult.PriceChanged(item.price)
-                if (!item.isCompatible()) return@withTransaction PurchaseResult.Incompatible
+                if (item.compatibleFriendId != null && dao.owned(profileId, item.compatibleFriendId) == null) {
+                    return@withTransaction PurchaseResult.Incompatible
+                }
                 val account = dao.account(profileId) ?: return@withTransaction PurchaseResult.StorageFailure
                 if (account.balance < item.price) {
                     return@withTransaction PurchaseResult.InsufficientPoints(item.price - account.balance)
