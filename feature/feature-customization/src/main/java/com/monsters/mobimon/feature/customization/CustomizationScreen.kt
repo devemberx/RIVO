@@ -64,6 +64,7 @@ import com.monsters.mobimon.core.ui.MobiMonSelectionCard
 import com.monsters.mobimon.core.ui.MobiMonTab
 import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.StarHanger
+import com.monsters.mobimon.core.ui.StarlightYarnBasket
 import com.monsters.mobimon.core.ui.companionBackgroundRes
 import kotlinx.coroutines.delay
 
@@ -210,7 +211,9 @@ fun CustomizationScreen(
                                     modifier = Modifier.fillMaxSize().testTag("preview-background"),
                                 )
                                 if (tab != CosmeticSlot.FRIEND) {
-                                    if (background == "background:star_hanger") {
+                                    if (background == "background:starlight_yarn_basket") {
+                                        StarlightYarnBasket(Modifier.fillMaxSize().testTag("store-preview-yarn-basket"))
+                                    } else if (background == "background:star_hanger") {
                                         StarHanger(
                                             Modifier.fillMaxSize().testTag("store-preview-star-hanger"),
                                         )
@@ -469,6 +472,12 @@ fun CustomizationScreen(
                                                 null,
                                                 Modifier.size(80.dp * scale),
                                                 tint = MobiMonColors.accent,
+                                            )
+                                        } else if (item.id == "background:starlight_yarn_basket") {
+                                            StarlightYarnBasket(
+                                                Modifier.fillMaxSize(),
+                                                centered = true,
+                                                isAnimated = false,
                                             )
                                         } else if (item.id == "background:star_hanger") {
                                             StarHanger(Modifier.fillMaxSize(), centered = true, isAnimated = false)
@@ -760,6 +769,7 @@ internal fun storePreviewDescription(
             }
         CosmeticSlot.BACKGROUND ->
             when (selectedItemId) {
+                "background:starlight_yarn_basket" -> stringResource(R.string.pet_preview_desc_yarn_basket)
                 "background:star_hanger" -> stringResource(R.string.pet_preview_desc_star_hanger)
                 "background:star" -> stringResource(R.string.pet_preview_desc_background_star)
                 "background:snow" -> stringResource(R.string.pet_preview_desc_background_snow)

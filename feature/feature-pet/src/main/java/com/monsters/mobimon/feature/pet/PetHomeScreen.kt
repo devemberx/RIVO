@@ -78,6 +78,7 @@ import com.monsters.mobimon.core.ui.MobiMonPointSummary
 import com.monsters.mobimon.core.ui.ParticleType
 import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.StarHanger
+import com.monsters.mobimon.core.ui.StarlightYarnBasket
 import com.monsters.mobimon.core.ui.companionBackgroundRes
 import kotlin.math.roundToInt
 import com.monsters.mobimon.core.ui.R as CoreUiR
@@ -282,7 +283,9 @@ private fun HomeBackground(
             alignment = HomeBackgroundAlignment,
         )
     }
-    if (backgroundId == "background:star_hanger") {
+    if (backgroundId == "background:starlight_yarn_basket") {
+        StarlightYarnBasket(Modifier.fillMaxSize().testTag("home-yarn-basket"))
+    } else if (backgroundId == "background:star_hanger") {
         StarHanger(Modifier.fillMaxSize().testTag("home-star-hanger"))
     } else if (backgroundId != null) {
         val particleType =
