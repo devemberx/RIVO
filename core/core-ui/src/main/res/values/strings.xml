@@ -1,5 +1,5 @@
 <resources>
-  <string name="mobimon_mobi_description">Mobi 강아지</string>
+  <string name="mobimon_mobi_description">Mobi 토끼</string>
   <string name="mobimon_luna_description">Luna 고양이</string>
   <string name="mobimon_source_simulated">시뮬레이션</string>
   <string name="mobimon_source_real">실제 차량 데이터</string>

@@ -77,7 +77,7 @@ class CustomizationScreenTest {
         compose.runOnIdle { storeInventoryReady = true }
         compose.mainClock.autoAdvance = true
         compose.onAllNodesWithTag("store-item-placeholder").assertCountEquals(0)
-        compose.onNodeWithText("이 모습 적용").assertIsEnabled()
+        compose.onNodeWithText("루나와 함께하기").assertIsEnabled()
     }
 
     @Test fun compactStoreKeepsItsCatalogWhileItemsLoad() {
@@ -218,7 +218,7 @@ class CustomizationScreenTest {
         }
 
         compose
-            .onNodeWithText("300 P 구매")
+            .onNodeWithText("300 P로 구매하기")
             .assertIsDisplayed()
             .assertIsNotEnabled()
             .performClick()
@@ -261,7 +261,7 @@ class CustomizationScreenTest {
             }
         }
 
-        compose.onNodeWithText("옷과 소품").performClick()
+        compose.onNodeWithTag("store-tab-ACCESSORY").performClick()
         compose.onNodeWithText("모비 헤드폰").assertExists()
         compose.onNodeWithText("루나 모자").assertDoesNotExist()
         compose.runOnIdle {
@@ -271,6 +271,51 @@ class CustomizationScreenTest {
         compose.onNodeWithText("모비 헤드폰").assertDoesNotExist()
         compose.onNodeWithTag("preview-background").assertExists()
         compose.onNodeWithTag("preview-character").assertExists()
+    }
+
+    @Test fun unownedAccessoryCanBePurchasedWhilePreviewingAnotherFriend() {
+        var purchases = 0
+        var friendSwitches = 0
+        val catalog =
+            listOf(
+                CosmeticItem("friend:mobi", CosmeticSlot.FRIEND, 0),
+                CosmeticItem("friend:luna", CosmeticSlot.FRIEND, 0),
+                CosmeticItem("accessory:luna_sunglasses", CosmeticSlot.ACCESSORY, 300, "friend:luna"),
+            )
+        compose.setContent {
+            var selectedId by androidx.compose.runtime.remember { mutableStateOf<String?>(null) }
+            MobiMonTheme {
+                CustomizationScreen(
+                    inventory =
+                        CosmeticInventory(
+                            setOf("friend:mobi", "friend:luna"),
+                            mapOf(CosmeticSlot.FRIEND to "friend:mobi"),
+                        ),
+                    catalog = catalog,
+                    selectedItemId = selectedId,
+                    purchasing = false,
+                    purchaseFailed = false,
+                    onSelectItem = { selectedId = it },
+                    onPurchaseItem = { id, price ->
+                        org.junit.Assert.assertEquals("accessory:luna_sunglasses", id)
+                        org.junit.Assert.assertEquals(300L, price)
+                        purchases++
+                    },
+                    onEquipItem = {},
+                    onEquipFriend = { friendSwitches++ },
+                    pointBalance = 300,
+                    pointLoadFailed = false,
+                )
+            }
+        }
+
+        compose.onNodeWithTag("store-tab-ACCESSORY").performClick()
+        compose.onNodeWithText("루나").performClick()
+        compose.onNodeWithText("루나 선글라스").performClick()
+        compose.onNodeWithText("300 P로 구매하기").assertIsEnabled().performClick()
+        compose.onNodeWithText("구매하기").performClick()
+        org.junit.Assert.assertEquals(1, purchases)
+        org.junit.Assert.assertEquals(0, friendSwitches)
     }
 
     @Test fun observationFailureOffersRetryWithCommittedInventoryVisible() {
@@ -330,7 +375,7 @@ class CustomizationScreenTest {
             .assertIsDisplayed()
             .performClick()
         org.junit.Assert.assertEquals(1, retries)
-        compose.onNodeWithTag("preview-character").assertIsDisplayed().assertContentDescriptionEquals("Mobi 강아지")
+        compose.onNodeWithTag("preview-character").assertIsDisplayed().assertContentDescriptionEquals("Mobi 토끼")
     }
 
     @Test fun enlargedTextKeepsRecoveryReachableByScrolling() {
@@ -407,9 +452,9 @@ class CustomizationScreenTest {
             }
         }
 
-        compose.onNodeWithText("옷과 소품").performClick()
+        compose.onNodeWithTag("store-tab-ACCESSORY").performClick()
         compose.onNodeWithTag("shop-items").assertIsDisplayed().performScrollToIndex(0)
-        compose.onNodeWithText("기본 (미착용)").assertIsDisplayed().performClick()
+        compose.onNodeWithText("장식 없음").assertIsDisplayed().performClick()
         compose.onNodeWithText("이 모습 적용").assertIsDisplayed().performClick()
         org.junit.Assert.assertEquals("none:accessory", unequippedSlot)
     }
@@ -445,10 +490,11 @@ class CustomizationScreenTest {
             }
         }
 
-        compose.onNodeWithText("배경").performClick()
+        compose.onNodeWithTag("store-tab-BACKGROUND").performClick()
+        compose.onNodeWithText("특수효과").performClick()
         compose.onNodeWithTag("shop-items").assertIsDisplayed().performScrollToIndex(0)
         compose.onNodeWithText("반짝이는 별").assertIsDisplayed().performClick()
-        compose.onNodeWithText("미리보기").assertIsDisplayed()
+        compose.onNodeWithText("200 P로 구매하기").assertIsDisplayed()
         compose.onNodeWithTag("store-preview-particles").assertIsDisplayed()
     }
 
@@ -484,7 +530,7 @@ class CustomizationScreenTest {
         }
 
         compose.onNodeWithText("친구").performClick()
-        compose.onAllNodesWithText("동행 중").assertCountEquals(3)
+        compose.onAllNodesWithText("동행 중").assertCountEquals(1)
         compose.onNodeWithText("사용 중").assertDoesNotExist()
     }
 
@@ -523,8 +569,8 @@ class CustomizationScreenTest {
             }
         }
 
-        compose.onNodeWithText("옷과 소품").performClick()
-        compose.onAllNodesWithText("착용 중").assertCountEquals(3)
+        compose.onNodeWithTag("store-tab-ACCESSORY").performClick()
+        compose.onAllNodesWithText("착용 중").assertCountEquals(1)
         compose.onNodeWithText("사용 중").assertDoesNotExist()
     }
 
@@ -563,7 +609,8 @@ class CustomizationScreenTest {
             }
         }
 
-        compose.onNodeWithText("배경").performClick()
-        compose.onAllNodesWithText("사용 중").assertCountEquals(3)
+        compose.onNodeWithTag("store-tab-BACKGROUND").performClick()
+        compose.onNodeWithText("특수효과").performClick()
+        compose.onAllNodesWithText("사용 중").assertCountEquals(1)
     }
 }

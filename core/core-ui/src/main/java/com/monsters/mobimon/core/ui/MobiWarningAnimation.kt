@@ -236,16 +236,13 @@ fun MobiIdleBreathAnimation(
             Box(Modifier.matchParentSize().graphicsLayer { alpha = 1f - blend.opacity.value }) {
                 if (showIdle) {
                     Box(Modifier.matchParentSize().graphicsLayer { alpha = 1f - hungryBlend.opacity.value }) {
-                        if (animateNormal) {
-                            NormalMobiIdleAnimation(
-                                modifier = Modifier.matchParentSize(),
-                                contentDescription = null,
-                                accessoryId = accessoryId,
-                                fallbackAsset = fallbackAsset,
-                            )
-                        } else {
-                            CharacterAssetImage(fallbackAsset, Modifier.matchParentSize(), null)
-                        }
+                        NormalMobiIdleAnimation(
+                            modifier = Modifier.matchParentSize(),
+                            contentDescription = null,
+                            accessoryId = accessoryId,
+                            fallbackAsset = fallbackAsset,
+                            animateFrames = animateNormal,
+                        )
                     }
                 }
                 if (showHungry) {
