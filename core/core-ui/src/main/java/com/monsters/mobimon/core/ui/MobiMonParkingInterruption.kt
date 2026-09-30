@@ -93,15 +93,6 @@ fun MobiMonParkingInterruption(
         )
         val wide = maxWidth >= 1200.dp && LocalDensity.current.fontScale <= 1.1f
         val scale = minOf(maxWidth.value / 2560f, maxHeight.value / 1184f)
-        MobiMonParkingStatusBadge(
-            confirmed = false,
-            modifier =
-                Modifier.align(Alignment.TopEnd).padding(
-                    end = if (wide) 72.dp * scale else 24.dp,
-                    top = if (wide) 36.dp * scale else 16.dp,
-                ),
-            scale = if (wide) scale else 0.7f,
-        )
         if (wide) {
             Box(
                 Modifier
