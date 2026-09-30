@@ -68,6 +68,7 @@ fun ConversationScreen(
     appearanceKey: String = "GOLDEN",
     accessoryId: String? = null,
     outfitId: String? = null,
+    backgroundId: String? = null,
     vehicleWarning: Boolean = false,
     vehicleHungry: Boolean = false,
     onRetry: () -> Unit = onOpenConnection,
@@ -162,6 +163,7 @@ fun ConversationScreen(
                         appearanceKey,
                         accessoryId,
                         outfitId,
+                        backgroundId,
                         vehicleWarning,
                         vehicleHungry,
                         shortened,
@@ -363,14 +365,18 @@ private fun CompanionConversationPanel(
     appearanceKey: String,
     accessoryId: String?,
     outfitId: String?,
+    backgroundId: String?,
     vehicleWarning: Boolean,
     vehicleHungry: Boolean,
     shortened: Boolean,
     scale: Float,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier.background(Colors.panel, ConversationPanelShape(36.923f / 680f)).testTag("chat-companion")) {
-        val avatarSize = (if (shortened) 440.dp else 624.dp) * scale
+    BoxWithConstraints(
+        modifier.background(Colors.panel, ConversationPanelShape(36.923f / 680f)).testTag("chat-companion"),
+    ) {
+        val avatarSize =
+            if (shortened) minOf(440.dp * scale, (maxHeight - 280.dp * scale).coerceAtLeast(0.dp)) else 624.dp * scale
         Text(
             stringResource(R.string.chat_companion_title, friend),
             Modifier.fillMaxWidth().padding(top = (if (shortened) 40.dp else 61.dp) * scale),
@@ -380,8 +386,8 @@ private fun CompanionConversationPanel(
         )
         Box(
             Modifier
-                .align(Alignment.TopStart)
-                .offset(x = (if (shortened) 120.dp else 28.dp) * scale, y = (if (shortened) 108.dp else 140.dp) * scale)
+                .align(Alignment.TopCenter)
+                .offset(y = (if (shortened) 108.dp else 140.dp) * scale)
                 .size(avatarSize)
                 .testTag("chat-avatar"),
         ) {
@@ -397,6 +403,7 @@ private fun CompanionConversationPanel(
                 friendId,
                 accessoryId,
                 outfitId,
+                backgroundId = backgroundId,
                 vehicleWarning = vehicleWarning,
                 vehicleHungry = vehicleHungry,
             )

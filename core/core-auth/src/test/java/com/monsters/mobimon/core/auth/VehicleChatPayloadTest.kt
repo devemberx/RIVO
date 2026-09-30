@@ -28,8 +28,11 @@ class VehicleChatPayloadTest {
         val payload = JSONObject(instruction.substringAfter("Optional context data (JSON): "))
         assertTrue(instruction.contains("Use only the declared read-only local tools."))
         assertTrue(
-            instruction.contains("For time and battery questions, answer using only the current context values."),
+            instruction.contains(
+                "For current time and current battery level questions, answer using only the current context values.",
+            ),
         )
+        assertFalse(instruction.contains("For time and battery questions"))
         assertTrue(instruction.contains("You have no authority to control vehicles"))
         assertEquals(42, payload.getJSONObject("battery").getInt("percent"))
         assertEquals("NORMAL", payload.getString("pet_condition"))

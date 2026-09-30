@@ -24,6 +24,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onFirst
@@ -36,7 +37,9 @@ import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.pressKey
+import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.Density
@@ -91,7 +94,7 @@ class ConversationScreenTest {
     fun copilotDisclosureStaysVisibleDuringVoicePermissionAndSignOut() {
         state = state.copy(voice = VoiceInputState(available = true))
         show()
-        val disclosure = "대화와 확인된 이름·시간·차량 상태 신호는 GitHub Copilot에 전달돼요. 디버거 사용 중에는 테스트 값이 전달돼요. 답변은 부정확할 수 있어요."
+        val disclosure = "대화는 GitHub Copilot으로 전송돼요. AI 답변은 부정확할 수 있어요."
         compose.onNodeWithText(disclosure).assertIsDisplayed()
         capture("composer-placeholder")
 
@@ -727,10 +730,7 @@ class ConversationScreenTest {
         }
         capture("keyboard-input")
         compose.onNodeWithText("오늘은 조금 피곤한 하루였어.").assertIsDisplayed()
-        compose
-            .onNodeWithText(
-                "대화와 확인된 이름·시간·차량 상태 신호는 GitHub Copilot에 전달돼요. 디버거 사용 중에는 테스트 값이 전달돼요. 답변은 부정확할 수 있어요.",
-            ).assertIsDisplayed()
+        compose.onNodeWithText("대화는 GitHub Copilot으로 전송돼요. AI 답변은 부정확할 수 있어요.").assertIsDisplayed()
         val resized = compose.onNodeWithTag("chat-panel").fetchSemanticsNode().boundsInRoot
         val composer = compose.onNodeWithTag("chat-composer").fetchSemanticsNode().boundsInRoot
         assertEquals(panel.left, resized.left, 1f)
@@ -997,10 +997,7 @@ class ConversationScreenTest {
         compose.onNodeWithTag("chat-send").assertIsNotEnabled()
         compose.onNodeWithTag("chat-new-action").assertDoesNotExist()
         compose.onNodeWithText("듣고 있어요", substring = true).assertDoesNotExist()
-        compose
-            .onNodeWithText(
-                "대화와 확인된 이름·시간·차량 상태 신호는 GitHub Copilot에 전달돼요. 디버거 사용 중에는 테스트 값이 전달돼요. 답변은 부정확할 수 있어요.",
-            ).assertIsDisplayed()
+        compose.onNodeWithText("대화는 GitHub Copilot으로 전송돼요. AI 답변은 부정확할 수 있어요.").assertIsDisplayed()
         compose.onNodeWithContentDescription("녹음 마치고 내용 확인").performClick()
         compose.runOnIdle {
             assertEquals(1, voiceStops)
@@ -1012,10 +1009,7 @@ class ConversationScreenTest {
         compose.runOnIdle { state = state.copy(voice = state.voice.copy(problem = VoiceInputProblem.NO_MATCH)) }
         capture("voice-review")
         compose.onNodeWithTag("chat-voice-hint").assertDoesNotExist()
-        compose
-            .onNodeWithText(
-                "대화와 확인된 이름·시간·차량 상태 신호는 GitHub Copilot에 전달돼요. 디버거 사용 중에는 테스트 값이 전달돼요. 답변은 부정확할 수 있어요.",
-            ).assertIsDisplayed()
+        compose.onNodeWithText("대화는 GitHub Copilot으로 전송돼요. AI 답변은 부정확할 수 있어요.").assertIsDisplayed()
         compose.onNodeWithTag("chat-input").assertIsDisplayed()
         compose.onNodeWithContentDescription("음성으로 입력").assertIsDisplayed()
         val composer = compose.onNodeWithTag("chat-composer").fetchSemanticsNode().boundsInRoot
@@ -1113,15 +1107,147 @@ class ConversationScreenTest {
         compose.onNodeWithTag("chat-parking-dialog").assertIsDisplayed()
     }
 
+    @Test
+    fun completedReplyReplacesPendingItemAndScrollsToItsEnd() {
+        state = state.copy(messages = messages, replyPending = true)
+        show()
+        val longReply = (1..40).joinToString("\n") { "배터리 관리 설명 $it" }
+        compose.runOnIdle {
+            state =
+                state.copy(
+                    messages = messages + ConversationMessage("long-reply", longReply, false),
+                    replyPending = false,
+                )
+        }
+        compose.waitForIdle()
+        val viewport = compose.onNodeWithTag("chat-messages").fetchSemanticsNode().boundsInRoot
+        val reply = compose.onNodeWithText(longReply).fetchSemanticsNode().boundsInRoot
+        assertTrue("Reply bottom ${reply.bottom} is below viewport ${viewport.bottom}", reply.bottom <= viewport.bottom)
+    }
+
+    @Test
+    fun aNewReplyDoesNotInterruptReadingOlderMessages() {
+        state =
+            state.copy(
+                messages = (1..12).map { ConversationMessage("message-$it", "대화 내용 $it", it % 2 == 0) },
+                replyPending = true,
+            )
+        show()
+        compose.onNodeWithTag("chat-messages").performTouchInput { swipeDown() }
+        compose.onNodeWithTag("chat-latest-reply").assertIsDisplayed()
+        compose.runOnIdle {
+            state =
+                state.copy(
+                    messages = state.messages + ConversationMessage("new-reply", "새로운 답변", false),
+                    replyPending = false,
+                )
+        }
+        compose.onNodeWithTag("chat-latest-reply").assertIsDisplayed()
+        compose.onNodeWithText("새로운 답변").assertDoesNotExist()
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun editingFailedMessageMovesItDownBeforeRestoringDraft() {
+        state =
+            state.copy(
+                messages = listOf(ConversationMessage("failed", "다시 고칠 질문", true)),
+                failed = true,
+                problem = ConversationProblem.PROVIDER,
+            )
+        show(motionEnabled = true)
+        val bubble = compose.onNodeWithTag("chat-user-bubble")
+        val initialTop = bubble.fetchSemanticsNode().boundsInRoot.top
+        compose.mainClock.autoAdvance = false
+        try {
+            compose.onNodeWithText("내용 수정").performClick()
+            compose.mainClock.advanceTimeBy(160)
+            val movingTop = bubble.fetchSemanticsNode().boundsInRoot.top
+            assertTrue("Failed message did not move downward", movingTop > initialTop)
+            assertTrue(
+                "Failed message travelled toward the composer instead of fading nearby",
+                movingTop - initialTop <= 32f,
+            )
+            compose.runOnIdle { assertEquals("", draft.text) }
+            compose.mainClock.advanceTimeBy(200)
+            compose.runOnIdle { assertEquals("다시 고칠 질문", draft.text) }
+        } finally {
+            compose.mainClock.autoAdvance = true
+        }
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun compactImeHeightKeepsCompanionAvatarAboveItsCaption() {
+        state = state.copy(messages = messages)
+        height = 850.dp
+        show()
+        val avatar = compose.onNodeWithTag("chat-avatar").fetchSemanticsNode().boundsInRoot
+        val caption = compose.onNodeWithText("오늘도 함께 쉬어 가요.").fetchSemanticsNode().boundsInRoot
+        assertTrue("Avatar bottom ${avatar.bottom} overlaps caption top ${caption.top}", avatar.bottom <= caption.top)
+        capture("keyboard-companion-compact")
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun latestReplyActionShowsTypingDotsUntilReplyCompletesThenArrow() {
+        state =
+            state.copy(
+                messages = (1..12).map { ConversationMessage("message-$it", "대화 내용 $it", it % 2 == 0) },
+                replyPending = true,
+            )
+        show()
+        compose.onNodeWithTag("chat-messages").performTouchInput { swipeDown() }
+        compose.onNodeWithTag("chat-latest-reply").assertContentDescriptionEquals("답변 중인 메시지로 이동")
+        compose.onNodeWithTag("chat-latest-reply").assertHeightIsAtLeast(70.dp).assertWidthIsAtLeast(70.dp)
+        val typing =
+            compose
+                .onNodeWithTag(
+                    "chat-latest-typing",
+                    useUnmergedTree = true,
+                ).fetchSemanticsNode()
+                .boundsInRoot
+        assertTrue("Typing dots did not scale with the button", typing.width in 43f..45f)
+        compose.onNodeWithTag("chat-latest-arrow", useUnmergedTree = true).assertDoesNotExist()
+        capture("latest-pending")
+        compose.runOnIdle {
+            state =
+                state.copy(
+                    messages = state.messages + ConversationMessage("new-reply", "새로운 답변", false),
+                    replyPending = false,
+                )
+        }
+        compose.onNodeWithTag("chat-latest-reply").assertContentDescriptionEquals("최신 답변으로 이동")
+        val arrow = compose.onNodeWithTag("chat-latest-arrow", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        assertTrue("Arrow did not scale with the button", arrow.width in 32f..34f)
+        assertTrue(arrow.height in 32f..34f)
+        compose.onNodeWithTag("chat-latest-typing", useUnmergedTree = true).assertDoesNotExist()
+        capture("latest-complete")
+    }
+
+    @Test
+    fun scrollingIntoHistoryRevealsLatestReplyAction() {
+        state =
+            state.copy(
+                messages = (1..12).map { ConversationMessage("message-$it", "대화 내용 $it", it % 2 == 0) },
+            )
+        show()
+        compose.onNodeWithTag("chat-messages").performTouchInput { swipeDown() }
+        compose.onNodeWithTag("chat-latest-reply").assertIsDisplayed().performClick()
+        compose.onNodeWithText("대화 내용 12").assertIsDisplayed()
+        compose.onNodeWithTag("chat-latest-reply").assertDoesNotExist()
+    }
+
     private fun show(
         fontScale: Float = 1f,
         density: Float = 1f,
+        motionEnabled: Boolean = false,
     ) {
         compose.setContent {
             val current = LocalView.current
             SideEffect { view = current }
             CompositionLocalProvider(
-                LocalMobiMonMotionEnabled provides false,
+                LocalMobiMonMotionEnabled provides motionEnabled,
                 LocalDensity provides Density(density, fontScale),
             ) {
                 MobiMonTheme {

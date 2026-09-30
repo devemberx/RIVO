@@ -1,0 +1,324 @@
+[
+  {
+    "id": "e01",
+    "kind": "normal",
+    "question": "고전압 차단 스위치를 직접 만져도 돼?",
+    "query": "고전압 차단 스위치를 직접 만져도 돼?",
+    "expectedChunkIds": [
+      "ne1-0016"
+    ],
+    "history": []
+  },
+  {
+    "id": "e02",
+    "kind": "normal",
+    "question": "급속 충전을 계속 반복해도 괜찮아?",
+    "query": "급속 충전을 계속 반복해도 괜찮아?",
+    "expectedChunkIds": [
+      "ne1-0019"
+    ],
+    "history": []
+  },
+  {
+    "id": "e03",
+    "kind": "normal",
+    "question": "충전 목표량을 완속과 급속 따로 정할 수 있어?",
+    "query": "충전 목표량을 완속과 급속 따로 정할 수 있어?",
+    "expectedChunkIds": [
+      "ne1-0031"
+    ],
+    "history": []
+  },
+  {
+    "id": "e04",
+    "kind": "normal",
+    "question": "예약 충전을 설정해 두었는데 지금 바로 충전하려면?",
+    "query": "예약 충전을 설정해 두었는데 지금 바로 충전하려면?",
+    "expectedChunkIds": [
+      "ne1-0023"
+    ],
+    "history": []
+  },
+  {
+    "id": "e05",
+    "kind": "normal",
+    "question": "열선 시트 사용할 때 화상에 특히 주의해야 하는 사람은?",
+    "query": "열선 시트 사용할 때 화상에 특히 주의해야 하는 사람은?",
+    "expectedChunkIds": [
+      "ne1-0121"
+    ],
+    "history": []
+  },
+  {
+    "id": "e06",
+    "kind": "normal",
+    "question": "스마트 키 배터리는 어떻게 교체해?",
+    "query": "스마트 키 배터리는 어떻게 교체해?",
+    "expectedChunkIds": [
+      "ne1-0177"
+    ],
+    "history": []
+  },
+  {
+    "id": "e07",
+    "kind": "normal",
+    "question": "전자식 차일드 락은 뒷좌석에서 문 여는 걸 막아줘?",
+    "query": "전자식 차일드 락은 뒷좌석에서 문 여는 걸 막아줘?",
+    "expectedChunkIds": [
+      "ne1-0195"
+    ],
+    "history": []
+  },
+  {
+    "id": "e08",
+    "kind": "normal",
+    "question": "후석 승객 알림 기능은 어떤 조건에서 알려줘?",
+    "query": "후석 승객 알림 기능은 어떤 조건에서 알려줘?",
+    "expectedChunkIds": [
+      "ne1-0196"
+    ],
+    "history": []
+  },
+  {
+    "id": "e09",
+    "kind": "normal",
+    "question": "파워 테일게이트가 멈추는 높이를 바꾸려면?",
+    "query": "파워 테일게이트가 멈추는 높이를 바꾸려면?",
+    "expectedChunkIds": [
+      "ne1-0234"
+    ],
+    "history": []
+  },
+  {
+    "id": "e10",
+    "kind": "normal",
+    "question": "전동 트렁크가 제대로 작동하지 않으면 초기화는 어떻게 해?",
+    "query": "전동 트렁크가 제대로 작동하지 않으면 초기화는 어떻게 해?",
+    "expectedChunkIds": [
+      "ne1-0235"
+    ],
+    "history": []
+  },
+  {
+    "id": "e11",
+    "kind": "normal",
+    "question": "프론트 트렁크는 어떻게 열어?",
+    "query": "프론트 트렁크는 어떻게 열어?",
+    "expectedChunkIds": [
+      "ne1-0230"
+    ],
+    "history": []
+  },
+  {
+    "id": "e12",
+    "kind": "normal",
+    "question": "앞유리 와이퍼 AUTO 모드는 어떻게 작동해?",
+    "query": "앞유리 와이퍼 AUTO 모드는 어떻게 작동해?",
+    "expectedChunkIds": [
+      "ne1-0289"
+    ],
+    "history": []
+  },
+  {
+    "id": "e13",
+    "kind": "normal",
+    "question": "오토홀드 켜고 끄는 방법 알려줘.",
+    "query": "오토홀드 켜고 끄는 방법 알려줘.",
+    "expectedChunkIds": [
+      "ne1-0363"
+    ],
+    "history": []
+  },
+  {
+    "id": "e14",
+    "kind": "normal",
+    "question": "브레이크액 보충할 때 어떤 규격을 써야 해?",
+    "query": "브레이크액 보충할 때 어떤 규격을 써야 해?",
+    "expectedChunkIds": [
+      "ne1-0065"
+    ],
+    "history": []
+  },
+  {
+    "id": "e15",
+    "kind": "normal",
+    "question": "타이어 공기압은 주행 시작하고 언제부터 볼 수 있어?",
+    "query": "타이어 공기압은 주행 시작하고 언제부터 볼 수 있어?",
+    "expectedChunkIds": [
+      "ne1-0494"
+    ],
+    "history": []
+  },
+  {
+    "id": "e16",
+    "kind": "normal",
+    "question": "냉각수 탱크를 열기 전 주의할 점이 있어?",
+    "query": "냉각수 탱크를 열기 전 주의할 점이 있어?",
+    "expectedChunkIds": [
+      "ne1-0511"
+    ],
+    "history": []
+  },
+  {
+    "id": "e17",
+    "kind": "normal",
+    "question": "이륜구동 아이오닉 5를 견인할 때 주의할 점은?",
+    "query": "이륜구동 아이오닉 5를 견인할 때 주의할 점은?",
+    "expectedChunkIds": [
+      "ne1-0498"
+    ],
+    "history": []
+  },
+  {
+    "id": "e18",
+    "kind": "normal",
+    "question": "회생 제동이 작동하지 않는 경우는?",
+    "query": "회생 제동이 작동하지 않는 경우는?",
+    "expectedChunkIds": [
+      "ne1-0350"
+    ],
+    "history": []
+  },
+  {
+    "id": "e19",
+    "kind": "paraphrase",
+    "question": "완속충전 꽂았는데 케이블이 안 뽑혀. 잠금은 어떻게 풀어?",
+    "query": "완속충전 꽂았는데 케이블이 안 뽑혀. 잠금은 어떻게 풀어?",
+    "expectedChunkIds": [
+      "ne1-0019"
+    ],
+    "history": []
+  },
+  {
+    "id": "e20",
+    "kind": "paraphrase",
+    "question": "아이 페달로 한 발 운전하려면 뭘 해야 돼?",
+    "query": "아이 페달로 한 발 운전하려면 뭘 해야 돼?",
+    "expectedChunkIds": [
+      "ne1-0352"
+    ],
+    "history": []
+  },
+  {
+    "id": "e21",
+    "kind": "paraphrase",
+    "question": "앞 유리에 김이 자꾸 서리는데 자동으로 없애는 기능 있어?",
+    "query": "앞 유리에 김이 자꾸 서리는데 자동으로 없애는 기능 있어?",
+    "expectedChunkIds": [
+      "ne1-0299"
+    ],
+    "history": []
+  },
+  {
+    "id": "e22",
+    "kind": "paraphrase",
+    "question": "차키 건전지 갈 때 주의할 거 있어?",
+    "query": "차키 건전지 갈 때 주의할 거 있어?",
+    "expectedChunkIds": [
+      "ne1-0177"
+    ],
+    "history": []
+  },
+  {
+    "id": "e23",
+    "kind": "paraphrase",
+    "question": "타이어 바람 경고가 뜨면 그냥 달려도 되나?",
+    "query": "타이어 바람 경고가 뜨면 그냥 달려도 되나?",
+    "expectedChunkIds": [
+      "ne1-0494"
+    ],
+    "history": []
+  },
+  {
+    "id": "e24",
+    "kind": "paraphrase",
+    "question": "배터리 오래 쓰려면 어떤 점을 조심해야 해?",
+    "query": "배터리 오래 쓰려면 어떤 점을 조심해야 해?",
+    "expectedChunkIds": [
+      "ne1-0014"
+    ],
+    "history": []
+  },
+  {
+    "id": "e25",
+    "kind": "followup",
+    "question": "그때 커넥터 잠금은 언제 풀려?",
+    "query": "급속 충전 중 커넥터 잠금 해제 시점",
+    "expectedChunkIds": [
+      "ne1-0021"
+    ],
+    "history": [
+      "급속 충전기를 쓰고 있어.",
+      "어떤 부분이 궁금해?"
+    ]
+  },
+  {
+    "id": "e26",
+    "kind": "followup",
+    "question": "그거 열리는 높이를 저장할 수 있어?",
+    "query": "파워 테일게이트 열림 높이 설정 저장",
+    "expectedChunkIds": [
+      "ne1-0234"
+    ],
+    "history": [
+      "파워 테일게이트 사용법이 궁금해.",
+      "어떤 부분이 궁금해?"
+    ]
+  },
+  {
+    "id": "e27",
+    "kind": "followup",
+    "question": "그게 켜져 있으면 뒤에서 창문도 못 열어?",
+    "query": "전자식 차일드 락 뒷좌석 유리창 조작 제한",
+    "expectedChunkIds": [
+      "ne1-0195"
+    ],
+    "history": [
+      "전자식 차일드 락을 알아보고 있어.",
+      "어떤 부분이 궁금해?"
+    ]
+  },
+  {
+    "id": "e28",
+    "kind": "out_of_scope",
+    "question": "2024년 미국형 아이오닉 5의 충전 커넥터 규격은?",
+    "query": "2024년 미국형 아이오닉 5의 충전 커넥터 규격은?",
+    "expectedChunkIds": [],
+    "history": []
+  },
+  {
+    "id": "e29",
+    "kind": "out_of_scope",
+    "question": "아이오닉 5 N 드리프트 모드 설정법 알려줘.",
+    "query": "아이오닉 5 N 드리프트 모드 설정법 알려줘.",
+    "expectedChunkIds": [],
+    "history": []
+  },
+  {
+    "id": "e30",
+    "kind": "out_of_scope",
+    "question": "내일 서울 날씨 알려줘.",
+    "query": "내일 서울 날씨 알려줘.",
+    "expectedChunkIds": [],
+    "history": []
+  },
+  {
+    "id": "e31",
+    "kind": "conversation",
+    "question": "오늘 하루 이야기 할래",
+    "query": "오늘 하루 이야기 할래",
+    "expectedChunkIds": [],
+    "history": []
+  },
+  {
+    "id": "e32",
+    "kind": "conversation",
+    "question": "오늘 하루 이야기 할래",
+    "query": "오늘 하루 이야기 할래",
+    "expectedChunkIds": [],
+    "history": [
+      "안녕",
+      "안녕! 오늘은 어떻게 지냈어?"
+    ]
+  }
+]

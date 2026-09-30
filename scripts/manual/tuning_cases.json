@@ -1,0 +1,26 @@
+[
+  {
+    "question": "완속 충전기 사용 방법",
+    "expectedChunkId": "ne1-0020"
+  },
+  {
+    "question": "급속 충전기 사용 방법",
+    "expectedChunkId": "ne1-0021"
+  },
+  {
+    "question": "V2L 사용 중 전원이 꺼졌어",
+    "expectedChunkId": "ne1-0038"
+  },
+  {
+    "question": "휴대용 충전기 안전 주의사항",
+    "expectedChunkId": "ne1-0022"
+  },
+  {
+    "question": "충전이 시작되지 않을 때",
+    "expectedChunkId": "ne1-0025"
+  },
+  {
+    "question": "전기차 배터리 종류",
+    "expectedChunkId": "ne1-0012"
+  }
+]

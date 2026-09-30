@@ -100,12 +100,20 @@ replay. A 401 invalidates only its credential revision. Release logging is off;
 provider bodies, dialogue and tokens never enter logs/errors.
 
 [Tool contracts](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/ConversationTools.kt)
-are pure Kotlin and build-variant bound; app registries are currently empty.
+are pure Kotlin and build-variant bound. Debug enables the bundled manual tool;
+Release registers none.
 An enabled tool turn permits at most two model requests, one allowlisted execution
 and 30 seconds, with bounded arguments, identity/Park checks and final-response
 acceptance. AI never grants rewards or changes vehicle state. The
 [Debug probe](../core/core-auth/src/debug/java/com/monsters/mobimon/core/auth/CopilotToolProbe.kt)
 uses synthetic data and does not establish live compatibility.
+
+The curated, pinned 2027 Korean IONIQ 5 bundle fails closed on missing assets;
+retrieval never supplies live vehicle state. Manual answers require current-turn
+evidence checked by the [reply policy](../app/src/debug/java/com/monsters/mobimon/manual/ManualReplyPolicy.kt),
+which renders citations; ordinary chat needs no retrieval. Only uncited
+`CONVERSATION` replies without tool evidence may omit the empty `sourceIds` field.
+Source checks do not prove correct routing or factual truth.
 
 Each send may add bounded AAOS user name and independently fresh VSS time, battery
 and condition. Treat these as untrusted data, not instructions or ownership.

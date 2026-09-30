@@ -1,5 +1,6 @@
 package com.monsters.mobimon.feature.auth
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -12,6 +13,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -50,21 +52,28 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -87,6 +96,7 @@ import com.monsters.mobimon.core.domain.ConversationProblem
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonReferenceText
 import com.monsters.mobimon.core.ui.mobiMonReferenceTextStyle
+import kotlinx.coroutines.launch
 import kotlin.math.PI
 import kotlin.math.cos
 import com.monsters.mobimon.core.ui.MobiMonColors as Colors
@@ -114,6 +124,38 @@ internal fun ConversationPanel(
     onDismissVoiceProblem: () -> Unit = {},
 ) {
     val showFailure = state.failed
+    val motionEnabled = LocalMobiMonMotionEnabled.current
+    val currentDismissFailure by rememberUpdatedState(onDismissFailure)
+    val returnProgress = remember { Animatable(0f) }
+    var returningMessageId by remember { mutableStateOf<String?>(null) }
+    val failedMessageId =
+        state.messages
+            .lastOrNull()
+            ?.takeIf { state.failed && it.fromUser }
+            ?.id
+    LaunchedEffect(returningMessageId, failedMessageId) {
+        val id = returningMessageId ?: return@LaunchedEffect
+        if (id != failedMessageId) {
+            returningMessageId = null
+            returnProgress.snapTo(0f)
+            return@LaunchedEffect
+        }
+        returnProgress.snapTo(0f)
+        if (motionEnabled) {
+            returnProgress.animateTo(1f, tween(280, easing = FastOutSlowInEasing))
+        } else {
+            returnProgress.snapTo(1f)
+        }
+        currentDismissFailure()
+        returningMessageId = null
+    }
+    val editFailure: () -> Unit = {
+        if (failedMessageId != null && state.problem != ConversationProblem.STORAGE) {
+            if (returningMessageId == null) returningMessageId = failedMessageId
+        } else {
+            currentDismissFailure()
+        }
+    }
     val focusRequester = remember { FocusRequester() }
     val seenMessageIds = remember { mutableStateListOf<String>().apply { addAll(state.messages.map { it.id }) } }
     val keyboard = LocalSoftwareKeyboardController.current
@@ -149,8 +191,10 @@ internal fun ConversationPanel(
             modifier,
             onNewConversation,
             onRetry,
-            onDismissFailure,
+            editFailure,
             seenMessageIds,
+            returningMessageId,
+            { returnProgress.value },
             onStartVoice,
             onStopVoice,
             onCancelVoice,
@@ -216,14 +260,23 @@ internal fun ConversationPanel(
             if (state.messages.isEmpty() && !state.replyPending) {
                 ConversationEmpty(scale, shortened, Modifier.fillMaxSize())
             } else {
-                ConversationMessages(state, friend, scale, shortened, seenMessageIds, Modifier.fillMaxSize())
+                ConversationMessages(
+                    state,
+                    friend,
+                    scale,
+                    shortened,
+                    seenMessageIds,
+                    Modifier.fillMaxSize(),
+                    returningMessageId = returningMessageId,
+                    returnProgress = { returnProgress.value },
+                )
             }
         }
         if (showFailure) {
             CompactConversationInlineFailure(
                 state.problem,
                 onRetry,
-                onDismissFailure,
+                editFailure,
                 allowed,
                 scale,
             )
@@ -391,6 +444,8 @@ private fun ReferenceConversationPanel(
     onRetry: () -> Unit,
     onDismissFailure: () -> Unit,
     seenMessageIds: MutableList<String>,
+    returningMessageId: String?,
+    returnProgress: () -> Float,
     onStartVoice: () -> Unit,
     onStopVoice: () -> Unit,
     onCancelVoice: () -> Unit,
@@ -497,6 +552,8 @@ private fun ReferenceConversationPanel(
                     seenMessageIds,
                     Modifier.weight(1f).fillMaxWidth(),
                     reference = true,
+                    returningMessageId = returningMessageId,
+                    returnProgress = returnProgress,
                 )
             }
             if (showFailure) {
@@ -828,98 +885,199 @@ private fun ConversationMessages(
     seenMessageIds: MutableList<String>,
     modifier: Modifier = Modifier,
     reference: Boolean = false,
+    returningMessageId: String? = null,
+    returnProgress: () -> Float = { 0f },
 ) {
     val scroll = rememberLazyListState()
+    val scope = rememberCoroutineScope()
     val motionEnabled = LocalMobiMonMotionEnabled.current
     val count = state.messages.size + if (state.replyPending) 1 else 0
-    LaunchedEffect(count, shortened) {
-        // BoxWithConstraints can launch this during measurement; scrolling forces a remeasure.
-        withFrameNanos { }
-        if (count > 0) {
-            scroll.scrollToItem(0)
-            withFrameNanos { }
-            val visible = scroll.layoutInfo.visibleItemsInfo
-            val last = visible.lastOrNull()
-            val allFit =
-                visible.firstOrNull()?.index == 0 &&
-                    last != null &&
-                    last.index == count - 1 &&
-                    last.offset + last.size <= scroll.layoutInfo.viewportEndOffset
-            if (!allFit) scroll.scrollToItem(count - 1)
-        }
-    }
-    LazyColumn(
-        modifier.testTag("chat-messages"),
-        state = scroll,
-        contentPadding =
-            PaddingValues(
-                top =
-                    (
-                        if (reference) {
-                            0.dp
-                        } else if (shortened) {
-                            4.dp
-                        } else {
-                            16.dp
-                        }
-                    ) * scale,
-                bottom =
-                    (if (reference) 8.dp else 24.dp) * scale,
-            ),
-        verticalArrangement = Arrangement.spacedBy((if (reference) 0.dp else 54.dp) * scale),
-    ) {
-        itemsIndexed(state.messages, key = { _, message -> message.id }) { index, message ->
-            val animateEntry = motionEnabled && message.id !in seenMessageIds
-            var entered by remember(message.id) { mutableStateOf(!animateEntry) }
-            LaunchedEffect(message.id) {
-                if (message.id !in seenMessageIds) seenMessageIds.add(message.id)
-                entered = true
-            }
-            val progress by animateFloatAsState(
-                targetValue = if (entered || !motionEnabled) 1f else 0f,
-                animationSpec = tween(280, easing = FastOutSlowInEasing),
-                label = "message arrival",
-            )
-            val entryProgress = progress
-            Column(
-                Modifier.graphicsLayer {
-                    alpha = entryProgress
-                    translationY = (1f - entryProgress) * 24.dp.toPx() * scale
-                    scaleX = 0.97f + entryProgress * 0.03f
-                    scaleY = 0.97f + entryProgress * 0.03f
-                },
-            ) {
-                MessageBubble(
-                    message.text,
-                    message.fromUser,
-                    friend,
-                    scale,
-                    shortened = shortened,
-                    reference = reference,
-                )
-                if (reference && (index < state.messages.lastIndex || state.replyPending)) {
-                    val gap =
-                        when {
-                            index == 0 && message.fromUser -> 73.dp
-                            index == 1 && !message.fromUser -> 17.dp
-                            message.fromUser -> 32.dp
-                            else -> 27.dp
-                        }
-                    Spacer(Modifier.height(gap * scale))
+    val latestActionScale = 70f / 76f
+    val lastKey = if (state.replyPending) "reply-pending" else state.messages.lastOrNull()?.id
+    var followLatest by remember { mutableStateOf(true) }
+    val userScroll =
+        remember {
+            object : NestedScrollConnection {
+                override fun onPreScroll(
+                    available: Offset,
+                    source: NestedScrollSource,
+                ): Offset {
+                    if (available.y != 0f) followLatest = false
+                    return Offset.Zero
                 }
             }
         }
-        if (state.replyPending) {
-            item(key = "reply-pending") {
-                MessageBubble(
-                    stringResource(R.string.chat_preparing, friend),
-                    false,
-                    friend,
-                    scale,
-                    pending = true,
-                    reference = reference,
-                )
+    LaunchedEffect(scroll) {
+        snapshotFlow { scroll.isScrollInProgress to scroll.canScrollForward }.collect { (scrolling, canScrollForward) ->
+            if (!scrolling && !canScrollForward) followLatest = true
+        }
+    }
+    LaunchedEffect(lastKey, count, shortened) {
+        // BoxWithConstraints can launch this during measurement; scrolling forces a remeasure.
+        withFrameNanos { }
+        if (count > 0 && (followLatest || state.messages.lastOrNull()?.fromUser == true)) {
+            scroll.scrollToBottom(count)
+            followLatest = true
+        }
+    }
+    Box(modifier) {
+        LazyColumn(
+            Modifier.fillMaxSize().nestedScroll(userScroll).testTag("chat-messages"),
+            state = scroll,
+            contentPadding =
+                PaddingValues(
+                    top =
+                        (
+                            if (reference) {
+                                0.dp
+                            } else if (shortened) {
+                                4.dp
+                            } else {
+                                16.dp
+                            }
+                        ) * scale,
+                    bottom =
+                        (if (reference) 8.dp else 24.dp) * scale,
+                ),
+            verticalArrangement = Arrangement.spacedBy((if (reference) 0.dp else 54.dp) * scale),
+        ) {
+            itemsIndexed(state.messages, key = { _, message -> message.id }) { index, message ->
+                val animateEntry = motionEnabled && message.id !in seenMessageIds
+                var entered by remember(message.id) { mutableStateOf(!animateEntry) }
+                LaunchedEffect(message.id) {
+                    if (message.id !in seenMessageIds) seenMessageIds.add(message.id)
+                    entered = true
+                }
+                val progress =
+                    animateFloatAsState(
+                        targetValue = if (entered || !motionEnabled) 1f else 0f,
+                        animationSpec = tween(280, easing = FastOutSlowInEasing),
+                        label = "message arrival",
+                    )
+                Column(
+                    Modifier.graphicsLayer {
+                        val returning = if (message.id == returningMessageId) returnProgress() else 0f
+                        val visibleProgress = progress.value * (1f - returning)
+                        alpha = visibleProgress
+                        translationY = (1f - visibleProgress) * 24.dp.toPx() * scale
+                        scaleX = 0.97f + visibleProgress * 0.03f
+                        scaleY = 0.97f + visibleProgress * 0.03f
+                    },
+                ) {
+                    MessageBubble(
+                        message.text,
+                        message.fromUser,
+                        friend,
+                        scale,
+                        shortened = shortened,
+                        reference = reference,
+                    )
+                    if (reference && (index < state.messages.lastIndex || state.replyPending)) {
+                        val gap =
+                            when {
+                                index == 0 && message.fromUser -> 73.dp
+                                index == 1 && !message.fromUser -> 17.dp
+                                message.fromUser -> 32.dp
+                                else -> 27.dp
+                            }
+                        Spacer(Modifier.height(gap * scale))
+                    }
+                }
             }
+            if (state.replyPending) {
+                item(key = "reply-pending") {
+                    MessageBubble(
+                        stringResource(R.string.chat_preparing, friend),
+                        false,
+                        friend,
+                        scale,
+                        pending = true,
+                        reference = reference,
+                    )
+                }
+            }
+        }
+        if (scroll.canScrollForward) {
+            val label =
+                stringResource(if (state.replyPending) R.string.chat_pending_reply else R.string.chat_latest_reply)
+            Box(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 16.dp * scale)
+                    .size(70.dp)
+                    .clip(CircleShape)
+                    .background(Colors.raised)
+                    .border(1.dp, Colors.border, CircleShape)
+                    .clickable(role = Role.Button) {
+                        scope.launch {
+                            scroll.scrollToBottom(count)
+                            followLatest = true
+                        }
+                    }.semantics { contentDescription = label }
+                    .testTag("chat-latest-reply"),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (state.replyPending) {
+                    ReplyTypingDots(
+                        latestActionScale,
+                        compact = true,
+                        modifier = Modifier.testTag("chat-latest-typing"),
+                    )
+                } else {
+                    Icon(
+                        painterResource(R.drawable.chat_arrow_down),
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp * latestActionScale).testTag("chat-latest-arrow"),
+                        tint = Colors.text,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private suspend fun androidx.compose.foundation.lazy.LazyListState.scrollToBottom(count: Int) {
+    if (count == 0) return
+    scrollToItem(count - 1)
+    withFrameNanos { }
+    layoutInfo.visibleItemsInfo.lastOrNull { it.index == count - 1 }?.let { scrollBy(it.size.toFloat()) }
+}
+
+@Composable
+private fun ReplyTypingDots(
+    scale: Float,
+    modifier: Modifier = Modifier,
+    reference: Boolean = false,
+    compact: Boolean = false,
+) {
+    val motionEnabled = LocalMobiMonMotionEnabled.current
+    val dotPhase =
+        if (motionEnabled) {
+            rememberInfiniteTransition(label = "reply typing").animateFloat(
+                initialValue = 0f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(tween(1200, easing = LinearEasing), RepeatMode.Restart),
+                label = "typing dot phase",
+            )
+        } else {
+            null
+        }
+    val dotSize = if (compact) 12.dp * scale else (if (reference) 12.dp else 16.dp) * scale
+    val spacing = if (compact) 6.dp * scale else (if (reference) 8.dp else 32.dp) * scale
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(spacing)) {
+        repeat(3) { index ->
+            Box(
+                Modifier
+                    .size(dotSize)
+                    .graphicsLayer {
+                        val progress = dotPhase?.value
+                        if (progress != null) {
+                            val pulse = (1f - cos((progress - index * 0.2f) * (2f * PI).toFloat())) / 2f
+                            alpha = 0.4f + 0.6f * pulse
+                            translationY = -(if (compact) 4.dp * scale else 5.dp * scale).toPx() * pulse
+                        }
+                    }.background(Colors.accent, CircleShape),
+            )
         }
     }
 }
@@ -935,18 +1093,6 @@ private fun MessageBubble(
     reference: Boolean = false,
 ) {
     val referencePending = reference && pending
-    val motionEnabled = LocalMobiMonMotionEnabled.current
-    val dotPhase =
-        if (pending && motionEnabled) {
-            rememberInfiniteTransition(label = "reply typing").animateFloat(
-                initialValue = 0f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(tween(1200, easing = LinearEasing), RepeatMode.Restart),
-                label = "typing dot phase",
-            )
-        } else {
-            null
-        }
     val labelGap =
         when {
             referencePending -> 10.dp
@@ -1054,36 +1200,27 @@ private fun MessageBubble(
                 },
         ) {
             if (pending) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy((if (reference) 8.dp else 32.dp) * scale),
+                ReplyTypingDots(
+                    scale,
+                    reference = reference,
                     modifier =
                         Modifier.padding(
                             top = (if (reference) 6.dp else 26.dp) * scale,
                             bottom = (if (reference) 4.dp else 44.dp) * scale,
                         ),
-                ) {
-                    repeat(3) { index ->
-                        Box(
-                            Modifier
-                                .size(
-                                    (if (reference) 12.dp else 16.dp) * scale,
-                                ).graphicsLayer {
-                                    val progress = dotPhase?.value
-                                    if (progress != null) {
-                                        val pulse =
-                                            (1f - cos((progress - index * 0.2f) * (2f * PI).toFloat())) / 2f
-                                        alpha = 0.4f + 0.6f * pulse
-                                        translationY = -5.dp.toPx() * scale * pulse
-                                    }
-                                }.background(Colors.accent, CircleShape),
-                        )
-                    }
-                }
+                )
             }
             if (!pending || !reference) {
                 SelectionContainer {
                     Text(
-                        text,
+                        if (fromUser ||
+                            pending
+                        ) {
+                            androidx.compose.ui.text
+                                .AnnotatedString(text)
+                        } else {
+                            remember(text) { parseConversationMarkdown(text) }
+                        },
                         style =
                             mobiMonReferenceTextStyle(
                                 if (reference) {
