@@ -295,6 +295,8 @@ private fun QuestContent(
             scale = scale,
             isDetail = detailId != null,
             isCompleted = selectedQuest?.status == QuestItemStatus.COMPLETED,
+            vehicleWarning = state.vehicleWarning,
+            vehicleHungry = state.vehicleHungry,
             isCompact = isCompact,
             modifier = panelModifier,
         )

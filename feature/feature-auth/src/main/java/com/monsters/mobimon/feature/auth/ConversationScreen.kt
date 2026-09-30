@@ -68,6 +68,8 @@ fun ConversationScreen(
     appearanceKey: String = "GOLDEN",
     accessoryId: String? = null,
     outfitId: String? = null,
+    vehicleWarning: Boolean = false,
+    vehicleHungry: Boolean = false,
     onRetry: () -> Unit = onOpenConnection,
     onDismissFailure: () -> Unit = {},
     onNewConversation: (() -> Unit)? = null,
@@ -160,6 +162,8 @@ fun ConversationScreen(
                         appearanceKey,
                         accessoryId,
                         outfitId,
+                        vehicleWarning,
+                        vehicleHungry,
                         shortened,
                         scale,
                         Modifier
@@ -359,6 +363,8 @@ private fun CompanionConversationPanel(
     appearanceKey: String,
     accessoryId: String?,
     outfitId: String?,
+    vehicleWarning: Boolean,
+    vehicleHungry: Boolean,
     shortened: Boolean,
     scale: Float,
     modifier: Modifier = Modifier,
@@ -391,6 +397,8 @@ private fun CompanionConversationPanel(
                 friendId,
                 accessoryId,
                 outfitId,
+                vehicleWarning = vehicleWarning,
+                vehicleHungry = vehicleHungry,
             )
         }
         Text(

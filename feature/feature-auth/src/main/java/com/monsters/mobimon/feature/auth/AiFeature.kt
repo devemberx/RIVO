@@ -47,9 +47,11 @@ import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.CompanionRoute
 import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.navigation.FeatureNavigator
+import com.monsters.mobimon.core.presentation.VehicleCondition
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.core.presentation.parkedVerified
 import com.monsters.mobimon.core.presentation.parkingBadgeConfirmed
+import com.monsters.mobimon.core.presentation.vehicleCondition
 import com.monsters.mobimon.core.ui.MobiMonButton
 import com.monsters.mobimon.core.ui.MobiMonDimensions
 import com.monsters.mobimon.core.ui.MobiMonMessage
@@ -75,6 +77,7 @@ class AiFeature(
         modifier: Modifier,
     ) {
         val snapshot = vehicle.snapshot()
+        val vehicleCondition = snapshot.vehicleCondition()
         val authenticationFactory =
             remember(this) {
                 viewModelFactory { initializer { GitHubAuthenticationViewModel(authentication) } }
@@ -254,6 +257,8 @@ class AiFeature(
                     appearanceKey = profile?.appearance?.name ?: "GOLDEN",
                     accessoryId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.ACCESSORY),
                     outfitId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.OUTFIT),
+                    vehicleWarning = vehicleCondition == VehicleCondition.WARNING,
+                    vehicleHungry = vehicleCondition == VehicleCondition.LOW_BATTERY,
                     onRetry = {
                         when (conversationState.problem) {
                             ConversationProblem.ACCOUNT -> navigator.navigate(AiRoute.COPILOT)
@@ -303,6 +308,8 @@ class AiFeature(
                 accessoryId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.ACCESSORY),
                 outfitId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.OUTFIT),
                 backgroundId = companion.inventory?.equippedItemIds?.get(CosmeticSlot.BACKGROUND),
+                vehicleWarning = vehicleCondition == VehicleCondition.WARNING,
+                vehicleHungry = vehicleCondition == VehicleCondition.LOW_BATTERY,
             )
         }
     }

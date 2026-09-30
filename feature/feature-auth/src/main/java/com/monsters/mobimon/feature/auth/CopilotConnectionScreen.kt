@@ -76,6 +76,8 @@ fun CopilotConnectionScreen(
     accessoryId: String? = null,
     outfitId: String? = null,
     backgroundId: String? = null,
+    vehicleWarning: Boolean = false,
+    vehicleHungry: Boolean = false,
     qrCode: Painter? = null,
     parkingBadgeConfirmed: Boolean = interactionAllowed,
 ) {
@@ -120,6 +122,8 @@ fun CopilotConnectionScreen(
                                 accessoryId,
                                 outfitId,
                                 backgroundId,
+                                vehicleWarning,
+                                vehicleHungry,
                                 scale,
                                 Modifier.width(884.dp * scale).fillMaxSize(),
                             )
@@ -161,6 +165,8 @@ fun CopilotConnectionScreen(
                             accessoryId = accessoryId,
                             outfitId = outfitId,
                             backgroundId = backgroundId,
+                            vehicleWarning = vehicleWarning,
+                            vehicleHungry = vehicleHungry,
                         )
                         Text(
                             stringResource(R.string.copilot_friend_heading, friend),
@@ -308,6 +314,8 @@ private fun CompanionPanel(
     accessoryId: String?,
     outfitId: String?,
     backgroundId: String?,
+    vehicleWarning: Boolean,
+    vehicleHungry: Boolean,
     scale: Float,
     modifier: Modifier = Modifier,
 ) {
@@ -354,6 +362,8 @@ private fun CompanionPanel(
             accessoryId = accessoryId,
             outfitId = outfitId,
             backgroundId = backgroundId,
+            vehicleWarning = vehicleWarning,
+            vehicleHungry = vehicleHungry,
         )
         Box(
             Modifier
