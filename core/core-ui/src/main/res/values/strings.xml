@@ -11,4 +11,5 @@
   <string name="mobimon_parking_confirmed">주차 확인됨</string>
   <string name="mobimon_parking_unconfirmed">주차 확인 불가</string>
   <string name="mobimon_parking_restricted">주차 후 이용</string>
+    <string name="mobimon_departure_surprise">앗 출발해?</string>
 </resources>

@@ -166,7 +166,8 @@ data updates.
 
 ## Vehicle launcher
 
-Outside-app companion needs explicit opt-in and overlay permission. Intended
-placement is vehicle Home; hide it while MobiMon is foreground. Target-OEM placement
-and lifecycle remain unverified under the
+Outside-app companion needs explicit opt-in and overlay permission. Non-P or
+unverified parking stops wandering and triggers Mobi's departure animation;
+verified P restores the companion. Intended placement is vehicle Home; hide it
+while MobiMon is foreground. Target-OEM placement and lifecycle remain unverified under the
 [platform contract](ARCHITECTURE.md#shared-vehicle-condition-and-overlay).
