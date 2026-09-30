@@ -74,6 +74,7 @@ class RoomCompanionRepository(
             economy.insertItem(CosmeticItemEntity("accessory:mobi_goggles", "ACCESSORY", 300, "friend:mobi"))
             economy.insertItem(CosmeticItemEntity("accessory:luna_cap", "ACCESSORY", 300, "friend:luna"))
             economy.insertItem(CosmeticItemEntity("accessory:luna_sunglasses", "ACCESSORY", 300, "friend:luna"))
+            economy.insertItem(CosmeticItemEntity("background:starlight_yarn_basket", "BACKGROUND", 200, null))
             economy.insertItem(CosmeticItemEntity("background:star_hanger", "BACKGROUND", 200, null))
             economy.insertItem(CosmeticItemEntity("background:star", "BACKGROUND", 200, null))
             economy.insertItem(CosmeticItemEntity("background:snow", "BACKGROUND", 200, null))
