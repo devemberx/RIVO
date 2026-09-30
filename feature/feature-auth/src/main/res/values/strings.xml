@@ -129,6 +129,8 @@
     <string name="chat_user">나</string>
     <string name="chat_disclaimer">대화는 GitHub Copilot으로 전송돼요. AI 답변은 부정확할 수 있어요.</string>
     <string name="chat_new">새 대화</string>
+    <string name="chat_latest_reply">최신 답변으로 이동</string>
+    <string name="chat_pending_reply">답변 중인 메시지로 이동</string>
     <string name="chat_input_limit">메시지를 4,000자 이하로 줄여 주세요.</string>
     <string name="chat_service_error">Copilot 서비스가 응답하지 못했어요.</string>
     <string name="chat_network_error">네트워크 연결을 확인해 주세요.</string>
