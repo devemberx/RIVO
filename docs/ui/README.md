@@ -1,8 +1,10 @@
 # UI reference exports
 
-These SVGs link to their source frames in Figma. Vehicle screens and the three
-notification states below use [revised v6](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=855-1393);
-the remaining references use [v5](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-2).
+These SVGs link to their source frames in Figma. Store screens use
+[revised v8](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=935-2543).
+Vehicle screens and the three notification states below use
+[revised v6](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=855-1393);
+the other references use [v5](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=524-2).
 See [DESIGN.md](../DESIGN.md) for behavior and [ARCHITECTURE.md](../ARCHITECTURE.md)
 for implementation status.
 
@@ -55,7 +57,27 @@ The connected screen includes a
 | [network-error.svg](conversation/network-error.svg) | [Network error dialog](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=676-700) |
 | [network-checking.svg](conversation/network-checking.svg) | [Copilot connection recheck dialog](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=676-1018) |
 
-### Customization
+### Store (v8)
+
+| Reference | Visible state |
+| --- | --- |
+| [friends-catalog.svg](store/friends-catalog.svg) | [Three friends in the catalog](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=935-2544) |
+| [clothes-catalog.svg](store/clothes-catalog.svg) | [Clothing catalog](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=935-2746) |
+| [clothes-owned-filter.svg](store/clothes-owned-filter.svg) | [Clothing with the owned-only filter selected](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=935-2860) |
+| [backgrounds-catalog.svg](store/backgrounds-catalog.svg) | [Background catalog with Lake Park before Golden City](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=935-2962) |
+| [background-golden-city.svg](store/background-golden-city.svg) | [Golden City selected in the background catalog](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=935-3098) |
+| [effects-catalog.svg](store/effects-catalog.svg) | [Effects catalog](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=935-3234) |
+| [props-catalog.svg](store/props-catalog.svg) | [Props catalog](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=935-3415) |
+| [parking-required.svg](store/parking-required.svg) | [Store parking interruption](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=935-3529) |
+| [insufficient-points.svg](store/insufficient-points.svg) | [Insufficient points](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=935-3722) |
+| [friend-ras.svg](store/friend-ras.svg) | [Ras friend preview](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=935-3836) |
+| [clothes-mobi.svg](store/clothes-mobi.svg) | [Mobi clothing](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=935-3938) |
+| [clothes-ras.svg](store/clothes-ras.svg) | [Ras clothing](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=935-4052) |
+| [purchase-confirmation.svg](store/purchase-confirmation.svg) | [Ras purchase confirmation](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=935-4155) |
+| [purchase-complete.svg](store/purchase-complete.svg) | [Ras purchase complete](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=935-4270) |
+| [ras-active.svg](store/ras-active.svg) | [Ras as the active friend](https://www.figma.com/design/7tyb4oJsJAUc15KnU7H0F6?node-id=935-4372) |
+
+### Earlier customization references (v5)
 
 | Reference | Visible state |
 | --- | --- |
