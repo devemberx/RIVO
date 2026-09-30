@@ -18,7 +18,6 @@ import android.view.View
 import android.view.WindowInsets
 import android.view.WindowManager
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.CompositionLocalProvider
@@ -227,7 +226,7 @@ class FloatingCompanionService : Service() {
                     // Use one full-window coordinate space for insets, dragging and wandering.
                     setFitInsetsTypes(0)
                     x = DEFAULT_OVERLAY_X
-                    y = DEFAULT_OVERLAY_Y
+                    y = DEFAULT_OVERLAY_Y - (36 * windowContext.resources.displayMetrics.density).roundToInt()
                 }
 
         val owner = OverlayLifecycleOwner()
@@ -269,13 +268,13 @@ class FloatingCompanionService : Service() {
                             Box(
                                 modifier =
                                     Modifier
-                                        .size(140.dp)
+                                        .size(width = 258.dp, height = 176.dp)
                                         .padding(8.dp),
-                                contentAlignment = Alignment.Center,
+                                contentAlignment = Alignment.BottomStart,
                             ) {
                                 if (appearanceReady) {
                                     PetAvatar(
-                                        modifier = Modifier.fillMaxSize(),
+                                        modifier = Modifier.size(124.dp),
                                         appearanceKey = "GOLDEN",
                                         friendId = if (isMoving || isDisappearing) activeFriendId else latestFriendId,
                                         accessoryId =
