@@ -310,5 +310,64 @@ class QuestCatalogTest {
         assertEquals(QuestProgressDetail.TireCheck, tireCheck.progressDetail)
     }
 
+    @Test
+    fun snapshotConditionSetsVehicleWarningAndVehicleHungry() {
+        val hungrySnapshot =
+            VehicleSnapshot(
+                id = "snap-1",
+                epoch = "epoch-1",
+                sequence = 1,
+                receivedAtMillis = 1000L,
+                source = SignalSource.SIMULATED,
+                drivingState = DrivingState.PARKED,
+                quality = SignalQuality.VALID,
+                batteryPercent = 10,
+            )
+        val hungryState =
+            catalog.present(
+                state = ready(),
+                appearance = CompanionAppearanceState(),
+                pointBalance = PointBalanceState.Ready(0),
+                parkedVerified = true,
+                snapshot = hungrySnapshot,
+                text = Int::toString,
+            )
+        assertFalse(hungryState.vehicleWarning)
+        assertTrue(hungryState.vehicleHungry)
+
+        val warningSnapshot =
+            VehicleSnapshot(
+                id = "snap-2",
+                epoch = "epoch-2",
+                sequence = 2,
+                receivedAtMillis = 2000L,
+                source = SignalSource.SIMULATED,
+                drivingState = DrivingState.PARKED,
+                quality = SignalQuality.VALID,
+                warnings =
+                    listOf(
+                        com.monsters.mobimon.core.domain.VehicleWarning(
+                            "tire",
+                            "front-left",
+                            com.monsters.mobimon.core.domain.WarningSeverity.CAUTION,
+                            "check",
+                            "check",
+                            1000L,
+                        ),
+                    ),
+            )
+        val warningState =
+            catalog.present(
+                state = ready(),
+                appearance = CompanionAppearanceState(),
+                pointBalance = PointBalanceState.Ready(0),
+                parkedVerified = true,
+                snapshot = warningSnapshot,
+                text = Int::toString,
+            )
+        assertTrue(warningState.vehicleWarning)
+        assertFalse(warningState.vehicleHungry)
+    }
+
     private fun ready() = QuestUiState(isLoading = false)
 }
