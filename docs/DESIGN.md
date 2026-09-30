@@ -96,6 +96,13 @@ shows it immediately. Quest detail preserves list scroll on Back and keeps
 
 ## Customization
 
+[Store](../feature/feature-customization/src/main/java/com/monsters/mobimon/feature/customization/CustomizationScreen.kt)
+uses a preview with its action on the left and a three-column catalog on
+the right. Clothes can preview each friend; Space groups the existing background
+slot into backgrounds, effects and props. The owned filter limits the catalog.
+Purchase confirmation shows price and remaining points before committing; pending
+writes retain selection. Enlarged text uses scrolling panels.
+
 Friends, accessories and backgrounds are independent; equipment persists per
 friend. Preview stays local until Apply. Purchase grants ownership, not equipment;
 owned items Apply without another charge. Show compatibility, price, balance and

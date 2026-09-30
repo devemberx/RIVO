@@ -179,4 +179,20 @@ class CustomizationCatalogTest {
         assertEquals("accessory:mobi_goggles", presentation.preview.accessoryId)
         assertFalse(presentation.selectedOwned)
     }
+
+    @Test fun inactiveFriendClothesPreviewRetainsThatFriendsEquipment() {
+        val cap = CosmeticItem("accessory:luna_cap", CosmeticSlot.ACCESSORY, 300, "friend:luna")
+        val inventory =
+            CosmeticInventory(
+                setOf("friend:mobi", "friend:luna", cap.id),
+                mapOf(CosmeticSlot.FRIEND to "friend:mobi"),
+                mapOf("friend:luna" to mapOf(CosmeticSlot.ACCESSORY to cap.id)),
+            )
+        val presentation =
+            customizationCatalog(inventory, listOf(cap), CosmeticSlot.ACCESSORY, null, clothesFriendId = "friend:luna")
+        assertEquals(cap.id, presentation.selected?.id)
+        assertEquals(cap.id, presentation.preview.accessoryId)
+        assertTrue(presentation.selectedEquipped)
+        assertFalse(inventory.isEquippedForFriend(NONE_ACCESSORY_ITEM, "friend:luna"))
+    }
 }

@@ -117,7 +117,7 @@ class StoreReferenceScreenTest {
         compose.onNodeWithTag("preview-character").assertExists()
         compose.onNodeWithText("아이템을 골라 주세요").assertIsNotEnabled()
         compose.mainClock.advanceTimeBy(240)
-        compose.onAllNodesWithTag("store-item-placeholder").assertCountEquals(2)
+        compose.onAllNodesWithTag("store-item-placeholder").assertCountEquals(3)
         capture(view, "shared-appearance-loading")
         compose.runOnIdle { storeInventoryReady = true }
         compose.mainClock.autoAdvance = true
@@ -245,7 +245,7 @@ class StoreReferenceScreenTest {
         compose.mainClock.advanceTimeBy(96)
         compose.onAllNodesWithTag("store-item-placeholder").assertCountEquals(0)
         compose.mainClock.advanceTimeBy(128)
-        compose.onAllNodesWithTag("store-item-placeholder").assertCountEquals(2)
+        compose.onAllNodesWithTag("store-item-placeholder").assertCountEquals(3)
         capture(view, "inventory-loading")
         compose.mainClock.autoAdvance = true
 
@@ -349,8 +349,8 @@ class StoreReferenceScreenTest {
             val reference = compose.onNodeWithTag("store-reference").getUnclippedBoundsInRoot()
             val action = compose.onNodeWithText("모비와 함께하기").getUnclippedBoundsInRoot()
             assertEquals(2560f, (reference.right - reference.left).value, 1f)
-            assertEquals(bottom - 24f, action.bottom.value, 1f)
-            assertEquals(112f, (action.bottom - action.top).value, 1f)
+            assertEquals(bottom - 88f, action.bottom.value, 1f)
+            assertEquals(104f, (action.bottom - action.top).value, 1f)
         }
         check(1184f)
         compose.runOnIdle { height.value = 1144.dp }
@@ -358,7 +358,7 @@ class StoreReferenceScreenTest {
         compose.onNodeWithTag("store-tab-ACCESSORY").performClick()
         val catalogBounds = compose.onNodeWithTag("shop-items").getUnclippedBoundsInRoot()
         val hint = compose.onNodeWithText("아이템을 선택하면 친구에게 먼저 입혀 볼 수 있어요.").getUnclippedBoundsInRoot()
-        assertTrue("Catalog stays above the hint after height changes", catalogBounds.bottom <= hint.top)
+        assertTrue("Catalog stays below its description after height changes", catalogBounds.top >= hint.bottom)
         compose.runOnIdle { height.value = 540.dp }
         compose.onNodeWithTag("store-reference").assertDoesNotExist()
     }

@@ -77,7 +77,7 @@ class CustomizationScreenTest {
         compose.runOnIdle { storeInventoryReady = true }
         compose.mainClock.autoAdvance = true
         compose.onAllNodesWithTag("store-item-placeholder").assertCountEquals(0)
-        compose.onNodeWithText("이 모습 적용").assertIsEnabled()
+        compose.onNodeWithText("루나와 함께하기").assertIsEnabled()
     }
 
     @Test fun compactStoreKeepsItsCatalogWhileItemsLoad() {
@@ -218,7 +218,7 @@ class CustomizationScreenTest {
         }
 
         compose
-            .onNodeWithText("300 P 구매")
+            .onNodeWithText("300 P로 구매하기")
             .assertIsDisplayed()
             .assertIsNotEnabled()
             .performClick()
@@ -261,7 +261,7 @@ class CustomizationScreenTest {
             }
         }
 
-        compose.onNodeWithText("옷과 소품").performClick()
+        compose.onNodeWithTag("store-tab-ACCESSORY").performClick()
         compose.onNodeWithText("모비 헤드폰").assertExists()
         compose.onNodeWithText("루나 모자").assertDoesNotExist()
         compose.runOnIdle {
@@ -407,7 +407,7 @@ class CustomizationScreenTest {
             }
         }
 
-        compose.onNodeWithText("옷과 소품").performClick()
+        compose.onNodeWithTag("store-tab-ACCESSORY").performClick()
         compose.onNodeWithTag("shop-items").assertIsDisplayed().performScrollToIndex(0)
         compose.onNodeWithText("기본 (미착용)").assertIsDisplayed().performClick()
         compose.onNodeWithText("이 모습 적용").assertIsDisplayed().performClick()
@@ -445,10 +445,11 @@ class CustomizationScreenTest {
             }
         }
 
-        compose.onNodeWithText("배경").performClick()
+        compose.onNodeWithTag("store-tab-BACKGROUND").performClick()
+        compose.onNodeWithText("특수효과").performClick()
         compose.onNodeWithTag("shop-items").assertIsDisplayed().performScrollToIndex(0)
         compose.onNodeWithText("반짝이는 별").assertIsDisplayed().performClick()
-        compose.onNodeWithText("미리보기").assertIsDisplayed()
+        compose.onNodeWithText("200 P로 구매하기").assertIsDisplayed()
         compose.onNodeWithTag("store-preview-particles").assertIsDisplayed()
     }
 
@@ -484,7 +485,7 @@ class CustomizationScreenTest {
         }
 
         compose.onNodeWithText("친구").performClick()
-        compose.onAllNodesWithText("동행 중").assertCountEquals(3)
+        compose.onAllNodesWithText("동행 중").assertCountEquals(1)
         compose.onNodeWithText("사용 중").assertDoesNotExist()
     }
 
@@ -523,8 +524,8 @@ class CustomizationScreenTest {
             }
         }
 
-        compose.onNodeWithText("옷과 소품").performClick()
-        compose.onAllNodesWithText("착용 중").assertCountEquals(3)
+        compose.onNodeWithTag("store-tab-ACCESSORY").performClick()
+        compose.onAllNodesWithText("착용 중").assertCountEquals(1)
         compose.onNodeWithText("사용 중").assertDoesNotExist()
     }
 
@@ -563,7 +564,8 @@ class CustomizationScreenTest {
             }
         }
 
-        compose.onNodeWithText("배경").performClick()
-        compose.onAllNodesWithText("사용 중").assertCountEquals(3)
+        compose.onNodeWithTag("store-tab-BACKGROUND").performClick()
+        compose.onNodeWithText("특수효과").performClick()
+        compose.onAllNodesWithText("사용 중").assertCountEquals(1)
     }
 }
