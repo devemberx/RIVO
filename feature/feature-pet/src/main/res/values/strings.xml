@@ -36,8 +36,6 @@
   <string name="pet_settings_ai_connect_description">내 GitHub 계정으로 대화를 시작하는 방법을 알아봐요.</string>
   <string name="pet_connection_description">GitHub Copilot 계정 연결 안내를 열어요.</string>
   <string name="pet_settings_ai_unavailable">연결 환경이 확인되지 않아 대화를 사용할 수 없어요.</string>
-  <string name="pet_settings_voice_title">음성 답변</string>
-  <string name="pet_settings_voice_unavailable">음성 대화는 현재 지원하지 않아요.</string>
   <string name="pet_settings_debug_title">Debugger</string>
   <string name="pet_settings_debug_description">시뮬레이션 신호와 포인트 도구를 표시해요.</string>
   <string name="pet_settings_unavailable_label">사용 불가</string>

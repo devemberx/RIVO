@@ -162,13 +162,6 @@ fun SettingsScreen(
                         )
                     }
                     SettingsItem(
-                        R.string.pet_settings_voice_title,
-                        R.string.pet_settings_voice_unavailable,
-                        R.string.pet_settings_preparing,
-                        reference,
-                        scale,
-                    )
-                    SettingsItem(
                         R.string.pet_setting_motion,
                         R.string.pet_setting_motion_description,
                         if (settings.reducedMotion) R.string.pet_settings_on else R.string.pet_settings_off,
