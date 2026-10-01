@@ -178,6 +178,11 @@ fun MobiMonApp(
     val currentSession = session
     val activeFriendId = appearance.inventory?.equippedItemIds?.get(CosmeticSlot.FRIEND)
     val debugResetScope = rememberCoroutineScope()
+    val resetDebugMode: () -> Unit = {
+        debugResetScope.launch {
+            settings.setDebugModeEnabled(false)
+        }
+    }
     MobiMonContent(
         entries = entries,
         notificationItems = alerts,
@@ -208,11 +213,8 @@ fun MobiMonApp(
                 else -> false
             }
         },
-        onReleaseDebuggerUnlocked = {
-            debugResetScope.launch {
-                settings.setDebugModeEnabled(false)
-            }
-        },
+        onReleaseDebuggerUnlocked = resetDebugMode,
+        onReleaseDebuggerLocked = resetDebugMode,
     )
 }
 
@@ -254,6 +256,7 @@ fun MobiMonContent(
     debugOverlay: @Composable () -> Unit = { DebugOverlay() },
     debugSettingsAvailableByDefault: Boolean = BuildConfig.DEBUG,
     onReleaseDebuggerUnlocked: () -> Unit = {},
+    onReleaseDebuggerLocked: () -> Unit = {},
 ) {
     val registry = remember(entries) { FeatureRegistry(entries) }
     var savedShell by rememberSaveable(stateSaver = ShellSaver) { mutableStateOf(ShellState()) }
@@ -264,17 +267,17 @@ fun MobiMonContent(
     var contentCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     var debuggerUnlockTapCount by rememberSaveable { mutableIntStateOf(0) }
     var debuggerUnlockTapVersion by remember { mutableIntStateOf(0) }
+    var releaseDebuggerUnlocked by rememberSaveable { mutableStateOf(false) }
     var debuggerUnlockNotice by remember { mutableStateOf<String?>(null) }
     var debuggerUnlockNoticeVersion by remember { mutableIntStateOf(0) }
-    val debuggerSettingsAvailable = debugSettingsAvailableByDefault || debuggerUnlockTapCount >= DEBUGGER_UNLOCK_TAPS
+    val debuggerSettingsAvailable = debugSettingsAvailableByDefault || releaseDebuggerUnlocked
     val context = LocalContext.current
     val stateHolder = rememberSaveableStateHolder()
     LaunchedEffect(
         debugSettingsAvailableByDefault,
-        debuggerSettingsAvailable,
         debuggerUnlockTapVersion,
     ) {
-        if (!debugSettingsAvailableByDefault && !debuggerSettingsAvailable && debuggerUnlockTapCount > 0) {
+        if (!debugSettingsAvailableByDefault && debuggerUnlockTapCount > 0) {
             delay(DEBUGGER_UNLOCK_RESET_MILLIS)
             debuggerUnlockTapCount = 0
         }
@@ -451,18 +454,31 @@ fun MobiMonContent(
                         onVersionClick = {
                             if (
                                 appUseState == AppUseState.ALLOWED &&
-                                !debugSettingsAvailableByDefault &&
-                                debuggerUnlockTapCount < DEBUGGER_UNLOCK_TAPS
+                                !debugSettingsAvailableByDefault
                             ) {
                                 debuggerUnlockTapCount += 1
                                 debuggerUnlockTapVersion += 1
                                 val remaining = DEBUGGER_UNLOCK_TAPS - debuggerUnlockTapCount
                                 debuggerUnlockNotice =
                                     if (remaining == 0) {
-                                        onReleaseDebuggerUnlocked()
-                                        context.getString(R.string.debugger_unlocked)
+                                        debuggerUnlockTapCount = 0
+                                        releaseDebuggerUnlocked = !releaseDebuggerUnlocked
+                                        if (releaseDebuggerUnlocked) {
+                                            onReleaseDebuggerUnlocked()
+                                            context.getString(R.string.debugger_unlocked)
+                                        } else {
+                                            onReleaseDebuggerLocked()
+                                            context.getString(R.string.debugger_locked)
+                                        }
                                     } else if (remaining <= DEBUGGER_UNLOCK_NOTICE_THRESHOLD) {
-                                        context.getString(R.string.debugger_unlock_remaining, remaining)
+                                        context.getString(
+                                            if (releaseDebuggerUnlocked) {
+                                                R.string.debugger_lock_remaining
+                                            } else {
+                                                R.string.debugger_unlock_remaining
+                                            },
+                                            remaining,
+                                        )
                                     } else {
                                         null
                                     }
