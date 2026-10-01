@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -33,14 +34,14 @@ internal fun CompanionStatusCrossfade(
     modifier: Modifier = Modifier,
     content: @Composable (CompanionStatus) -> Unit,
 ) {
-    if (!motionEnabled) {
-        Box(modifier) { content(state) }
-        return
-    }
-
     var pair by remember { mutableStateOf(StatusPair(state, state)) }
     val fade = remember { Animatable(1f) }
-    LaunchedEffect(state) {
+    LaunchedEffect(state, motionEnabled) {
+        if (!motionEnabled) {
+            fade.snapTo(1f)
+            pair = StatusPair(state, state)
+            return@LaunchedEffect
+        }
         if (pair.incoming == state) return@LaunchedEffect
 
         val duration: Int
@@ -61,16 +62,29 @@ internal fun CompanionStatusCrossfade(
         pair = StatusPair(state, state)
     }
 
+    val visibleStatuses =
+        when {
+            !motionEnabled -> listOf(state)
+            pair.outgoing == pair.incoming -> listOf(pair.incoming)
+            else -> listOf(pair.outgoing, pair.incoming)
+        }
     Box(modifier) {
-        if (pair.outgoing != pair.incoming) {
-            Box(Modifier.matchParentSize().graphicsLayer { alpha = 1f - fade.value }) {
-                content(pair.outgoing)
+        // Keep each pose's sprite clock at the same keyed call site throughout the fade.
+        for (status in visibleStatuses) {
+            key(status) {
+                Box(
+                    Modifier.matchParentSize().graphicsLayer {
+                        alpha =
+                            when {
+                                !motionEnabled || pair.outgoing == pair.incoming -> 1f
+                                status == pair.incoming -> fade.value
+                                else -> 1f - fade.value
+                            }
+                    },
+                ) {
+                    content(status)
+                }
             }
-            Box(Modifier.matchParentSize().graphicsLayer { alpha = fade.value }) {
-                content(pair.incoming)
-            }
-        } else {
-            content(pair.incoming)
         }
     }
 }
