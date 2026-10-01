@@ -43,13 +43,14 @@ internal fun QuestCompanionPanel(
     backgroundId: String?,
     scale: Float,
     isDetail: Boolean,
+    animateSelection: Boolean,
     isCompleted: Boolean,
     vehicleWarning: Boolean,
     vehicleHungry: Boolean,
     modifier: Modifier = Modifier,
     isCompact: Boolean = false,
 ) {
-    val motionEnabled = LocalMobiMonMotionEnabled.current
+    val motionEnabled = LocalMobiMonMotionEnabled.current && animateSelection
     val transition = updateTransition(isDetail, label = "quest companion movement")
     val width by transition.animateDp(
         transitionSpec = {
