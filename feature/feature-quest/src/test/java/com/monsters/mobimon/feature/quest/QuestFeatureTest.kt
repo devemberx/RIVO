@@ -78,6 +78,13 @@ class QuestFeatureTest {
     }
 
     @Test
+    fun enteringQuestRouteWhileUnparkedShowsInterruptionImmediately() {
+        vehicle.snapshots.value = vehicle.initial.copy(drivingState = DrivingState.MOVING, speed = 20)
+        show()
+        compose.onNodeWithText("주차 후 퀘스트를 이어가요").assertIsDisplayed()
+    }
+
+    @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun productionRouteProducesReviewImage() {
         show()

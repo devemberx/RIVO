@@ -25,10 +25,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -47,15 +44,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
-/** Keeps first-entry loading or already-restricted routes separate from a live parking interruption. */
+/** Returns true whenever the vehicle is not in a verified parked state. */
 @Composable
-fun rememberParkingInterruption(parkedVerified: Boolean): Boolean {
-    var hadVerifiedPark by remember { mutableStateOf(parkedVerified) }
-    LaunchedEffect(parkedVerified) {
-        if (parkedVerified) hadVerifiedPark = true
-    }
-    return hadVerifiedPark && !parkedVerified
-}
+fun rememberParkingInterruption(parkedVerified: Boolean): Boolean = !parkedVerified
 
 /** Blocking parking interruption surface shared by vehicle, customization, and quest routes. */
 @OptIn(ExperimentalComposeUiApi::class)
