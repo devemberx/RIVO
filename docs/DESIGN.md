@@ -171,7 +171,8 @@ Debug controls default off; Release data follows the
 In an allowed Release session, ten version taps with no gap over three seconds reveal
 Debugger settings; ten more hide them and turn Debugger mode off. Show the
 remaining count for the last five taps and confirm each transition.
-Spoken replies and vehicle-home display are unavailable; omit Do Not Disturb.
+Spoken replies and vehicle-home display are unavailable; omit voice reply and
+Do Not Disturb settings.
 Configured builds show GitHub approval QR, code and address help; unconfigured
 builds disable sign-in. Only verified authentication shows the connected state,
 account and equipped friend's chat action. Explain local persistence and separate
