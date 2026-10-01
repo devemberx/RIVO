@@ -76,6 +76,7 @@ fun QuestScreen(
     parkingRequired: Boolean = false,
 ) {
     var selectedQuestId by rememberSaveable { mutableStateOf<String?>(null) }
+    var animateDetailSelection by rememberSaveable { mutableStateOf(false) }
     var selectedTab by rememberSaveable { mutableStateOf(QuestFilterTab.ALL) }
     val listScrollState = rememberScrollState()
     val detailScrollState = rememberScrollState()
@@ -86,6 +87,7 @@ fun QuestScreen(
             if (isHiddenQuest && !state.parkedVerified) {
                 if (onHome != null) onHome() else onBack()
             } else {
+                animateDetailSelection = false
                 selectedQuestId = state.requestedQuestId
             }
             onClearRequestedQuest()
@@ -97,10 +99,16 @@ fun QuestScreen(
         detailScrollState.scrollTo(0)
     }
 
-    val selectedQuest = state.quests.firstOrNull { it.id == selectedQuestId }
+    val displayedQuestId = state.requestedQuestId ?: selectedQuestId
+    val selectedQuest = state.quests.firstOrNull { it.id == displayedQuestId }
+    val selectionMotionEnabled = state.requestedQuestId == null && animateDetailSelection
+    val selectQuest: (String?) -> Unit = { id ->
+        animateDetailSelection = true
+        selectedQuestId = id
+    }
     BackHandler(enabled = !parkingRequired) {
         if (selectedQuest != null) {
-            selectedQuestId = null
+            selectQuest(null)
         } else {
             onBack()
         }
@@ -131,7 +139,7 @@ fun QuestScreen(
                                     scale = scale,
                                     onBack = {
                                         if (selectedQuest != null) {
-                                            selectedQuestId = null
+                                            selectQuest(null)
                                         } else {
                                             onBack()
                                         }
@@ -150,7 +158,8 @@ fun QuestScreen(
                                     scale = scale,
                                     isCompact = false,
                                     onSelectTab = { selectedTab = it },
-                                    onSelectQuest = { selectedQuestId = it },
+                                    onSelectQuest = selectQuest,
+                                    animateSelection = selectionMotionEnabled,
                                     onClaimReward = onClaimReward,
                                     onNavigateRoute = onNavigateRoute,
                                     pointInHeader = pointInHeader,
@@ -178,7 +187,7 @@ fun QuestScreen(
                                 scale = compactScale,
                                 onBack = {
                                     if (selectedQuest != null) {
-                                        selectedQuestId = null
+                                        selectQuest(null)
                                     } else {
                                         onBack()
                                     }
@@ -194,7 +203,8 @@ fun QuestScreen(
                                 scale = compactScale,
                                 isCompact = true,
                                 onSelectTab = { selectedTab = it },
-                                onSelectQuest = { selectedQuestId = it },
+                                onSelectQuest = selectQuest,
+                                animateSelection = selectionMotionEnabled,
                                 onClaimReward = onClaimReward,
                                 onNavigateRoute = onNavigateRoute,
                                 pointInHeader = pointInHeader,
@@ -291,13 +301,14 @@ private fun QuestContent(
     isCompact: Boolean,
     onSelectTab: (QuestFilterTab) -> Unit,
     onSelectQuest: (String?) -> Unit,
+    animateSelection: Boolean,
     onClaimReward: (String) -> Unit,
     onNavigateRoute: (AppRoute) -> Unit,
     pointInHeader: Boolean,
     listScrollState: ScrollState,
     modifier: Modifier = Modifier,
 ) {
-    val motionEnabled = LocalMobiMonMotionEnabled.current
+    val motionEnabled = LocalMobiMonMotionEnabled.current && animateSelection
     val detailId = selectedQuest?.id
     val panelGap by animateDpAsState(
         targetValue = (if (detailId == null) 56 else 48).dp * scale,
@@ -312,6 +323,7 @@ private fun QuestContent(
             backgroundId = state.appearance.backgroundId,
             scale = scale,
             isDetail = detailId != null,
+            animateSelection = animateSelection,
             isCompleted = selectedQuest?.status == QuestItemStatus.COMPLETED,
             vehicleWarning = state.vehicleWarning,
             vehicleHungry = state.vehicleHungry,

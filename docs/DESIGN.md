@@ -45,6 +45,7 @@ Prefix feature icons; share fonts/artwork in `core-ui` and retain licenses.
 | Asset | Location |
 | --- | --- |
 | Character frames/sprites | `core/core-ui/src/main/assets/characters/<friend>/<variant>/<action>/` |
+| Luna accessory source art | `art/characters/luna/variants/<variant>/` (not packaged) |
 | Mobi warning masters | `art/characters/mobi/unhealthy/` (not packaged) |
 | Shared artwork/accessories/backgrounds | `core/core-ui/src/main/res/drawable-nodpi/` |
 | Feature artwork/icons | Owning module's `res/drawable[-nodpi]/` |
@@ -52,8 +53,10 @@ Prefix feature icons; share fonts/artwork in `core-ui` and retain licenses.
 
 Generate from approved masters and change only requested properties. Compare
 identity, proportions, framing, anchors, transparency and dimensions; reject drift.
-Use replaceable `PetAvatar` for rendering. Variants and crossfades keep ground
-anchors fixed; reduced motion uses still frames.
+Use replaceable `PetAvatar` for rendering. Mobi and Luna crossfade only the
+outgoing and incoming normal, hungry or sick poses over 200ms in a fixed
+ground-anchored slot. Reduced motion switches poses immediately while gentle idle
+breathing continues.
 
 #### Luna generation references
 
@@ -82,8 +85,9 @@ keyboard, then dialog/menu, then destination. Menu destinations return Home;
 connection returns to its entry route. Menus close through close, backdrop, Back or
 selection. Notifications show a Home dot and positive Menu count; opening them
 expands the Menu panel. Keep the header fixed while alerts scroll; quest alerts
-remain until receipt. Pending actions block duplicates, and uncertain writes
-reconcile before retry.
+remain until receipt. Driving quest reward alerts open their detail without
+a list transition; hidden quest rewards open the claim modal. Pending actions
+block duplicates, and uncertain writes reconcile before retry.
 
 ## Quests and points
 
