@@ -14,4 +14,6 @@
     <string name="drawer_version">v%1$s</string>
     <string name="debugger_unlock_remaining">debugger 버튼 활성화까지 %1$d회 남았습니다</string>
     <string name="debugger_unlocked">debugger 버튼이 활성화 되었습니다</string>
+    <string name="debugger_lock_remaining">debugger 버튼 비활성화까지 %1$d회 남았습니다</string>
+    <string name="debugger_locked">debugger 버튼이 비활성화 되었습니다</string>
 </resources>

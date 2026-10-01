@@ -326,6 +326,43 @@ class MobiMonContentTest {
     }
 
     @Test
+    fun releaseMenuVersionTapsToggleDebuggerSettingsOffAndBackOn() {
+        var unlockRequests = 0
+        var lockRequests = 0
+        show(
+            debugSettingsAvailableByDefault = false,
+            onReleaseDebuggerUnlocked = { unlockRequests++ },
+            onReleaseDebuggerLocked = { lockRequests++ },
+        )
+        compose.onNodeWithText("Open menu").performClick()
+        repeat(10) { compose.onNodeWithTag("menu-version").performScrollTo().performClick() }
+        clickMenuItem("설정")
+        compose.onNodeWithText("Debugger").assertExists()
+
+        compose.onNodeWithText("Open menu").performClick()
+        repeat(9) { compose.onNodeWithTag("menu-version").performScrollTo().performClick() }
+        compose.onNodeWithText("debugger 버튼 비활성화까지 1회 남았습니다").assertExists()
+        compose.runOnIdle {
+            assertEquals(1, unlockRequests)
+            assertEquals(0, lockRequests)
+        }
+        compose.onNodeWithTag("menu-version").performScrollTo().performClick()
+        compose.onNodeWithText("debugger 버튼이 비활성화 되었습니다").assertExists()
+        clickMenuItem("설정")
+        compose.onNodeWithText("Debugger").assertDoesNotExist()
+        compose.runOnIdle { assertEquals(1, lockRequests) }
+
+        compose.onNodeWithText("Open menu").performClick()
+        repeat(10) { compose.onNodeWithTag("menu-version").performScrollTo().performClick() }
+        clickMenuItem("설정")
+        compose.onNodeWithText("Debugger").assertExists()
+        compose.runOnIdle {
+            assertEquals(2, unlockRequests)
+            assertEquals(1, lockRequests)
+        }
+    }
+
+    @Test
     fun restrictedAppUseDoesNotUnlockDebuggerFromVersionTaps() {
         var resetRequests = 0
         show(
@@ -458,6 +495,7 @@ class MobiMonContentTest {
         debugSettingsAvailableByDefault: Boolean = true,
         reducedMotion: Boolean = false,
         onReleaseDebuggerUnlocked: () -> Unit = {},
+        onReleaseDebuggerLocked: () -> Unit = {},
         notificationItems: List<NotificationItem> = emptyList(),
     ) {
         compose.setContent {
@@ -468,6 +506,7 @@ class MobiMonContentTest {
                 reducedMotion = reducedMotion,
                 debugSettingsAvailableByDefault = debugSettingsAvailableByDefault,
                 onReleaseDebuggerUnlocked = onReleaseDebuggerUnlocked,
+                onReleaseDebuggerLocked = onReleaseDebuggerLocked,
             )
         }
     }
