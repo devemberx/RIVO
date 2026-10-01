@@ -5,6 +5,7 @@ class VehicleChatField(
     val observation: VehicleObservation?,
     val validity: VehicleFieldValidity,
     val deliveryMode: String = validity.validityBasis,
+    val validUntilElapsedMillis: Long? = null,
 ) {
     val value: VehicleValue? get() = observation?.value.takeIf { validity.quality == SignalQuality.VALID }
 

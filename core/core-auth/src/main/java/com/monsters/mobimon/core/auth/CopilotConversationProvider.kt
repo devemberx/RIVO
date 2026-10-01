@@ -79,7 +79,11 @@ internal interface CopilotApi {
         tools: ConversationTools,
         guard: suspend () -> Unit,
     ): String {
-        if (tools.tools.isNotEmpty()) throw ConversationException(ConversationProblem.PROVIDER)
+        if (tools.tools.isNotEmpty() ||
+            tools.groundedReplyPolicy != null
+        ) {
+            throw ConversationException(ConversationProblem.PROVIDER)
+        }
         guard()
         return complete(access, model, friendId, messages).also { guard() }
     }
@@ -112,7 +116,7 @@ internal class CopilotConversationProvider(
         friendId: String,
         messages: List<ConversationTurn>,
     ): ConversationResult<String> =
-        if (tools.tools.isEmpty()) {
+        if (tools.tools.isEmpty() && tools.groundedReplyPolicy == null) {
             replyOnce(accountId, conversationId, friendId, messages)
         } else {
             withTimeoutOrNull(30_000) {
@@ -146,7 +150,7 @@ internal class CopilotConversationProvider(
             }
             coroutineScope {
                 val monitor =
-                    if (tools.tools.isNotEmpty()) {
+                    if (tools.tools.isNotEmpty() || tools.groundedReplyPolicy != null) {
                         launch {
                             while (true) {
                                 delay(100)

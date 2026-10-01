@@ -1,6 +1,7 @@
 package com.monsters.mobimon.core.auth
 
 import android.os.SystemClock
+import com.monsters.mobimon.core.domain.ConversationEvidenceSet
 import com.monsters.mobimon.core.domain.ConversationLimits
 import com.monsters.mobimon.core.domain.ConversationProblem
 import com.monsters.mobimon.core.domain.ConversationResult
@@ -20,6 +21,7 @@ internal class CopilotToolConversation(
     private val guard: suspend () -> Unit,
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val nowMillis: () -> Long = SystemClock::elapsedRealtime,
+    private val turnEvidence: ConversationEvidenceSet = ConversationEvidenceSet(),
 ) {
     suspend fun run(request: JSONObject): String {
         var responses = 0
@@ -32,12 +34,22 @@ internal class CopilotToolConversation(
 
         suspend fun send(): CopilotToolReply {
             guard()
+            if (tools.groundedReplyPolicy?.checkCurrent(turnEvidence) ==
+                false
+            ) {
+                throw ConversationException(ConversationProblem.RESTRICTED)
+            }
             val tokens =
                 withContext(dispatcher) {
                     CopilotTokenBudget.requireFits(model, request)
                     CopilotTokenBudget.promptTokens(model, request)
                 }
             guard()
+            if (tools.groundedReplyPolicy?.checkCurrent(turnEvidence) ==
+                false
+            ) {
+                throw ConversationException(ConversationProblem.RESTRICTED)
+            }
             estimated += tokens
             requests++
             val response = exchange(request)
@@ -48,6 +60,11 @@ internal class CopilotToolConversation(
             prompt = prompt?.let { total -> count("prompt_tokens")?.let { total + it } }
             completion = completion?.let { total -> count("completion_tokens")?.let { total + it } }
             guard()
+            if (tools.groundedReplyPolicy?.checkCurrent(turnEvidence) ==
+                false
+            ) {
+                throw ConversationException(ConversationProblem.RESTRICTED)
+            }
             return withContext(dispatcher) { CopilotToolCodec.reply(response, tools) }
         }
         try {
@@ -57,10 +74,20 @@ internal class CopilotToolConversation(
             if (reply is CopilotToolReply.Call) {
                 val call = reply
                 guard()
+                if (tools.groundedReplyPolicy?.checkCurrent(turnEvidence) ==
+                    false
+                ) {
+                    throw ConversationException(ConversationProblem.RESTRICTED)
+                }
                 executions++
                 val executor = tools.tools.single { it.definition.name == call.value.name }
                 val result = executor.execute(call.value)
                 guard()
+                if (tools.groundedReplyPolicy?.checkCurrent(turnEvidence) ==
+                    false
+                ) {
+                    throw ConversationException(ConversationProblem.RESTRICTED)
+                }
                 evidence =
                     when (result) {
                         is ConversationToolResult.Found -> result
@@ -72,6 +99,7 @@ internal class CopilotToolConversation(
                         )
                         ConversationToolResult.Limit -> throw ConversationException(ConversationProblem.LIMIT)
                     }
+                turnEvidence.add(evidence)
                 if (evidence.content.isBlank()) throw ConversationException(ConversationProblem.TOOL_UNAVAILABLE)
                 if (evidence.content.length > 64_000) throw ConversationException(ConversationProblem.LIMIT)
                 request.getJSONArray("messages").put(call.assistant).put(
@@ -86,8 +114,17 @@ internal class CopilotToolConversation(
             }
             if (reply !is CopilotToolReply.Final) throw ConversationException(ConversationProblem.LIMIT)
             guard()
+            if (tools.groundedReplyPolicy?.checkCurrent(turnEvidence) ==
+                false
+            ) {
+                throw ConversationException(ConversationProblem.RESTRICTED)
+            }
             val accepted =
-                when (val result = tools.replyPolicy.accept(reply.text, evidence)) {
+                when (
+                    val result =
+                        tools.groundedReplyPolicy?.accept(GroundedReplyCodec.parse(reply.text), turnEvidence)
+                            ?: tools.replyPolicy.accept(reply.text, evidence)
+                ) {
                     is ConversationResult.Success -> result.value
                     is ConversationResult.Failure -> throw ConversationException(result.problem)
                 }
@@ -95,6 +132,11 @@ internal class CopilotToolConversation(
                 throw ConversationException(ConversationProblem.PROVIDER)
             }
             guard()
+            if (tools.groundedReplyPolicy?.checkCurrent(turnEvidence) ==
+                false
+            ) {
+                throw ConversationException(ConversationProblem.RESTRICTED)
+            }
             return accepted
         } finally {
             tools.onUsage(

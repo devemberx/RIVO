@@ -2,6 +2,7 @@ package com.monsters.mobimon.core.auth
 
 import com.monsters.mobimon.core.domain.ConversationContext
 import com.monsters.mobimon.core.domain.ConversationContextSource
+import com.monsters.mobimon.core.domain.ConversationEvidenceSet
 import com.monsters.mobimon.core.domain.ConversationProblem
 import com.monsters.mobimon.core.domain.ConversationTools
 import com.monsters.mobimon.core.domain.ConversationTurn
@@ -113,16 +114,21 @@ internal class OkHttpCopilotApi(
         tools: ConversationTools,
         guard: suspend () -> Unit,
     ): String {
-        if (tools.tools.isEmpty()) return super.completeWithTools(access, model, friendId, messages, tools, guard)
+        if (tools.tools.isEmpty() &&
+            tools.groundedReplyPolicy == null
+        ) {
+            return super.completeWithTools(access, model, friendId, messages, tools, guard)
+        }
         if (model.api != CopilotChatApi.CHAT_COMPLETIONS) fail(ConversationProblem.PROVIDER)
         guard()
+        val captured = context.current()
         val request =
             withContext(Dispatchers.Default) {
-                CopilotMessageCodec.request(model, friendId, messages, context.current(), toolsEnabled = true)
+                CopilotMessageCodec.request(model, friendId, messages, captured, toolsEnabled = true)
             }
         return CopilotToolConversation(model, tools, {
             exchange(access, CopilotChatApi.CHAT_COMPLETIONS, it)
-        }, guard).run(request)
+        }, guard, turnEvidence = ConversationEvidenceSet(captured.vehicleCapture)).run(request)
     }
 
     // Internal wire seam also used by the opt-in Debug protocol probe. Callers enforce their budget.

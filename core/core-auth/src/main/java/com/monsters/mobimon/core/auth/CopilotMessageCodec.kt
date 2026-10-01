@@ -60,7 +60,7 @@ internal object CopilotMessageCodec {
             $toolInstruction
             For current time and current battery level questions, answer using only the current context values.
             Time is a recent VSS observation, not a live clock; never invent missing time or treat simulated time as real.
-            When asked what time it is, give vss_clock (hours, minutes and seconds) with vss_utc_offset.
+            When asked the time, use the supplied vehicle clock value and its UTC offset; rich evidence requires a vehicle reference.
             Use the offset in the original VSS timestamp, never the device timezone or an approximate time of day.
             The pet's hunger and sickness represent vehicle signals, not biological needs or a diagnosis.
             For why-hungry or why-sick questions, explain the matching HUNGRY or SICK condition_reasons

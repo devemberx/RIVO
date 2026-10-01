@@ -27,7 +27,11 @@ internal object CopilotToolCodec {
         tools: ConversationTools,
     ) {
         val system = request.getJSONArray("messages").getJSONObject(0)
-        system.put("content", system.getString("content") + "\n" + tools.instruction)
+        system.put(
+            "content",
+            system.getString("content") + "\n" + tools.instruction +
+                if (tools.groundedReplyPolicy != null) "\n" + GroundedReplyCodec.instruction else "",
+        )
         val definitions = JSONArray()
         tools.tools.forEach { tool ->
             val definition = tool.definition
@@ -55,10 +59,8 @@ internal object CopilotToolCodec {
                 ),
             )
         }
-        request
-            .put("tools", definitions)
-            .put("tool_choice", "auto")
-            .put("response_format", JSONObject().put("type", "json_object"))
+        if (tools.tools.isNotEmpty()) request.put("tools", definitions).put("tool_choice", "auto")
+        request.put("response_format", JSONObject().put("type", "json_object"))
     }
 
     fun reply(

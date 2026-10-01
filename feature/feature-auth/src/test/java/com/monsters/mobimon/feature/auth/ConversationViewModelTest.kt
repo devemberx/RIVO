@@ -1038,6 +1038,31 @@ class ConversationViewModelTest {
             assertEquals(1, provider.requests.size)
         }
 
+    @Test fun rejectedEvidenceNeverAppendsAndKeepsCommittedHistory() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val disk = FakeConversationStore()
+            var appends = 0
+            disk.beforeAppend = { appends++ }
+            val model = ConversationViewModel(authentication, provider, networkStatus, conversationStore = disk)
+            store.put("evidence-rejection", model)
+            model.bind("profile", "friend:mobi")
+            model.activate(true)
+            runCurrent()
+            model.edit(TextFieldValue("first"))
+            model.send()
+            runCurrent()
+            val committed = disk.values.values.single()
+            provider.answer = { ConversationResult.Failure(ConversationProblem.NO_EVIDENCE) }
+            model.edit(TextFieldValue("current battery"))
+            model.send()
+            runCurrent()
+            assertEquals(1, appends)
+            assertTrue(disk.values.values.single() === committed)
+            assertEquals(listOf("first", "answer"), committed.turns.map { it.text })
+            assertEquals(ConversationProblem.NO_EVIDENCE, model.state.value.problem)
+        }
+
     private class FakeConversationStore : ConversationStore {
         val values = mutableMapOf<ConversationKey, StoredConversation>()
         var failAppend = false

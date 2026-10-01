@@ -78,7 +78,7 @@ class VehicleChatEvidenceReader(
                     VehicleDeliveryPolicy.OnChange -> "ON_CHANGE"
                     else -> "UNKNOWN"
                 }
-            return VehicleChatField(spec, observation, validity, mode)
+            return VehicleChatField(spec, observation, validity, mode, deadline(frame, id))
         }
         val reasons =
             vehicle.vehicleConditionReasons().filter { reason ->
@@ -159,6 +159,34 @@ class VehicleChatEvidenceReader(
             },
             reasons.take(32).map { ConversationConditionReason(it.concern.name, it.signal, it.value, it.description) },
         )
+    }
+
+    private fun deadline(
+        frame: VehicleEvidenceFrame,
+        id: String,
+        visited: Set<String> = emptySet(),
+    ): Long? {
+        if (id in visited || visited.size >= 32) return 0
+        val observation = frame.observations[id]
+        val policy = frame.policies[id]
+        val own =
+            if (policy is VehicleDeliveryPolicy.Periodic) {
+                observation?.receivedAtElapsedMillis?.let { received ->
+                    if (Long.MAX_VALUE - received <
+                        policy.maxAgeMillis
+                    ) {
+                        Long.MAX_VALUE
+                    } else {
+                        received + policy.maxAgeMillis
+                    }
+                }
+            } else {
+                null
+            }
+        return (
+            listOfNotNull(own, frame.subscription.leaseExpiresAtElapsedMillis?.minus(1)) +
+                observation?.dependencyIds.orEmpty().mapNotNull { deadline(frame, it, visited + id) }
+        ).minOrNull()
     }
 
     private fun batteryAlias(frame: VehicleEvidenceFrame): VehicleEvidenceFrame {

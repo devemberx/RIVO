@@ -34,6 +34,7 @@ sealed interface ConversationToolResult {
     class Found(
         val content: String,
         val evidence: List<ConversationEvidence> = emptyList(),
+        val vehicleCapture: VehicleChatCapture? = null,
     ) : ConversationToolResult {
         override fun toString() = "ConversationToolResult.Found(REDACTED)"
     }
@@ -74,6 +75,7 @@ class ConversationTools(
     val instruction: String = "",
     val replyPolicy: ConversationReplyPolicy = ConversationReplyPolicy { text, _ -> ConversationResult.Success(text) },
     val onUsage: (ConversationToolUsage) -> Unit = {},
+    val groundedReplyPolicy: ConversationGroundedReplyPolicy? = null,
 ) {
     val tools: List<ConversationTool> = tools.toList()
 

@@ -1,5 +1,6 @@
 package com.monsters.mobimon.core.auth
 
+import com.monsters.mobimon.core.domain.ConversationGroundedReplyPolicy
 import com.monsters.mobimon.core.domain.ConversationProblem
 import com.monsters.mobimon.core.domain.ConversationReplyPolicy
 import com.monsters.mobimon.core.domain.ConversationResult
@@ -61,6 +62,37 @@ class CopilotToolConversationTest {
                 action()
                 return output
             }
+        }
+
+    @Test fun noToolsStillParsesAndValidatesGroundedReplies() =
+        runTest {
+            var validated = false
+            val registry =
+                ConversationTools(
+                    emptyList(),
+                    groundedReplyPolicy =
+                        ConversationGroundedReplyPolicy { reply, _ ->
+                            validated = true
+                            assertEquals("CONVERSATION", reply.status)
+                            ConversationResult.Failure(ConversationProblem.NO_EVIDENCE)
+                        },
+                )
+            val request = CopilotMessageCodec.request(model, "friend:mobi", listOf(ConversationTurn("hello", true)))
+            try {
+                CopilotToolConversation(model, registry, {
+                    assertFalse(it.has("tools"))
+                    response(
+                        text =
+                            """
+                            {"version":1,"status":"CONVERSATION","text":"hello","sourceIds":[],"vehicleRefs":[]}
+                            """.trimIndent(),
+                    )
+                }, {}, StandardTestDispatcher(testScheduler)).run(request)
+                error("Rejected reply escaped policy")
+            } catch (error: ConversationException) {
+                assertEquals(ConversationProblem.NO_EVIDENCE, error.problem)
+            }
+            assertTrue(validated)
         }
 
     @Test fun boundedRoundTripMatchesIdsAndSumsUsageWithoutPersistingProtocolMessages() =
