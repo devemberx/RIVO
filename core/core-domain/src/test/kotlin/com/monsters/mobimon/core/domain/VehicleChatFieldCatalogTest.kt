@@ -14,14 +14,11 @@ class VehicleChatFieldCatalogTest {
                 fields.any { definition.path in it.sourcePaths }
             },
         )
-        assertTrue(
-            VehicleChatTopic.entries.filter { it !in setOf(VehicleChatTopic.BASIC, VehicleChatTopic.OVERVIEW) }.all { topic ->
-                fields.any {
-                    it.topic ==
-                        topic
-                }
-            },
-        )
+        val detailedTopics =
+            VehicleChatTopic.entries.filter {
+                it !in setOf(VehicleChatTopic.BASIC, VehicleChatTopic.OVERVIEW)
+            }
+        assertTrue(detailedTopics.all { topic -> fields.any { it.topic == topic } })
         assertTrue(fields.all { field -> field.dependencyIds.all { dependency -> fields.any { it.id == dependency } } })
     }
 

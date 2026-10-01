@@ -94,6 +94,7 @@ data class DebugVssState(
     val raw: DebugRawVssState = DebugRawVssState(),
     val overrides: DebugInterpretationOverrides = DebugInterpretationOverrides(),
     val cardExtraSignals: Map<String, String> = DebugCardVssSignals.defaults,
+    val receivedAtElapsedMillis: Long? = null,
 ) {
     val isDistracted: Boolean
         get() = overrides.isDistracted ?: (raw.driverDistractionLevel >= DISTRACTION_THRESHOLD_PERCENT)
@@ -190,7 +191,8 @@ class DebugStore
     ) : DebugVssProvider {
         private val prefs: SharedPreferences = context.getSharedPreferences("debug_vss_prefs", Context.MODE_PRIVATE)
 
-        private val _state = MutableStateFlow(loadState())
+        private val _state =
+            MutableStateFlow(loadState().copy(receivedAtElapsedMillis = android.os.SystemClock.elapsedRealtime()))
         override val state: StateFlow<DebugVssState> = _state.asStateFlow()
 
         // Count of completed safe drives. VSS is a snapshot and cannot express this history, so the
@@ -323,7 +325,10 @@ class DebugStore
             )
 
         fun updateState(reducer: (DebugVssState) -> DebugVssState) {
-            val newState = reducer(_state.value)
+            val newState =
+                reducer(
+                    _state.value,
+                ).copy(receivedAtElapsedMillis = android.os.SystemClock.elapsedRealtime())
             _state.value = newState
             prefs.edit().write(newState).apply()
         }

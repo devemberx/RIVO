@@ -1,6 +1,21 @@
 package com.monsters.mobimon.core.domain
 
-enum class VehicleChatTopic { BASIC, OVERVIEW, BATTERY, CHARGING, TIRES, BRAKES, BODY, ENVIRONMENT, DRIVER, SERVICE, MOTION, NAVIGATION, TIME, CONDITION }
+enum class VehicleChatTopic {
+    BASIC,
+    OVERVIEW,
+    BATTERY,
+    CHARGING,
+    TIRES,
+    BRAKES,
+    BODY,
+    ENVIRONMENT,
+    DRIVER,
+    SERVICE,
+    MOTION,
+    NAVIGATION,
+    TIME,
+    CONDITION,
+}
 
 data class VehicleFieldSpec(
     val id: String,
