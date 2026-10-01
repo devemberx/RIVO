@@ -3,6 +3,7 @@ package com.monsters.mobimon.di
 import android.content.Context
 import android.util.Log
 import com.monsters.mobimon.chat.GroundedConversationReplyPolicy
+import com.monsters.mobimon.chat.VehicleConversationTool
 import com.monsters.mobimon.core.domain.ConversationTools
 import com.monsters.mobimon.core.domain.ManualRetriever
 import com.monsters.mobimon.core.domain.VehicleChatEvidenceSource
@@ -32,7 +33,7 @@ object ConversationToolsModule {
     ): ConversationTools {
         val manual = ManualConversationTools.create(retriever) { Log.i("MobiMonManual", it.toString()) }
         return ConversationTools(
-            manual.tools,
+            manual.tools + VehicleConversationTool(evidence),
             manual.instruction.substringBefore("# Response contract"),
             onUsage = manual.onUsage,
             groundedReplyPolicy = GroundedConversationReplyPolicy(evidence, manual.replyPolicy),

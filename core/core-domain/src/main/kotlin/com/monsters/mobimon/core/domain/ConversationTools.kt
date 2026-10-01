@@ -7,6 +7,7 @@ data class ConversationToolDefinition(
     val parameter: String,
     val parameterDescription: String,
     val maxArgumentCharacters: Int = 400,
+    val allowedValues: List<String> = emptyList(),
 ) {
     init {
         require(name.matches(Regex("[a-z][a-z0-9_]{0,63}")))
@@ -14,6 +15,10 @@ data class ConversationToolDefinition(
         require(description.isNotBlank() && description.length <= 2000)
         require(parameterDescription.isNotBlank() && parameterDescription.length <= 1000)
         require(maxArgumentCharacters in 1..2000)
+        require(allowedValues.size <= 32 && allowedValues.distinct().size == allowedValues.size)
+        require(
+            allowedValues.all { it.isNotBlank() && it.length <= maxArgumentCharacters && it.none(Char::isISOControl) },
+        )
     }
 }
 

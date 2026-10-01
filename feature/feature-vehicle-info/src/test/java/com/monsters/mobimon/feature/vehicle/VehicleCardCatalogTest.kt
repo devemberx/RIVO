@@ -4,6 +4,7 @@ import com.monsters.mobimon.core.domain.DrivingState
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleCardVssDefaults
+import com.monsters.mobimon.core.domain.VehicleChatFieldCatalog
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.presentation.VehicleCondition
 import com.monsters.mobimon.core.presentation.vehicleCondition
@@ -14,6 +15,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VehicleCardCatalogTest {
+    @Test fun everyCardPathHasAChatFieldContract() {
+        val paths = (VehicleCardCatalog.cards + VehicleCardCatalog.defaultSlots).flatMap { it.vssPaths }
+        paths.forEach { assertNotNull(it, VehicleChatFieldCatalog.find(it)) }
+    }
+
     @Test
     fun initialSlotsMatchTheSixFigmaCards() {
         assertEquals(

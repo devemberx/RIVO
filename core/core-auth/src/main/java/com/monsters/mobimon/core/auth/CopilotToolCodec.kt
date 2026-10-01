@@ -52,7 +52,15 @@ internal object CopilotToolCodec {
                                         .put("type", "string")
                                         .put("minLength", 1)
                                         .put("maxLength", definition.maxArgumentCharacters)
-                                        .put("description", definition.parameterDescription),
+                                        .put("description", definition.parameterDescription)
+                                        .apply {
+                                            if (definition.allowedValues.isNotEmpty()) {
+                                                put(
+                                                    "enum",
+                                                    JSONArray(definition.allowedValues),
+                                                )
+                                            }
+                                        },
                                 ),
                             ),
                     ),
@@ -121,7 +129,8 @@ internal object CopilotToolCodec {
                     }
                 if (value.isBlank() ||
                     value.length > definition.maxArgumentCharacters ||
-                    value.any(Char::isISOControl)
+                    value.any(Char::isISOControl) ||
+                    (definition.allowedValues.isNotEmpty() && value !in definition.allowedValues)
                 ) {
                     fail()
                 }
