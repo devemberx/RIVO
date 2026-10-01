@@ -187,6 +187,8 @@ data updates.
 
 Outside-app companion needs explicit opt-in and overlay permission. Non-P or
 unverified parking stops wandering and triggers Mobi's departure animation;
-verified P restores the companion. Intended placement is vehicle Home; hide it
+verified P restores Mobi with a 1.4-second entrance before wandering resumes.
+The Debug parking button uses the same vehicle stream; a renewed non-P signal
+during entrance queues departure after the entrance completes. Intended placement is vehicle Home; hide it
 while MobiMon is foreground. Target-OEM placement and lifecycle remain unverified under the
 [platform contract](ARCHITECTURE.md#shared-vehicle-condition-and-overlay).

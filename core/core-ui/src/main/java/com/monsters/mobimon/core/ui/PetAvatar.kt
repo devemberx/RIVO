@@ -362,6 +362,8 @@ fun PetAvatar(
     artworkOverride: Int? = null,
     isDisappearing: Boolean = false,
     onDisappeared: () -> Unit = {},
+    isAppearing: Boolean = false,
+    onAppeared: () -> Unit = {},
 ) {
     val cat = friendId == "friend:luna"
     val cream = appearanceKey == "CREAM"
@@ -369,6 +371,14 @@ fun PetAvatar(
     // Reduced motion keeps the gentle idle breath and drops travel animation only.
     val runEnabled = isAnimated && isMoving && LocalMobiMonMotionEnabled.current
     val description = stringResource(if (cat) R.string.mobimon_luna_description else R.string.mobimon_mobi_description)
+    if (isAppearing) {
+        if (friendId == "friend:mobi") {
+            MobiAppearAnimation(modifier, accessoryId ?: outfitId, onAppeared)
+        } else {
+            LaunchedEffect(Unit) { onAppeared() }
+        }
+        return
+    }
     if (isDisappearing && friendId != "friend:mobi" && !isMoving) {
         LaunchedEffect(Unit) { onDisappeared() }
         return
