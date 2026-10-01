@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -32,7 +33,10 @@ import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import kotlin.math.PI
+import kotlin.math.cos
 import kotlin.math.roundToInt
+import kotlin.math.sin
 
 internal object MobiIdleTimeline {
     const val COLUMNS = 6
@@ -42,8 +46,34 @@ internal object MobiIdleTimeline {
     const val BOB_PERIOD_MS = 6_600L
 
     // Sources already contain inhale/exhale and repeated extreme poses; do not ping-pong.
-    private val durationsMs = IntArray(24) { if (it == 23) 130 else 90 }
-    val cycleMs: Long = 2_200L
+    private val durationsMs =
+        intArrayOf(
+            180,
+            190,
+            190,
+            190,
+            190,
+            190,
+            180,
+            180,
+            210,
+            200,
+            180,
+            180,
+            180,
+            210,
+            205,
+            200,
+            195,
+            195,
+            190,
+            190,
+            190,
+            180,
+            180,
+            180,
+        )
+    val cycleMs: Long = 4_050L
     private val sourceDurationMs = durationsMs.sum().toLong()
     private val endsMs = durationsMs.runningFold(0L) { sum, duration -> sum + duration }.drop(1).toLongArray()
 
@@ -56,6 +86,37 @@ internal object MobiIdleTimeline {
     private fun sourcePosition(elapsedNanos: Long): Double =
         (elapsedNanos.coerceAtLeast(0L) % (cycleMs * 1_000_000L)).toDouble() *
             sourceDurationMs / (cycleMs * 1_000_000L)
+
+    fun blendAt(
+        elapsedNanos: Long,
+        frame: Int = frameAt(elapsedNanos),
+    ): Float {
+        val start = if (frame == 0) 0L else endsMs[frame - 1]
+        return ((sourcePosition(elapsedNanos) - start) / durationsMs[frame]).toFloat().coerceIn(0f, 1f)
+    }
+
+    fun breathAt(elapsedNanos: Long): Float {
+        val phase = (elapsedNanos.coerceAtLeast(0L) % (cycleMs * 1_000_000L)).toDouble()
+        return ((1 - cos(2 * PI * phase / (cycleMs * 1_000_000L))) / 2).toFloat()
+    }
+
+    fun bobAt(elapsedNanos: Long): Float {
+        val phase = (elapsedNanos.coerceAtLeast(0L) % (BOB_PERIOD_MS * 1_000_000L)).toDouble()
+        val wave = sin(2 * PI * phase / (BOB_PERIOD_MS * 1_000_000L))
+        return (wave * wave).toFloat()
+    }
+
+    fun scaleXAt(elapsedNanos: Long): Float = 1f + 0.012f * breathAt(elapsedNanos) + 0.005f * (1f - bobAt(elapsedNanos))
+
+    fun scaleYAt(elapsedNanos: Long): Float = 1f + 0.024f * breathAt(elapsedNanos) - 0.004f * (1f - bobAt(elapsedNanos))
+
+    // Relative to the fixed sprite box: about 4dp breath + 2.4dp bob at the 600dp Home reference size.
+    fun liftFractionAt(elapsedNanos: Long): Float = -0.0067f * breathAt(elapsedNanos) - 0.004f * bobAt(elapsedNanos)
+
+    fun tiltAt(elapsedNanos: Long): Float {
+        val phase = (elapsedNanos.coerceAtLeast(0L) % (TILT_PERIOD_MS * 1_000_000L)).toDouble()
+        return (2.35 * sin(2 * PI * phase / (TILT_PERIOD_MS * 1_000_000L))).toFloat()
+    }
 }
 
 /** Idle first frames are exact atlas extracts; the full atlas loads off the main thread. */
@@ -188,17 +249,24 @@ internal fun NormalMobiIdleAnimation(
             .testTag("mobi-animation-frame-${mobiAppearanceName(accessoryId)}")
             .semantics { if (contentDescription != null) this.contentDescription = contentDescription }
             .graphicsLayer {
-                translationY = size.minDimension * fallbackAsset.translationYFraction
+                val time = if (animate) elapsed.longValue else 0L
+                rotationZ = MobiIdleTimeline.tiltAt(time)
+                scaleX = MobiIdleTimeline.scaleXAt(time)
+                scaleY = MobiIdleTimeline.scaleYAt(time)
+                translationY =
+                    size.minDimension * (MobiIdleTimeline.liftFractionAt(time) + fallbackAsset.translationYFraction)
+                // Isolate premultiplied interpolation from the Home background; keep body/hands/wheel together.
                 compositingStrategy = CompositingStrategy.Offscreen
+                transformOrigin = TransformOrigin(0.5f, 0.9f)
                 clip = false
             }.mobiSpriteFrames(
                 sheet,
-                MobiIdleTimeline.COLUMNS,
-                MobiIdleTimeline.ROWS,
-                blendFrames = false,
+                if (sprite != null) MobiIdleTimeline.COLUMNS else 1,
+                if (sprite != null) MobiIdleTimeline.ROWS else 1,
             ) {
-                val time = elapsed.longValue
-                MobiIdleTimeline.frameAt(time).toFloat()
+                val time = if (animate) elapsed.longValue else 0L
+                val frame = MobiIdleTimeline.frameAt(time)
+                frame + MobiIdleTimeline.blendAt(time, frame)
             },
     )
 }
@@ -290,17 +358,17 @@ internal fun NormalMobiHungryAnimation(
         modifier
             .semantics { if (contentDescription != null) this.contentDescription = contentDescription }
             .graphicsLayer {
+                // Hungry motion is authored in the atlas; do not add idle sway or breathing.
+                scaleX = MobiIdleTimeline.scaleXAt(0L)
+                scaleY = MobiIdleTimeline.scaleYAt(0L)
                 translationY = size.minDimension * fallbackAsset.translationYFraction
                 compositingStrategy = CompositingStrategy.Offscreen
+                transformOrigin = TransformOrigin(0.5f, 0.9f)
                 clip = false
-            }.mobiSpriteFrames(
-                sheet,
-                MobiIdleTimeline.COLUMNS,
-                MobiIdleTimeline.ROWS,
-                blendFrames = false,
-            ) {
+            }.mobiSpriteFrames(sheet, MobiIdleTimeline.COLUMNS, MobiIdleTimeline.ROWS) {
                 val time = elapsed.longValue
-                MobiIdleTimeline.frameAt(time).toFloat()
+                val frame = MobiIdleTimeline.frameAt(time)
+                frame + MobiIdleTimeline.blendAt(time, frame)
             },
     )
 }
@@ -362,7 +430,7 @@ internal object MobiRunSpriteCache {
     }
 }
 
-const val MOBI_RUN_FRAME_DURATION_MS = 50
+const val MOBI_RUN_FRAME_DURATION_MS = 70
 
 @Composable
 fun MobiRunAnimation(
