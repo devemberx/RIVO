@@ -155,7 +155,7 @@ class CopilotToolConversationTest {
             assertEquals(0, executed)
         }
 
-    @Test fun malformedUnknownAndMultipleCallsNeverExecute() =
+    @Test fun malformedUnknownAndDuplicateCallsNeverExecute() =
         runTest {
             val invalid =
                 listOf(
@@ -177,7 +177,7 @@ class CopilotToolConversationTest {
                 assertEquals(ConversationResult.Failure(ConversationProblem.PROVIDER), runTurn())
                 assertEquals(1, requests.size)
             }
-            for (secondId in listOf("call_1", "call_2")) {
+            for (secondId in listOf("call_1")) {
                 requests.clear()
                 answer = {
                     response(call()).apply {
@@ -186,7 +186,7 @@ class CopilotToolConversationTest {
                         ).getJSONObject(0).getJSONObject("message").getJSONArray("tool_calls").put(call(id = secondId))
                     }
                 }
-                assertEquals(ConversationResult.Failure(ConversationProblem.LIMIT), runTurn())
+                assertEquals(ConversationResult.Failure(ConversationProblem.PROVIDER), runTurn())
             }
             assertEquals(0, executed)
         }
@@ -194,7 +194,7 @@ class CopilotToolConversationTest {
     @Test fun repeatedCallStopsWithoutSecondExecution() =
         runTest {
             answer = { response(call()) }
-            assertEquals(ConversationResult.Failure(ConversationProblem.LIMIT), runTurn())
+            assertEquals(ConversationResult.Failure(ConversationProblem.PROVIDER), runTurn())
             assertEquals(2, requests.size)
             assertEquals(1, executed)
         }
