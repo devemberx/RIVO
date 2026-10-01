@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertTrue
@@ -34,6 +35,207 @@ class DecorativeMotionTest {
     @get:Rule val compose = createComposeRule()
 
     private lateinit var view: View
+
+    @Test
+    fun mobiHungryRecoveryKeepsOutgoingPoseDuringFade() {
+        var hungry by mutableStateOf(true)
+        show {
+            PetAvatar(
+                modifier = Modifier.size(180.dp),
+                friendId = "friend:mobi",
+                vehicleHungry = hungry,
+            )
+        }
+        compose.onNodeWithTag("mobi-hungry-layer").assertExists()
+
+        updateStateAndDraw { hungry = false }
+        compose.mainClock.advanceTimeBy(80)
+        compose.onNodeWithTag("mobi-hungry-layer").assertExists()
+        compose.mainClock.advanceTimeBy(240)
+        compose.onNodeWithTag("mobi-hungry-layer").assertDoesNotExist()
+    }
+
+    @Test
+    fun mobiWarningRecoveryKeepsOutgoingPoseDuringFade() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        requireNotNull(MobiCollapsedSpriteCache.getOrLoad(context))
+        var warning by mutableStateOf(true)
+        show {
+            PetAvatar(
+                modifier = Modifier.size(180.dp),
+                friendId = "friend:mobi",
+                vehicleWarning = warning,
+            )
+        }
+        compose.mainClock.advanceTimeBy(240)
+        compose.onNodeWithTag("mobi-sick-layer").assertExists()
+
+        updateStateAndDraw { warning = false }
+        compose.mainClock.advanceTimeBy(80)
+        compose.onNodeWithTag("mobi-sick-layer").assertExists()
+        compose.mainClock.advanceTimeBy(240)
+        compose.onNodeWithTag("mobi-sick-layer").assertDoesNotExist()
+    }
+
+    @Test
+    fun mobiHungryAndSickCrossfadeWithoutNormalPose() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        requireNotNull(MobiCollapsedSpriteCache.getOrLoad(context))
+        var hungry by mutableStateOf(true)
+        var warning by mutableStateOf(false)
+        show {
+            PetAvatar(
+                modifier = Modifier.size(180.dp),
+                friendId = "friend:mobi",
+                vehicleHungry = hungry,
+                vehicleWarning = warning,
+            )
+        }
+
+        updateStateAndDraw {
+            hungry = false
+            warning = true
+        }
+        compose.mainClock.advanceTimeBy(80)
+        compose.onNodeWithTag("mobi-hungry-layer").assertExists()
+        compose.onNodeWithTag("mobi-sick-layer").assertExists()
+        compose.onNodeWithTag("mobi-animation-frame-normal").assertDoesNotExist()
+
+        compose.mainClock.advanceTimeBy(240)
+        updateStateAndDraw {
+            warning = false
+            hungry = true
+        }
+        compose.mainClock.advanceTimeBy(80)
+        compose.onNodeWithTag("mobi-sick-layer").assertExists()
+        compose.onNodeWithTag("mobi-hungry-layer").assertExists()
+        compose.onNodeWithTag("mobi-animation-frame-normal").assertDoesNotExist()
+    }
+
+    @Test
+    fun lunaHungryAndSickCrossfadeWithoutNormalPose() {
+        var hungry by mutableStateOf(true)
+        var warning by mutableStateOf(false)
+        show {
+            PetAvatar(
+                modifier = Modifier.size(180.dp),
+                friendId = "friend:luna",
+                vehicleHungry = hungry,
+                vehicleWarning = warning,
+            )
+        }
+
+        updateStateAndDraw {
+            hungry = false
+            warning = true
+        }
+        compose.mainClock.advanceTimeBy(80)
+        compose.onNodeWithTag("luna-state-hungry").assertExists()
+        compose.onNodeWithTag("luna-state-sick").assertExists()
+        compose.onNodeWithTag("luna-state-idle").assertDoesNotExist()
+
+        compose.mainClock.advanceTimeBy(240)
+        updateStateAndDraw {
+            warning = false
+            hungry = true
+        }
+        compose.mainClock.advanceTimeBy(80)
+        compose.onNodeWithTag("luna-state-sick").assertExists()
+        compose.onNodeWithTag("luna-state-hungry").assertExists()
+        compose.onNodeWithTag("luna-state-idle").assertDoesNotExist()
+    }
+
+    @Test
+    fun mobiVehicleStatusChangesImmediatelyWithReducedMotion() {
+        var hungry by mutableStateOf(false)
+        show {
+            CompositionLocalProvider(LocalMobiMonMotionEnabled provides false) {
+                PetAvatar(
+                    modifier = Modifier.size(180.dp),
+                    friendId = "friend:mobi",
+                    vehicleHungry = hungry,
+                )
+            }
+        }
+        updateStateAndDraw { hungry = true }
+        compose.mainClock.advanceTimeByFrame()
+        compose.onNodeWithTag("mobi-hungry-layer").assertExists()
+        compose.onNodeWithTag("mobi-normal-layer").assertDoesNotExist()
+    }
+
+    @Test
+    fun lunaVehicleStatesOverlapDuringFadeAndSettleOnLatestStatus() {
+        var hungry by mutableStateOf(false)
+        var warning by mutableStateOf(false)
+        show {
+            PetAvatar(
+                modifier = Modifier.size(180.dp),
+                friendId = "friend:luna",
+                vehicleHungry = hungry,
+                vehicleWarning = warning,
+            )
+        }
+        compose.onNodeWithTag("luna-state-idle").assertExists()
+
+        updateStateAndDraw { hungry = true }
+        compose.mainClock.advanceTimeBy(80)
+        compose.onNodeWithTag("luna-state-idle").assertExists()
+        compose.onNodeWithTag("luna-state-hungry").assertExists()
+
+        updateStateAndDraw { warning = true }
+        compose.mainClock.advanceTimeByFrame()
+        compose.onNodeWithTag("luna-state-sick").assertExists()
+        val outgoingCount =
+            compose.onAllNodesWithTag("luna-state-idle").fetchSemanticsNodes().size +
+                compose.onAllNodesWithTag("luna-state-hungry").fetchSemanticsNodes().size
+        assertTrue("Rapid status changes retain only one outgoing pose", outgoingCount == 1)
+        compose.mainClock.advanceTimeBy(240)
+        compose.onNodeWithTag("luna-state-sick").assertExists()
+        compose.onNodeWithTag("luna-state-idle").assertDoesNotExist()
+        compose.onNodeWithTag("luna-state-hungry").assertDoesNotExist()
+    }
+
+    @Test
+    fun lunaStatusFadeReversesWithoutDroppingTheOutgoingPose() {
+        var hungry by mutableStateOf(false)
+        show {
+            PetAvatar(
+                modifier = Modifier.size(180.dp),
+                friendId = "friend:luna",
+                vehicleHungry = hungry,
+            )
+        }
+
+        updateStateAndDraw { hungry = true }
+        compose.mainClock.advanceTimeBy(80)
+        updateStateAndDraw { hungry = false }
+        compose.mainClock.advanceTimeBy(32)
+        compose.onNodeWithTag("luna-state-idle").assertExists()
+        compose.onNodeWithTag("luna-state-hungry").assertExists()
+        compose.mainClock.advanceTimeBy(240)
+        compose.onNodeWithTag("luna-state-hungry").assertDoesNotExist()
+    }
+
+    @Test
+    fun lunaVehicleStatusChangesImmediatelyWithReducedMotion() {
+        var hungry by mutableStateOf(false)
+        show {
+            CompositionLocalProvider(LocalMobiMonMotionEnabled provides false) {
+                PetAvatar(
+                    modifier = Modifier.size(180.dp),
+                    friendId = "friend:luna",
+                    vehicleHungry = hungry,
+                )
+            }
+        }
+        updateStateAndDraw { hungry = true }
+        compose.onNodeWithTag("luna-state-hungry").assertExists()
+        compose.onNodeWithTag("luna-state-idle").assertDoesNotExist()
+    }
 
     @Test
     fun petAvatarsKeepBreathingWithReducedMotion() {
@@ -76,6 +278,7 @@ class DecorativeMotionTest {
                 }
             }
         }
+        awaitLunaAnimation("moving")
         val first = pixels("moving")
         compose.mainClock.advanceTimeBy(320)
         val moving = pixels("moving")
@@ -162,6 +365,7 @@ class DecorativeMotionTest {
         awaitLunaAnimation("luna")
         for (state in listOf(PetEmotion.IDLE, PetEmotion.HUNGRY, PetEmotion.SICK)) {
             updateStateAndDraw { emotion = state }
+            compose.mainClock.advanceTimeBy(240)
             awaitLunaAnimation("luna")
             val first = pixels("luna")
             compose.mainClock.advanceTimeBy(320)

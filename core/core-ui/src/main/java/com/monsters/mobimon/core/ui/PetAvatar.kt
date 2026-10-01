@@ -454,11 +454,12 @@ fun PetAvatar(
                 }
 
                 val showMobiRun = (runEnabled || mobiHopCompleting) && isAnimated
+                val showMobiStatus = (isSick || isHungry) && !isDisappearing
 
                 when {
                     isDisappearing && !showMobiRun ->
                         MobiDisappearAnimation(Modifier.fillMaxSize(), onDisappeared)
-                    (isSick || isHungry) && !isDisappearing ->
+                    showMobiStatus || !showMobiRun ->
                         MobiIdleBreathAnimation(
                             modifier = Modifier.fillMaxSize(),
                             accessoryId = equippedAccessory,
@@ -468,7 +469,7 @@ fun PetAvatar(
                             animateNormal = isAnimated && hasMobiIdleSprite,
                             motionEnabled = motionEnabled,
                         )
-                    showMobiRun ->
+                    else ->
                         MobiRunAnimation(
                             modifier = Modifier.fillMaxSize(),
                             movingLeft = movingLeft,
@@ -479,43 +480,28 @@ fun PetAvatar(
                                 mobiHopCompleting = false
                             },
                         )
-                    else ->
-                        MobiIdleBreathAnimation(
-                            modifier = Modifier.fillMaxSize(),
-                            accessoryId = equippedAccessory,
-                            fallbackAsset = CharacterArtwork.preview(friendId, equippedAccessory),
-                            vehicleWarning = isSick,
-                            vehicleHungry = isHungry,
-                            animateNormal = isAnimated && hasMobiIdleSprite,
-                            motionEnabled = motionEnabled,
-                        )
                 }
             } else if (friendId == "friend:luna") {
-                when {
-                    isSick ->
-                        LunaSickAnimation(
-                            modifier = Modifier.fillMaxSize(),
-                            appearance = appearance,
-                            animateFrames = isAnimated,
-                        )
-                    isHungry ->
-                        LunaHungryAnimation(
-                            modifier = Modifier.fillMaxSize(),
-                            appearance = appearance,
-                            animateFrames = isAnimated,
-                        )
-                    runEnabled ->
-                        LunaRunAnimation(
-                            modifier = Modifier.fillMaxSize(),
-                            movingLeft = movingLeft,
-                            appearance = appearance,
-                        )
-                    else ->
-                        LunaIdleBreathAnimation(
-                            modifier = Modifier.fillMaxSize(),
-                            appearance = appearance,
-                            animateFrames = isAnimated,
-                        )
+                if (runEnabled && !isSick && !isHungry) {
+                    LunaRunAnimation(
+                        modifier = Modifier.fillMaxSize(),
+                        movingLeft = movingLeft,
+                        appearance = appearance,
+                    )
+                } else {
+                    val lunaState =
+                        when {
+                            isSick -> CompanionStatus.SICK
+                            isHungry -> CompanionStatus.HUNGRY
+                            else -> CompanionStatus.NORMAL
+                        }
+                    CompanionStatusCrossfade(
+                        state = lunaState,
+                        motionEnabled = motionEnabled,
+                        modifier = Modifier.fillMaxSize(),
+                    ) { state ->
+                        LunaStateArtwork(state, appearance, isAnimated)
+                    }
                 }
             } else {
                 val asset =
@@ -538,6 +524,37 @@ fun PetAvatar(
         drawCircle(ear, radius * 0.48f, center + Offset(radius * 0.85f, -radius * 0.4f))
         drawCircle(fur, radius, center)
         drawCircle(Color(0xFF51402C), radius * 0.1f, center + Offset(0f, radius * 0.25f))
+    }
+}
+
+@Composable
+private fun LunaStateArtwork(
+    state: CompanionStatus,
+    appearance: LunaAppearance,
+    animateFrames: Boolean,
+) {
+    val stateName = if (state == CompanionStatus.NORMAL) "idle" else state.name.lowercase()
+    Box(Modifier.fillMaxSize().testTag("luna-state-$stateName")) {
+        when (state) {
+            CompanionStatus.SICK ->
+                LunaSickAnimation(
+                    modifier = Modifier.fillMaxSize(),
+                    appearance = appearance,
+                    animateFrames = animateFrames,
+                )
+            CompanionStatus.HUNGRY ->
+                LunaHungryAnimation(
+                    modifier = Modifier.fillMaxSize(),
+                    appearance = appearance,
+                    animateFrames = animateFrames,
+                )
+            CompanionStatus.NORMAL ->
+                LunaIdleBreathAnimation(
+                    modifier = Modifier.fillMaxSize(),
+                    appearance = appearance,
+                    animateFrames = animateFrames,
+                )
+        }
     }
 }
 
