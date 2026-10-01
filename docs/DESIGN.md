@@ -45,6 +45,7 @@ Prefix feature icons; share fonts/artwork in `core-ui` and retain licenses.
 | Asset | Location |
 | --- | --- |
 | Character frames/sprites | `core/core-ui/src/main/assets/characters/<friend>/<variant>/<action>/` |
+| Luna accessory source art | `art/characters/luna/variants/<variant>/` (not packaged) |
 | Mobi warning masters | `art/characters/mobi/unhealthy/` (not packaged) |
 | Shared artwork/accessories/backgrounds | `core/core-ui/src/main/res/drawable-nodpi/` |
 | Feature artwork/icons | Owning module's `res/drawable[-nodpi]/` |
