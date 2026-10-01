@@ -354,6 +354,95 @@ class QuestScreenTest {
     }
 
     @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun notificationEntryStartsOnQuestDetailWithoutListFrame() {
+        val questId = DrivingQuestIds.BATTERY_CARE
+        var state by mutableStateOf(presentation(QuestUiState(isLoading = false, requestedQuestId = questId)))
+        lateinit var view: View
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            val currentView = LocalView.current
+            SideEffect { view = currentView }
+            MobiMonTheme {
+                QuestScreen(
+                    state = state,
+                    onClaimReward = {},
+                    onDismissHiddenQuest = {},
+                    onDismissRewardSuccess = {},
+                    onRetryQuests = {},
+                    onRetryWallet = {},
+                    onRetryAppearance = {},
+                    onNavigateRoute = {},
+                    onClearRequestedQuest = { state = state.copy(requestedQuestId = null) },
+                )
+            }
+        }
+        compose.mainClock.advanceTimeByFrame()
+        val firstFrame = snapshot(view)
+        compose.mainClock.advanceTimeBy(500)
+        val settledFrame = snapshot(view)
+
+        try {
+            assertEquals(
+                "Notification entry must not animate the list into detail",
+                0L,
+                visualDistance(firstFrame, settledFrame),
+            )
+        } finally {
+            firstFrame.recycle()
+            settledFrame.recycle()
+        }
+        compose.onNodeWithTag("quest-detail-card").assertIsDisplayed()
+        compose.onNodeWithTag("quest-header-back-button").performClick()
+        compose.mainClock.advanceTimeBy(500)
+        compose.onNodeWithTag("quest-tab-all").assertIsDisplayed()
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun notificationWhileQuestListIsOpenSkipsListToDetailAnimation() {
+        val questId = DrivingQuestIds.BATTERY_CARE
+        var state by mutableStateOf(presentation())
+        lateinit var view: View
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            val currentView = LocalView.current
+            SideEffect { view = currentView }
+            MobiMonTheme {
+                QuestScreen(
+                    state = state,
+                    onClaimReward = {},
+                    onDismissHiddenQuest = {},
+                    onDismissRewardSuccess = {},
+                    onRetryQuests = {},
+                    onRetryWallet = {},
+                    onRetryAppearance = {},
+                    onNavigateRoute = {},
+                    onClearRequestedQuest = { state = state.copy(requestedQuestId = null) },
+                )
+            }
+        }
+        val listFrame = snapshot(view)
+        compose.runOnIdle { state = state.copy(requestedQuestId = questId) }
+        compose.mainClock.advanceTimeByFrame()
+        val firstFrame = snapshot(view)
+        compose.mainClock.advanceTimeBy(500)
+        val settledFrame = snapshot(view)
+
+        try {
+            assertTrue(
+                "Notification must show detail on its first frame",
+                visualDistance(firstFrame, settledFrame) * 2 < visualDistance(firstFrame, listFrame),
+            )
+        } finally {
+            listFrame.recycle()
+            firstFrame.recycle()
+            settledFrame.recycle()
+        }
+        compose.onNodeWithTag("quest-detail-card").assertIsDisplayed()
+    }
+
+    @Test
     fun reducedMotionOpensQuestDetailWithoutTransition() {
         val state = presentation()
         compose.setContent {
@@ -798,6 +887,26 @@ class QuestScreenTest {
             parkedVerified = true,
             context::getString,
         )
+
+    private fun snapshot(view: View): Bitmap =
+        Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888).also { view.draw(Canvas(it)) }
+
+    private fun visualDistance(
+        first: Bitmap,
+        second: Bitmap,
+    ): Long {
+        var distance = 0L
+        for (x in 960 until 2480 step 8) {
+            for (y in 200 until 1100 step 8) {
+                val a = first.getPixel(x, y)
+                val b = second.getPixel(x, y)
+                distance += kotlin.math.abs((a shr 16 and 255) - (b shr 16 and 255))
+                distance += kotlin.math.abs((a shr 8 and 255) - (b shr 8 and 255))
+                distance += kotlin.math.abs((a and 255) - (b and 255))
+            }
+        }
+        return distance
+    }
 
     private fun capture(
         viewProvider: () -> View,

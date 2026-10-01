@@ -85,8 +85,9 @@ keyboard, then dialog/menu, then destination. Menu destinations return Home;
 connection returns to its entry route. Menus close through close, backdrop, Back or
 selection. Notifications show a Home dot and positive Menu count; opening them
 expands the Menu panel. Keep the header fixed while alerts scroll; quest alerts
-remain until receipt. Pending actions block duplicates, and uncertain writes
-reconcile before retry.
+remain until receipt. Driving quest reward alerts open their detail without
+a list transition; hidden quest rewards open the claim modal. Pending actions
+block duplicates, and uncertain writes reconcile before retry.
 
 ## Quests and points
 
