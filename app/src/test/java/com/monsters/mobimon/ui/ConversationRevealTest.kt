@@ -1,6 +1,5 @@
 package com.monsters.mobimon.ui
 
-import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.view.View
@@ -31,6 +30,7 @@ import com.monsters.mobimon.core.navigation.AppRoute
 import com.monsters.mobimon.core.navigation.CompanionRoute
 import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.navigation.FeatureNavigator
+import com.monsters.mobimon.testing.ComposeTestApplication
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -42,7 +42,7 @@ import org.robolectric.annotation.GraphicsMode
 import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], application = Application::class, qualifiers = "ko-rKR-w1000dp-h700dp-mdpi")
+@Config(sdk = [34], application = ComposeTestApplication::class, qualifiers = "ko-rKR-w1000dp-h700dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class ConversationRevealTest {
     @get:Rule val compose = createComposeRule()
