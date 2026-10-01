@@ -17,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
@@ -546,7 +547,7 @@ fun LunaRunAnimation(
         Box(modifier.testTag("luna-animation-loading-${appearance.assetName}"))
     } else {
         val loadedFrames = frames.orEmpty()
-        var currentFrameIndex by remember(loadedFrames) { mutableIntStateOf(0) }
+        val currentFrameIndex = remember(loadedFrames) { mutableIntStateOf(0) }
         LaunchedEffect(loadedFrames) {
             if (loadedFrames.isEmpty()) return@LaunchedEffect
             var previousTime = withInfiniteAnimationFrameNanos { it }
@@ -555,34 +556,51 @@ fun LunaRunAnimation(
                 val time = withInfiniteAnimationFrameNanos { it }
                 elapsedNanos += (time - previousTime).coerceAtMost(100_000_000L)
                 previousTime = time
-                var nextFrame = currentFrameIndex
+                var nextFrame = currentFrameIndex.intValue
                 while (elapsedNanos >= RUN_FRAME_DURATIONS_MS[nextFrame] * 1_000_000L) {
                     elapsedNanos -= RUN_FRAME_DURATIONS_MS[nextFrame] * 1_000_000L
                     nextFrame = (nextFrame + 1) % loadedFrames.size
                 }
-                currentFrameIndex = nextFrame
+                currentFrameIndex.intValue = nextFrame
             }
         }
-        val frame = loadedFrames.getOrNull(currentFrameIndex) ?: firstFrame ?: return
         val baseAsset = CharacterArtwork.characters.getValue("friend:luna")
         Box(
             modifier =
-                modifier.graphicsLayer {
-                    val flip = if (movingLeft) 1f else -1f
-                    scaleX = baseAsset.visualScale * flip
-                    scaleY = baseAsset.visualScale
-                    translationX = size.width * baseAsset.translationXFraction * flip
-                    translationY = size.height * baseAsset.translationYFraction
-                },
+                modifier
+                    .graphicsLayer {
+                        val flip = if (movingLeft) 1f else -1f
+                        scaleX = baseAsset.visualScale * flip
+                        scaleY = baseAsset.visualScale
+                        translationX = size.width * baseAsset.translationXFraction * flip
+                        translationY = size.height * baseAsset.translationYFraction
+                    }.testTag("luna-animation-frame-${appearance.assetName}")
+                    .semantics { if (contentDescription != null) this.contentDescription = contentDescription }
+                    .drawWithCache {
+                        onDrawBehind {
+                            val frame = loadedFrames.getOrNull(currentFrameIndex.intValue) ?: firstFrame
+                            if (frame != null) {
+                                val side =
+                                    size.minDimension.toInt()
+                                val dstSize =
+                                    androidx.compose.ui.unit
+                                        .IntSize(side, side)
+                                val dstOffset =
+                                    androidx.compose.ui.unit.IntOffset(
+                                        ((size.width - side) / 2).toInt(),
+                                        ((size.height - side) / 2).toInt(),
+                                    )
+                                drawImage(
+                                    image = frame,
+                                    dstOffset = dstOffset,
+                                    dstSize = dstSize,
+                                    filterQuality = androidx.compose.ui.graphics.FilterQuality.Low,
+                                )
+                            }
+                        }
+                    },
             contentAlignment = Alignment.Center,
-        ) {
-            Image(
-                bitmap = frame,
-                contentDescription = contentDescription,
-                modifier = Modifier.fillMaxSize().testTag("luna-animation-frame-${appearance.assetName}"),
-                contentScale = ContentScale.Fit,
-            )
-        }
+        ) {}
     }
 }
 
@@ -663,7 +681,7 @@ private fun IdleBreathAnimation(
         Box(modifier.testTag("luna-animation-loading-${appearance.assetName}"))
     } else {
         val loadedFrames = frames.orEmpty()
-        var currentFrameIndex by remember(loadedFrames) { mutableIntStateOf(0) }
+        val currentFrameIndex = remember(loadedFrames) { mutableIntStateOf(0) }
         LaunchedEffect(loadedFrames, animateFrames) {
             if (!animateFrames || loadedFrames.isEmpty()) return@LaunchedEffect
             var previousTime = withInfiniteAnimationFrameNanos { it }
@@ -673,37 +691,55 @@ private fun IdleBreathAnimation(
                 // Resume from a stopped window without jumping through the whole breathing cycle.
                 elapsedNanos += (time - previousTime).coerceAtMost(130_000_000L)
                 previousTime = time
-                var nextFrame = currentFrameIndex
+                var nextFrame = currentFrameIndex.intValue
                 while (elapsedNanos >= IDLE_BREATH_FRAME_DURATIONS_MS[nextFrame] * 1_000_000L) {
                     elapsedNanos -= IDLE_BREATH_FRAME_DURATIONS_MS[nextFrame] * 1_000_000L
                     nextFrame = (nextFrame + 1) % loadedFrames.size
                 }
-                currentFrameIndex = nextFrame
+                currentFrameIndex.intValue = nextFrame
             }
         }
-        val frame = loadedFrames.getOrNull(currentFrameIndex) ?: firstFrame ?: return
         val baseAsset = CharacterArtwork.characters.getValue("friend:luna")
         Box(
             modifier =
-                if (applyAssetTransform) {
-                    modifier.graphicsLayer {
-                        scaleX = baseAsset.visualScale
-                        scaleY = baseAsset.visualScale
-                        translationX = size.width * baseAsset.translationXFraction
-                        translationY = size.height * baseAsset.translationYFraction
+                (
+                    if (applyAssetTransform) {
+                        modifier.graphicsLayer {
+                            scaleX = baseAsset.visualScale
+                            scaleY = baseAsset.visualScale
+                            translationX = size.width * baseAsset.translationXFraction
+                            translationY = size.height * baseAsset.translationYFraction
+                        }
+                    } else {
+                        modifier
                     }
-                } else {
-                    modifier
-                },
+                ).testTag("luna-animation-frame-${appearance.assetName}")
+                    .semantics { if (contentDescription != null) this.contentDescription = contentDescription }
+                    .drawWithCache {
+                        onDrawBehind {
+                            val frame = loadedFrames.getOrNull(currentFrameIndex.intValue) ?: firstFrame
+                            if (frame != null) {
+                                val side =
+                                    size.minDimension.toInt()
+                                val dstSize =
+                                    androidx.compose.ui.unit
+                                        .IntSize(side, side)
+                                val dstOffset =
+                                    androidx.compose.ui.unit.IntOffset(
+                                        ((size.width - side) / 2).toInt(),
+                                        ((size.height - side) / 2).toInt(),
+                                    )
+                                drawImage(
+                                    image = frame,
+                                    dstOffset = dstOffset,
+                                    dstSize = dstSize,
+                                    filterQuality = androidx.compose.ui.graphics.FilterQuality.Low,
+                                )
+                            }
+                        }
+                    },
             contentAlignment = Alignment.Center,
-        ) {
-            Image(
-                bitmap = frame,
-                contentDescription = contentDescription,
-                modifier = Modifier.fillMaxSize().testTag("luna-animation-frame-${appearance.assetName}"),
-                contentScale = ContentScale.Fit,
-            )
-        }
+        ) {}
     }
 }
 
