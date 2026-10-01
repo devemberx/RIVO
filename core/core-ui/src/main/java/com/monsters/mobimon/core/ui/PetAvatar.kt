@@ -42,12 +42,22 @@ private val IDLE_BREATH_FRAME_DURATIONS_MS =
 internal val RUN_FRAME_DURATIONS_MS =
     IntArray(24) { 50 }
 
+// Normal/hat sick art ends at y=1048/1254; this lowers it onto Mobi's collapsed baseline (0.926 of the slot).
+internal const val LUNA_REDRAWN_SICK_TRANSLATION_Y_FRACTION = 0.134f
+
+// Normal/hat hungry body sits ~77px/1254 left of idle; this recenters it on the idle body.
+internal const val LUNA_REDRAWN_HUNGRY_TRANSLATION_X_FRACTION = 0.053f
+
 enum class LunaAppearance(
     internal val assetName: String,
 ) {
     NORMAL("normal"),
     HAT("hat"),
     SUNGLASSES("sunglasses"),
+    ;
+
+    /** Sick/hungry frames redrawn on a shared canvas that needs the offsets below. */
+    internal val hasRedrawnStateArt: Boolean get() = this != SUNGLASSES
 }
 
 private fun lunaAppearance(accessoryId: String?): LunaAppearance =
@@ -637,6 +647,8 @@ fun LunaHungryAnimation(
         modifier,
         contentDescription,
         animateFrames,
+        extraTranslationXFraction =
+            if (appearance.hasRedrawnStateArt) LUNA_REDRAWN_HUNGRY_TRANSLATION_X_FRACTION else 0f,
     )
 }
 
@@ -655,6 +667,8 @@ fun LunaSickAnimation(
         modifier,
         contentDescription,
         animateFrames,
+        extraTranslationYFraction =
+            if (appearance.hasRedrawnStateArt) LUNA_REDRAWN_SICK_TRANSLATION_Y_FRACTION else 0f,
     )
 }
 
@@ -667,6 +681,8 @@ private fun IdleBreathAnimation(
     modifier: Modifier,
     contentDescription: String?,
     animateFrames: Boolean,
+    extraTranslationXFraction: Float = 0f,
+    extraTranslationYFraction: Float = 0f,
 ) {
     val context = LocalContext.current
     val firstFrame =
@@ -707,8 +723,10 @@ private fun IdleBreathAnimation(
                         modifier.graphicsLayer {
                             scaleX = baseAsset.visualScale
                             scaleY = baseAsset.visualScale
-                            translationX = size.width * baseAsset.translationXFraction
-                            translationY = size.height * baseAsset.translationYFraction
+                            translationX =
+                                size.width * (baseAsset.translationXFraction + extraTranslationXFraction)
+                            translationY =
+                                size.height * (baseAsset.translationYFraction + extraTranslationYFraction)
                         }
                     } else {
                         modifier
