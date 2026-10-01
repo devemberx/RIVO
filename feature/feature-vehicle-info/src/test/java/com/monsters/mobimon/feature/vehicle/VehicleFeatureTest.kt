@@ -70,13 +70,15 @@ class VehicleFeatureTest {
     private val vehicleSnapshots =
         MutableStateFlow(
             VehicleSnapshot(
-                "unavailable",
+                "parked",
                 "test",
-                0,
-                0,
+                1,
+                1_000,
                 SignalSource.REAL,
-                DrivingState.UNKNOWN,
-                SignalQuality.UNAVAILABLE,
+                DrivingState.PARKED,
+                SignalQuality.VALID,
+                speed = 0,
+                gear = "P",
             ),
         )
 
@@ -119,6 +121,24 @@ class VehicleFeatureTest {
                 )
         }
         compose.onNodeWithText("주차 후 차량 상태를 확인해요").assertDoesNotExist()
+    }
+
+    @Test
+    fun enteringVehicleRouteWhileUnparkedShowsVehiclePopupImmediately() {
+        vehicleSnapshots.value =
+            VehicleSnapshot(
+                "moving",
+                "test",
+                1,
+                1_000,
+                SignalSource.REAL,
+                DrivingState.MOVING,
+                SignalQuality.VALID,
+                speed = 25,
+                gear = "D",
+            )
+        show(FakePoints())
+        compose.onNodeWithText("주차 후 차량 상태를 확인해요").assertIsDisplayed()
     }
 
     @Test

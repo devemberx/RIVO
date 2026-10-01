@@ -94,4 +94,17 @@ class MobiMonParkingInterruptionTest {
         compose.onNodeWithTag("parking-interruption-home").performKeyInput { pressKey(Key.Tab) }
         compose.onNodeWithTag("parking-interruption-home").assertIsFocused()
     }
+
+    @Test
+    fun rememberParkingInterruptionReturnsTrueWhenUnparked() {
+        var unparkedInterruption = false
+        var parkedInterruption = true
+        compose.setContent {
+            unparkedInterruption = rememberParkingInterruption(parkedVerified = false)
+            parkedInterruption = rememberParkingInterruption(parkedVerified = true)
+        }
+
+        assertEquals(true, unparkedInterruption)
+        assertEquals(false, parkedInterruption)
+    }
 }

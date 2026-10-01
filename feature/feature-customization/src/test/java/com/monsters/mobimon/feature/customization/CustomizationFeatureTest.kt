@@ -97,6 +97,49 @@ class CustomizationFeatureTest {
         compose.onNodeWithTag("parking-interruption-dialog").assertDoesNotExist()
     }
 
+    @Test
+    fun enteringRouteWhileUnparkedShowsParkingInterruptionPopupImmediately() {
+        val moving =
+            VehicleSnapshot(
+                "moving",
+                "test",
+                1,
+                1_000,
+                SignalSource.SIMULATED,
+                DrivingState.MOVING,
+                SignalQuality.VALID,
+                speed = 20,
+                gear = "D",
+            )
+        val vehicle =
+            object : VehicleRepository {
+                override val snapshots = MutableStateFlow(moving)
+
+                override fun start() = error("Feature must not start a provider")
+
+                override fun stop() = error("Feature must not stop a provider")
+            }
+        val points = TestPoints()
+        val feature =
+            CustomizationFeature(
+                points,
+                PointPresentation(points),
+                CompanionAppearancePresentation(points),
+                VehiclePresentation(
+                    vehicle,
+                    ProgressionIdentity("test", SignalSource.SIMULATED),
+                    Clock { 2_000 },
+                    VehicleFreshnessPolicy(15_000),
+                ),
+            )
+        compose.setContent {
+            MobiMonTheme {
+                Surface { feature.Content(CompanionRoute.APPEARANCE, FeatureNavigator({}, {}, {}, {}), Modifier) }
+            }
+        }
+        compose.onNodeWithText("주차 후 꾸미기를 이어가요").assertIsDisplayed()
+    }
+
     private class TestPoints : PointEconomy {
         override val wallet = flowOf(PointWallet(100))
         override val inventory = flowOf(CosmeticInventory(emptySet(), emptyMap()))
