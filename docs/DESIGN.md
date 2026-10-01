@@ -168,6 +168,9 @@ expressions do not diagnose.
 
 Debug controls default off; Release data follows the
 [vehicle authorization contract](ARCHITECTURE.md#vehicle-interaction-authorization).
+In an allowed Release session, ten version taps with no gap over three seconds reveal
+Debugger settings; ten more hide them and turn Debugger mode off. Show the
+remaining count for the last five taps and confirm each transition.
 Spoken replies and vehicle-home display are unavailable; omit Do Not Disturb.
 Configured builds show GitHub approval QR, code and address help; unconfigured
 builds disable sign-in. Only verified authentication shows the connected state,
@@ -187,6 +190,8 @@ data updates.
 
 Outside-app companion needs explicit opt-in and overlay permission. Non-P or
 unverified parking stops wandering and triggers Mobi's departure animation;
-verified P restores the companion. Intended placement is vehicle Home; hide it
+verified P restores Mobi with a 1.4-second entrance before wandering resumes.
+The Debug parking button uses the same vehicle stream; a renewed non-P signal
+during entrance queues departure after the entrance completes. Intended placement is vehicle Home; hide it
 while MobiMon is foreground. Target-OEM placement and lifecycle remain unverified under the
 [platform contract](ARCHITECTURE.md#shared-vehicle-condition-and-overlay).

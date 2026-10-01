@@ -516,6 +516,7 @@ internal fun Modifier.mobiSpriteFrames(
     rows: Int,
     loop: Boolean = true,
     blendFrames: Boolean = true,
+    filterQuality: FilterQuality = FilterQuality.Low,
     position: () -> Float,
 ): Modifier =
     drawWithCache {
@@ -536,7 +537,7 @@ internal fun Modifier.mobiSpriteFrames(
                 offset,
                 destination,
                 alpha = 1f - blend,
-                filterQuality = FilterQuality.Low,
+                filterQuality = filterQuality,
             )
             if (blend > 0f) {
                 val next = if (loop) (frame + 1) % count else (frame + 1).coerceAtMost(count - 1)
@@ -547,7 +548,7 @@ internal fun Modifier.mobiSpriteFrames(
                     offset,
                     destination,
                     alpha = blend,
-                    filterQuality = FilterQuality.Low,
+                    filterQuality = filterQuality,
                     blendMode = BlendMode.Plus,
                 )
             }

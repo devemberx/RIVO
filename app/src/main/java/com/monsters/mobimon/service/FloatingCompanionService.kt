@@ -98,6 +98,7 @@ class FloatingCompanionService : Service() {
     private var hidden = true
     private var exitPending = false
     private var isDisappearing by mutableStateOf(false)
+    private var isAppearing by mutableStateOf(false)
     private var isMoving by mutableStateOf(false)
     private var movingLeft by mutableStateOf(true)
     private var vehicleWarning by mutableStateOf(false)
@@ -291,6 +292,11 @@ class FloatingCompanionService : Service() {
                                         isMoving = isMoving,
                                         movingLeft = movingLeft,
                                         isDisappearing = isDisappearing,
+                                        isAppearing = isAppearing,
+                                        onAppeared = {
+                                            isAppearing = false
+                                            if (parked) restartWandering() else beginDisappearance()
+                                        },
                                         onDisappeared = {
                                             if (!parked) {
                                                 hidden = true
@@ -345,7 +351,7 @@ class FloatingCompanionService : Service() {
         var isDragging = false
 
         view.setOnTouchListener { _, event ->
-            if (!parked || exitPending || isDisappearing) return@setOnTouchListener true
+            if (!parked || exitPending || isDisappearing || isAppearing) return@setOnTouchListener true
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     wanderJob?.cancel()
@@ -400,7 +406,7 @@ class FloatingCompanionService : Service() {
         wm: WindowManager,
         initialDelayMs: Long = 4000L,
     ) {
-        if (!parked || exitPending || isDisappearing || hidden) return
+        if (!parked || exitPending || isDisappearing || isAppearing || hidden) return
         wanderJob?.cancel()
         wanderJob = null
         isMoving = false
@@ -595,13 +601,23 @@ class FloatingCompanionService : Service() {
                     if (parked != nowParked) {
                         parked = nowParked
                         if (parked) {
+                            val shouldEnter =
+                                (hidden || isDisappearing) &&
+                                    !appInForeground &&
+                                    latestFriendId == "friend:mobi"
+                            if (shouldEnter) {
+                                wanderJob?.cancel()
+                                wanderJob = null
+                                isMoving = false
+                                isAppearing = true
+                            }
                             exitPending = false
                             isDisappearing = false
                             hidden = false
                             updateOverlayVisibility()
                         } else if (!hidden && !appInForeground) {
                             exitPending = true
-                            if (!isMoving) beginDisappearance()
+                            if (!isMoving && !isAppearing) beginDisappearance()
                         } else {
                             hidden = true
                             updateOverlayVisibility()
@@ -620,13 +636,13 @@ class FloatingCompanionService : Service() {
     }
 
     private fun beginDisappearance() {
-        if (parked || hidden || isDisappearing) return
+        if (parked || hidden || isDisappearing || isAppearing) return
         // Do not cancel the active travel job: PetAvatar finishes its last hop before the exit.
         isDisappearing = true
     }
 
     private fun restartWandering() {
-        if (!parked || hidden || exitPending || isDisappearing || isMoving) return
+        if (!parked || hidden || exitPending || isDisappearing || isAppearing || isMoving) return
         if (!FloatingCompanionVisibility.shouldShow(appInForeground)) return
         val view = composeView ?: return
         val params = overlayParams ?: return
@@ -642,6 +658,7 @@ class FloatingCompanionService : Service() {
             restartWandering()
         } else {
             view.visibility = View.GONE
+            isAppearing = false
             if (!parked) {
                 hidden = true
                 exitPending = false
