@@ -4,6 +4,7 @@ class VehicleChatField(
     val spec: VehicleFieldSpec,
     val observation: VehicleObservation?,
     val validity: VehicleFieldValidity,
+    val deliveryMode: String = validity.validityBasis,
 ) {
     val value: VehicleValue? get() = observation?.value.takeIf { validity.quality == SignalQuality.VALID }
 
@@ -16,6 +17,7 @@ class VehicleChatCapture(
     val sourceKind: VehicleObservationSource,
     val sessionId: String,
     fields: List<VehicleChatField>,
+    val conditionReasons: List<ConversationConditionReason> = emptyList(),
 ) {
     val fields = fields.toList()
 

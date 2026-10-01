@@ -109,7 +109,22 @@ internal object CopilotMessageCodec {
             )
         }
         data.put("condition_reasons", reasons)
-        val fullInstruction = instruction + "\nOptional context data (JSON): " + data.toString()
+        val evidenceData =
+            context.vehicleCapture?.let { capture ->
+                VehicleEvidenceJson.json(capture).also { json ->
+                    context.userName
+                        ?.trim()
+                        ?.takeIf { it.isNotEmpty() && it.length <= 100 && it.none(Char::isISOControl) }
+                        ?.let { json.put("user_name", it) }
+                }
+            } ?: data
+        val observationInstruction =
+            "\nFor structured vehicle fields, use only VALID values. " +
+                "Receipt age is not staleness for ON_CHANGE; trust quality and validityBasis. " +
+                "vss_time_value is the observed clock value, not the receipt timestamp of other fields. " +
+                "Missing provenance and UNAVAILABLE values cannot establish current facts."
+        val fullInstruction =
+            instruction + observationInstruction + "\nOptional context data (JSON): " + evidenceData.toString()
         val body = JSONObject().put("model", model.id).put("stream", false)
         val payload = JSONArray()
         return when (model.api) {

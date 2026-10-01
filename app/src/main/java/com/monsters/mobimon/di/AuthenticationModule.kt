@@ -3,6 +3,7 @@ package com.monsters.mobimon.di
 import android.content.Context
 import com.monsters.mobimon.BuildConfig
 import com.monsters.mobimon.chat.AndroidUserName
+import com.monsters.mobimon.chat.VehicleChatEvidenceReader
 import com.monsters.mobimon.chat.VehicleConversationContext
 import com.monsters.mobimon.core.auth.PersistentGitHubAuthentication
 import com.monsters.mobimon.core.database.AtomicConversationStore
@@ -20,6 +21,7 @@ import com.monsters.mobimon.core.domain.ProgressionIdentity
 import com.monsters.mobimon.core.domain.SettingsRepository
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSourceProvider
+import com.monsters.mobimon.core.domain.VehicleChatEvidenceSource
 import com.monsters.mobimon.core.domain.VehicleFreshnessPolicy
 import dagger.Module
 import dagger.Provides
@@ -68,12 +70,30 @@ object AuthenticationModule {
     ): ConversationProvider = authentication.conversationProvider(context, tools)
 
     @Provides @Singleton
+    fun vehicleChatEvidence(
+        vehicle: CurrentVehicleEvidence,
+        clock: Clock,
+        settings: SettingsRepository,
+    ): VehicleChatEvidenceSource =
+        VehicleChatEvidenceReader(
+            vehicle::snapshot,
+            clock::nowMillis,
+            { settings.settings.first().debugModeEnabled },
+        )
+
+    @Provides @Singleton
     fun conversationContext(
         @ApplicationContext context: Context,
         vehicle: CurrentVehicleEvidence,
         clock: Clock,
         settings: SettingsRepository,
         freshness: VehicleFreshnessPolicy,
+        evidence: VehicleChatEvidenceSource =
+            VehicleChatEvidenceReader(
+                vehicle::snapshot,
+                clock::nowMillis,
+                { settings.settings.first().debugModeEnabled },
+            ),
     ): ConversationContextSource =
         VehicleConversationContext(
             AndroidUserName(context)::read,
@@ -81,5 +101,6 @@ object AuthenticationModule {
             clock::nowMillis,
             { settings.settings.first().debugModeEnabled },
             freshness,
+            evidence,
         )
 }
