@@ -118,8 +118,9 @@ class VehicleChatEvidenceReader(
                         reason
                     }
                 }.filter { reason ->
+                    // Raw reasons contain bounded display text; validate against the full checked value.
                     VehicleChatFieldCatalog.find(reason.signal) != null &&
-                        field(reason.signal).value?.canonical() == reason.value
+                        field(reason.signal).value?.canonical() == (checkedRaw[reason.signal] ?: reason.value)
                 }
         val essentials =
             listOf(

@@ -113,6 +113,44 @@ class VehicleChatEvidenceReaderTest {
             assertTrue(capture.conditionReasons.any { it.signal == id })
         }
 
+    @Test fun longBatteryErrorsKeepWarningsAndFullEvidenceWithBoundedReasonText() =
+        runTest {
+            val id = "Vehicle.Powertrain.TractionBattery.ErrorCodes"
+            for (length in listOf(200, 201, 2000)) {
+                val codes = "BMS123 ".repeat(286).take(length)
+                val observed = observation(id, VehicleValue.Text(codes))
+                val reader = VehicleChatEvidenceReader({ snapshot(mapOf(id to observed)) }, { 200 }, { false })
+                val capture = reader.capture(VehicleChatTopic.BASIC)
+
+                assertEquals(
+                    "length=$length",
+                    VehicleValue.Text("WARNING"),
+                    capture.field(VehicleChatFieldCatalog.CONDITION)!!.value,
+                )
+                assertEquals(VehicleValue.Text(codes), capture.field(id)!!.value)
+                val reason = capture.conditionReasons.single { it.signal == id }
+                assertEquals("SICK", reason.concern)
+                assertEquals(codes.take(200), reason.value)
+            }
+        }
+
+    @Test fun invalidOrStaleBatteryErrorsCannotCreateWarnings() =
+        runTest {
+            val id = "Vehicle.Powertrain.TractionBattery.ErrorCodes"
+            val observed = observation(id, VehicleValue.Text("BMS123 ".repeat(30)))
+            for (invalid in listOf(
+                observed.copy(value = VehicleValue.Text("E".repeat(2001))),
+                observed.copy(sourceQuality = SignalQuality.STALE),
+            )) {
+                val reader = VehicleChatEvidenceReader({ snapshot(mapOf(id to invalid)) }, { 200 }, { false })
+                val capture = reader.capture(VehicleChatTopic.BATTERY)
+
+                assertNull(capture.field(id)!!.value)
+                assertTrue(capture.conditionReasons.isEmpty())
+                assertNull(reader.capture(VehicleChatTopic.BASIC).field(VehicleChatFieldCatalog.CONDITION)!!.value)
+            }
+        }
+
     private fun observation(
         id: String,
         value: VehicleValue,
