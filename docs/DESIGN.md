@@ -53,8 +53,10 @@ Prefix feature icons; share fonts/artwork in `core-ui` and retain licenses.
 
 Generate from approved masters and change only requested properties. Compare
 identity, proportions, framing, anchors, transparency and dimensions; reject drift.
-Use replaceable `PetAvatar` for rendering. Variants and crossfades keep ground
-anchors fixed; reduced motion uses still frames.
+Use replaceable `PetAvatar` for rendering. Mobi and Luna crossfade only the
+outgoing and incoming normal, hungry or sick poses over 200ms in a fixed
+ground-anchored slot. Reduced motion switches poses immediately while gentle idle
+breathing continues.
 
 #### Luna generation references
 
