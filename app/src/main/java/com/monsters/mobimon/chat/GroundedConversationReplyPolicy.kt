@@ -28,6 +28,7 @@ class GroundedConversationReplyPolicy(
         evidence: ConversationEvidenceSet,
     ): ConversationResult<String> {
         if (reply.version != 1 || reply.text.isBlank() || reply.text.length > 12_000) return failure()
+        if (reply.status == "CONVERSATION" && evidence.manualSources.isNotEmpty()) return failure()
         val refs = reply.vehicleRefs
         if (refs.size > 32 || refs.distinct().size != refs.size) return failure()
         val markers = Regex("\\{\\{vehicle:([0-9]+)}}").findAll(reply.text).toList()
@@ -97,7 +98,6 @@ class GroundedConversationReplyPolicy(
         current: VehicleChatCapture,
     ): Boolean {
         if (current.capturedAtElapsedMillis < capture.capturedAtElapsedMillis ||
-            old.validUntilElapsedMillis?.let { current.capturedAtElapsedMillis > it } == true ||
             old.spec != latest.spec ||
             old.validity.quality != latest.validity.quality ||
             old.validity.reason != latest.validity.reason ||
@@ -108,7 +108,10 @@ class GroundedConversationReplyPolicy(
             return false
         }
         // An advancing vehicle clock is explicitly an as-of fact, not evidence receipt time.
-        if (old.spec.id == VehicleChatFieldCatalog.TIME && old.value != null) return latest.value != null
+        if (old.spec.id == VehicleChatFieldCatalog.TIME && old.value != null && old.value != latest.value) {
+            return latest.value != null &&
+                old.validUntilElapsedMillis?.let { current.capturedAtElapsedMillis <= it } == true
+        }
         return old.value == latest.value
     }
 

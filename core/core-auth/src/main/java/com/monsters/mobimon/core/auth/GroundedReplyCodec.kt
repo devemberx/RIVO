@@ -19,6 +19,8 @@ internal object GroundedReplyCodec {
         The app renders the actual label, value, unit, availability and simulation source. Do not restate or invent these facts in prose.
         Unavailable fields may be referenced to explain missing evidence; never treat them as false, zero or normal.
         CONVERSATION is ordinary companion chat, without vehicle claims or citations. ANSWERED requires valid manual sourceIds.
+        For ANSWERED, put each manual source inline as [ne1-0000] using the actual returned ID beside its claim.
+        sourceIds lists those IDs once each in order of first appearance, at most four. The app renders the bibliography.
         sourceIds are manual references only. Vehicle evidenceIds are not manual sources. No vehicle command is available.
         Use ONLY the current turn's evidence; older conversation text is not current vehicle evidence.
         Vehicle.CurrentLocation.Timestamp is the vehicle clock value at capture, not an observation timestamp or phone time.

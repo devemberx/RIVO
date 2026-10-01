@@ -29,7 +29,7 @@ class VehicleChatPayloadTest {
         assertTrue(instruction.contains("Use only the declared read-only local tools."))
         assertTrue(
             instruction.contains(
-                "For current time and current battery level questions, answer using only the current context values.",
+                "For current time and battery questions, use only this turn's context or declared read-only tool evidence.",
             ),
         )
         assertFalse(instruction.contains("For time and battery questions"))

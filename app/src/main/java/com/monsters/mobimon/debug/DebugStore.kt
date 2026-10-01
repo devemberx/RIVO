@@ -3,6 +3,8 @@ package com.monsters.mobimon.debug
 import android.content.Context
 import android.content.SharedPreferences
 import com.monsters.mobimon.core.vss.interpretVssTimeOfDay
+import com.monsters.mobimon.vehicle.DebugObservationStamp
+import com.monsters.mobimon.vehicle.withObservationReceipts
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -95,6 +97,8 @@ data class DebugVssState(
     val overrides: DebugInterpretationOverrides = DebugInterpretationOverrides(),
     val cardExtraSignals: Map<String, String> = DebugCardVssSignals.defaults,
     val receivedAtElapsedMillis: Long? = null,
+    val observationRevision: Long = 0,
+    val observationReceipts: Map<String, DebugObservationStamp> = emptyMap(),
 ) {
     val isDistracted: Boolean
         get() = overrides.isDistracted ?: (raw.driverDistractionLevel >= DISTRACTION_THRESHOLD_PERCENT)
@@ -192,7 +196,7 @@ class DebugStore
         private val prefs: SharedPreferences = context.getSharedPreferences("debug_vss_prefs", Context.MODE_PRIVATE)
 
         private val _state =
-            MutableStateFlow(loadState().copy(receivedAtElapsedMillis = android.os.SystemClock.elapsedRealtime()))
+            MutableStateFlow(loadState().withObservationReceipts(null, android.os.SystemClock.elapsedRealtime()))
         override val state: StateFlow<DebugVssState> = _state.asStateFlow()
 
         // Count of completed safe drives. VSS is a snapshot and cannot express this history, so the
@@ -324,11 +328,12 @@ class DebugStore
                     ),
             )
 
+        @Synchronized
         fun updateState(reducer: (DebugVssState) -> DebugVssState) {
             val newState =
                 reducer(
                     _state.value,
-                ).copy(receivedAtElapsedMillis = android.os.SystemClock.elapsedRealtime())
+                ).withObservationReceipts(_state.value, android.os.SystemClock.elapsedRealtime())
             _state.value = newState
             prefs.edit().write(newState).apply()
         }

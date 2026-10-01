@@ -125,6 +125,7 @@ class DemoVehicleRepository(
                                                 snapshot,
                                                 debugState.receivedAtElapsedMillis ?: observedAt,
                                                 observedAt,
+                                                debugState,
                                             ),
                                     )
                                 } else {
@@ -162,6 +163,7 @@ class DemoVehicleRepository(
         generation++
         observation?.cancel()
         observation = null
+        debugEvidence = null
         vssRawSource.stop()
         if (vssRawSource is DefaultParkedVssRawVehicleSource) {
             val current = mutableSnapshots.value

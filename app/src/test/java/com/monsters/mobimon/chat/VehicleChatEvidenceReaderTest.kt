@@ -65,6 +65,54 @@ class VehicleChatEvidenceReaderTest {
             assertNull(capture.field("Vehicle.Powertrain.TractionBattery.StateOfHealth")!!.value)
         }
 
+    @Test fun batteryAliasUsesAppRoundingAndCannotHideOutOfRangeRawValues() =
+        runTest {
+            val id = "Vehicle.Powertrain.TractionBattery.StateOfCharge.Displayed"
+            var raw = observation(id, VehicleValue.Number(18.5))
+            val reader =
+                VehicleChatEvidenceReader({ snapshot(mapOf(id to raw)).copy(batteryPercent = 19) }, { 200 }, { false })
+            assertEquals(
+                VehicleValue.Number(19.0),
+                reader.capture(VehicleChatTopic.BATTERY).field(VehicleChatFieldCatalog.BATTERY)!!.value,
+            )
+            raw = raw.copy(value = VehicleValue.Number(100.4))
+            assertNull(reader.capture(VehicleChatTopic.BATTERY).field(VehicleChatFieldCatalog.BATTERY)!!.value)
+        }
+
+    @Test fun lowWasherFluidDoesNotClaimBatteryIsLow() =
+        runTest {
+            val id = "interpreted.washerFluidLevel"
+            val observed = observation(id, VehicleValue.Number(10.0))
+            val reader =
+                VehicleChatEvidenceReader({
+                    snapshot(mapOf(id to observed)).copy(washerFluidLevel = 10, batteryPercent = 72)
+                }, { 200 }, { false })
+            assertEquals(
+                VehicleValue.Text("NEEDS_REPLENISHMENT"),
+                reader.capture(VehicleChatTopic.BASIC).field(VehicleChatFieldCatalog.CONDITION)!!.value,
+            )
+        }
+
+    @Test fun conditionUsesTheSameAtomicEvidenceAsBatteryWhenLegacyScalarsAreMissing() =
+        runTest {
+            val id = VehicleChatFieldCatalog.BATTERY
+            val observed = observation(id, VehicleValue.Number(12.0))
+            val reader = VehicleChatEvidenceReader({ snapshot(mapOf(id to observed)) }, { 200 }, { false })
+            val capture = reader.capture(VehicleChatTopic.BASIC)
+            assertEquals(VehicleValue.Text("LOW_BATTERY"), capture.field(VehicleChatFieldCatalog.CONDITION)!!.value)
+            assertTrue(capture.conditionReasons.any { it.signal == id })
+        }
+
+    @Test fun confirmedBatteryErrorDoesNotRequireAvailableBatteryPercentage() =
+        runTest {
+            val id = "Vehicle.Powertrain.TractionBattery.ErrorCodes"
+            val observed = observation(id, VehicleValue.Text("BMS123"))
+            val reader = VehicleChatEvidenceReader({ snapshot(mapOf(id to observed)) }, { 200 }, { false })
+            val capture = reader.capture(VehicleChatTopic.BASIC)
+            assertEquals(VehicleValue.Text("WARNING"), capture.field(VehicleChatFieldCatalog.CONDITION)!!.value)
+            assertTrue(capture.conditionReasons.any { it.signal == id })
+        }
+
     private fun observation(
         id: String,
         value: VehicleValue,

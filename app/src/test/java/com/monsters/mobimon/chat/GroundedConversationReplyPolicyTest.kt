@@ -27,6 +27,16 @@ class GroundedConversationReplyPolicyTest {
             assertEquals("시뮬레이션 · 배터리 잔량: 25%", (result as ConversationResult.Success).value)
         }
 
+    @Test fun freshEqualReceiptCanRevalidateBeyondTheInitialDeadline() =
+        runTest {
+            val result =
+                policy(capture(revision = 2, now = 1500, deadline = 2000)).accept(
+                    reply(),
+                    ConversationEvidenceSet(capture(deadline = 1000)),
+                )
+            assertTrue(result is ConversationResult.Success)
+        }
+
     @Test fun rejectsChangedValueExpiredEvidenceAndChangedSession() =
         runTest {
             listOf(capture(26.0), capture(valid = false), capture(session = "other")).forEach { latest ->
@@ -36,7 +46,7 @@ class GroundedConversationReplyPolicyTest {
             }
             assertTrue(
                 policy(
-                    capture(now = 1001),
+                    capture(now = 1001, valid = false),
                 ).accept(reply(), ConversationEvidenceSet(capture(deadline = 1000))) is ConversationResult.Failure,
             )
         }

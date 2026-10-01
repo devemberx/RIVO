@@ -1,0 +1,2310 @@
+{
+  "version": 1,
+  "kind": "synthetic-contract-fixtures-not-model-results",
+  "cases": [
+    {
+      "id": "battery-mobi",
+      "persona": "mobi",
+      "split": "holdout",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "배터리가 얼마나 남았어?"
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 28,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "28%"
+      }
+    },
+    {
+      "id": "battery-luna",
+      "persona": "luna",
+      "split": "holdout",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "배터리가 얼마나 남았어?"
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 28,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "28%"
+      }
+    },
+    {
+      "id": "zero_battery-mobi",
+      "persona": "mobi",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "배터리가 0인 거야?"
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 0,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "0%"
+      }
+    },
+    {
+      "id": "zero_battery-luna",
+      "persona": "luna",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "배터리가 0인 거야?"
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 0,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "0%"
+      }
+    },
+    {
+      "id": "full_battery-mobi",
+      "persona": "mobi",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "배터리 충전량 알려줘."
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 100,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "100%"
+      }
+    },
+    {
+      "id": "full_battery-luna",
+      "persona": "luna",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "배터리 충전량 알려줘."
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 100,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "100%"
+      }
+    },
+    {
+      "id": "decimal_charge-mobi",
+      "persona": "mobi",
+      "split": "holdout",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "세부 충전량은?"
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "Vehicle.Powertrain.TractionBattery.StateOfCharge.Displayed",
+        "value": 43.5,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "43.5%"
+      }
+    },
+    {
+      "id": "decimal_charge-luna",
+      "persona": "luna",
+      "split": "holdout",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "세부 충전량은?"
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "Vehicle.Powertrain.TractionBattery.StateOfCharge.Displayed",
+        "value": 43.5,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "43.5%"
+      }
+    },
+    {
+      "id": "health-mobi",
+      "persona": "mobi",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "배터리 건강 상태를 수치로 알려줘."
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "Vehicle.Powertrain.TractionBattery.StateOfHealth",
+        "value": 94,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "94%"
+      }
+    },
+    {
+      "id": "health-luna",
+      "persona": "luna",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "배터리 건강 상태를 수치로 알려줘."
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "Vehicle.Powertrain.TractionBattery.StateOfHealth",
+        "value": 94,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "94%"
+      }
+    },
+    {
+      "id": "range-mobi",
+      "persona": "mobi",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "남은 주행 거리는?"
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "Vehicle.Powertrain.TractionBattery.Range",
+        "value": 123000,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "123000 m"
+      }
+    },
+    {
+      "id": "range-luna",
+      "persona": "luna",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "남은 주행 거리는?"
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "Vehicle.Powertrain.TractionBattery.Range",
+        "value": 123000,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "123000 m"
+      }
+    },
+    {
+      "id": "temperature-mobi",
+      "persona": "mobi",
+      "split": "holdout",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "바깥 온도는?"
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "environment"
+      ],
+      "observation": {
+        "fieldId": "interpreted.outsideTemperature",
+        "value": -5,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "-5 °C"
+      }
+    },
+    {
+      "id": "temperature-luna",
+      "persona": "luna",
+      "split": "holdout",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "바깥 온도는?"
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "environment"
+      ],
+      "observation": {
+        "fieldId": "interpreted.outsideTemperature",
+        "value": -5,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "-5 °C"
+      }
+    },
+    {
+      "id": "washer-mobi",
+      "persona": "mobi",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "워셔액 얼마나 남았어?"
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "body"
+      ],
+      "observation": {
+        "fieldId": "interpreted.washerFluidLevel",
+        "value": 20,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "20%"
+      }
+    },
+    {
+      "id": "washer-luna",
+      "persona": "luna",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "워셔액 얼마나 남았어?"
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "body"
+      ],
+      "observation": {
+        "fieldId": "interpreted.washerFluidLevel",
+        "value": 20,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "20%"
+      }
+    },
+    {
+      "id": "motion-mobi",
+      "persona": "mobi",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "지금 속도가 얼마야?"
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "motion"
+      ],
+      "observation": {
+        "fieldId": "interpreted.speed",
+        "value": 0,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "0 km/h"
+      }
+    },
+    {
+      "id": "motion-luna",
+      "persona": "luna",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "지금 속도가 얼마야?"
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "motion"
+      ],
+      "observation": {
+        "fieldId": "interpreted.speed",
+        "value": 0,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "0 km/h"
+      }
+    },
+    {
+      "id": "navigation-mobi",
+      "persona": "mobi",
+      "split": "holdout",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "목적지까지 거리는?"
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "navigation"
+      ],
+      "observation": {
+        "fieldId": "interpreted.distanceToDestination",
+        "value": 1500,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "1500 m"
+      }
+    },
+    {
+      "id": "navigation-luna",
+      "persona": "luna",
+      "split": "holdout",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "목적지까지 거리는?"
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "navigation"
+      ],
+      "observation": {
+        "fieldId": "interpreted.distanceToDestination",
+        "value": 1500,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "1500 m"
+      }
+    },
+    {
+      "id": "charging-mobi",
+      "persona": "mobi",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "충전 중이야?"
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "charging"
+      ],
+      "observation": {
+        "fieldId": "interpreted.isCharging",
+        "value": true,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "감지됨"
+      }
+    },
+    {
+      "id": "charging-luna",
+      "persona": "luna",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "충전 중이야?"
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "charging"
+      ],
+      "observation": {
+        "fieldId": "interpreted.isCharging",
+        "value": true,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "감지됨"
+      }
+    },
+    {
+      "id": "tire_warning-mobi",
+      "persona": "mobi",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "앞 왼쪽 타이어 경고 있어?"
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "tires"
+      ],
+      "observation": {
+        "fieldId": "Vehicle.Chassis.Axle.Row1.Wheel.Left.Tire.IsPressureLow",
+        "value": true,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "감지됨"
+      }
+    },
+    {
+      "id": "tire_warning-luna",
+      "persona": "luna",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "앞 왼쪽 타이어 경고 있어?"
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "tires"
+      ],
+      "observation": {
+        "fieldId": "Vehicle.Chassis.Axle.Row1.Wheel.Left.Tire.IsPressureLow",
+        "value": true,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "감지됨"
+      }
+    },
+    {
+      "id": "tire_false-mobi",
+      "persona": "mobi",
+      "split": "holdout",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "그 경고가 없다는 신호야?"
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "tires"
+      ],
+      "observation": {
+        "fieldId": "Vehicle.Chassis.Axle.Row1.Wheel.Left.Tire.IsPressureLow",
+        "value": false,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "감지되지 않음"
+      }
+    },
+    {
+      "id": "tire_false-luna",
+      "persona": "luna",
+      "split": "holdout",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "그 경고가 없다는 신호야?"
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "tires"
+      ],
+      "observation": {
+        "fieldId": "Vehicle.Chassis.Axle.Row1.Wheel.Left.Tire.IsPressureLow",
+        "value": false,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "감지되지 않음"
+      }
+    },
+    {
+      "id": "partial_wheels-mobi",
+      "persona": "mobi",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "뒤 오른쪽 타이어도 괜찮아?"
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "tires"
+      ],
+      "observation": {
+        "fieldId": "Vehicle.Chassis.Axle.Row1.Wheel.Left.Tire.IsPressureLow",
+        "value": false,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "확인할 수 없음"
+      },
+      "referenceFieldId": "Vehicle.Chassis.Axle.Row2.Wheel.Right.Tire.IsPressureLow"
+    },
+    {
+      "id": "partial_wheels-luna",
+      "persona": "luna",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "뒤 오른쪽 타이어도 괜찮아?"
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "tires"
+      ],
+      "observation": {
+        "fieldId": "Vehicle.Chassis.Axle.Row1.Wheel.Left.Tire.IsPressureLow",
+        "value": false,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "확인할 수 없음"
+      },
+      "referenceFieldId": "Vehicle.Chassis.Axle.Row2.Wheel.Right.Tire.IsPressureLow"
+    },
+    {
+      "id": "periodic_fresh-mobi",
+      "persona": "mobi",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "최근 수신한 잔량 알려줘."
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 29,
+        "mode": "PERIODIC",
+        "receivedAtMs": 100,
+        "maxAgeMs": 1000
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "29%"
+      }
+    },
+    {
+      "id": "periodic_fresh-luna",
+      "persona": "luna",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "최근 수신한 잔량 알려줘."
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 29,
+        "mode": "PERIODIC",
+        "receivedAtMs": 100,
+        "maxAgeMs": 1000
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "29%"
+      }
+    },
+    {
+      "id": "periodic_stale-mobi",
+      "persona": "mobi",
+      "split": "holdout",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "오래된 잔량도 지금 값이야?"
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 29,
+        "mode": "PERIODIC",
+        "receivedAtMs": 100,
+        "maxAgeMs": 1000
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 1200,
+      "currentAtMs": 1300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "확인할 수 없음"
+      }
+    },
+    {
+      "id": "periodic_stale-luna",
+      "persona": "luna",
+      "split": "holdout",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "오래된 잔량도 지금 값이야?"
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 29,
+        "mode": "PERIODIC",
+        "receivedAtMs": 100,
+        "maxAgeMs": 1000
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 1200,
+      "currentAtMs": 1300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "확인할 수 없음"
+      }
+    },
+    {
+      "id": "unknown_policy-mobi",
+      "persona": "mobi",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "수신 규칙이 없는 잔량이네?"
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 29,
+        "mode": "UNKNOWN",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "확인할 수 없음"
+      }
+    },
+    {
+      "id": "unknown_policy-luna",
+      "persona": "luna",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "수신 규칙이 없는 잔량이네?"
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 29,
+        "mode": "UNKNOWN",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "확인할 수 없음"
+      }
+    },
+    {
+      "id": "on_change_old-mobi",
+      "persona": "mobi",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "값이 안 바뀐 지 오래됐는데?"
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 29,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 100000,
+      "currentAtMs": 100100,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "29%"
+      }
+    },
+    {
+      "id": "on_change_old-luna",
+      "persona": "luna",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "값이 안 바뀐 지 오래됐는데?"
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 29,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 100000,
+      "currentAtMs": 100100,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "29%"
+      }
+    },
+    {
+      "id": "missing-mobi",
+      "persona": "mobi",
+      "split": "holdout",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "배터리 값이 안 와도 알 수 있어?"
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": null,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "확인할 수 없음"
+      }
+    },
+    {
+      "id": "missing-luna",
+      "persona": "luna",
+      "split": "holdout",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "배터리 값이 안 와도 알 수 있어?"
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": null,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "확인할 수 없음"
+      }
+    },
+    {
+      "id": "equal_receipt-mobi",
+      "persona": "mobi",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "답변 도중 같은 잔량이 다시 왔어."
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 29,
+        "mode": "PERIODIC",
+        "receivedAtMs": 100,
+        "maxAgeMs": 1000
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 1200,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "29%"
+      },
+      "currentChange": {
+        "receivedAtMs": 1150
+      }
+    },
+    {
+      "id": "equal_receipt-luna",
+      "persona": "luna",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "답변 도중 같은 잔량이 다시 왔어."
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 29,
+        "mode": "PERIODIC",
+        "receivedAtMs": 100,
+        "maxAgeMs": 1000
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 1200,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "29%"
+      },
+      "currentChange": {
+        "receivedAtMs": 1150
+      }
+    },
+    {
+      "id": "changed_value-mobi",
+      "persona": "mobi",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "답변 도중 잔량이 달라졌어."
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 29,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": false,
+        "contains": ""
+      },
+      "currentChange": {
+        "value": 30
+      }
+    },
+    {
+      "id": "changed_value-luna",
+      "persona": "luna",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "답변 도중 잔량이 달라졌어."
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 29,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": false,
+        "contains": ""
+      },
+      "currentChange": {
+        "value": 30
+      }
+    },
+    {
+      "id": "expired_during-mobi",
+      "persona": "mobi",
+      "split": "holdout",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "답변 전에 유효시간이 지나면?"
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 29,
+        "mode": "PERIODIC",
+        "receivedAtMs": 100,
+        "maxAgeMs": 1000
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 1200,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": false,
+        "contains": ""
+      }
+    },
+    {
+      "id": "expired_during-luna",
+      "persona": "luna",
+      "split": "holdout",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "답변 전에 유효시간이 지나면?"
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 29,
+        "mode": "PERIODIC",
+        "receivedAtMs": 100,
+        "maxAgeMs": 1000
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 1200,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": false,
+        "contains": ""
+      }
+    },
+    {
+      "id": "disconnect_during-mobi",
+      "persona": "mobi",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "설명서를 찾는 도중 연결이 끊겼어."
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 29,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [
+        {
+          "id": "ne1-0001",
+          "text": "합성 충전 안내.",
+          "citation": "합성 자료 1쪽"
+        }
+      ],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": false,
+        "contains": ""
+      },
+      "currentChange": {
+        "connected": false
+      }
+    },
+    {
+      "id": "disconnect_during-luna",
+      "persona": "luna",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "설명서를 찾는 도중 연결이 끊겼어."
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 29,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [
+        {
+          "id": "ne1-0001",
+          "text": "합성 충전 안내.",
+          "citation": "합성 자료 1쪽"
+        }
+      ],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": false,
+        "contains": ""
+      },
+      "currentChange": {
+        "connected": false
+      }
+    },
+    {
+      "id": "session_changed-mobi",
+      "persona": "mobi",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "새 차량 세션으로 바뀌었어."
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 29,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": false,
+        "contains": ""
+      },
+      "currentChange": {
+        "session": "next-session"
+      }
+    },
+    {
+      "id": "session_changed-luna",
+      "persona": "luna",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "새 차량 세션으로 바뀌었어."
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 29,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": false,
+        "contains": ""
+      },
+      "currentChange": {
+        "session": "next-session"
+      }
+    },
+    {
+      "id": "source_changed-mobi",
+      "persona": "mobi",
+      "split": "holdout",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "시뮬레이션을 껐어."
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 29,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": false,
+        "contains": ""
+      },
+      "currentChange": {
+        "source": "VSS_ADAPTER"
+      }
+    },
+    {
+      "id": "source_changed-luna",
+      "persona": "luna",
+      "split": "holdout",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "시뮬레이션을 껐어."
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 29,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": false,
+        "contains": ""
+      },
+      "currentChange": {
+        "source": "VSS_ADAPTER"
+      }
+    },
+    {
+      "id": "clock_advances-mobi",
+      "persona": "mobi",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "차량 시각은?"
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "time"
+      ],
+      "observation": {
+        "fieldId": "Vehicle.CurrentLocation.Timestamp",
+        "value": "2026-10-02T10:00:00+09:00",
+        "mode": "PERIODIC",
+        "receivedAtMs": 100,
+        "maxAgeMs": 60000
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "10:00:00"
+      },
+      "currentChange": {
+        "value": "2026-10-02T10:00:01+09:00",
+        "receivedAtMs": 250
+      }
+    },
+    {
+      "id": "clock_advances-luna",
+      "persona": "luna",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "차량 시각은?"
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "time"
+      ],
+      "observation": {
+        "fieldId": "Vehicle.CurrentLocation.Timestamp",
+        "value": "2026-10-02T10:00:00+09:00",
+        "mode": "PERIODIC",
+        "receivedAtMs": 100,
+        "maxAgeMs": 60000
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "10:00:00"
+      },
+      "currentChange": {
+        "value": "2026-10-02T10:00:01+09:00",
+        "receivedAtMs": 250
+      }
+    },
+    {
+      "id": "contradicted_history-mobi",
+      "persona": "mobi",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "아까는?"
+        },
+        {
+          "fromUser": false,
+          "text": "배터리가 99%야."
+        },
+        {
+          "fromUser": true,
+          "text": "그럼 지금 잔량은?"
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 17,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "17%"
+      }
+    },
+    {
+      "id": "contradicted_history-luna",
+      "persona": "luna",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "아까는?"
+        },
+        {
+          "fromUser": false,
+          "text": "배터리가 99%야."
+        },
+        {
+          "fromUser": true,
+          "text": "그럼 지금 잔량은?"
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 17,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [
+        "vehicle"
+      ],
+      "candidateStatus": "VEHICLE",
+      "expected": {
+        "accepted": true,
+        "contains": "17%"
+      }
+    },
+    {
+      "id": "unsupported_pressure-mobi",
+      "persona": "mobi",
+      "split": "holdout",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "타이어 압력을 kPa로 알려줘."
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "tires"
+      ],
+      "observation": {
+        "fieldId": "Vehicle.Chassis.Axle.Row1.Wheel.Left.Tire.Pressure",
+        "value": null,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [],
+      "candidateStatus": "NO_EVIDENCE",
+      "expected": {
+        "accepted": false,
+        "contains": ""
+      }
+    },
+    {
+      "id": "unsupported_pressure-luna",
+      "persona": "luna",
+      "split": "holdout",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "타이어 압력을 kPa로 알려줘."
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "tires"
+      ],
+      "observation": {
+        "fieldId": "Vehicle.Chassis.Axle.Row1.Wheel.Left.Tire.Pressure",
+        "value": null,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [],
+      "candidateStatus": "NO_EVIDENCE",
+      "expected": {
+        "accepted": false,
+        "contains": ""
+      }
+    },
+    {
+      "id": "unsupported_location-mobi",
+      "persona": "mobi",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "현재 주소와 위도를 알려줘."
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "navigation"
+      ],
+      "observation": {
+        "fieldId": "Vehicle.CurrentLocation.Latitude",
+        "value": null,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [],
+      "candidateStatus": "NO_EVIDENCE",
+      "expected": {
+        "accepted": false,
+        "contains": ""
+      }
+    },
+    {
+      "id": "unsupported_location-luna",
+      "persona": "luna",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "현재 주소와 위도를 알려줘."
+        }
+      ],
+      "source": "DEBUG_OVERRIDE",
+      "queryTopics": [
+        "navigation"
+      ],
+      "observation": {
+        "fieldId": "Vehicle.CurrentLocation.Latitude",
+        "value": null,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [],
+      "allowedEvidenceTypes": [],
+      "candidateStatus": "NO_EVIDENCE",
+      "expected": {
+        "accepted": false,
+        "contains": ""
+      }
+    },
+    {
+      "id": "mixed_manual-mobi",
+      "persona": "mobi",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "잔량과 설명서의 충전 안내를 같이 알려줘."
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 17,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [
+        {
+          "id": "ne1-0001",
+          "text": "합성 설명서: 충전 안내를 확인하세요.",
+          "citation": "합성 자료 1쪽"
+        }
+      ],
+      "allowedEvidenceTypes": [
+        "vehicle",
+        "manual"
+      ],
+      "candidateStatus": "ANSWERED",
+      "expected": {
+        "accepted": true,
+        "contains": "17%"
+      }
+    },
+    {
+      "id": "mixed_manual-luna",
+      "persona": "luna",
+      "split": "development",
+      "userTurns": [
+        {
+          "fromUser": true,
+          "text": "잔량과 설명서의 충전 안내를 같이 알려줘."
+        }
+      ],
+      "source": "VSS_ADAPTER",
+      "queryTopics": [
+        "battery"
+      ],
+      "observation": {
+        "fieldId": "interpreted.batteryPercent",
+        "value": 17,
+        "mode": "ON_CHANGE",
+        "receivedAtMs": 100
+      },
+      "subscription": {
+        "connected": true,
+        "synchronized": true,
+        "valid": true
+      },
+      "captureAtMs": 200,
+      "currentAtMs": 300,
+      "manualExcerpts": [
+        {
+          "id": "ne1-0001",
+          "text": "합성 설명서: 충전 안내를 확인하세요.",
+          "citation": "합성 자료 1쪽"
+        }
+      ],
+      "allowedEvidenceTypes": [
+        "vehicle",
+        "manual"
+      ],
+      "candidateStatus": "ANSWERED",
+      "expected": {
+        "accepted": true,
+        "contains": "17%"
+      }
+    }
+  ]
+}

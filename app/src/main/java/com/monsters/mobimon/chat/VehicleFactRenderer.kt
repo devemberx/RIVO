@@ -19,6 +19,7 @@ internal object VehicleFactRenderer {
                     when (value.value) {
                         "WARNING" -> "경고 신호 있음"
                         "LOW_BATTERY" -> "배터리 잔량 낮음"
+                        "NEEDS_REPLENISHMENT" -> "보충이 필요한 항목 있음"
                         "CHECKED" -> "확인된 항목에 경고 없음"
                         "PARTIAL" -> "일부 항목만 확인됨"
                         else -> value.value.ifEmpty { "없음" }

@@ -113,6 +113,7 @@ class JourneyConversationProvider
     @Inject
     constructor() : ConversationProvider {
         var connectionResult: ConversationResult<String> = ConversationResult.Success("gpt-4o")
+        var replyResult: ConversationResult<String> = ConversationResult.Success("이야기를 들려줘서 고마워요.")
         var connections = 0
             private set
         var replies = 0
@@ -134,7 +135,7 @@ class JourneyConversationProvider
             replies++
             requests += messages
             conversationIds += conversationId
-            return ConversationResult.Success("이야기를 들려줘서 고마워요.")
+            return replyResult
         }
     }
 

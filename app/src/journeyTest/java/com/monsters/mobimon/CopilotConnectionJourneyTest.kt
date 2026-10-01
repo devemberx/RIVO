@@ -221,6 +221,38 @@ class CopilotConnectionJourneyTest {
     }
 
     @Test
+    fun rejectedEvidenceKeepsHistoryAndOnlyExplicitRetrySendsAgain() {
+        authentication.approve()
+        ActivityScenario.launch(MainActivity::class.java).use {
+            waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
+            compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
+            waitFor(hasText(text(AuthR.string.chat_ready)))
+            compose.onNodeWithTag("chat-input").performTextInput("첫 대화")
+            waitFor(hasTestTag("chat-send") and isEnabled())
+            compose.onNodeWithTag("chat-send").performClick()
+            waitFor(hasText("이야기를 들려줘서 고마워요."))
+            conversations.replyResult = ConversationResult.Failure(ConversationProblem.NO_EVIDENCE)
+            compose.onNodeWithTag("chat-input").performTextInput("현재 배터리")
+            waitFor(hasTestTag("chat-send") and isEnabled())
+            compose.onNodeWithTag("chat-send").performClick()
+            waitFor(hasTestTag("chat-network-dialog"))
+            assertEquals(2, conversations.replies)
+            compose.onNodeWithTag("chat-network-retry").ensureDisplayed().performClick()
+            waitFor(hasTestTag("chat-inline-failure"))
+            compose.onNodeWithText("이야기를 들려줘서 고마워요.").assertExists()
+            assertEquals(2, conversations.replies)
+            conversations.replyResult = ConversationResult.Success("검증된 새 답변")
+            compose.onNodeWithText(text(AuthR.string.chat_retry)).ensureDisplayed().performClick()
+            waitFor(hasText("검증된 새 답변"))
+            assertEquals(3, conversations.replies)
+            assertEquals(
+                listOf("첫 대화", "이야기를 들려줘서 고마워요.", "현재 배터리"),
+                conversations.requests.last().map { it.text },
+            )
+        }
+    }
+
+    @Test
     fun returningFromHomeKeepsVisibleMessagesAndProviderHistory() {
         authentication.approve()
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->

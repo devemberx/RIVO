@@ -1,0 +1,61 @@
+package com.monsters.mobimon.vehicle
+
+import com.monsters.mobimon.core.domain.VehicleChatFieldCatalog
+import com.monsters.mobimon.core.domain.VehicleValue
+import com.monsters.mobimon.debug.DebugRawVssState
+
+/** Exact Debug source values, separate from interpreted values and card fixtures. */
+internal fun DebugRawVssState.chatRawValues(): Map<String, VehicleValue?> =
+    mapOf(
+        "Vehicle.Driver.FatigueLevel" to driverFatigueLevel.toString(),
+        "Vehicle.Driver.DistractionLevel" to driverDistractionLevel.toString(),
+        "Vehicle.ADAS.DMS.IsWarning" to dmsIsWarning.toString(),
+        "Vehicle.ADAS.LaneDepartureDetection.IsWarning" to laneDepartureWarning.toString(),
+        "Vehicle.ADAS.ObstacleDetection.IsWarning" to obstacleDetectionWarning.toString(),
+        "Vehicle.ADAS.ESC.IsStrongCrossWindDetected" to strongCrossWindDetected.toString(),
+        "Vehicle.ADAS.ESC.RoadFriction.MostProbable" to roadFrictionMostProbable.toString(),
+        "Vehicle.Acceleration.Longitudinal" to accelerationLongitudinal.toString(),
+        "Vehicle.Chassis.Brake.IsDriverEmergencyBrakingDetected" to driverEmergencyBrakingDetected.toString(),
+        "Vehicle.ADAS.ObstacleDetection.Front.Center.Distance" to obstacleFrontCenterDistance.toString(),
+        "Vehicle.Powertrain.FuelSystem.IsFuelLevelLow" to fuelLevelLow.toString(),
+        "Vehicle.Powertrain.TractionBattery.StateOfCharge.Displayed" to tractionBatterySocDisplayed.toString(),
+        "Vehicle.Powertrain.TractionBattery.Charging.ChargingPort.AnyPosition.IsChargingCableConnected" to
+            chargingCableConnected.toString(),
+        "Vehicle.Powertrain.TractionBattery.Charging.IsCharging" to tractionBatteryChargingIsCharging.toString(),
+        "Vehicle.Powertrain.TractionBattery.Charging.AveragePower" to chargingAveragePowerKw.toString(),
+        "Vehicle.Cabin.HVAC.AmbientAirTemperature" to cabinAmbientAirTemperature.toString(),
+        "Vehicle.Exterior.AirTemperature" to exteriorAirTemperature.toString(),
+        "Vehicle.Body.Raindetection.Intensity" to rainIntensity.toString(),
+        "Vehicle.Body.Windshield.Front.WasherFluid.IsLevelLow" to washerFluidLow.toString(),
+        "Vehicle.Body.Windshield.Front.WasherFluid.Level" to washerFluidLevel.toString(),
+        "Vehicle.Body.Windshield.Front.Wiping.WiperWear" to frontWiperWear.toString(),
+        "Vehicle.Body.Windshield.Rear.Wiping.WiperWear" to rearWiperWear.toString(),
+        "Vehicle.Chassis.Axle.Row1.Wheel.Left.Brake.PadWear" to row1LeftBrakePadWear.toString(),
+        "Vehicle.Chassis.Axle.Row1.Wheel.Right.Brake.PadWear" to row1RightBrakePadWear.toString(),
+        "Vehicle.Chassis.Axle.Row2.Wheel.Left.Brake.PadWear" to row2LeftBrakePadWear.toString(),
+        "Vehicle.Chassis.Axle.Row2.Wheel.Right.Brake.PadWear" to row2RightBrakePadWear.toString(),
+        "Vehicle.Chassis.Axle.Row1.Wheel.Left.Tire.IsPressureLow" to row1LeftTirePressureLow.toString(),
+        "Vehicle.Chassis.Axle.Row1.Wheel.Right.Tire.IsPressureLow" to row1RightTirePressureLow.toString(),
+        "Vehicle.Chassis.Axle.Row2.Wheel.Left.Tire.IsPressureLow" to row2LeftTirePressureLow.toString(),
+        "Vehicle.Chassis.Axle.Row2.Wheel.Right.Tire.IsPressureLow" to row2RightTirePressureLow.toString(),
+        "Vehicle.Diagnostics.DTCCount" to diagnosticsDtcCount.toString(),
+        "Vehicle.OBD.Status.IsMILOn" to obdMilOn.toString(),
+        "Vehicle.Service.IsServiceDue" to serviceDue.toString(),
+        "Vehicle.IsMoving" to vehicleIsMoving.toString(),
+        "Vehicle.Speed" to vehicleSpeedKmh.toString(),
+        "Vehicle.Powertrain.Transmission.SelectedGear" to selectedGear.toString(),
+        "Vehicle.TraveledDistance" to traveledDistanceMeters.toString(),
+        "Vehicle.Cabin.Seat.Row1.DriverSide.IsBelted" to driverSeatBelted.toString(),
+        "Vehicle.Body.Lights.DirectionIndicator.Left.IsSignaling" to leftIndicatorSignaling.toString(),
+        "Vehicle.Body.Lights.DirectionIndicator.Right.IsSignaling" to rightIndicatorSignaling.toString(),
+        "Vehicle.Cabin.Infotainment.Navigation.DestinationSet.Latitude" to destinationLatitude.toString(),
+        "Vehicle.Cabin.Infotainment.Navigation.DestinationSet.Longitude" to destinationLongitude.toString(),
+        "Vehicle.CurrentLocation.Timestamp" to currentLocationTimestamp.toString(),
+        "Vehicle.CurrentLocation.Latitude" to currentLatitude.toString(),
+        "Vehicle.CurrentLocation.Longitude" to currentLongitude.toString(),
+        "Vehicle.Powertrain.CombustionEngine.IsRunning" to combustionEngineRunning.toString(),
+        "Vehicle.TraveledDistanceSinceStart" to traveledDistanceSinceStartKm.toString(),
+        "Vehicle.TripDuration" to tripDurationSeconds.toString(),
+        "Vehicle.TripMeterReading" to tripMeterReadingKm.toString(),
+        "Vehicle.AverageSpeed" to averageSpeedKmh.toString(),
+    ).mapValues { (id, value) -> VehicleValue.parse(requireNotNull(VehicleChatFieldCatalog.find(id)).valueType, value) }

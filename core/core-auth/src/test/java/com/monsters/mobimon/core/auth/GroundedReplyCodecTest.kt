@@ -27,5 +27,9 @@ class GroundedReplyCodecTest {
         ).forEach { json -> assertThrows(ConversationException::class.java) { GroundedReplyCodec.parse(json) } }
     }
 
-    private val valid = """{"version":1,"status":"VEHICLE","text":"{{vehicle:0}}","sourceIds":[],"vehicleRefs":[{"evidenceId":"capture","fieldId":"interpreted.batteryPercent"}]}"""
+    private val valid =
+        """
+        {"version":1,"status":"VEHICLE","text":"{{vehicle:0}}","sourceIds":[],
+        "vehicleRefs":[{"evidenceId":"capture","fieldId":"interpreted.batteryPercent"}]}
+        """.trimIndent()
 }

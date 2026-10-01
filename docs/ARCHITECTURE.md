@@ -100,27 +100,36 @@ replay. A 401 invalidates only its credential revision. Release logging is off;
 provider bodies, dialogue and tokens never enter logs/errors.
 
 [Tool contracts](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/ConversationTools.kt)
-are pure Kotlin and build-variant bound. Debug enables the bundled manual tool;
-Release registers none.
-An enabled tool turn permits at most two model requests, one allowlisted execution
-and 30 seconds, with bounded arguments, identity/Park checks and final-response
-acceptance. AI never grants rewards or changes vehicle state. The
-[Debug probe](../core/core-auth/src/debug/java/com/monsters/mobimon/core/auth/CopilotToolProbe.kt)
-uses synthetic data and does not establish live compatibility.
+are pure Kotlin. Debug registers manual search and read-only `get_vehicle_context(topic)`;
+Release registers no tools but uses the same checked reply policy. Sequential validated
+batches share a [turn budget](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/ConversationExecutionBudget.kt):
+30 seconds, 64,000 estimated prompt plus reserved output tokens, 64,000 characters per
+and combined tool results, and 12,000 reply characters. Counts are not fixed. Repeated
+normalized queries with unchanged semantic evidence stop; receipt/ticker changes alone
+are not progress. Identity, Park and source/session checks remain enforced. No automatic
+replay, commands or rewards are available. Synthetic Debug probes do not establish live compatibility.
 
-The curated, pinned 2027 Korean IONIQ 5 bundle fails closed on missing assets;
-retrieval never supplies live vehicle state. Manual answers require current-turn
-evidence checked by the [reply policy](../app/src/debug/java/com/monsters/mobimon/manual/ManualReplyPolicy.kt),
-which renders citations; ordinary chat needs no retrieval. Only uncited
-`CONVERSATION` replies without tool evidence may omit the empty `sourceIds` field.
-Source checks do not prove correct routing or factual truth.
+The pinned 2027 Korean IONIQ 5 bundle fails closed on missing assets; it cannot supply
+current vehicle state. Manual claims need current-turn sources and
+[checked citations](../app/src/debug/java/com/monsters/mobimon/manual/ManualReplyPolicy.kt).
+All app replies use a versioned envelope with separate manual IDs and vehicle references;
+[acceptance](../app/src/main/java/com/monsters/mobimon/chat/GroundedConversationReplyPolicy.kt)
+renders vehicle values/units and rechecks source, session, value and validity before storage.
+Equal-value receipts remain acceptable; a changed value rejects the answer without substitution.
+Reference checks do not prove routing or arbitrary prose semantics.
 
-Each send may add bounded AAOS user name and independently fresh VSS time, battery
-and condition. Treat these as untrusted data, not instructions or ownership.
-Debugger readings are labeled simulations; with Debug off, unavailable real data
-stays unavailable. A VSS timestamp needs its own observation within 60 seconds;
-ticker updates cannot refresh it. Real adapters supply observation provenance.
-Derived conditions cannot invent diagnoses or historical causes.
+Basic context retains bounded AAOS name, battery, vehicle clock, condition and reasons;
+[the shared reader](../app/src/main/java/com/monsters/mobimon/chat/VehicleChatEvidenceReader.kt)
+also serves every [registered field](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/VehicleChatFieldCatalog.kt)
+by topic. Simulated and real sources share IDs, with explicit origin and unavailable values.
+Receipt, change, publication and capture times are distinct monotonic metadata; reads/ticks
+cannot refresh receipts. Periodic signals use adapter-declared TTLs; on-change signals need
+a synchronized live subscription/lease; unknown delivery fails closed. The atomic
+[source frame](../core/core-vss/src/main/kotlin/com/monsters/mobimon/core/vss/VssObservationFrame.kt)
+is optional: legacy adapters without provenance remain unavailable to chat. Real bindings
+must declare delivery/dependency semantics; this does not change command freshness policy.
+Vehicle clock is an as-of value, not receipt time; Debug clock uses a 60-second TTL.
+Derived conditions expose checked scope and cannot invent diagnoses or historical causes.
 
 Catalog token limits and tokenizer must be supported or sending fails closed.
 The server decides context overflow; no automatic truncation or replay. Local

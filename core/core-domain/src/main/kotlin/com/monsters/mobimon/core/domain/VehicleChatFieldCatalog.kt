@@ -44,7 +44,8 @@ object VehicleChatFieldCatalog {
                 type: CardVssType,
                 unit: String? = null,
             ) {
-                add(VehicleFieldSpec("interpreted.$name", topic, type, unit, emptyList()))
+                val deps = VehicleChatDependencies.forField(name)
+                add(VehicleFieldSpec("interpreted.$name", topic, type, unit, deps, deps))
             }
             val number = CardVssType.NUMBER
             val boolean = CardVssType.BOOLEAN
@@ -55,6 +56,7 @@ object VehicleChatFieldCatalog {
             interpreted("tirePressureStatus", VehicleChatTopic.TIRES, text)
             interpreted("speed", VehicleChatTopic.MOTION, number, "km/h")
             interpreted("gear", VehicleChatTopic.MOTION, text)
+            interpreted("isMoving", VehicleChatTopic.MOTION, boolean)
             interpreted("drivingState", VehicleChatTopic.MOTION, text)
             interpreted("isEngineOn", VehicleChatTopic.MOTION, boolean)
             interpreted("isCharging", VehicleChatTopic.CHARGING, boolean)
@@ -70,8 +72,7 @@ object VehicleChatFieldCatalog {
             interpreted("isNavigating", VehicleChatTopic.NAVIGATION, boolean)
             interpreted("distanceToDestination", VehicleChatTopic.NAVIGATION, number, "m")
             interpreted("timeOfDay", VehicleChatTopic.TIME, text)
-            add(VehicleFieldSpec(TIME, VehicleChatTopic.TIME, text))
-            add(VehicleFieldSpec("Vehicle.Powertrain.FuelSystem.IsFuelLevelLow", VehicleChatTopic.BATTERY, boolean))
+            VehicleRawChatFields.fields.forEach { field -> if (none { it.id == field.id }) add(field) }
         }
     private val byId = fields.associateBy { it.id }
 

@@ -11,7 +11,7 @@ import com.monsters.mobimon.core.domain.VehicleChatTopic
 import com.monsters.mobimon.core.domain.VehicleDeliveryPolicy
 import com.monsters.mobimon.core.domain.VehicleDerivation
 import com.monsters.mobimon.core.domain.VehicleEvidenceFrame
-import com.monsters.mobimon.core.domain.VehicleFieldValidity
+import com.monsters.mobimon.core.domain.VehicleFieldSpec
 import com.monsters.mobimon.core.domain.VehicleObservation
 import com.monsters.mobimon.core.domain.VehicleObservationSource
 import com.monsters.mobimon.core.domain.VehicleObservationValidity
@@ -22,6 +22,7 @@ import com.monsters.mobimon.core.presentation.VehicleConcern
 import com.monsters.mobimon.core.presentation.vehicleConditionReasons
 import java.time.OffsetDateTime
 import java.util.UUID
+import kotlin.math.roundToInt
 
 /** One immutable capture feeds both basic context and read-only detailed queries. */
 class VehicleChatEvidenceReader(
@@ -48,30 +49,27 @@ class VehicleChatEvidenceReader(
             )
         // A supplied frame is not permission to mix adapter and debugger observations.
         frame = frame.copy(observations = frame.observations.filterValues { it.sourceKind == source })
+        frame =
+            frame.copy(
+                observations =
+                    frame.observations.mapValues { (id, observation) ->
+                        val spec = VehicleChatFieldCatalog.find(id)
+                        if (spec != null && observation.value?.let { !validValue(spec, it) } == true) {
+                            observation.copy(
+                                sourceQuality = SignalQuality.UNAVAILABLE,
+                                unavailableReason = "INVALID_VALUE",
+                            )
+                        } else {
+                            observation
+                        }
+                    },
+            )
         frame = batteryAlias(frame)
 
         fun field(id: String): VehicleChatField {
             val spec = requireNotNull(VehicleChatFieldCatalog.find(id))
             val observation = frame.observations[id]
-            var validity = VehicleObservationValidity.evaluate(frame, id, now)
-            val value = observation?.value
-            if (value != null &&
-                (
-                    VehicleValue.parse(spec.valueType, value.canonical()) != value ||
-                        spec.unit == "%" &&
-                        (value as? VehicleValue.Number)?.value?.let { it !in 0.0..100.0 } == true ||
-                        id == VehicleChatFieldCatalog.TIME &&
-                        runCatching { OffsetDateTime.parse(value.canonical()) }.isFailure
-                )
-            ) {
-                validity =
-                    VehicleFieldValidity(
-                        SignalQuality.UNAVAILABLE,
-                        "INVALID_VALUE",
-                        validity.receiptAgeMillis,
-                        validity.validityBasis,
-                    )
-            }
+            val validity = VehicleObservationValidity.evaluate(frame, id, now)
             val mode =
                 when (frame.policies[id]) {
                     is VehicleDeliveryPolicy.Periodic -> "PERIODIC"
@@ -80,11 +78,49 @@ class VehicleChatEvidenceReader(
                 }
             return VehicleChatField(spec, observation, validity, mode, deadline(frame, id))
         }
+        val checkedRaw =
+            frame.observations.keys
+                .filter {
+                    it.startsWith("Vehicle.") &&
+                        VehicleChatFieldCatalog.find(it) != null
+                }.mapNotNull { id -> field(id).value?.let { id to it.canonical() } }
+                .toMap()
+
+        fun flag(id: String) = (field(id).value as? VehicleValue.Boolean)?.value
+
+        fun number(id: String) = (field(id).value as? VehicleValue.Number)?.value?.toInt()
+        val checkedVehicle =
+            vehicle.copy(
+                quality = SignalQuality.VALID,
+                // Only validated values enter this local explanation projection.
+                // Missing scalars are null; unrelated fields cannot suppress a confirmed warning.
+                batteryQuality = SignalQuality.VALID,
+                batteryPercent = number(VehicleChatFieldCatalog.BATTERY),
+                washerFluidLevel = number("interpreted.washerFluidLevel"),
+                tirePressureStatus = (field("interpreted.tirePressureStatus").value as? VehicleValue.Text)?.value,
+                isEmergencyBraking = flag("interpreted.isEmergencyBraking"),
+                isDrowsy = flag("interpreted.isDrowsy"),
+                isDistracted = flag("interpreted.isDistracted"),
+                isEngineWarning = flag("interpreted.isEngineWarning"),
+                isFuelLevelLow =
+                    flag("Vehicle.Powertrain.FuelSystem.IsFuelLevelLow") ?: flag("interpreted.isFuelLevelLow"),
+                vssCardSignals = checkedRaw,
+            )
         val reasons =
-            vehicle.vehicleConditionReasons().filter { reason ->
-                VehicleChatFieldCatalog.find(reason.signal) != null &&
-                    field(reason.signal).value?.canonical() == reason.value
-            }
+            checkedVehicle
+                .vehicleConditionReasons()
+                .map { reason ->
+                    if (reason.signal == "Vehicle.Powertrain.FuelSystem.IsFuelLevelLow" &&
+                        field(reason.signal).value == null
+                    ) {
+                        reason.copy(signal = "interpreted.isFuelLevelLow")
+                    } else {
+                        reason
+                    }
+                }.filter { reason ->
+                    VehicleChatFieldCatalog.find(reason.signal) != null &&
+                        field(reason.signal).value?.canonical() == reason.value
+                }
         val essentials =
             listOf(
                 "interpreted.batteryPercent",
@@ -111,6 +147,9 @@ class VehicleChatEvidenceReader(
         val condition =
             when {
                 reasons.any { it.concern == VehicleConcern.SICK } -> "WARNING"
+                reasons.any {
+                    it.concern == VehicleConcern.HUNGRY && it.signal != VehicleChatFieldCatalog.BATTERY
+                } -> "NEEDS_REPLENISHMENT"
                 reasons.any { it.concern == VehicleConcern.HUNGRY } -> "LOW_BATTERY"
                 validInputs.size == essentials.size -> "CHECKED"
                 validInputs.isNotEmpty() -> "PARTIAL"
@@ -161,6 +200,19 @@ class VehicleChatEvidenceReader(
         )
     }
 
+    private fun validValue(
+        spec: VehicleFieldSpec,
+        value: VehicleValue,
+    ): Boolean {
+        if (VehicleValue.parse(spec.valueType, value.canonical()) != value) return false
+        val number = (value as? VehicleValue.Number)?.value
+        if (spec.unit == "%" && number?.let { it !in 0.0..100.0 } == true) return false
+        if (spec.id.endsWith("Latitude") && number?.let { it !in -90.0..90.0 } == true) return false
+        if (spec.id.endsWith("Longitude") && number?.let { it !in -180.0..180.0 } == true) return false
+        return spec.id != VehicleChatFieldCatalog.TIME ||
+            runCatching { OffsetDateTime.parse(value.canonical()) }.isSuccess
+    }
+
     private fun deadline(
         frame: VehicleEvidenceFrame,
         id: String,
@@ -195,10 +247,11 @@ class VehicleChatEvidenceReader(
         val rawId = "Vehicle.Powertrain.TractionBattery.StateOfCharge.Displayed"
         val raw = frame.observations[rawId] ?: return frame
         val value = (raw.value as? VehicleValue.Number)?.value ?: return frame
+        if (value !in 0.0..100.0) return frame
         val interpreted =
             raw.copy(
                 fieldId = id,
-                value = VehicleValue.Number(kotlin.math.round(value)),
+                value = VehicleValue.Number(value.roundToInt().toDouble()),
                 derivation = VehicleDerivation.DERIVED,
                 dependencyIds = listOf(rawId),
             )

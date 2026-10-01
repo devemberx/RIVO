@@ -144,6 +144,8 @@ unsent drafts. Keep the Copilot disclosure below the composer: transmitted dialo
 available context/debug values and AI uncertainty. Local clearing does not promise
 provider deletion. Spoken replies remain planned.
 
+Vehicle facts show app-rendered values and units, explicitly label simulated readings, and explain unavailable observations. Vehicle time is labeled as the clock at lookup. Rejected evidence preserves committed history and requires an explicit retry; raw tool protocol stays hidden.
+
 Replies keep a friendly companion voice: short paragraphs for explanations,
 bullets for multiple tips and numbered steps when order matters. Keep relevant
 conditions/warnings and place citations beside supported claims. Manual answers
