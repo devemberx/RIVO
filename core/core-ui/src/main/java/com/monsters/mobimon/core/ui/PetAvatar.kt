@@ -388,6 +388,12 @@ fun PetAvatar(
     if (isAppearing) {
         if (friendId == "friend:mobi") {
             MobiAppearAnimation(modifier, accessoryId ?: outfitId, onAppeared)
+        } else if (friendId == "friend:luna") {
+            LunaAppearAnimation(
+                modifier.size(120.dp).semantics { contentDescription = description },
+                lunaAppearance(accessoryId ?: outfitId),
+                onAppeared,
+            )
         } else {
             LaunchedEffect(Unit) { onAppeared() }
         }
