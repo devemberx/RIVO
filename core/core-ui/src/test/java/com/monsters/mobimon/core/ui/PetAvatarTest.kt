@@ -541,4 +541,24 @@ class PetAvatarTest {
             }
         }
     }
+
+    @Test
+    fun lasSickAnimationAssetExistsAndPetAvatarRendersLasSick() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        assertTrue(
+            context.assets
+                .list("characters/las/sick/idle_breath")!!
+                .contains("las_idle_breath_sick_sprite.png"),
+        )
+        compose.setContent {
+            MobiMonTheme {
+                PetAvatar(
+                    friendId = "friend:las",
+                    emotion = PetEmotion.SICK,
+                )
+            }
+        }
+    }
 }
