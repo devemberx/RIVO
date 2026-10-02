@@ -344,6 +344,7 @@ internal fun storePreviewDescription(
                 "background:star" -> stringResource(R.string.pet_preview_desc_background_star)
                 "background:snow" -> stringResource(R.string.pet_preview_desc_background_snow)
                 "background:petal" -> stringResource(R.string.pet_preview_desc_background_petal)
+                "background:cyberpunk_city" -> stringResource(R.string.pet_preview_desc_background_cyberpunk_city)
                 else ->
                     stringResource(
                         when (category) {

@@ -61,6 +61,7 @@ import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.StarHanger
 import com.monsters.mobimon.core.ui.StarlightYarnBasket
 import com.monsters.mobimon.core.ui.companionBackgroundRes
+import com.monsters.mobimon.core.ui.R as CoreUiR
 
 internal enum class StoreSpaceCategory(
     val label: String,
@@ -534,6 +535,13 @@ private fun StoreItemArtwork(
                 centered = true,
                 isAnimated = false,
             )
+        item.id == "background:cyberpunk_city" ->
+            Image(
+                painterResource(CoreUiR.drawable.pet_background_cyberpunk_city),
+                null,
+                modifier,
+                contentScale = ContentScale.Crop,
+            )
         item.slot == CosmeticSlot.BACKGROUND ->
             FallingParticlesEffect(
                 particleType = storeParticleType(item.id),
@@ -554,8 +562,14 @@ private fun StorePreview(
 ) {
     BoxWithConstraints(modifier.clip(RoundedCornerShape(24.dp))) {
         val zoomBackground = tab == CosmeticSlot.FRIEND || tab == CosmeticSlot.ACCESSORY
+        val backgroundRes =
+            if (preview.backgroundId == "background:cyberpunk_city") {
+                CoreUiR.drawable.pet_background_cyberpunk_city
+            } else {
+                companionBackgroundRes(timeOfDay)
+            }
         Image(
-            painterResource(companionBackgroundRes(timeOfDay)),
+            painterResource(backgroundRes),
             null,
             (
                 if (zoomBackground) {
@@ -577,6 +591,7 @@ private fun StorePreview(
                     StarlightYarnBasket(
                         Modifier.fillMaxSize().testTag("store-preview-yarn-basket"),
                     )
+                "background:cyberpunk_city" -> Unit
                 null -> Unit
                 else ->
                     FallingParticlesEffect(

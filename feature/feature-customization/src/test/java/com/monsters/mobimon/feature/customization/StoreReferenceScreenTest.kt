@@ -409,6 +409,8 @@ class StoreReferenceScreenTest {
                     storePreviewDescription(CosmeticSlot.BACKGROUND, "background:snow", "friend:mobi", false)
                 descriptions["background:petal"] =
                     storePreviewDescription(CosmeticSlot.BACKGROUND, "background:petal", "friend:mobi", false)
+                descriptions["background:cyberpunk_city"] =
+                    storePreviewDescription(CosmeticSlot.BACKGROUND, "background:cyberpunk_city", "friend:mobi", false)
             }
         }
         assertEquals("별빛 핸들을 꼭 쥔 사랑스러운 친구예요.", descriptions["friend:mobi"])
@@ -424,6 +426,7 @@ class StoreReferenceScreenTest {
         assertEquals("작은 별빛으로 공간에 반짝임을 더해요.", descriptions["background:star"])
         assertEquals("하얀 눈송이로 공간에 겨울 분위기를 더해요.", descriptions["background:snow"])
         assertEquals("흩날리는 꽃잎으로 공간에 봄기운을 더해요.", descriptions["background:petal"])
+        assertEquals("화려한 네온사인과 미래 도시의 풍경을 즐겨 보세요.", descriptions["background:cyberpunk_city"])
     }
 
     @Test fun figmaCatalogSizesAndSpaceDefaults() {
