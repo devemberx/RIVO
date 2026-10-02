@@ -106,7 +106,10 @@ fun CustomizationScreen(
     val selected = presentation.selected
     val activeFriend = inventory?.equippedItemIds?.get(CosmeticSlot.FRIEND) ?: "friend:mobi"
     val otherFriend = tab == CosmeticSlot.ACCESSORY && presentation.preview.friendId != activeFriend
-    val switchFriend = otherFriend && presentation.selectedOwned
+    val previewFriendOwned =
+        storeInventoryReady && inventory?.ownedItemIds?.contains(presentation.preview.friendId) == true
+    val unownedOtherFriend = otherFriend && storeInventoryReady && !previewFriendOwned
+    val switchFriend = otherFriend && previewFriendOwned && presentation.selectedOwned
     val busy =
         saving ||
             purchasing ||
@@ -122,6 +125,7 @@ fun CustomizationScreen(
             !loadFailed &&
             !catalogLoadFailed &&
             !busy &&
+            !unownedOtherFriend &&
             (!presentation.selectedEquipped || switchFriend) &&
             (
                 presentation.selectedOwned ||
@@ -131,6 +135,7 @@ fun CustomizationScreen(
         when {
             busy -> "적용 중…"
             selected == null -> "아이템을 골라 주세요"
+            unownedOtherFriend -> "구매 전"
             switchFriend -> "${storeFriendName(presentation.preview.friendId)}와 함께하기"
             presentation.selectedEquipped ->
                 when (tab) {
