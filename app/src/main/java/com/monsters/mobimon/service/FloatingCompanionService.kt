@@ -70,6 +70,11 @@ private const val NOTIFICATION_ID = 1001
 private const val DEFAULT_OVERLAY_X = 1900
 private const val DEFAULT_OVERLAY_Y = 700
 
+// Luna's cat-tower exit rises above the avatar and her entrance box lands to its left. The headroom is kept while
+// Luna is active because resizing and moving the window land on different frames, which made Luna jump.
+private const val LUNA_HEADROOM_TOP_DP = 72
+private const val LUNA_HEADROOM_START_DP = 88
+
 /**
  * Floating companion overlay service rendering the companion avatar on top of all screens.
  * Runs as a specialUse foreground service to persist across the launcher and other apps.
@@ -103,6 +108,7 @@ class FloatingCompanionService : Service() {
     private var movingLeft by mutableStateOf(true)
     private var vehicleWarning by mutableStateOf(false)
     private var vehicleHungry by mutableStateOf(false)
+    private var lunaHeadroom by mutableStateOf(false)
     private var currentFriendId by mutableStateOf("friend:mobi")
     private var activeFriendId by mutableStateOf("friend:mobi")
     private var activeAccessoryId by mutableStateOf<String?>(null)
@@ -266,11 +272,18 @@ class FloatingCompanionService : Service() {
                                 }
                             }
 
+                            val targetLunaHeadroom = activeFriendId == "friend:luna"
+                            androidx.compose.runtime.LaunchedEffect(targetLunaHeadroom) {
+                                applyLunaHeadroom(targetLunaHeadroom)
+                            }
+                            val headroomTop = if (lunaHeadroom) LUNA_HEADROOM_TOP_DP else 0
+                            val headroomStart = if (lunaHeadroom) LUNA_HEADROOM_START_DP else 0
+
                             Box(
                                 modifier =
                                     Modifier
-                                        .size(width = 258.dp, height = 176.dp)
-                                        .padding(8.dp),
+                                        .size(width = (258 + headroomStart).dp, height = (176 + headroomTop).dp)
+                                        .padding(start = (8 + headroomStart).dp, top = 8.dp, end = 8.dp, bottom = 8.dp),
                                 contentAlignment = Alignment.BottomStart,
                             ) {
                                 if (appearanceReady) {
@@ -604,7 +617,7 @@ class FloatingCompanionService : Service() {
                             val shouldEnter =
                                 (hidden || isDisappearing) &&
                                     !appInForeground &&
-                                    latestFriendId == "friend:mobi"
+                                    (latestFriendId == "friend:mobi" || latestFriendId == "friend:luna")
                             if (shouldEnter) {
                                 wanderJob?.cancel()
                                 wanderJob = null
@@ -633,6 +646,27 @@ class FloatingCompanionService : Service() {
                     }
                 }
         }
+    }
+
+    /** Moves the window by the added size in the same step, so the avatar keeps its screen position. */
+    private fun applyLunaHeadroom(enabled: Boolean) {
+        if (enabled == lunaHeadroom) return
+        val params = overlayParams
+        if (params != null) {
+            val sign = if (enabled) 1 else -1
+            val density = resources.displayMetrics.density
+            params.x -= sign * (LUNA_HEADROOM_START_DP * density).roundToInt()
+            params.y -= sign * (LUNA_HEADROOM_TOP_DP * density).roundToInt()
+            val view = composeView
+            val wm = windowManager
+            if (isViewAttached && view != null && wm != null) {
+                try {
+                    wm.updateViewLayout(view, params)
+                } catch (_: Exception) {
+                }
+            }
+        }
+        lunaHeadroom = enabled
     }
 
     private fun beginDisappearance() {

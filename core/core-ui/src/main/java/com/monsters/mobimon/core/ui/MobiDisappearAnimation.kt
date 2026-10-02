@@ -73,32 +73,40 @@ internal fun MobiDisappearAnimation(
             },
         ) {
             // Frames 2–6: surprise, before the burrowing effect starts.
-            if (elapsed.longValue in 66_666_667L until 400_000_000L) {
-                Text(
-                    text = stringResource(R.string.mobimon_departure_surprise),
-                    color = Color(0xFF132238),
-                    fontSize = 18.sp,
-                    lineHeight = 24.sp,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    modifier =
-                        Modifier
-                            .align(Alignment.TopStart)
-                            .offset(x = 110.dp, y = (-4).dp)
-                            .requiredWidth(120.dp)
-                            .background(
-                                Color(0xFFFCFBF9),
-                                SpeechBubbleShape(
-                                    cornerRadius = 12.dp,
-                                    tailWidth = 12.dp,
-                                    tailHeight = 12.dp,
-                                    tailOffsetYFromBottom = 8.dp,
-                                ),
-                            ).padding(start = 22.dp, end = 10.dp, top = 8.dp, bottom = 8.dp),
-                )
+            if (elapsed.longValue in DEPARTURE_SURPRISE_NANOS) {
+                DepartureSurpriseBubble(Modifier.align(Alignment.TopStart))
             }
         }
     } else if (!sheet.first) {
         CharacterAssetImage(CharacterArtwork.preview("friend:mobi", null), modifier)
     }
+}
+
+/** When the "departing?" bubble shows, measured from the start of a departure animation. */
+internal val DEPARTURE_SURPRISE_NANOS = 66_666_667L until 400_000_000L
+
+/** Speech bubble beside the companion's head, aligned to the top start of its avatar slot. */
+@Composable
+internal fun DepartureSurpriseBubble(modifier: Modifier) {
+    Text(
+        text = stringResource(R.string.mobimon_departure_surprise),
+        color = Color(0xFF132238),
+        fontSize = 18.sp,
+        lineHeight = 24.sp,
+        textAlign = TextAlign.Center,
+        maxLines = 1,
+        modifier =
+            modifier
+                .offset(x = 110.dp, y = (-4).dp)
+                .requiredWidth(120.dp)
+                .background(
+                    Color(0xFFFCFBF9),
+                    SpeechBubbleShape(
+                        cornerRadius = 12.dp,
+                        tailWidth = 12.dp,
+                        tailHeight = 12.dp,
+                        tailOffsetYFromBottom = 8.dp,
+                    ),
+                ).padding(start = 22.dp, end = 10.dp, top = 8.dp, bottom = 8.dp),
+    )
 }

@@ -233,6 +233,52 @@ class PetAvatarTest {
     }
 
     @Test
+    fun lunaDisappearLoadsTwentyFourFramesAndHoldsTheLastOne() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        assertEquals(24, LunaDisappearTimeline.load(context)?.size)
+        assertEquals(0, LunaDisappearTimeline.frameAt(0L))
+        assertEquals(0, LunaDisappearTimeline.frameAt(LunaDisappearTimeline.HOLD_NANOS))
+        assertEquals(12, LunaDisappearTimeline.frameAt(LunaDisappearTimeline.HOLD_NANOS + 750_000_000L))
+        assertEquals(23, LunaDisappearTimeline.frameAt(LunaDisappearTimeline.DURATION_NANOS * 2))
+    }
+
+    @Test
+    fun lunaDisappearingPlaysTheExitBeforeReportingCompletion() {
+        var finished = false
+        compose.setContent {
+            PetAvatar(friendId = "friend:luna", isDisappearing = true, onDisappeared = { finished = true })
+        }
+        compose.mainClock.advanceTimeBy(100L)
+        assertTrue(!finished)
+        compose.waitUntil(10_000L) { finished }
+    }
+
+    @Test
+    fun lunaAppearLoadsTwentyFourFramesAndHandsOffToIdle() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        assertEquals(24, LunaAppearTimeline.load(context)?.size)
+        assertEquals(0, LunaAppearTimeline.frameAt(0L))
+        assertEquals(23, LunaAppearTimeline.frameAt(LunaAppearTimeline.DURATION_NANOS))
+        assertEquals(0f, LunaAppearTimeline.idleBlendAt(0L), 0f)
+        assertEquals(1f, LunaAppearTimeline.idleBlendAt(LunaAppearTimeline.DURATION_NANOS), 0f)
+    }
+
+    @Test
+    fun lunaAppearingPlaysTheEntranceBeforeReportingCompletion() {
+        var finished = false
+        compose.setContent {
+            PetAvatar(friendId = "friend:luna", isAppearing = true, onAppeared = { finished = true })
+        }
+        compose.mainClock.advanceTimeBy(100L)
+        assertTrue(!finished)
+        compose.waitUntil(10_000L) { finished }
+    }
+
+    @Test
     fun lunaRunAnimationCacheLoadsTwentyFourFramesFromAssets() {
         val context =
             androidx.test.core.app.ApplicationProvider
@@ -474,5 +520,25 @@ class PetAvatarTest {
         assertNull(LunaHungryAnimationCache.peek())
         assertNull(LunaSickAnimationCache.peek())
         assertNull(LunaRunAnimationCache.peek())
+    }
+
+    @Test
+    fun lasHungryAnimationAssetExistsAndPetAvatarRendersLasHungry() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        assertTrue(
+            context.assets
+                .list("characters/las/hungry/idle_breath")!!
+                .contains("las_idle_breath_hungry_sprite.png"),
+        )
+        compose.setContent {
+            MobiMonTheme {
+                PetAvatar(
+                    friendId = "friend:las",
+                    emotion = PetEmotion.HUNGRY,
+                )
+            }
+        }
     }
 }
