@@ -248,8 +248,14 @@ private fun HomeBackground(
     timeOfDay: String?,
     backgroundId: String?,
 ) {
+    val backgroundRes =
+        if (backgroundId == "background:cyberpunk_city") {
+            CoreUiR.drawable.pet_background_cyberpunk_city
+        } else {
+            companionBackgroundRes(timeOfDay)
+        }
     Crossfade(
-        targetState = companionBackgroundRes(timeOfDay),
+        targetState = backgroundRes,
         animationSpec = tween(durationMillis = if (LocalMobiMonMotionEnabled.current) 1000 else 0),
         modifier = Modifier.fillMaxSize(),
         label = "pet_home_background_crossfade",
@@ -261,6 +267,7 @@ private fun HomeBackground(
                 CoreUiR.drawable.pet_home_background_day -> 0.12f
                 CoreUiR.drawable.pet_home_background_afternoon -> 0.10f
                 CoreUiR.drawable.pet_home_background_sunset -> 0.06f
+                CoreUiR.drawable.pet_background_cyberpunk_city -> 0.02f
                 else -> 0.04f
             }
         Image(
@@ -287,6 +294,8 @@ private fun HomeBackground(
         StarlightYarnBasket(Modifier.fillMaxSize().testTag("home-yarn-basket"))
     } else if (backgroundId == "background:star_hanger") {
         StarHanger(Modifier.fillMaxSize().testTag("home-star-hanger"))
+    } else if (backgroundId == "background:cyberpunk_city") {
+        // Full background image rendered
     } else if (backgroundId != null) {
         val particleType =
             when {

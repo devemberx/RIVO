@@ -58,6 +58,11 @@ interface PointEconomyDao {
     @Query("DELETE FROM point_ledger WHERE profileId = :profileId AND referenceKey LIKE 'quest:%'")
     suspend fun clearQuestLedger(profileId: String): Int
 
+    // Purchase ledger keys are "purchase:<itemId>"; clearing them alongside owned/equipped cosmetics
+    // keeps the reset consistent so the unique (profileId, referenceKey) index cannot block re-purchases.
+    @Query("DELETE FROM point_ledger WHERE profileId = :profileId AND referenceKey LIKE 'purchase:%'")
+    suspend fun clearPurchaseLedger(profileId: String): Int
+
     @Insert
     suspend fun insertLedger(entry: PointLedgerEntity)
 
