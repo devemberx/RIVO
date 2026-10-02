@@ -70,6 +70,7 @@ class RoomCompanionRepository(
             economy.insertAccount(PointAccountEntity(identity.profileId, 0))
             economy.insertItem(CosmeticItemEntity("friend:mobi", "FRIEND", 0, null))
             economy.insertItem(CosmeticItemEntity("friend:luna", "FRIEND", 0, null))
+            economy.insertItem(CosmeticItemEntity("friend:las", "FRIEND", 500, null))
             economy.insertItem(CosmeticItemEntity("accessory:mobi_headphones", "ACCESSORY", 300, "friend:mobi"))
             economy.insertItem(CosmeticItemEntity("accessory:mobi_goggles", "ACCESSORY", 300, "friend:mobi"))
             economy.insertItem(CosmeticItemEntity("accessory:luna_cap", "ACCESSORY", 300, "friend:luna"))

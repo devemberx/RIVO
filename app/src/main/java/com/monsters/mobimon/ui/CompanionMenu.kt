@@ -114,6 +114,7 @@ private fun drawerProfileName(friendId: String?): Int =
     when (friendId) {
         "friend:mobi" -> R.string.drawer_mobi_name
         "friend:luna" -> R.string.drawer_luna_name
+        "friend:las" -> R.string.drawer_las_name
         else -> R.string.drawer_no_friend
     }
 

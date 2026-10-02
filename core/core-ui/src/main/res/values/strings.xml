@@ -12,4 +12,5 @@
   <string name="mobimon_parking_unconfirmed">주차 확인 불가</string>
   <string name="mobimon_parking_restricted">주차 후 이용</string>
     <string name="mobimon_departure_surprise">앗 출발해?</string>
+    <string name="mobimon_las_description">손을 흔드는 로봇 친구 라스</string>
 </resources>

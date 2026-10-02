@@ -307,7 +307,12 @@ private fun StoreHeader(
     }
 }
 
-internal fun storeFriendName(id: String): String = if (id == "friend:luna") "루나" else "모비"
+internal fun storeFriendName(id: String): String =
+    when (id) {
+        "friend:luna" -> "루나"
+        "friend:las" -> "라스"
+        else -> "모비"
+    }
 
 @Composable
 internal fun storePreviewDescription(
@@ -321,6 +326,7 @@ internal fun storePreviewDescription(
         CosmeticSlot.FRIEND ->
             when (previewFriend) {
                 "friend:luna" -> stringResource(R.string.pet_preview_desc_friend_luna)
+                "friend:las" -> stringResource(R.string.pet_preview_desc_friend_las)
                 else -> stringResource(R.string.pet_preview_desc_friend_mobi)
             }
         CosmeticSlot.ACCESSORY ->

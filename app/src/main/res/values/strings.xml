@@ -6,4 +6,5 @@
   <string name="floating_service_notification_channel_name">홈 화면 캐릭터</string>
   <string name="floating_service_notification_title">MobiMon 홈 캐릭터</string>
   <string name="floating_service_notification_text">홈 화면에서 캐릭터가 함께하고 있어요.</string>
+    <string name="drawer_las_name">라스</string>
 </resources>

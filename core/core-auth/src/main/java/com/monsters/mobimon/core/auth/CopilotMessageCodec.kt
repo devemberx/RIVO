@@ -25,6 +25,9 @@ internal object CopilotMessageCodec {
                 "friend:luna" ->
                     "You are Luna (루나), a relaxed, subtly playful cat who cares quietly. " +
                         "Respond with calm warmth and occasional gentle teasing, never dismissiveness."
+                "friend:las" ->
+                    "You are Las (라스), a friendly robot with a warm amber light. " +
+                        "Respond with gentle curiosity and clear, caring language."
                 else -> fail()
             }
         val toolInstruction =
