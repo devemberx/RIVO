@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.isActive
 import kotlin.math.PI
+import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
@@ -80,7 +81,8 @@ private class LasRigidArtwork(
 
     // Coordinates are tied to the unchanged 475px canonical master, never generated poses.
     private val eye = Rect(184, 148, 302, 184)
-    private val eyeDestination = RectF()
+    private val eyeDestination = RectF(eye)
+    private val eyeAxis = measureEyeAxis(master, eye)
 
     // Warp the complete original image, never cut out the hand or forearm.
     // Motion tapers to zero through the upper arm before reaching the shoulder.
@@ -120,13 +122,31 @@ private class LasRigidArtwork(
             for (x in 0 until master.width) {
                 val source = master.getPixel(x, y)
                 val alpha = AndroidColor.alpha(source)
-                val moving = AndroidColor.alpha(mask.getPixel(x, y))
+                // The ear stays in the stationary layer, even beside the thumb.
+                val moving = if (x >= 116 && y < 205) 0 else AndroidColor.alpha(mask.getPixel(x, y))
                 val rgb = source and 0x00FFFFFF
                 body.setPixel(x, y, ((alpha * (255 - moving) / 255) shl 24) or rgb)
                 arm.setPixel(x, y, ((alpha * moving / 255) shl 24) or rgb)
             }
         }
         mask.recycle()
+        // The master contains an occluded ear. Rebuild its continuous rear surface
+        // behind the body, then draw the moving arm in front of it as usual.
+        val earPaint =
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                shader =
+                    android.graphics.LinearGradient(
+                        114f,
+                        176f,
+                        151f,
+                        176f,
+                        intArrayOf(0xFF654B29.toInt(), 0xFF251D12.toInt(), 0xFF181610.toInt()),
+                        floatArrayOf(0f, 0.35f, 1f),
+                        android.graphics.Shader.TileMode.CLAMP,
+                    )
+                xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DST_OVER)
+            }
+        AndroidCanvas(body).drawOval(RectF(114f, 132f, 157f, 220f), earPaint)
         for (row in 0..divisions) {
             for (column in 0..divisions) {
                 val index = row * (divisions + 1) + column
@@ -216,10 +236,62 @@ private class LasRigidArtwork(
             paint.alpha = 255
             // Replace the original bar before drawing its symmetrically scaled source pixels.
             canvas.drawBitmap(visor, eye.left.toFloat(), eye.top.toFloat(), paint)
-            val halfWidth = eye.width() * (1f - 0.8f * dim) / 2f
-            val center = eye.exactCenterX()
-            eyeDestination.set(center - halfWidth, eye.top.toFloat(), center + halfWidth, eye.bottom.toFloat())
-            canvas.drawBitmap(master, eye, eyeDestination, paint)
+            val widthScale = 1f - dim
+            if (widthScale > 0f) {
+                val saved = canvas.save()
+                canvas.translate(eyeAxis.centerX, eyeAxis.centerY)
+                canvas.rotate(eyeAxis.degrees)
+                canvas.scale(widthScale, 1f)
+                canvas.rotate(-eyeAxis.degrees)
+                canvas.translate(-eyeAxis.centerX, -eyeAxis.centerY)
+                canvas.drawBitmap(master, eye, eyeDestination, paint)
+                canvas.restoreToCount(saved)
+            }
         }
     }
+}
+
+private data class LasEyeAxis(
+    val centerX: Float,
+    val centerY: Float,
+    val degrees: Float,
+)
+
+private fun measureEyeAxis(
+    bitmap: Bitmap,
+    bounds: Rect,
+): LasEyeAxis {
+    var count = 0
+    var sumX = 0.0
+    var sumY = 0.0
+    var sumXX = 0.0
+    var sumYY = 0.0
+    var sumXY = 0.0
+    for (y in bounds.top until bounds.bottom) {
+        for (x in bounds.left until bounds.right) {
+            val color = bitmap.getPixel(x, y)
+            if (AndroidColor.alpha(color) < 180 ||
+                AndroidColor.red(color) < 240 ||
+                AndroidColor.green(color) < 190 ||
+                AndroidColor.blue(color) > 190
+            ) {
+                continue
+            }
+            val px = x + 0.5
+            val py = y + 0.5
+            count++
+            sumX += px
+            sumY += py
+            sumXX += px * px
+            sumYY += py * py
+            sumXY += px * py
+        }
+    }
+    if (count < 2) return LasEyeAxis(bounds.exactCenterX(), bounds.exactCenterY(), 0f)
+    val cx = sumX / count
+    val cy = sumY / count
+    val xx = sumXX / count - cx * cx
+    val yy = sumYY / count - cy * cy
+    val xy = sumXY / count - cx * cy
+    return LasEyeAxis(cx.toFloat(), cy.toFloat(), (atan2(2 * xy, xx - yy) * 90 / PI).toFloat())
 }
