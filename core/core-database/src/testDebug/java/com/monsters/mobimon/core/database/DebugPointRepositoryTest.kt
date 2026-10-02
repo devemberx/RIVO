@@ -64,13 +64,14 @@ class DebugPointRepositoryTest {
         }
 
     @Test
-    fun `resetStoreInventory clears non default owned cosmetics and resets equipped friend`() =
+    fun `resetStoreInventory clears non default owned cosmetics and purchase ledger`() =
         runBlocking {
             val repository = subject()
             val dao = database.economyDao()
             dao.insertItem(CosmeticItemEntity("accessory:hat", "ACCESSORY", 100, null))
             dao.insertOwned(OwnedCosmeticEntity("profile", "accessory:hat"))
             dao.putEquipped(EquippedCosmeticEntity("profile", "ACCESSORY", "accessory:hat"))
+            dao.insertLedger(PointLedgerEntity("led-purchase", "profile", "purchase:accessory:hat", -100, 1L))
 
             assertEquals(DebugPointResult.UPDATED, repository.resetStoreInventory())
 
@@ -79,6 +80,10 @@ class DebugPointRepositoryTest {
             assertNull(dao.owned("profile", "accessory:hat"))
             assertEquals("friend:mobi", dao.equipped("profile", "FRIEND")?.itemId)
             assertNull(dao.equipped("profile", "ACCESSORY"))
+            assertEquals(
+                emptyList<PointLedgerEntity>(),
+                dao.ledger("profile").filter { it.referenceKey.startsWith("purchase:") },
+            )
         }
 
     @Test

@@ -318,6 +318,53 @@ class CustomizationScreenTest {
         org.junit.Assert.assertEquals(0, friendSwitches)
     }
 
+    @Test fun unownedFriendInClothesTabShowsDisabledBeforePurchaseButtonAndEnablesAfterPurchase() {
+        var friendSwitches = 0
+        var inventory by mutableStateOf(
+            CosmeticInventory(
+                ownedItemIds = setOf("friend:mobi"),
+                equippedItemIds = mapOf(CosmeticSlot.FRIEND to "friend:mobi"),
+            ),
+        )
+        val catalog =
+            listOf(
+                CosmeticItem("friend:mobi", CosmeticSlot.FRIEND, 0),
+                CosmeticItem("friend:las", CosmeticSlot.FRIEND, 500),
+            )
+        compose.setContent {
+            var selectedId by androidx.compose.runtime.remember { mutableStateOf<String?>(null) }
+            MobiMonTheme {
+                CustomizationScreen(
+                    inventory = inventory,
+                    catalog = catalog,
+                    selectedItemId = selectedId,
+                    purchasing = false,
+                    purchaseFailed = false,
+                    onSelectItem = { selectedId = it },
+                    onPurchaseItem = { _, _ -> },
+                    onEquipItem = {},
+                    onEquipFriend = {
+                        friendSwitches++
+                    },
+                    pointBalance = 1000,
+                    pointLoadFailed = false,
+                )
+            }
+        }
+
+        compose.onNodeWithTag("store-tab-ACCESSORY").performClick()
+        compose.onNodeWithText("라스").performClick()
+        compose.onNodeWithText("구매 전").assertIsNotEnabled()
+
+        inventory =
+            inventory.copy(
+                ownedItemIds = setOf("friend:mobi", "friend:las"),
+            )
+
+        compose.onNodeWithText("라스와 함께하기").assertIsEnabled().performClick()
+        org.junit.Assert.assertEquals(1, friendSwitches)
+    }
+
     @Test fun observationFailureOffersRetryWithCommittedInventoryVisible() {
         var retries = 0
         compose.setContent {

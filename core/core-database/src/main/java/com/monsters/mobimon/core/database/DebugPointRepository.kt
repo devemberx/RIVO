@@ -67,6 +67,7 @@ class DebugPointRepository(
         transact {
             clearOwnedNonDefault(profileId)
             clearAllEquipped(profileId)
+            clearPurchaseLedger(profileId)
             insertOwned(OwnedCosmeticEntity(profileId, "friend:mobi"))
             insertOwned(OwnedCosmeticEntity(profileId, "friend:luna"))
             putEquipped(EquippedCosmeticEntity(profileId, "FRIEND", "friend:mobi"))
