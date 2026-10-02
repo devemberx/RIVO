@@ -233,6 +233,29 @@ class PetAvatarTest {
     }
 
     @Test
+    fun lunaDisappearLoadsTwentyFourFramesAndHoldsTheLastOne() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        assertEquals(24, LunaDisappearTimeline.load(context)?.size)
+        assertEquals(0, LunaDisappearTimeline.frameAt(0L))
+        assertEquals(0, LunaDisappearTimeline.frameAt(LunaDisappearTimeline.HOLD_NANOS))
+        assertEquals(12, LunaDisappearTimeline.frameAt(LunaDisappearTimeline.HOLD_NANOS + 750_000_000L))
+        assertEquals(23, LunaDisappearTimeline.frameAt(LunaDisappearTimeline.DURATION_NANOS * 2))
+    }
+
+    @Test
+    fun lunaDisappearingPlaysTheExitBeforeReportingCompletion() {
+        var finished = false
+        compose.setContent {
+            PetAvatar(friendId = "friend:luna", isDisappearing = true, onDisappeared = { finished = true })
+        }
+        compose.mainClock.advanceTimeBy(100L)
+        assertTrue(!finished)
+        compose.waitUntil(10_000L) { finished }
+    }
+
+    @Test
     fun lunaRunAnimationCacheLoadsTwentyFourFramesFromAssets() {
         val context =
             androidx.test.core.app.ApplicationProvider

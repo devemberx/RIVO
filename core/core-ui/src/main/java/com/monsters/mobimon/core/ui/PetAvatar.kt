@@ -393,7 +393,7 @@ fun PetAvatar(
         }
         return
     }
-    if (isDisappearing && friendId != "friend:mobi" && !isMoving) {
+    if (isDisappearing && friendId != "friend:mobi" && friendId != "friend:luna" && !isMoving) {
         LaunchedEffect(Unit) { onDisappeared() }
         return
     }
@@ -494,7 +494,10 @@ fun PetAvatar(
                         )
                 }
             } else if (friendId == "friend:luna") {
-                if (runEnabled && !isSick && !isHungry) {
+                val showLunaRun = runEnabled && !isSick && !isHungry
+                if (isDisappearing && !showLunaRun) {
+                    LunaDisappearAnimation(Modifier.fillMaxSize(), appearance, onDisappeared)
+                } else if (showLunaRun) {
                     LunaRunAnimation(
                         modifier = Modifier.fillMaxSize(),
                         movingLeft = movingLeft,
