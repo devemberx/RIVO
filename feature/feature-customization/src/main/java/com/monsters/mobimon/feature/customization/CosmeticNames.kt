@@ -30,5 +30,6 @@ internal fun cosmeticName(
         itemId == "background:star" -> stringResource(R.string.pet_background_star)
         itemId == "background:snow" -> stringResource(R.string.pet_background_snow)
         itemId == "background:petal" -> stringResource(R.string.pet_background_petal)
+        itemId == "background:cyberpunk_city" -> stringResource(R.string.pet_background_cyberpunk_city)
         else -> itemId
     }
