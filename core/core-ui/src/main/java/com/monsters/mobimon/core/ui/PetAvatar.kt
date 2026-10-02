@@ -413,7 +413,21 @@ fun PetAvatar(
             backgroundId?.let { CharacterArtwork.backgrounds[it] }?.let {
                 CharacterAssetImage(it, Modifier.fillMaxSize())
             }
-            LasIdleAnimation(Modifier.fillMaxSize(), motionEnabled)
+            val hungry =
+                (vehicleHungry || emotion == PetEmotion.HUNGRY) &&
+                    !vehicleWarning &&
+                    emotion != PetEmotion.SICK
+            CompanionStatusCrossfade(
+                state = if (hungry) CompanionStatus.HUNGRY else CompanionStatus.NORMAL,
+                motionEnabled = motionEnabled,
+                modifier = Modifier.fillMaxSize(),
+            ) { status ->
+                if (status == CompanionStatus.HUNGRY) {
+                    LasHungryAnimation(Modifier.fillMaxSize(), motionEnabled)
+                } else {
+                    LasIdleAnimation(Modifier.fillMaxSize(), motionEnabled)
+                }
+            }
         }
         return
     }

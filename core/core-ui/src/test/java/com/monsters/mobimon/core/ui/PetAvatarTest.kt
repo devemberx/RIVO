@@ -498,4 +498,24 @@ class PetAvatarTest {
         assertNull(LunaSickAnimationCache.peek())
         assertNull(LunaRunAnimationCache.peek())
     }
+
+    @Test
+    fun lasHungryAnimationAssetExistsAndPetAvatarRendersLasHungry() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        assertTrue(
+            context.assets
+                .list("characters/las/hungry/idle_breath")!!
+                .contains("las_idle_breath_hungry_sprite.png"),
+        )
+        compose.setContent {
+            MobiMonTheme {
+                PetAvatar(
+                    friendId = "friend:las",
+                    emotion = PetEmotion.HUNGRY,
+                )
+            }
+        }
+    }
 }
