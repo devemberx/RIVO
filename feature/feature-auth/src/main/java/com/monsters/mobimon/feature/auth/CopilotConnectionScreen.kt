@@ -90,7 +90,14 @@ fun CopilotConnectionScreen(
         } else {
             state
         }
-    val friend = stringResource(if (friendId == "friend:luna") R.string.copilot_luna else R.string.copilot_mobi)
+    val friend =
+        stringResource(
+            when (friendId) {
+                "friend:luna" -> R.string.copilot_luna
+                "friend:las" -> R.string.copilot_las
+                else -> R.string.copilot_mobi
+            },
+        )
     Box(modifier.fillMaxSize().background(Colors.background).semantics { paneTitle = title }) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val fontScale = LocalDensity.current.fontScale
