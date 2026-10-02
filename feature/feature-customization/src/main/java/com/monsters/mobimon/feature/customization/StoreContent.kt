@@ -525,7 +525,7 @@ private fun StoreItemArtwork(
                 modifier,
                 friendId = item.id,
                 isAnimated =
-                    item.id == "friend:luna",
+                    item.id == "friend:luna" || item.id == "friend:las",
             )
         item.id == "background:star_hanger" -> StarHanger(modifier, centered = true, isAnimated = false)
         item.id == "background:starlight_yarn_basket" ->

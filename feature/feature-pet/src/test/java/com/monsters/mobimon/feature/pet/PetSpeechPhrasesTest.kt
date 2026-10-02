@@ -45,6 +45,17 @@ class PetSpeechPhrasesTest {
         assertEquals(PetSpeechPhrases.lunaHungry, pool(friendId = "friend:luna", isTap = true, isHungry = true))
     }
 
+    @Test
+    fun lasSpeechPhrasesReturnExpectedPools() {
+        assertEquals(listOf("삐빅, 잠깐 쉬어갈까?", "오늘은 천천히 함께하자."), pool(friendId = "friend:las", isSick = true))
+        assertEquals(listOf("에너지 충전할 시간이야!", "잠깐 쉬면서 힘을 채워보자."), pool(friendId = "friend:las", isHungry = true))
+        assertEquals(listOf("라스 여기 있어! 반가워!", "삐빅, 나 불렀어?"), pool(friendId = "friend:las", isTap = true))
+        assertEquals(
+            listOf("반가워! 나는 라스야.", "오늘도 네 곁에서 함께할게.", "내 불빛 보이지? 인사하는 중이야!"),
+            pool(friendId = "friend:las"),
+        )
+    }
+
     private fun pool(
         friendId: String,
         isTap: Boolean = false,

@@ -381,7 +381,14 @@ fun PetAvatar(
     val motionEnabled = isAnimated && LocalMobiMonMotionEnabled.current
     // Reduced motion keeps the gentle idle breath and drops travel animation only.
     val runEnabled = isAnimated && isMoving && LocalMobiMonMotionEnabled.current
-    val description = stringResource(if (cat) R.string.mobimon_luna_description else R.string.mobimon_mobi_description)
+    val description =
+        stringResource(
+            when (friendId) {
+                "friend:las" -> R.string.mobimon_las_description
+                "friend:luna" -> R.string.mobimon_luna_description
+                else -> R.string.mobimon_mobi_description
+            },
+        )
     if (isAppearing) {
         if (friendId == "friend:mobi") {
             MobiAppearAnimation(modifier, accessoryId ?: outfitId, onAppeared)
@@ -402,6 +409,15 @@ fun PetAvatar(
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Fit,
             )
+        }
+        return
+    }
+    if (friendId == "friend:las") {
+        Box(modifier = modifier.size(120.dp).semantics { contentDescription = description }) {
+            backgroundId?.let { CharacterArtwork.backgrounds[it] }?.let {
+                CharacterAssetImage(it, Modifier.fillMaxSize())
+            }
+            LasIdleAnimation(Modifier.fillMaxSize(), motionEnabled)
         }
         return
     }

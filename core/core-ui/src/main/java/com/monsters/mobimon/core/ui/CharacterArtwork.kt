@@ -39,6 +39,7 @@ object CharacterArtwork {
         mapOf(
             "friend:mobi" to CharacterAsset(R.drawable.mobimon_mobi, translationYFraction = -35.24f / 1254f),
             "friend:luna" to CharacterAsset(R.drawable.mobimon_luna, visualScale = 0.87f),
+            "friend:las" to CharacterAsset(R.drawable.mobimon_las),
         )
 
     val equippedLooks =
@@ -95,7 +96,8 @@ object CharacterArtwork {
         friendId: String,
         accessoryId: String? = null,
     ): CharacterAsset =
-        happyEquippedLooks[accessoryId] ?: happyCharacters[friendId] ?: happyCharacters.getValue("friend:mobi")
+        happyEquippedLooks[accessoryId] ?: happyCharacters[friendId] ?: characters[friendId]
+            ?: happyCharacters.getValue("friend:mobi")
 
     val hungryCharacters =
         mapOf(

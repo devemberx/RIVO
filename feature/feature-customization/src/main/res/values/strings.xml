@@ -52,4 +52,6 @@
     <string name="pet_preview_desc_star_hanger">은은한 별빛 모빌로 차 안에 포인트를 더해요.</string>
     <string name="pet_item_yarn_basket">별빛 털실 바구니</string>
     <string name="pet_preview_desc_yarn_basket">별빛 털실 바구니로 공간을 포근하게 꾸며요.</string>
+    <string name="pet_friend_las">라스 · 로봇</string>
+    <string name="pet_preview_desc_friend_las">따뜻한 금빛 조명으로 인사하는 로봇 친구예요.</string>
 </resources>

@@ -185,6 +185,10 @@ disconnect confirms local-only removal.
 
 ## Motion
 
+Las (라스) is a 500-point character using the unchanged robot master. Its idle renderer keeps the master body fixed while gently waving the connected raised arm from the shoulder,
+shortening the eye symmetrically and fading the head lights. It respects the shared
+motion preference; the generated atlas is retained as source reference, not playback.
+
 Respect the shared motion preference; animation never authorizes commands. Settings
 controls only floating wandering; unknown/failed reads keep it stationary. Shell
 chat transition returns to its trigger; restrictions replace content immediately.
