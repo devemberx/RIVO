@@ -70,6 +70,10 @@ private const val NOTIFICATION_ID = 1001
 private const val DEFAULT_OVERLAY_X = 1900
 private const val DEFAULT_OVERLAY_Y = 700
 
+// Luna's cat-tower exit rises above the avatar. The headroom is kept while Luna is active because resizing
+// and moving the window land on different frames, which made Luna jump down when the exit started.
+private const val LUNA_EXIT_HEADROOM_DP = 72
+
 /**
  * Floating companion overlay service rendering the companion avatar on top of all screens.
  * Runs as a specialUse foreground service to persist across the launcher and other apps.
@@ -103,6 +107,7 @@ class FloatingCompanionService : Service() {
     private var movingLeft by mutableStateOf(true)
     private var vehicleWarning by mutableStateOf(false)
     private var vehicleHungry by mutableStateOf(false)
+    private var exitHeadroomDp by mutableStateOf(0)
     private var currentFriendId by mutableStateOf("friend:mobi")
     private var activeFriendId by mutableStateOf("friend:mobi")
     private var activeAccessoryId by mutableStateOf<String?>(null)
@@ -266,10 +271,15 @@ class FloatingCompanionService : Service() {
                                 }
                             }
 
+                            val targetHeadroomDp = if (activeFriendId == "friend:luna") LUNA_EXIT_HEADROOM_DP else 0
+                            androidx.compose.runtime.LaunchedEffect(targetHeadroomDp) {
+                                applyExitHeadroom(targetHeadroomDp)
+                            }
+
                             Box(
                                 modifier =
                                     Modifier
-                                        .size(width = 258.dp, height = 176.dp)
+                                        .size(width = 258.dp, height = (176 + exitHeadroomDp).dp)
                                         .padding(8.dp),
                                 contentAlignment = Alignment.BottomStart,
                             ) {
@@ -633,6 +643,25 @@ class FloatingCompanionService : Service() {
                     }
                 }
         }
+    }
+
+    /** Moves the window up by the added height in the same step, so the avatar keeps its screen position. */
+    private fun applyExitHeadroom(targetDp: Int) {
+        val delta = targetDp - exitHeadroomDp
+        if (delta == 0) return
+        val params = overlayParams
+        if (params != null) {
+            params.y -= (delta * resources.displayMetrics.density).roundToInt()
+            val view = composeView
+            val wm = windowManager
+            if (isViewAttached && view != null && wm != null) {
+                try {
+                    wm.updateViewLayout(view, params)
+                } catch (_: Exception) {
+                }
+            }
+        }
+        exitHeadroomDp = targetDp
     }
 
     private fun beginDisappearance() {
