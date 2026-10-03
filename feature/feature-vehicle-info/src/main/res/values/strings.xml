@@ -127,6 +127,7 @@
     <string name="vehicle_header_subtitle">%1$s의 상태로 내 차를 한눈에</string>
     <string name="vehicle_companion_mobi">모비</string>
     <string name="vehicle_companion_luna">루나</string>
+    <string name="vehicle_companion_las">라스</string>
     <string name="vehicle_appearance_load_failed">친구 정보를 불러오지 못했어요.</string>
     <string name="vehicle_appearance_update_failed">친구 정보를 갱신하지 못했어요.</string>
     <string name="vehicle_retry">다시 시도</string>

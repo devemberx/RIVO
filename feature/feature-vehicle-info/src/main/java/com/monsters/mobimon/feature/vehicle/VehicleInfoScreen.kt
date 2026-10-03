@@ -388,10 +388,10 @@ internal fun VehicleHeader(
                     stringResource(
                         R.string.vehicle_header_subtitle,
                         stringResource(
-                            if (friendId == "friend:luna") {
-                                R.string.vehicle_companion_luna
-                            } else {
-                                R.string.vehicle_companion_mobi
+                            when (friendId) {
+                                "friend:luna" -> R.string.vehicle_companion_luna
+                                "friend:las" -> R.string.vehicle_companion_las
+                                else -> R.string.vehicle_companion_mobi
                             },
                         ),
                     ),
@@ -457,7 +457,7 @@ private fun VehicleStatusBanner(
                 lowBattery -> R.string.vehicle_banner_low_battery_title
                 else -> mood.bannerTitleRes
             },
-        ).replace("모비", if (friendId == "friend:luna") "루나" else "모비")
+        ).replace("모비", vehicleCompanionName(friendId))
     val description =
         if (tireWarning) {
             snapshot.warnings
@@ -465,7 +465,7 @@ private fun VehicleStatusBanner(
                 ?.description ?: stringResource(R.string.vehicle_banner_sick_tire_desc)
         } else {
             stringResource(if (lowBattery) R.string.vehicle_banner_low_battery_desc else mood.bannerDescriptionRes)
-        }
+        }.replace("모비", vehicleCompanionName(friendId))
     StatusSurface(
         background = mood.bannerBackground,
         border = mood.accent,
@@ -599,7 +599,7 @@ private fun CompanionStatusPanel(
                         } else {
                             mood.companionTextRes
                         },
-                    ).replace("모비", if (friendId == "friend:luna") "루나" else "모비"),
+                    ).replace("모비", vehicleCompanionName(friendId)),
                 color = MobiMonColors.text,
                 fontSize = (if (compact) 26f else 36f).times(designScale).sp,
                 textAlign = TextAlign.Center,
@@ -1813,6 +1813,13 @@ private fun lastCheckedText(ageMillis: Long): String {
         else -> stringResource(R.string.vehicle_last_checked_days, seconds / 86_400)
     }
 }
+
+private fun vehicleCompanionName(friendId: String): String =
+    when (friendId) {
+        "friend:luna" -> "루나"
+        "friend:las" -> "라스"
+        else -> "모비"
+    }
 
 private fun SignalUnavailableReason.description(): Int =
     when (this) {

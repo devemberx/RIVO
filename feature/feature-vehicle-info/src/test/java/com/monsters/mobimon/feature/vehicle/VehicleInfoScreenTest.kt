@@ -516,6 +516,19 @@ class VehicleInfoScreenTest {
     }
 
     @Test
+    fun lasDisplaysHungryAndSickState() {
+        compose.setContent {
+            MaterialTheme {
+                VehicleInfoScreen(
+                    snapshot = snapshot(battery = 15),
+                    friendId = "friend:las",
+                )
+            }
+        }
+        compose.onNodeWithText("라스가 배고파요.").assertIsDisplayed()
+    }
+
+    @Test
     fun unselectedCardCautionsUpdateLunaAndRecoverWhenCleared() {
         val baseline =
             snapshot().copy(
