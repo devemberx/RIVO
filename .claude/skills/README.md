@@ -1,6 +1,7 @@
 # Project development skills
 
-This project vendors three skills for Android development and UI/UX design.
+This project vendors three skills for Android development and UI/UX design and
+maintains a local background asset workflow.
 Upstream content is preserved except for trailing whitespace cleanup in
 UI/UX Pro Max's `scripts/design_system.py`, including a docstring. Code logic is unchanged.
 
@@ -13,6 +14,11 @@ UI/UX Pro Max's `scripts/design_system.py`, including a docstring. Code logic is
 The Android skills were imported on 2026-09-09 and UI/UX Pro Max on 2026-09-12
 using the Codex skill installer.
 
+The project-maintained [background-time-variants](background-time-variants/SKILL.md)
+skill generates time variants from one approved master, separating fixed scene
+geometry from time-dependent lighting and requiring post-generation visual review.
+Its complete folder is mirrored in `.claude/skills/`.
+
 ## Usage
 
 Codex discovers these skills in `.agents/skills/`. For other agents, use their
@@ -23,6 +29,7 @@ Example prompts:
 - `Use compose-agent to implement this Compose screen using the project's existing dependencies.`
 - `Use compose-agent to review state restoration and animation lifecycle in this feature.`
 - `Use testing-setup to review the current Android test setup and identify the checks needed for this change.`
+- `Use background-time-variants to create and verify Cyberpunk City time variants while preserving building heights and object placement.`
 
 Apply these workflows within the user's requested scope and the repository's
 instructions. Check upstream version assumptions against the project's actual

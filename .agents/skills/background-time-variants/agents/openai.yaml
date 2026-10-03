@@ -1,0 +1,4 @@
+interface:
+  display_name: "Background Time Variants"
+  short_description: "Keep scene geometry stable across time variants"
+  default_prompt: "Use $background-time-variants to create and verify time-of-day background variants from one approved master."
