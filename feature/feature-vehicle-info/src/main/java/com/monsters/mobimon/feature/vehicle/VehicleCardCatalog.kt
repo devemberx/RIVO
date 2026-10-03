@@ -93,11 +93,13 @@ internal object VehicleCardCatalog {
             card("washer", "워셔액", "앞유리 워셔액 잔량", "Vehicle.Body.Windshield.Front.WasherFluid.Level"),
         )
 
+    internal val allCards: List<VehicleCardSpec> = cards + initialOnly
+
     val defaultSlots =
         listOf("battery", "charging", "tire", "washer", "environment", "assist")
             .map { id -> requireNotNull(find(id)) }
 
-    fun find(id: String): VehicleCardSpec? = (cards + initialOnly).firstOrNull { it.id == id }
+    fun find(id: String): VehicleCardSpec? = allCards.firstOrNull { it.id == id }
 
     fun status(
         id: String,

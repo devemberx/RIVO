@@ -7,14 +7,28 @@ data class VehicleCautionAlert(
     val title: String,
 )
 
-/** Uses the same current card status as the Vehicle screen and retains the selected slot order. */
+/** Uses current card statuses, puts selected cards first, and includes cautions outside visible slots. */
 fun vehicleCautionAlerts(
     snapshot: VehicleSnapshot,
     selectedCards: List<String>,
-): List<VehicleCautionAlert> =
-    VehicleCardSelectionStore.validOrDefaults(selectedCards).mapNotNull { id ->
-        val spec = VehicleCardCatalog.find(id) ?: return@mapNotNull null
+): List<VehicleCautionAlert> {
+    val orderedIds =
+        (
+            VehicleCardSelectionStore.validOrDefaults(
+                selectedCards,
+            ) + VehicleCardCatalog.allCards.map { it.id }
+        ).distinct()
+    val alertedConditions = mutableSetOf<String>()
+    return orderedIds.mapNotNull { id ->
         if (VehicleCardCatalog.status(id, snapshot) != VehicleCardStatus.CAUTION) return@mapNotNull null
+        val conditionId =
+            when (id) {
+                "tire", "tire-low" -> "tire-pressure"
+                "washer", "washer-low" -> "washer-fluid"
+                else -> id
+            }
+        if (!alertedConditions.add(conditionId)) return@mapNotNull null
+        val spec = VehicleCardCatalog.find(id) ?: return@mapNotNull null
         val title =
             when (id) {
                 "battery" -> "배터리 잔량이 낮아요"
@@ -23,3 +37,4 @@ fun vehicleCautionAlerts(
             }
         VehicleCautionAlert(id, title)
     }
+}
