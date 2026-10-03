@@ -51,17 +51,20 @@ class VssSourceVehicleRepository(
                 var sequence = 0L
                 publicationRequests().collect {
                     val nextSequence = ++sequence
+                    val atomicSource = rawSource as? ObservedVssRawVehicleSource
+                    val frame = atomicSource?.observationFrames?.value
                     val snapshot =
-                        VssVehicleInterpreter.snapshot(
-                            raw = rawSource.state.value,
-                            id = "$epoch-$nextSequence",
-                            epoch = epoch,
-                            sequence = nextSequence,
-                            observedAtMillis = clock.nowMillis(),
-                            source = SignalSource.REAL,
-                            timeObservedAtMillis = rawSource.timeObservedAtMillis,
-                            batteryObservedAtMillis = rawSource.batteryObservedAtMillis,
-                        )
+                        VssVehicleInterpreter
+                            .snapshot(
+                                raw = if (atomicSource != null) frame?.raw else rawSource.state.value,
+                                id = "$epoch-$nextSequence",
+                                epoch = epoch,
+                                sequence = nextSequence,
+                                observedAtMillis = clock.nowMillis(),
+                                source = SignalSource.REAL,
+                                timeObservedAtMillis = rawSource.timeObservedAtMillis,
+                                batteryObservedAtMillis = rawSource.batteryObservedAtMillis,
+                            ).copy(evidenceFrame = frame?.evidence)
                     synchronized(this@VssSourceVehicleRepository) {
                         if (generation == currentGeneration) {
                             mutableSnapshots.value = snapshot
@@ -81,6 +84,8 @@ class VssSourceVehicleRepository(
                 }
             },
             rawSource.state.drop(1).map { Unit },
+            (rawSource as? ObservedVssRawVehicleSource)?.observationFrames?.drop(1)?.map { Unit }
+                ?: kotlinx.coroutines.flow.emptyFlow(),
         )
 
     @Synchronized
@@ -94,6 +99,10 @@ class VssSourceVehicleRepository(
                 quality = SignalQuality.UNAVAILABLE,
                 drivingState = DrivingState.UNKNOWN,
                 batteryQuality = SignalQuality.UNAVAILABLE,
+                evidenceFrame =
+                    mutableSnapshots.value.evidenceFrame?.let {
+                        it.copy(subscription = it.subscription.copy(connected = false, subscriptionValid = false))
+                    },
             )
     }
 }

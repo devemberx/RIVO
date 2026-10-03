@@ -292,37 +292,32 @@ class ConversationScreenTest {
 
     @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
-    fun networkFailureShowsModalAndRecheckNeverSendsDraft() {
+    fun networkFailureStaysInlineAndRecheckNeverSendsDraft() {
         state = ConversationUiState(ConversationConnection.UNAVAILABLE, connectionProblem = ConversationProblem.NETWORK)
         draft = TextFieldValue("작성 중")
         show()
         capture("network-error")
-        compose.onNodeWithTag("chat-network-dialog").assertIsDisplayed()
-        compose.onNodeWithText("네트워크 연결을 확인해 주세요").assertIsDisplayed()
-        compose.onNodeWithTag("chat-send").assertDoesNotExist()
-        compose.onNodeWithTag("chat-network-retry").performClick()
+        compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+        compose.onNodeWithTag("chat-inline-failure").assertIsDisplayed()
+        compose.onNodeWithText("네트워크 연결을 확인해 주세요.").assertIsDisplayed()
+        compose.onNodeWithTag("chat-user-bubble").assertDoesNotExist()
+        compose.onNodeWithText("내용 수정").assertDoesNotExist()
+        compose.onNodeWithTag("chat-input").assertIsDisplayed().assertIsEnabled()
+        compose.onNodeWithTag("chat-send").assertIsNotEnabled()
+        compose.onNodeWithText("다시 확인").performClick()
         compose.runOnIdle {
             assertEquals(1, checks)
             assertEquals(0, sends)
             assertEquals("작성 중", draft.text)
         }
+        compose.onNodeWithTag("chat-network-dialog").assertIsDisplayed()
         compose.onNodeWithText("Copilot 연결을 다시 확인하는 중").assertIsDisplayed()
-        val ring =
-            compose
-                .onNodeWithTag(
-                    "chat-connection-ring",
-                    useUnmergedTree = true,
-                ).fetchSemanticsNode()
-                .boundsInRoot
-        assertEquals(688f, ring.left, 1f)
-        assertEquals(342f, ring.top, 1f)
-        assertEquals(64f, ring.width, 1f)
-        assertEquals(64f, ring.height, 1f)
-        compose.onNodeWithTag("chat-network-retry").assertIsNotEnabled()
-        compose.onNodeWithTag("chat-network-home").assertIsEnabled()
+        compose.onNodeWithText("확인 중…").assertIsNotEnabled().performClick()
+        compose.runOnIdle { assertEquals(1, checks) }
         capture("network-checking")
         compose.runOnIdle { state = state.copy(connection = ConversationConnection.READY, connectionRetrying = false) }
         compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+        compose.onNodeWithTag("chat-inline-failure").assertDoesNotExist()
         compose.onNodeWithTag("chat-send").assertIsEnabled()
     }
 
@@ -342,11 +337,14 @@ class ConversationScreenTest {
         state = ConversationUiState(ConversationConnection.UNAVAILABLE, connectionProblem = ConversationProblem.TIMEOUT)
         draft = TextFieldValue("대기 중인 초안")
         show(fontScale = fontScale)
-        compose.onNodeWithText("네트워크 연결을 확인해 주세요").assertIsDisplayed()
+        compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+        compose.onNodeWithText("네트워크 응답 대기 시간이 지났어요.").assertIsDisplayed()
+        compose.onNodeWithText("내용 수정").assertDoesNotExist()
         compose.onNodeWithText("Copilot 답변이 지연됐어요").assertDoesNotExist()
         capture(if (fontScale == 1f) "network-timeout" else "network-timeout-enlarged")
-        compose.onNodeWithTag("chat-network-retry").performClick()
-        compose.onNodeWithText("Copilot 연결을 다시 확인하는 중").assertIsDisplayed()
+        compose.onNodeWithText("다시 확인").assertIsDisplayed().performClick()
+        compose.onNodeWithTag("chat-network-dialog").assertIsDisplayed()
+        compose.onNodeWithText("확인 중…").assertIsDisplayed().assertIsNotEnabled()
         compose.runOnIdle {
             assertEquals(1, checks)
             assertEquals(0, sends)
@@ -355,18 +353,198 @@ class ConversationScreenTest {
     }
 
     @Test
-    @GraphicsMode(GraphicsMode.Mode.NATIVE)
-    fun voiceAvailabilityDoesNotBypassNetworkPopup() {
-        showVoiceNetworkPopup(1f, ConversationProblem.NETWORK)
+    fun explicitRecheckUsesPopupUntilSuccessWithoutSendingAndLaterFailuresStayInline() {
+        state = ConversationUiState(ConversationConnection.UNAVAILABLE, connectionProblem = ConversationProblem.NETWORK)
+        draft = TextFieldValue("보내지 않은 초안")
+        show()
+        compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+        compose.onNodeWithText("다시 확인").performClick()
+        compose.onNodeWithTag("chat-network-dialog").assertIsDisplayed()
+        compose.onNodeWithTag("chat-network-retry").assertIsNotEnabled()
+        compose.runOnIdle {
+            state =
+                state.copy(
+                    connection = ConversationConnection.UNAVAILABLE,
+                    connectionProblem = ConversationProblem.NETWORK,
+                    connectionRetrying = false,
+                )
+        }
+        compose.onNodeWithTag("chat-network-dialog").assertIsDisplayed()
+        compose.onNodeWithText("다시 보내기").assertDoesNotExist()
+        compose.onNodeWithTag("chat-network-retry").assertIsEnabled().performClick()
+        compose.runOnIdle {
+            assertEquals(2, checks)
+            assertEquals(0, sends)
+            assertEquals(0, retries)
+            assertEquals("보내지 않은 초안", draft.text)
+            state = state.copy(connection = ConversationConnection.READY, connectionRetrying = false)
+        }
+        compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+        compose.runOnIdle {
+            state =
+                state.copy(
+                    connection = ConversationConnection.UNAVAILABLE,
+                    connectionProblem = ConversationProblem.NETWORK,
+                )
+        }
+        compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+        compose.onNodeWithTag("chat-inline-failure").assertIsDisplayed()
+    }
+
+    @Test
+    fun offlineRecheckOpensPopupAndHomeKeepsUnsentDraft() {
+        state = ConversationUiState(ConversationConnection.UNAVAILABLE, connectionProblem = ConversationProblem.NETWORK)
+        draft = TextFieldValue("오프라인 초안")
+        show(recheckStartsRequest = false)
+        compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+        compose.onNodeWithText("다시 확인").performClick()
+        compose.onNodeWithTag("chat-network-dialog").assertIsDisplayed()
+        compose.onNodeWithTag("chat-network-retry").assertIsEnabled()
+        compose.onNodeWithTag("chat-network-home").performClick()
+        compose.runOnIdle {
+            assertEquals(1, checks)
+            assertEquals(1, homeReturns)
+            assertEquals(0, sends)
+            assertEquals(0, retries)
+            assertEquals("오프라인 초안", draft.text)
+        }
+        compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+    }
+
+    @Test
+    fun explicitRecheckPopupDoesNotReopenAfterParkingLoss() {
+        state = ConversationUiState(ConversationConnection.UNAVAILABLE, connectionProblem = ConversationProblem.NETWORK)
+        show()
+        compose.onNodeWithText("다시 확인").performClick()
+        compose.onNodeWithTag("chat-network-dialog").assertIsDisplayed()
+        compose.runOnIdle { allowed = false }
+        compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+        compose.runOnIdle {
+            state =
+                state.copy(
+                    connection = ConversationConnection.UNAVAILABLE,
+                    connectionProblem = ConversationProblem.NETWORK,
+                    connectionRetrying = false,
+                )
+            allowed = true
+        }
+        compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+        compose.onNodeWithTag("chat-inline-failure").assertIsDisplayed()
+        compose.runOnIdle { assertEquals(1, checks) }
+    }
+
+    @Test
+    fun serviceReadinessFailureOffersInlineRecheckWithoutAFailedTurn() {
+        state = ConversationUiState(ConversationConnection.UNAVAILABLE, connectionProblem = ConversationProblem.SERVICE)
+        show()
+        compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+        compose.onNodeWithText("Copilot 서비스가 응답하지 못했어요.").assertIsDisplayed()
+        compose.onNodeWithText("내용 수정").assertDoesNotExist()
+        compose.onNodeWithText("다시 보내기").assertDoesNotExist()
+        compose.onNodeWithText("다시 확인").performClick()
+        compose.runOnIdle {
+            assertEquals(1, checks)
+            assertEquals(0, sends)
+            assertTrue(state.messages.isEmpty())
+        }
+    }
+
+    @Test
+    fun networkFailureWithoutAnUnansweredMessageNeverOffersResend() {
+        showFailureWithoutAnUnansweredMessage(1f)
+    }
+
+    @Test
+    fun networkFailureWithoutAnUnansweredMessageNeverOffersResendWithEnlargedText() {
+        showFailureWithoutAnUnansweredMessage(2f)
+    }
+
+    private fun showFailureWithoutAnUnansweredMessage(fontScale: Float) {
+        show(fontScale = fontScale)
+        val completed =
+            listOf(
+                ConversationMessage("old-user", "이전 질문", true),
+                ConversationMessage("old-reply", "이전 답변", false),
+            )
+        val problems =
+            listOf(
+                ConversationProblem.NETWORK,
+                ConversationProblem.TIMEOUT,
+                ConversationProblem.SERVICE,
+                ConversationProblem.PROVIDER,
+            )
+        for (messages in listOf(emptyList(), completed)) {
+            for (problem in problems) {
+                compose.runOnIdle {
+                    state =
+                        ConversationUiState(
+                            connection = ConversationConnection.UNAVAILABLE,
+                            messages = messages,
+                            failed = true,
+                            problem = problem,
+                        )
+                }
+                compose.onNodeWithText("다시 보내기").assertDoesNotExist()
+                compose.onNodeWithText("내용 수정").assertDoesNotExist()
+                compose.onNodeWithText("다시 확인").assertIsEnabled().performClick()
+                compose.onNodeWithText("확인 중…").assertIsNotEnabled()
+                compose.onNodeWithTag("chat-network-dialog").assertIsDisplayed()
+                compose.runOnIdle {
+                    state =
+                        state.copy(
+                            connection = ConversationConnection.READY,
+                            connectionRetrying = false,
+                            failed = false,
+                            problem = null,
+                        )
+                }
+                compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+            }
+        }
+        compose.runOnIdle {
+            assertEquals(8, checks)
+            assertEquals(0, retries)
+            assertEquals(0, sends)
+        }
+    }
+
+    @Test
+    fun recoverableTurnFailuresKeepExplicitRetryAndEditInline() {
+        state = state.copy(messages = listOf(ConversationMessage("attempt", "다시 보낼 내용", true)), failed = true)
+        show()
+        for (problem in listOf(
+            ConversationProblem.NETWORK,
+            ConversationProblem.TIMEOUT,
+            ConversationProblem.SERVICE,
+            ConversationProblem.PROVIDER,
+            ConversationProblem.NO_EVIDENCE,
+            ConversationProblem.TOOL_UNAVAILABLE,
+        )) {
+            compose.runOnIdle { state = state.copy(problem = problem) }
+            compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+            compose.onNodeWithText("내용 수정").assertIsDisplayed().assertIsEnabled()
+            compose.onNodeWithText("다시 확인").assertDoesNotExist()
+            compose.onNodeWithText("다시 보내기").assertIsEnabled().performClick()
+        }
+        compose.runOnIdle {
+            assertEquals(6, retries)
+            assertEquals(0, checks)
+        }
     }
 
     @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
-    fun voiceAvailabilityDoesNotBypassTimeoutPopupWithEnlargedText() {
-        showVoiceNetworkPopup(1.6f, ConversationProblem.TIMEOUT)
+    fun voiceAvailabilityKeepsNetworkRecoveryInline() {
+        showVoiceNetworkRecovery(1f, ConversationProblem.NETWORK)
     }
 
-    private fun showVoiceNetworkPopup(
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun voiceAvailabilityKeepsTimeoutRecoveryInlineWithEnlargedText() {
+        showVoiceNetworkRecovery(1.6f, ConversationProblem.TIMEOUT)
+    }
+
+    private fun showVoiceNetworkRecovery(
         fontScale: Float,
         problem: ConversationProblem,
     ) {
@@ -378,13 +556,13 @@ class ConversationScreenTest {
             )
         draft = TextFieldValue("보존할 초안")
         show(fontScale = fontScale)
-        compose.onNodeWithTag("chat-network-dialog").assertIsDisplayed()
-        compose.onNodeWithTag("chat-inline-failure").assertDoesNotExist()
-        compose.onNodeWithContentDescription("음성으로 입력").assertDoesNotExist()
+        compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+        compose.onNodeWithTag("chat-inline-failure").assertIsDisplayed()
+        compose.onNodeWithContentDescription("음성으로 입력").assertIsDisplayed()
         capture(if (fontScale == 1f) "voice-network-popup" else "voice-timeout-popup-enlarged")
-        compose.onNodeWithTag("chat-network-retry").performClick()
+        compose.onNodeWithText("다시 확인").performClick()
         compose.onNodeWithTag("chat-network-dialog").assertIsDisplayed()
-        compose.onNodeWithTag("chat-network-retry").assertIsNotEnabled()
+        compose.onNodeWithText("확인 중…").assertIsNotEnabled()
         compose.runOnIdle {
             assertEquals(1, checks)
             assertEquals(0, sends)
@@ -398,7 +576,7 @@ class ConversationScreenTest {
 
     @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
-    fun failedMessageNetworkErrorShowsDialogThenKeepsRetryAndEditReachable() {
+    fun failedMessageRechecksInPopupBeforeExplicitRetryAndEdit() {
         state =
             ConversationUiState(
                 ConversationConnection.UNAVAILABLE,
@@ -411,9 +589,14 @@ class ConversationScreenTest {
         draft = TextFieldValue()
         show()
         capture("message-network-failed")
+        compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+        compose.onNodeWithTag("chat-inline-failure").assertIsDisplayed()
+        compose.onNodeWithText("내용 수정").assertIsDisplayed().assertIsEnabled()
+        compose.onNodeWithText("다시 보내기").assertDoesNotExist()
+        compose.onNodeWithText("다시 확인").performClick()
         compose.onNodeWithTag("chat-network-dialog").assertIsDisplayed()
-        compose.onNodeWithTag("chat-inline-failure").assertDoesNotExist()
-        compose.onNodeWithTag("chat-network-retry").performClick()
+        compose.onNodeWithText("내용 수정").assertDoesNotExist()
+        compose.onNodeWithText("확인 중…").assertIsNotEnabled()
         compose.runOnIdle { assertEquals(1, checks) }
         compose.runOnIdle { state = state.copy(connection = ConversationConnection.READY, connectionRetrying = false) }
         compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
@@ -1087,7 +1270,7 @@ class ConversationScreenTest {
     }
 
     @Test
-    fun networkLossDuringRecordingOpensPopupAndReleasesMicrophone() {
+    fun networkLossDuringRecordingKeepsRecoveryInlineAndCaptureActive() {
         state = state.copy(voice = VoiceInputState(true, VoiceInputPhase.LISTENING))
         show()
         compose.runOnIdle {
@@ -1097,14 +1280,39 @@ class ConversationScreenTest {
                     connectionProblem = ConversationProblem.NETWORK,
                 )
         }
-        compose.onNodeWithTag("chat-network-dialog").assertIsDisplayed()
-        compose.onNodeWithContentDescription("녹음 마치고 내용 확인").assertDoesNotExist()
+        compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+        compose.onNodeWithText("다시 확인").assertIsDisplayed()
+        compose.onNodeWithContentDescription("녹음 마치고 내용 확인").assertIsDisplayed()
+        val failure = compose.onNodeWithTag("chat-inline-failure").fetchSemanticsNode().boundsInRoot
+        val voiceControl = compose.onNodeWithTag("chat-voice-control").fetchSemanticsNode().boundsInRoot
+        assertTrue("Connection notice overlaps the recording controls", failure.bottom <= voiceControl.top)
         compose.runOnIdle {
-            assertEquals(1, voiceCancellations)
+            assertEquals(0, voiceCancellations)
             assertEquals(0, sends)
             allowed = false
         }
         compose.onNodeWithTag("chat-parking-dialog").assertIsDisplayed()
+        compose.runOnIdle { assertEquals(1, voiceCancellations) }
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun connectionNoticeAndVoiceErrorStayAboveTheComposer() {
+        state =
+            state.copy(
+                connection = ConversationConnection.UNAVAILABLE,
+                connectionProblem = ConversationProblem.NETWORK,
+                voice = VoiceInputState(available = true, problem = VoiceInputProblem.NETWORK),
+            )
+        show()
+        compose.onNodeWithText("다시 확인").assertIsDisplayed()
+        compose.onNodeWithTag("chat-input").assertIsDisplayed()
+        val failure = compose.onNodeWithTag("chat-inline-failure").fetchSemanticsNode().boundsInRoot
+        val voiceHint = compose.onNodeWithTag("chat-voice-hint").fetchSemanticsNode().boundsInRoot
+        val composer = compose.onNodeWithTag("chat-composer").fetchSemanticsNode().boundsInRoot
+        assertTrue("Connection notice overlaps the voice hint", failure.bottom <= voiceHint.top)
+        assertTrue("Voice hint overlaps the composer", voiceHint.bottom <= composer.top)
+        capture("connection-voice-error")
     }
 
     @Test
@@ -1242,6 +1450,7 @@ class ConversationScreenTest {
         fontScale: Float = 1f,
         density: Float = 1f,
         motionEnabled: Boolean = false,
+        recheckStartsRequest: Boolean = true,
     ) {
         compose.setContent {
             val current = LocalView.current
@@ -1277,12 +1486,14 @@ class ConversationScreenTest {
                         onRetry = { retries++ },
                         onRecheckConnection = {
                             checks++
-                            state =
-                                state.copy(
-                                    connection = ConversationConnection.CHECKING,
-                                    connectionProblem = null,
-                                    connectionRetrying = true,
-                                )
+                            if (recheckStartsRequest) {
+                                state =
+                                    state.copy(
+                                        connection = ConversationConnection.CHECKING,
+                                        connectionProblem = null,
+                                        connectionRetrying = true,
+                                    )
+                            }
                         },
                         onDismissFailure = {
                             state.messages.lastOrNull()?.takeIf { state.failed && it.fromUser }?.let {

@@ -126,14 +126,20 @@ shows a still hanger.
 Use split companion/chat panels, suggestions and a system-keyboard composer.
 Suggestions fill without sending. Signed-out Chat opens connection settings.
 Mobi speaks curious rabbit banmal and Luna quietly caring cat banmal, without
-habitual animal suffixes, emojis or stage directions. Current-thread retention
+habitual animal suffixes, emojis or stage directions. Checked vehicle-linked hunger,
+sickness and battery state are spoken as the companion's own state in first person,
+with the observed reason; this does not imply biological illness or a mechanical diagnosis.
+Current-thread retention
 and New conversation follow the
 [session contract](ARCHITECTURE.md#keyboard-conversation-ui). Keep New conversation
 reachable above the composer; do not invent a name when one is absent.
 
-Network failures use the [recovery popup](ui/conversation/network-error.svg),
-say “이전 대화 기록은 보존돼요.” and retain failed turns for explicit Edit/Retry. Show “Copilot 확인 중” until readiness is
-verified, then “Copilot 연결됨”. Parking recovery blocks editing and hides IME;
+Recoverable network/readiness failures first use inline guidance. Explicit Recheck opens
+the [recovery popup](ui/conversation/network-error.svg) until readiness succeeds and never
+resends messages. Show Retry only when an unanswered user message exists. Failed replies,
+including missing evidence, keep the turn for explicit Edit/Retry; account/access/usage
+failures open the same popup. Show “Copilot 확인 중” until
+readiness is verified, then “Copilot 연결됨”. Parking recovery blocks editing and hides IME;
 AAOS restrictions remove the screen. After Send, show the sent bubble and a waiting
 hint; canceling a reply restores its text for editing, while Home clears the composer.
 
@@ -143,10 +149,13 @@ Follow the [keyboard](ui/conversation/keyboard-input.svg),
 Send actions; Stop yields editable text, only Send submits, and errors retain
 confirmed text. Microphone permission is explicit; an accepted request clears typed input,
 even if permission is later denied. Settings guidance appears when the system
-dialog cannot reopen. Network recovery releases capture and keeps
-unsent drafts. Keep the Copilot disclosure below the composer: transmitted dialogue,
-available context/debug values and AI uncertainty. Local clearing does not promise
+dialog cannot reopen. Inline network errors preserve capture and unsent drafts;
+explicit popup recovery releases capture and keeps drafts. Keep the
+Copilot disclosure below the composer: transmitted dialogue, available context/debug
+values and AI uncertainty. Local clearing does not promise
 provider deletion. Spoken replies remain planned.
+
+The AI explains vehicle information in the companion voice using tool values, units and signal meanings; the app does not replace its prose with fact templates. Identify Debug-simulated readings explicitly; verified VSS readings omit that label. Explain unavailable observations and label vehicle time as the clock at lookup. Rejected evidence preserves committed history and requires an explicit retry; raw tool protocol stays hidden.
 
 Replies keep a friendly companion voice: short paragraphs for explanations,
 bullets for multiple tips and numbered steps when order matters. Keep relevant

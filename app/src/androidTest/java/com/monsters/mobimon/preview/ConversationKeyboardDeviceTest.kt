@@ -90,15 +90,15 @@ class ConversationKeyboardDeviceTest {
     }
 
     @Test
-    fun replyNetworkDialogRechecksWithoutRemovingTheFailedTurn() {
+    fun replyNetworkFailureRechecksInlineWithoutRemovingTheFailedTurn() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         for (sample in listOf("network-failed", "timeout-failed")) {
             val intent = Intent(context, ConversationPreviewActivity::class.java).putExtra("state", sample)
             ActivityScenario.launch<ConversationPreviewActivity>(intent).use {
-                compose.onNodeWithTag("chat-network-dialog").assertIsDisplayed()
-                compose.onNodeWithText("네트워크 연결을 확인해 주세요").assertIsDisplayed()
-                compose.onNodeWithContentDescription("음성으로 입력").assertDoesNotExist()
-                compose.onNodeWithTag("chat-network-retry").performClick()
+                compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+                compose.onNodeWithTag("chat-inline-failure").assertIsDisplayed()
+                compose.onNodeWithContentDescription("음성으로 입력").assertIsDisplayed()
+                compose.onNodeWithText("다시 확인").assertIsEnabled().performClick()
                 compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
                 compose.onNodeWithTag("chat-inline-failure").assertIsDisplayed()
                 assertEquals(3, compose.onAllNodesWithTag("chat-user-bubble").fetchSemanticsNodes().size)

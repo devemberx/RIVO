@@ -62,4 +62,6 @@ data class VehicleSnapshot(
     val vssCardSignals: Map<String, String> = emptyMap(),
     /** Explicit debugger input, distinct from a simulated fallback when no adapter exists. */
     val isDebuggerOverride: Boolean = false,
+    /** Optional atomic observations for chat; never command or reward authority. */
+    val evidenceFrame: VehicleEvidenceFrame? = null,
 )

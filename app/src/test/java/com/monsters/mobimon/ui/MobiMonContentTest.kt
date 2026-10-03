@@ -1,6 +1,5 @@
 package com.monsters.mobimon.ui
 
-import android.app.Application
 import android.graphics.Insets
 import android.view.View
 import android.view.WindowInsets
@@ -36,6 +35,7 @@ import com.monsters.mobimon.core.navigation.CompanionRoute
 import com.monsters.mobimon.core.navigation.FeatureEntry
 import com.monsters.mobimon.core.navigation.FeatureNavigator
 import com.monsters.mobimon.core.navigation.LocalDebugSettingsAvailable
+import com.monsters.mobimon.testing.ComposeTestApplication
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -45,7 +45,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], application = Application::class, qualifiers = "ko-rKR-w2560dp-h1184dp-mdpi")
+@Config(sdk = [34], application = ComposeTestApplication::class, qualifiers = "ko-rKR-w2560dp-h1184dp-mdpi")
 class MobiMonContentTest {
     @get:Rule val compose = createComposeRule()
     private lateinit var rootView: View
