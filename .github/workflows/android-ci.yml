@@ -45,7 +45,11 @@ jobs:
             :app:assembleDebug \
             :app:assembleDebugAndroidTest \
             :core:core-database:assembleDebugAndroidTest \
-            :core:core-auth:assembleDebugAndroidTest
+            :core:core-auth:assembleDebugAndroidTest \
+            :app:assembleRelease \
+            :app:testReleaseUnitTest \
+            :core:core-auth:testReleaseUnitTest \
+            :feature:feature-auth:testReleaseUnitTest
       - name: Save APK
         if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v7

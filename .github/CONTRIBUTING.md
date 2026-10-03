@@ -66,7 +66,7 @@ checks:
 
 ```bash
 ./gradlew ktlintFormat
-./gradlew verifyModuleBoundaries ktlintCheck lintDebug testDebugUnitTest :core:core-domain:test :core:core-vss:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest :core:core-database:assembleDebugAndroidTest :core:core-auth:assembleDebugAndroidTest
+./gradlew verifyModuleBoundaries ktlintCheck lintDebug testDebugUnitTest :core:core-domain:test :core:core-vss:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest :core:core-database:assembleDebugAndroidTest :core:core-auth:assembleDebugAndroidTest :app:assembleRelease :app:testReleaseUnitTest :core:core-auth:testReleaseUnitTest :feature:feature-auth:testReleaseUnitTest
 git diff --check
 ```
 
