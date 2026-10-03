@@ -2,7 +2,9 @@ package com.monsters.mobimon.core.auth
 
 import com.monsters.mobimon.core.domain.AuthenticationProblem
 import com.monsters.mobimon.core.domain.GitHubAccount
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.FormBody
@@ -10,7 +12,9 @@ import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody
 import okhttp3.Response
+import okio.BufferedSink
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
@@ -65,7 +69,7 @@ internal class OkHttpGitHubApi(
 
     override suspend fun account(accessToken: String): GitHubAccount {
         val json =
-            request(
+            identityRequest(
                 Request
                     .Builder()
                     .url(apiBase.resolve("user")!!)
@@ -98,10 +102,43 @@ internal class OkHttpGitHubApi(
     ): JSONObject {
         val body = FormBody.Builder().add("client_id", clientId)
         fields.forEach { (name, value) -> body.add(name, value) }
-        return request(Request.Builder().url(oauthBase.resolve(path)!!).post(body.build()))
+        val form = body.build()
+        // OkHttp may replay a 503 Retry-After: 0 even with connection retries disabled.
+        val singleUseBody =
+            object : RequestBody() {
+                override fun contentType() = form.contentType()
+
+                override fun contentLength() = form.contentLength()
+
+                override fun isOneShot() = true
+
+                override fun writeTo(sink: BufferedSink) = form.writeTo(sink)
+            }
+        return request(Request.Builder().url(oauthBase.resolve(path)!!).post(singleUseBody))
     }
 
-    private suspend fun request(builder: Request.Builder): JSONObject =
+    private suspend fun identityRequest(builder: Request.Builder): JSONObject =
+        // Each attempt may include OkHttp's single provider-directed 503 Retry-After: 0 GET follow-up.
+        withTimeoutOrNull(30_000L) { request(builder, retryIdentity = true) }
+            ?: fail(AuthenticationProblem.NETWORK)
+
+    private suspend fun request(
+        builder: Request.Builder,
+        retryIdentity: Boolean = false,
+    ): JSONObject {
+        var retries = 0
+        while (true) {
+            try {
+                return requestOnce(builder)
+            } catch (_: TransientNetworkFailure) {
+                if (!retryIdentity || retries == 2) fail(AuthenticationProblem.NETWORK)
+                delay(250L shl retries)
+                retries++
+            }
+        }
+    }
+
+    private suspend fun requestOnce(builder: Request.Builder): JSONObject =
         suspendCancellableCoroutine { continuation ->
             val call =
                 client.newCall(
@@ -116,7 +153,7 @@ internal class OkHttpGitHubApi(
                     ) {
                         if (continuation.isActive) {
                             continuation.resumeWithException(
-                                AuthenticationException(AuthenticationProblem.NETWORK),
+                                TransientNetworkFailure(),
                             )
                         }
                     }
@@ -130,7 +167,12 @@ internal class OkHttpGitHubApi(
                                 response.use {
                                     when (it.code) {
                                         401 -> fail(AuthenticationProblem.REAUTHENTICATION)
-                                        408, 429 -> fail(AuthenticationProblem.NETWORK)
+                                        429 -> fail(AuthenticationProblem.NETWORK)
+                                        408, 500, 502, 503, 504 -> {
+                                            // Do not add application retries for provider-directed waits.
+                                            if (it.header("Retry-After") == null) throw TransientNetworkFailure()
+                                            fail(AuthenticationProblem.NETWORK)
+                                        }
                                     }
                                     if (it.code >= 500) fail(AuthenticationProblem.NETWORK)
                                     if (!it.isSuccessful) fail(AuthenticationProblem.PROVIDER)
@@ -143,7 +185,8 @@ internal class OkHttpGitHubApi(
                             val safeError =
                                 when (error) {
                                     is AuthenticationException -> error
-                                    is IOException -> AuthenticationException(AuthenticationProblem.NETWORK)
+                                    is TransientNetworkFailure -> error
+                                    is IOException -> TransientNetworkFailure()
                                     else -> AuthenticationException(AuthenticationProblem.PROVIDER)
                                 }
                             if (continuation.isActive) continuation.resumeWithException(safeError)
@@ -152,6 +195,8 @@ internal class OkHttpGitHubApi(
                 },
             )
         }
+
+    private class TransientNetworkFailure : Exception()
 
     private fun rejectError(json: JSONObject) {
         when (json.optString("error")) {

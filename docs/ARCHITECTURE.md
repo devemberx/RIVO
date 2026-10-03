@@ -75,8 +75,11 @@ readiness; UI never receives tokens or polls providers.
 Credentials use atomic authenticated encryption with Android Keystore outside
 backups. Tokens never enter UI/domain state, Room, preferences or logs. Persist token
 rotations and invalidate old revisions before use. Network failure retains credentials; revocation and unreadable
-storage fail closed. Disconnect removes local credentials and key, not the GitHub
-grant, subscription or rewards.
+storage fail closed. Identity GETs retry transient transport/server failures within a
+bounded budget; rate limits and positive provider waits are not immediately retried.
+A provider-directed zero-wait response may retry the idempotent identity read.
+Device-code and refresh writes are never automatically replayed. Disconnect removes
+local credentials and key, not the GitHub grant, subscription or rewards.
 
 ### Keyboard conversation UI
 
