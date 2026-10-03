@@ -1,13 +1,13 @@
 # Scene examples
 
-These are starting inventories for the current repository images. Inspect the
-chosen master and amend them for the actual task. Paths below are repository-relative;
-they identify candidates, not a guarantee that the files are unchanged or approved
-for a new task. Do not mix different masters within one run.
+These are starting inventories for familiar scene types, not source-image choices.
+Use the image path or URL supplied by the user for the current run, inspect that
+image and amend the inventory to match it. Do not select a repository image from
+these examples or mix different masters within one run.
 
 ## Cyberpunk City — `cyberpunk_city`
 
-Source: `core/core-ui/src/main/res/drawable-nodpi/pet_background_cyberpunk_city.png`.
+Source: the user's selected Cyberpunk City image; no default file or source time.
 
 | Fixed structure | Time-dependent appearance |
 | --- | --- |
@@ -24,13 +24,16 @@ center platform and the right planter. Start review crops with
 `skyline=0.16,0.02,0.90,0.66` and `foreground=0,0.58,1,1`; adjust after inspection.
 Warm sunset illumination in a master is a time cue, not permission to preserve it
 in daylight or midnight variants.
+At sunrise, reduce window occupancy and neon emission as daylight takes over;
+retain a few lit windows/signs and adjust their glow/reflections together. Turning
+off emission must preserve window openings, sign bodies and fixture locations.
 
 ## Lake Park — `lake_park`, display name `호수 공원`
 
-Day source candidate:
-`core/core-ui/src/main/res/drawable-nodpi/pet_home_background_day.webp`.
-The existing family is `pet_home_background_<period>`; the scene name does not
-itself authorize renaming that resource family.
+Source: the user's selected Lake Park image; no default file or source time.
+The resource family is `pet_background_lake_park_<period>`, following
+`docs/DESIGN.md#background-resource-names`. Renaming does not authorize changing
+the artwork or runtime selection.
 
 | Fixed structure | Time-dependent appearance |
 | --- | --- |

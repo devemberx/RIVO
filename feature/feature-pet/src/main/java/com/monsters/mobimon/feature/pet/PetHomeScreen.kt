@@ -57,15 +57,14 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monsters.mobimon.core.domain.PetProfile
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.presentation.VehicleCondition
 import com.monsters.mobimon.core.presentation.vehicleCondition
+import com.monsters.mobimon.core.ui.BackgroundProp
+import com.monsters.mobimon.core.ui.CompanionBackground
 import com.monsters.mobimon.core.ui.FallingParticlesEffect
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.LocalMobiMonNotificationCount
@@ -75,13 +74,10 @@ import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonNavigationButton
 import com.monsters.mobimon.core.ui.MobiMonParkingStatusBadge
 import com.monsters.mobimon.core.ui.MobiMonPointSummary
-import com.monsters.mobimon.core.ui.ParticleType
 import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.StarHanger
 import com.monsters.mobimon.core.ui.StarlightYarnBasket
-import com.monsters.mobimon.core.ui.companionBackgroundRes
-import kotlin.math.roundToInt
-import com.monsters.mobimon.core.ui.R as CoreUiR
+import com.monsters.mobimon.core.ui.resolveCompanionBackground
 
 /** Displays the in-app Home from committed state; navigation belongs to the shell. */
 @Composable
@@ -111,11 +107,9 @@ fun PetHomeScreen(
             val windowHeight = maxHeight
             val fontScale = LocalDensity.current.fontScale
             val scale = maxWidth.value / 2560f
+            val background = resolveCompanionBackground(backgroundTimeOfDay, backgroundId)
             val textShadow =
-                if (
-                    companionBackgroundRes(backgroundTimeOfDay) == CoreUiR.drawable.pet_home_background_night ||
-                    companionBackgroundRes(backgroundTimeOfDay) == CoreUiR.drawable.pet_home_background_midnight
-                ) {
+                if (!background.layer.frame.needsTextShadow) {
                     null
                 } else {
                     with(LocalDensity.current) {
@@ -124,7 +118,7 @@ fun PetHomeScreen(
                 }
             val bubbleLeft = (maxWidth - (2560 * scale).dp) / 2 + (1576 * scale).dp
             val referenceLayout = maxWidth >= 1200.dp && maxHeight >= 700.dp && fontScale <= 1f
-            HomeBackground(backgroundTimeOfDay, backgroundId)
+            HomeBackground(background)
             val companion: @Composable (Modifier) -> Unit = { companionModifier ->
                 HomeCompanion(
                     profile,
@@ -244,36 +238,18 @@ fun PetHomeScreen(
 }
 
 @Composable
-private fun HomeBackground(
-    timeOfDay: String?,
-    backgroundId: String?,
-) {
-    val backgroundRes =
-        if (backgroundId == "background:cyberpunk_city") {
-            CoreUiR.drawable.pet_background_cyberpunk_city
-        } else {
-            companionBackgroundRes(timeOfDay)
-        }
+private fun HomeBackground(background: CompanionBackground) {
     Crossfade(
-        targetState = backgroundRes,
+        targetState = background.layer,
         animationSpec = tween(durationMillis = if (LocalMobiMonMotionEnabled.current) 1000 else 0),
         modifier = Modifier.fillMaxSize(),
         label = "pet_home_background_crossfade",
-    ) { targetRes ->
-        val tintOpacity =
-            when (targetRes) {
-                CoreUiR.drawable.pet_home_background_sunrise -> 0.08f
-                CoreUiR.drawable.pet_home_background_morning -> 0.08f
-                CoreUiR.drawable.pet_home_background_day -> 0.12f
-                CoreUiR.drawable.pet_home_background_afternoon -> 0.10f
-                CoreUiR.drawable.pet_home_background_sunset -> 0.06f
-                CoreUiR.drawable.pet_background_cyberpunk_city -> 0.02f
-                else -> 0.04f
-            }
+    ) { layer ->
+        val tintOpacity = layer.frame.glassOpacity
         Image(
-            painterResource(targetRes),
+            painterResource(layer.frame.drawableRes),
             null,
-            Modifier.fillMaxSize().drawWithCache {
+            Modifier.fillMaxSize().testTag("home-background").drawWithCache {
                 // Keep the horizon clear and crossfade the glass tint with its artwork.
                 val glass =
                     Brush.verticalGradient(
@@ -287,40 +263,19 @@ private fun HomeBackground(
                 }
             },
             contentScale = ContentScale.Crop,
-            alignment = HomeBackgroundAlignment,
+            alignment = layer.alignment,
         )
     }
-    if (backgroundId == "background:starlight_yarn_basket") {
-        StarlightYarnBasket(Modifier.fillMaxSize().testTag("home-yarn-basket"))
-    } else if (backgroundId == "background:star_hanger") {
-        StarHanger(Modifier.fillMaxSize().testTag("home-star-hanger"))
-    } else if (backgroundId == "background:cyberpunk_city") {
-        // Full background image rendered
-    } else if (backgroundId != null) {
-        val particleType =
-            when {
-                backgroundId.contains("snow") -> ParticleType.SNOW
-                backgroundId.contains("petal") || backgroundId.contains("flower") -> ParticleType.PETAL
-                else -> ParticleType.STAR
-            }
+    when (background.prop) {
+        BackgroundProp.STARLIGHT_YARN_BASKET -> StarlightYarnBasket(Modifier.fillMaxSize().testTag("home-yarn-basket"))
+        BackgroundProp.STAR_HANGER -> StarHanger(Modifier.fillMaxSize().testTag("home-star-hanger"))
+        null -> Unit
+    }
+    background.effect?.let { particleType ->
         FallingParticlesEffect(
             particleType = particleType,
             modifier = Modifier.fillMaxSize().testTag("home-background-particles"),
         )
-    }
-}
-
-// Figma preserves its 1268-high artwork at y=76 under the larger bars. Anchor
-// that crop to y=96 content rather than recentering the horizon on each resize.
-internal object HomeBackgroundAlignment : Alignment {
-    override fun align(
-        size: IntSize,
-        space: IntSize,
-        layoutDirection: LayoutDirection,
-    ): IntOffset {
-        val scale = space.width / 2560f
-        val top = ((1268 * scale - size.height) / 2 - 20 * scale).roundToInt()
-        return IntOffset((space.width - size.width) / 2, top.coerceIn(minOf(0, space.height - size.height), 0))
     }
 }
 

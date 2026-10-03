@@ -322,7 +322,11 @@ class CompanionMenuReviewTest {
             ) {
                 MobiMonTheme {
                     Box(Modifier.fillMaxSize()) {
-                        Image(painterResource(CoreUiR.drawable.pet_home_background_night), null, Modifier.fillMaxSize())
+                        Image(
+                            painterResource(CoreUiR.drawable.pet_background_lake_park_night),
+                            null,
+                            Modifier.fillMaxSize(),
+                        )
                         CompanionMenu(
                             visible.value,
                             CompanionRoute.HOME,

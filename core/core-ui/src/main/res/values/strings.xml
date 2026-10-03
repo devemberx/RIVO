@@ -13,4 +13,8 @@
   <string name="mobimon_parking_restricted">주차 후 이용</string>
     <string name="mobimon_departure_surprise">앗 출발해?</string>
     <string name="mobimon_las_description">손을 흔드는 로봇 친구 라스</string>
+    <string name="pet_scene_lake_park_name">호수 공원</string>
+    <string name="pet_scene_lake_park_description">호수 공원의 밤하늘과 풍경을 느껴 보세요.</string>
+    <string name="pet_scene_cyberpunk_city_name">사이버펑크 시티</string>
+    <string name="pet_scene_cyberpunk_city_description">화려한 네온사인과 미래 도시의 풍경을 즐겨 보세요.</string>
 </resources>

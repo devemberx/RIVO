@@ -57,6 +57,13 @@ Read failures retain committed data. Notifications are read-only summaries;
 repositories own reward writes. [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
 renders appearance only; display evidence and previews cannot authorize commands.
 Home and Store backgrounds use interpreted VSS time, never device time.
+The [core-ui catalog/resolver](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/CompanionBackground.kt)
+owns typed periods, complete seven-frame or deliberate static artwork, scene
+labels, contrast/tint and crop alignment. Register scenes and item mappings in the
+[visual catalog](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/CompanionBackgroundCatalog.kt);
+Home/Store need no scene-specific branches. Optional explicit prop/effect inputs
+support independent layers while retaining current single-slot compatibility;
+purchase, ownership and persisted equipment remain repository responsibilities.
 
 ### Window geometry
 

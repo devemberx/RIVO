@@ -4,16 +4,19 @@ The helper needs Python 3.9+ and Pillow. Use an existing environment or install
 Pillow in a task-local virtual environment. It creates comparison artifacts only;
 it never changes source/background artwork or calls a generation service.
 
-Run from the repository root, using paths relative to that root or absolute paths:
+Set `BACKGROUND_REFERENCE_PATH` to the user's selected local image path (or the
+unchanged local snapshot of their image URL). The helper requires `--master` and
+has no default source. Run from the repository root, using paths relative to that
+root or absolute paths:
 
 ```bash
 python3 .agents/skills/background-time-variants/scripts/prepare_review.py \
   --scene-id cyberpunk_city \
-  --master core/core-ui/src/main/res/drawable-nodpi/pet_background_cyberpunk_city.png \
+  --master "$BACKGROUND_REFERENCE_PATH" \
   --periods sunrise day night \
-  --variant sunrise=output/imagegen/cyberpunk_city/sunrise.png \
-  --variant day=output/imagegen/cyberpunk_city/day.png \
-  --variant night=output/imagegen/cyberpunk_city/night.png \
+  --variant sunrise=output/imagegen/cyberpunk_city/sunrise.webp \
+  --variant day=output/imagegen/cyberpunk_city/day.webp \
+  --variant night=output/imagegen/cyberpunk_city/night.webp \
   --region skyline=0.16,0.02,0.90,0.66 \
   --region foreground=0,0.58,1,1 \
   --output-dir output/imagegen/cyberpunk_city/review-01
@@ -22,6 +25,10 @@ python3 .agents/skills/background-time-variants/scripts/prepare_review.py \
 Omit `--periods` for the seven-period family. `--variant` labels must match the
 requested periods; use a new review directory for each run. Crop coordinates
 are normalized left/top/right/bottom positions within the unchanged canvas.
+Use `scripts/export_webp.py` before this review and confirm every candidate's
+`metadata.format` is `WEBP` in `review.json`. A PNG candidate is a working file,
+not a final background asset. Lossless export preserves decoded pixels and alpha;
+visual review still checks the scene and illumination.
 
 Outputs are `review.json`, `review.md`, `overview.png` and `focus_<name>.png`.
 JSON records source paths/hashes, metadata, failures and pending visual checks.

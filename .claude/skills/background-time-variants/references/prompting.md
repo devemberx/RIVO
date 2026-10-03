@@ -27,7 +27,7 @@ Generate only the requested subset; for a full family use all seven periods:
 | Period | VSS hours | Suggested appearance, subject to the scene contract |
 | --- | --- | --- |
 | midnight | 00–04 | Deep night, weak ambient light, selective existing lights; no sunset-colored horizon |
-| sunrise | 05–06 | Low early light, cool-to-warm sky transition, some lights still on |
+| sunrise | 05–06 | Low early light, cool-to-warm sky transition; mostly unlit windows, subdued neon with a few existing lights still on |
 | morning | 07–11 | Clearer daylight, soft directional shadows, reduced artificial light |
 | day | 12–15 | Strong daylight, short/less dominant shadows, minimal artificial glow |
 | afternoon | 16–17 | Lower warm daylight and longer shadows |

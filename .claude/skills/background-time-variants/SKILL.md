@@ -1,6 +1,6 @@
 ---
 name: background-time-variants
-description: Create and verify time-of-day variants from an approved background image while preserving building heights, silhouettes, object placement, perspective and framing. Use for stable scenes whose sky, clouds, lighting, shadows and reflections change over time. Excludes redesigning the scene or requiring identical pixels.
+description: Create and verify time-of-day variants from a user-selected background image while preserving building heights, silhouettes, object placement, perspective and framing. Use for stable scenes whose sky, clouds, lighting, shadows and reflections change over time. Excludes redesigning the scene or requiring identical pixels.
 ---
 
 # Background time variants
@@ -8,6 +8,20 @@ description: Create and verify time-of-day variants from an approved background 
 Produce views of the same place at different times. Geometry and object identity
 stay stable; illumination and atmosphere may change. Pixel equality is not an
 acceptance criterion. Follow the project's approved-master and asset-location rules.
+
+## Select the reference image
+
+At the start of each run, ask the user for the reference image's local path or
+image URL: "기준으로 사용할 이미지의 로컬 경로나 이미지 URL을 알려주세요."
+If the current request already specifies one unambiguous image, use that input
+without asking again. Otherwise wait for the answer before generation; never
+choose a source from a scene name, repository resource, previous run or fixed path.
+
+Use the selected image as this run's **master**. For an image URL, save an unchanged
+local snapshot in the task's ignored working directory and record both the URL and
+local path. Inspect the local image before editing and use the same bytes for every
+variant and comparison. If the input cannot be read, ask for a usable path or URL.
+Do not create or require a permanent repository master copy.
 
 ## Establish the scene contract
 
@@ -54,7 +68,14 @@ generated variants or substituting a simple color filter for scene relighting.
 - Change only the time-dependent properties. Window lights can turn on/off while
   window openings stay put; highlights may move while surface shape stays stable.
 
-## Verify before accepting
+## Export WebP and verify before accepting
+
+Final background assets must be still, lossless **WebP** files. If the image tool
+returns PNG or another format, retain that candidate in the ignored run directory
+and use `scripts/export_webp.py <candidate> <new-output.webp>` before review. The
+helper verifies identical decoded pixels, canvas and alpha; it never resizes or
+overwrites a source. Do not convert the chosen master. Review and deliver the final
+WebP bytes; comparison boards may remain PNG.
 
 Read [verification](references/verification.md) and run the comparison helper.
 It checks readability, dimensions, transparency and completeness, and prepares
@@ -80,5 +101,5 @@ Report accepted and pending/rejected times separately, output paths, prompt path
 the master used and the review evidence. Reconfirm source/output hashes from
 `review.json` before exporting so the reviewed bytes are the delivered bytes.
 Use scene IDs such as `lake_park` and `cyberpunk_city`, and proposed resource names
-`pet_background_<scene>_<period>`. Rename existing resources or wire runtime time
+`pet_background_<scene>_<period>.webp`. Rename existing resources or wire runtime time
 selection only when that work is included in the user's request.

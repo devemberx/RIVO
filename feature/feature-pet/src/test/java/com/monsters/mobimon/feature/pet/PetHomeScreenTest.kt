@@ -410,6 +410,18 @@ class PetHomeScreenTest {
     }
 
     @Test
+    fun unknownBackgroundDoesNotDisplayInventedParticles() {
+        render(backgroundId = "background:future_snow")
+        compose.onNodeWithTag("home-background-particles").assertDoesNotExist()
+    }
+
+    @Test
+    fun cityBackgroundDoesNotDisplayParticles() {
+        render(backgroundId = "background:cyberpunk_city")
+        compose.onNodeWithTag("home-background-particles").assertDoesNotExist()
+    }
+
+    @Test
     fun initialLoadingDoesNotOfferRetryOrSavedValues() {
         compose.setContent { MobiMonTheme { PetHomeLoadingScreen(false, {}) } }
         compose.onNodeWithText("친구를 불러오고 있어요.").assertIsDisplayed()
