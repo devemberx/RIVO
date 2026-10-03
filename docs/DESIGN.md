@@ -198,7 +198,9 @@ data updates.
 ## Vehicle launcher
 
 Outside-app companion needs explicit opt-in and overlay permission. Non-P or
-unverified parking stops wandering and triggers Mobi's departure animation;
+unverified parking stops wandering and triggers Mobi's departure animation. Keep
+the live idle visible while loading; the exit preserves its body scale and ground anchor
+through the handoff, without a scale-down transition;
 verified P restores Mobi with a 1.4-second entrance before wandering resumes.
 The Debug parking button uses the same vehicle stream; a renewed non-P signal
 during entrance queues departure after the entrance completes. Intended placement is vehicle Home; hide it
