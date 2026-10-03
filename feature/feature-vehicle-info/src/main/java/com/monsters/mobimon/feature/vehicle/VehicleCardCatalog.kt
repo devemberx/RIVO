@@ -58,7 +58,7 @@ internal object VehicleCardCatalog {
             card("service-distance", "정비까지 거리", "다음 정비까지 남은 거리", "Vehicle.Service.DistanceToService"),
             card("service-time", "정비까지 시간", "다음 정비까지 남은 시간", "Vehicle.Service.TimeToService"),
             fourWheels("brake-fluid", "브레이크액 부족", "네 바퀴 부족 신호 종합", "Brake.IsFluidLevelLow"),
-            card("low-beam", "하향등", "램프 고장 여부", "Vehicle.Body.Lights.Beam.Low.IsDefect"),
+            card("low-beam", "하향등 경고", "램프 고장 여부", "Vehicle.Body.Lights.Beam.Low.IsDefect"),
             card("brake-light", "브레이크등", "램프 고장 여부", "Vehicle.Body.Lights.Brake.IsDefect"),
             card("parking-brake", "주차 브레이크", "주차 브레이크 상태", "${CHASSIS}ParkingBrake.IsEngaged"),
             fourWheels("tire-low", "타이어 저압 경고", "네 바퀴 저압 신호 종합", "Tire.IsPressureLow"),
@@ -83,20 +83,13 @@ internal object VehicleCardCatalog {
         listOf(
             card("charging", "충전 상태", "현재 충전 상태", "${BATTERY}Charging.IsCharging"),
             fourWheels("tire", "타이어 공기압", "확인된 공기압 상태", "Tire.IsPressureLow"),
-            VehicleCardSpec(
-                "environment",
-                "외부 환경",
-                "외기 온도 및 비 감지",
-                listOf("Vehicle.Exterior.AirTemperature", "Vehicle.Body.Raindetection.Intensity"),
-            ),
-            card("assist", "운전자 보조", "운전자 주의 상태", "Vehicle.Driver.DistractionLevel"),
             card("washer", "워셔액", "앞유리 워셔액 잔량", "Vehicle.Body.Windshield.Front.WasherFluid.Level"),
         )
 
     internal val allCards: List<VehicleCardSpec> = cards + initialOnly
 
     val defaultSlots =
-        listOf("battery", "charging", "tire", "washer", "environment", "assist")
+        listOf("battery", "tire", "washer", "low-beam", "fatigue", "service-distance")
             .map { id -> requireNotNull(find(id)) }
 
     fun find(id: String): VehicleCardSpec? = allCards.firstOrNull { it.id == id }
@@ -158,26 +151,10 @@ internal object VehicleCardCatalog {
                     signalStatus(spec, snapshot)
                 }
             }
-            "assist" -> {
-                when {
-                    !current -> VehicleCardStatus.UNAVAILABLE
-                    snapshot.isEmergencyBraking == true || snapshot.isDrowsy == true || snapshot.isDistracted == true ->
-                        VehicleCardStatus.CAUTION
-                    snapshot.isEmergencyBraking != null && snapshot.isDrowsy != null && snapshot.isDistracted != null ->
-                        VehicleCardStatus.NORMAL
-                    else -> VehicleCardStatus.UNAVAILABLE
-                }
-            }
             "charging" ->
                 if (current &&
                     snapshot.isCharging != null
                 ) {
-                    VehicleCardStatus.INFO
-                } else {
-                    VehicleCardStatus.UNAVAILABLE
-                }
-            "environment" ->
-                if (current && (snapshot.outsideTemperature != null || snapshot.isRaining != null)) {
                     VehicleCardStatus.INFO
                 } else {
                     VehicleCardStatus.UNAVAILABLE
@@ -231,8 +208,7 @@ internal object VehicleCardCatalog {
                             else -> null
                         }
                     }
-                "environment", "air-temperature" -> snapshot.outsideTemperature?.takeIf { current }?.let { "$it°" }
-                "assist" -> snapshot.attentionLevel?.takeIf { current && it in 0..100 }?.toString()
+                "air-temperature" -> snapshot.outsideTemperature?.takeIf { current }?.let { "$it°" }
                 "washer" -> snapshot.washerFluidLevel?.takeIf { current && it in 0..100 }?.let { "$it%" }
                 else -> null
             }
@@ -313,7 +289,7 @@ internal object VehicleCardCatalog {
             "driver-belt" -> state("착용", "미착용")
             "hood", "trunk" -> state("열림", "닫힘")
             "washer-low" -> state("부족", "정상")
-            "air-temperature", "cabin-temperature", "environment" ->
+            "air-temperature", "cabin-temperature" ->
                 signals[spec.vssPaths.first()]
                     ?.toDoubleOrNull()
                     ?.takeIf {
@@ -322,7 +298,6 @@ internal object VehicleCardCatalog {
             "dtc-count" -> number()?.let { "${it.toInt()}개" }
             "breakdown" -> state("고장 감지", "정상")
             "charging" -> state("충전 중", "충전 안 함")
-            "assist" -> number()?.takeIf { it <= 100 }?.let { "${(100 - it).toInt()}" }
             else -> null
         }
     }

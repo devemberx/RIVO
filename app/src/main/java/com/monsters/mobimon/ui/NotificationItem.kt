@@ -30,7 +30,7 @@ data class NotificationItem(
                     "brake-fluid", "pad-wear", "pad-warning", "abs", "parking-brake" -> R.drawable.notification_brake
                     "driver-door", "hood", "trunk" -> R.drawable.notification_door
                     "low-beam", "brake-light" -> R.drawable.notification_lights
-                    "assist", "fatigue", "distraction", "driver-belt" -> R.drawable.notification_driver
+                    "driver-state", "fatigue", "distraction", "driver-belt" -> R.drawable.notification_driver
                     else -> R.drawable.notification_warning
                 }
             }
