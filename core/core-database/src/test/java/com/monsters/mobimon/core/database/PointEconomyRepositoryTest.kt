@@ -147,6 +147,45 @@ class PointEconomyRepositoryTest {
         }
 
     @Test
+    fun cyberpunkThemeAndPropOverlayEquipTogetherAndRetainInInventory() =
+        runBlocking {
+            val companion =
+                RoomCompanionRepository(
+                    database,
+                    com.monsters.mobimon.core.domain
+                        .ProgressionIdentity("profile", SignalSource.REAL),
+                    Clock { 10_000 },
+                    IdGenerator { "bg-${ids.incrementAndGet()}" },
+                    QuestEvaluator(15_000),
+                    CurrentVehicleEvidence { vehicle },
+                    CurrentAppUse { appUse },
+                )
+            companion.initialize()
+            database.economyDao().credit("profile", 1000, Long.MAX_VALUE - 1000)
+
+            val cyberpunk = repository.catalog.first().single { it.id == "background:cyberpunk_city" }
+            val hanger = repository.catalog.first().single { it.id == "background:star_hanger" }
+
+            assertEquals(PurchaseResult.Purchased(700), repository.purchase(cyberpunk.id, 400))
+            assertEquals(PurchaseResult.Purchased(500), repository.purchase(hanger.id, 200))
+
+            assertEquals(EquipResult.Applied, repository.equip(cyberpunk.id))
+            var inv = repository.inventory.first()
+            assertEquals("background:cyberpunk_city", inv.equippedItemIds[CosmeticSlot.BACKGROUND])
+            assertNull(inv.backgroundPropId)
+
+            assertEquals(EquipResult.Applied, repository.equip(hanger.id))
+            inv = repository.inventory.first()
+            assertEquals("background:cyberpunk_city", inv.equippedItemIds[CosmeticSlot.BACKGROUND])
+            assertEquals("background:star_hanger", inv.backgroundPropId)
+
+            assertEquals(EquipResult.Applied, repository.equip("none:background_prop"))
+            inv = repository.inventory.first()
+            assertEquals("background:cyberpunk_city", inv.equippedItemIds[CosmeticSlot.BACKGROUND])
+            assertNull(inv.backgroundPropId)
+        }
+
+    @Test
     fun purchaseChargesOnceAndEquipRequiresASeparateOwnedItemCommand() =
         runBlocking {
             database.economyDao().insertItem(CosmeticItemEntity("hat", CosmeticSlot.ACCESSORY.name, 30, null))

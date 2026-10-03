@@ -76,6 +76,9 @@ fun CustomizationScreen(
     var ownedOnly by rememberSaveable { mutableStateOf(false) }
     var clothesFriend by rememberSaveable { mutableStateOf<String?>(null) }
     var category by rememberSaveable { mutableStateOf(StoreSpaceCategory.BACKGROUNDS) }
+    var selectedBackgroundThemeId by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedBackgroundPropId by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedBackgroundEffectId by rememberSaveable { mutableStateOf<String?>(null) }
     var confirmingId by rememberSaveable { mutableStateOf<String?>(null) }
     var submittedId by remember { mutableStateOf<String?>(null) }
     val recoveryNeeded = loadFailed || catalogLoadFailed || pointLoadFailed
@@ -93,6 +96,15 @@ fun CustomizationScreen(
             submittedId = null
         }
     }
+    LaunchedEffect(selectedItemId, tab, category) {
+        if (tab == CosmeticSlot.BACKGROUND && selectedItemId != null) {
+            when (category) {
+                StoreSpaceCategory.BACKGROUNDS -> selectedBackgroundThemeId = selectedItemId
+                StoreSpaceCategory.PROPS -> selectedBackgroundPropId = selectedItemId
+                StoreSpaceCategory.EFFECTS -> selectedBackgroundEffectId = selectedItemId
+            }
+        }
+    }
     val available = if (storeInventoryReady) catalog else emptyList()
     val scopedCatalog =
         if (tab ==
@@ -102,7 +114,19 @@ fun CustomizationScreen(
         } else {
             available
         }
-    val presentation = customizationCatalog(inventory, scopedCatalog, tab, selectedItemId, ownedOnly, clothesFriend)
+    val presentation =
+        customizationCatalog(
+            inventory,
+            scopedCatalog,
+            tab,
+            selectedItemId,
+            ownedOnly,
+            clothesFriend,
+            category,
+            selectedBackgroundThemeId,
+            selectedBackgroundPropId,
+            selectedBackgroundEffectId,
+        )
     val selected = presentation.selected
     val activeFriend = inventory?.equippedItemIds?.get(CosmeticSlot.FRIEND) ?: "friend:mobi"
     val otherFriend = tab == CosmeticSlot.ACCESSORY && presentation.preview.friendId != activeFriend
@@ -207,11 +231,24 @@ fun CustomizationScreen(
                 onSelect = { if (!busy) onSelectItem(it) },
                 onAction = {
                     if (enabled) {
+                        val item = requireNotNull(selected)
                         when {
-                            !presentation.selectedOwned -> confirmingId = selected.id
+                            !presentation.selectedOwned -> confirmingId = item.id
                             switchFriend -> onEquipFriend(presentation.preview.friendId)
-                            selected.slot == CosmeticSlot.FRIEND -> onEquipFriend(selected.id)
-                            else -> onEquipItem(selected.id)
+                            item.slot == CosmeticSlot.FRIEND -> onEquipFriend(item.id)
+                            else -> {
+                                val equipId =
+                                    if (item.isRemoval && tab == CosmeticSlot.BACKGROUND) {
+                                        when (category) {
+                                            StoreSpaceCategory.BACKGROUNDS -> "none:background"
+                                            StoreSpaceCategory.PROPS -> "none:background_prop"
+                                            StoreSpaceCategory.EFFECTS -> "none:background_effect"
+                                        }
+                                    } else {
+                                        item.id
+                                    }
+                                onEquipItem(equipId)
+                            }
                         }
                     }
                 },
