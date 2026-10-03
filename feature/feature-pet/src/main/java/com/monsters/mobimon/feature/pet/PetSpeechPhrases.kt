@@ -94,7 +94,7 @@ internal object PetSpeechPhrases {
                     )
             }
         }
-        val isMobi = friendId != "friend:luna"
+        val isMobi = friendId == "friend:mobi"
         if (isSick) return if (isMobi) mobiSick else lunaSick
         if (isHungry) return if (isMobi) mobiHungry else lunaHungry
         if (isTap) return if (isMobi) mobiTap else lunaTap
