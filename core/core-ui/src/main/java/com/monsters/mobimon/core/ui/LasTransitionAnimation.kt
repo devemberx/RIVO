@@ -12,6 +12,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
@@ -76,6 +77,9 @@ internal object LasTransitionTimeline {
         } else {
             1f - (elapsedNanos.toFloat() / DISAPPEAR_HANDOFF_NANOS).coerceIn(0f, 1f)
         }
+
+    fun showsDepartureBubble(elapsedNanos: Long): Boolean =
+        elapsedNanos - DISAPPEAR_HANDOFF_NANOS in DEPARTURE_SURPRISE_NANOS
 }
 
 /** Plays Las's portal entrance or exit once, then reports completion to the floating overlay. */
@@ -149,6 +153,12 @@ internal fun LasTransitionAnimation(
                     },
                 animate = false,
             )
+        }
+        if (transition == LasTransition.DISAPPEAR &&
+            bitmap != null &&
+            LasTransitionTimeline.showsDepartureBubble(elapsed.longValue)
+        ) {
+            DepartureSurpriseBubble(Modifier.align(Alignment.TopStart))
         }
     }
 }
