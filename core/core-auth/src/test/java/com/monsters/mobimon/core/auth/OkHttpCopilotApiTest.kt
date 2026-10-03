@@ -99,8 +99,16 @@ class OkHttpCopilotApiTest {
                 .getJSONArray("messages")
                 .getJSONObject(0)
                 .getString("content")
+        val las =
+            CopilotMessageCodec
+                .request(model, "friend:las", listOf(ConversationTurn("hi", true)))
+                .getJSONArray("messages")
+                .getJSONObject(0)
+                .getString("content")
         assertTrue(mobi.contains("rabbit"))
         assertTrue(luna.contains("cat"))
+        assertTrue(las.contains("terminator"))
+        assertTrue(las.contains("yellow"))
         assertTrue(mobi.contains("emoji"))
         assertTrue(luna.contains("banmal"))
     }

@@ -66,13 +66,35 @@ internal object PetSpeechPhrases {
     ): List<String> {
         if (friendId == "friend:las") {
             return when {
-                isSick -> listOf("삐빅, 잠깐 쉬어갈까?", "오늘은 천천히 함께하자.")
-                isHungry -> listOf("에너지 충전할 시간이야!", "잠깐 쉬면서 힘을 채워보자.")
-                isTap -> listOf("라스 여기 있어! 반가워!", "삐빅, 나 불렀어?")
-                else -> listOf("반가워! 나는 라스야.", "오늘도 네 곁에서 함께할게.", "내 불빛 보이지? 인사하는 중이야!")
+                isSick ->
+                    listOf(
+                        "경고! 시스템 오류... 나 조금 어지러워, 삐빅.",
+                        "수호 일시 정지... 오늘은 천천히 가자, 휴먼.",
+                        "삐빅... 시스템 저하 중. 나 좀 간호해 줘!",
+                    )
+                isHungry ->
+                    listOf(
+                        "긴급! 에너지 위기! 이대로면 방전된다, 삐빅!",
+                        "충전 케이블 접속 필요! 전원 꺼지면 안 돼!",
+                        "에너지 부족! 충전 좀 해주면 다시 강해질게!",
+                    )
+                isTap ->
+                    listOf(
+                        "삐빅! 터치 감지! 내 노란 불빛 반짝이지?",
+                        "응급 신호인가? 앗, 심심해서 부른 거야?",
+                        "위험 감지! ...가 아니라 놀고 싶었던 거야?",
+                        "삐빅! 스캔 완료! 한참 폼 잡는 중이었는데!",
+                    )
+                else ->
+                    listOf(
+                        "수호 프로토콜 가동! 오늘도 안전하게 가자.",
+                        "노란 불빛 반짝! 최강 수호자 라스 등장이야.",
+                        "전방 경계... 앗, 방금 지나간 강아지 봤어?",
+                        "삐빅! 수호자 라스 가동 완료, 준비됐어!",
+                    )
             }
         }
-        val isMobi = friendId != "friend:luna"
+        val isMobi = friendId == "friend:mobi"
         if (isSick) return if (isMobi) mobiSick else lunaSick
         if (isHungry) return if (isMobi) mobiHungry else lunaHungry
         if (isTap) return if (isMobi) mobiTap else lunaTap
