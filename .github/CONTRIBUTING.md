@@ -28,6 +28,12 @@ On Windows, use `gradlew.bat` instead of `./gradlew`. The Debug APK is written t
 `app/build/outputs/apk/debug/` and installs as the separate simulated `.demo`
 application.
 
+For local Release testing, connect a device or emulator and run
+`./gradlew :app:installRelease` (`gradlew.bat :app:installRelease` on Windows).
+Gradle signs `app/build/outputs/apk/release/app-release.apk`
+with the local Debug key; the app keeps its Release build type and
+`com.monsters.mobimon` ID. Use a dedicated Release signing key before distribution.
+
 In WSL, use `./gradlew` with a Linux JDK and Android SDK instead of Windows
 binaries, even when the checkout is under `/mnt/c`.
 
