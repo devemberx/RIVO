@@ -113,6 +113,7 @@ class JourneyConversationProvider
     @Inject
     constructor() : ConversationProvider {
         var connectionResult: ConversationResult<String> = ConversationResult.Success("gpt-4o")
+        var connectionAnswer: (suspend () -> ConversationResult<String>)? = null
         var replyResult: ConversationResult<String> = ConversationResult.Success("이야기를 들려줘서 고마워요.")
         var connections = 0
             private set
@@ -123,7 +124,7 @@ class JourneyConversationProvider
 
         override suspend fun connect(accountId: Long): ConversationResult<String> {
             connections++
-            return connectionResult
+            return connectionAnswer?.invoke() ?: connectionResult
         }
 
         override suspend fun reply(

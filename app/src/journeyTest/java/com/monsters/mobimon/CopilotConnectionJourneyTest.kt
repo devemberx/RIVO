@@ -1,8 +1,10 @@
 package com.monsters.mobimon
 
+import android.graphics.Bitmap
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasAnyAncestor
@@ -37,12 +39,14 @@ import com.monsters.mobimon.testing.JourneyStorage
 import com.monsters.mobimon.testing.JourneyVehicle
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
+import kotlinx.coroutines.CompletableDeferred
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
 import javax.inject.Inject
 import com.monsters.mobimon.feature.auth.R as AuthR
 import com.monsters.mobimon.feature.pet.R as PetR
@@ -134,25 +138,45 @@ class CopilotConnectionJourneyTest {
     fun startupNetworkFailureStaysOnHomeAndConversationCanRecheckWithoutSending() {
         authentication.approve()
         conversations.connectionResult = ConversationResult.Failure(ConversationProblem.NETWORK)
-        ActivityScenario.launch(MainActivity::class.java).use {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
             compose.waitUntil(timeoutMillis = 10_000) { conversations.connections >= 1 }
             compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
             compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
-            waitFor(hasTestTag("chat-network-dialog"))
-            compose.onNodeWithTag("chat-inline-failure").assertDoesNotExist()
-            compose.onNodeWithTag("chat-send").assertDoesNotExist()
-            compose.onNodeWithContentDescription(text(AuthR.string.chat_voice_start)).assertDoesNotExist()
-            conversations.connectionResult = ConversationResult.Success("gpt-4o")
+            waitFor(hasTestTag("chat-inline-failure"))
+            compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+            compose.onNodeWithTag("chat-send").assertIsNotEnabled()
+            waitFor(hasTestTag("chat-input") and isEnabled())
+            compose.onNodeWithTag("chat-input").assertIsEnabled()
+            val checksBefore = conversations.connections
+            compose.onNodeWithTag("chat-input").performTextInput("연결 확인 뒤 보낼 초안")
+            dismissImeIfVisible(scenario)
+            val failedCheck = CompletableDeferred<ConversationResult<String>>()
+            conversations.connectionAnswer = { failedCheck.await() }
             compose.onNodeWithText(text(AuthR.string.chat_network_recheck)).ensureDisplayed().performClick()
+            waitFor(hasTestTag("chat-network-dialog"))
+            compose.onNodeWithTag("chat-network-retry").assertIsNotEnabled()
+            compose.onNodeWithText(text(AuthR.string.chat_retry)).assertDoesNotExist()
+            captureConnectionPopup("checking")
+            failedCheck.complete(ConversationResult.Failure(ConversationProblem.NETWORK))
+            waitFor(hasTestTag("chat-network-retry") and isEnabled())
+            compose.onNodeWithTag("chat-network-dialog").assertIsDisplayed()
+            captureConnectionPopup("failed")
+            val successfulCheck = CompletableDeferred<ConversationResult<String>>()
+            conversations.connectionAnswer = { successfulCheck.await() }
+            compose.onNodeWithTag("chat-network-retry").performClick()
+            compose.onNodeWithTag("chat-network-retry").assertIsNotEnabled()
+            successfulCheck.complete(ConversationResult.Success("gpt-4o"))
             waitFor(hasText(text(AuthR.string.chat_ready)))
             compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+            compose.onNodeWithTag("chat-input").assertTextContains("연결 확인 뒤 보낼 초안")
+            assertEquals(checksBefore + 2, conversations.connections)
             assertEquals(0, conversations.replies)
         }
     }
 
     @Test
-    fun networkLossShowsPopupKeepsDraftAndOfflineRecheckDoesNotCallCopilot() {
+    fun transientNetworkLossKeepsDraftAndDoesNotCallCopilot() {
         authentication.approve()
         ActivityScenario.launch(MainActivity::class.java).use {
             waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
@@ -164,18 +188,14 @@ class CopilotConnectionJourneyTest {
             val checksBeforeDisconnect = conversations.connections
             networkStatus.online.value = false
 
-            waitFor(hasTestTag("chat-network-dialog"))
-            compose.onNodeWithTag("chat-inline-failure").assertDoesNotExist()
-            compose.onNodeWithTag("chat-send").assertDoesNotExist()
-            compose.onNodeWithContentDescription(text(AuthR.string.chat_voice_start)).assertDoesNotExist()
-            assertEquals(0, conversations.replies)
-            compose.onNodeWithText(text(AuthR.string.chat_network_recheck)).ensureDisplayed().performClick()
-            compose.onNodeWithText(text(AuthR.string.chat_network_body), substring = true).assertExists()
-            assertEquals(checksBeforeDisconnect, conversations.connections)
-            networkStatus.online.value = true
-            compose.onNodeWithTag("chat-network-retry").ensureDisplayed().performClick()
-            waitFor(hasText(text(AuthR.string.chat_ready)))
+            compose.waitForIdle()
+            compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
             compose.onNodeWithTag("chat-input").assertTextContains("연결 확인")
+            assertEquals(0, conversations.replies)
+            networkStatus.online.value = true
+            compose.waitForIdle()
+            compose.onNodeWithTag("chat-input").assertTextContains("연결 확인")
+            assertEquals(checksBeforeDisconnect, conversations.connections)
             assertEquals(0, conversations.replies)
         }
     }
@@ -186,10 +206,10 @@ class CopilotConnectionJourneyTest {
         ActivityScenario.launch(MainActivity::class.java).use {
             waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
             compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
-            waitFor(hasTestTag("chat-network-dialog"))
+            waitFor(hasTestTag("chat-inline-failure"))
             assertEquals(0, conversations.connections)
             authentication.restoreSession = GitHubSession.Authenticated(GitHubAccount(1, "journey-sample"))
-            compose.onNodeWithTag("chat-network-retry").ensureDisplayed().performClick()
+            compose.onNodeWithText(text(AuthR.string.chat_network_recheck)).ensureDisplayed().performClick()
             waitFor(hasText(text(AuthR.string.chat_ready)))
             compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
             assertEquals(0, conversations.replies)
@@ -235,10 +255,9 @@ class CopilotConnectionJourneyTest {
             compose.onNodeWithTag("chat-input").performTextInput("현재 배터리")
             waitFor(hasTestTag("chat-send") and isEnabled())
             compose.onNodeWithTag("chat-send").performClick()
-            waitFor(hasTestTag("chat-network-dialog"))
-            assertEquals(2, conversations.replies)
-            compose.onNodeWithTag("chat-network-retry").ensureDisplayed().performClick()
             waitFor(hasTestTag("chat-inline-failure"))
+            compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
+            assertEquals(2, conversations.replies)
             compose.onNodeWithText("이야기를 들려줘서 고마워요.").assertExists()
             assertEquals(2, conversations.replies)
             conversations.replyResult = ConversationResult.Success("검증된 새 답변")
@@ -275,6 +294,8 @@ class CopilotConnectionJourneyTest {
             compose.onNodeWithTag("chat-send").performClick()
             compose.waitUntil(timeoutMillis = 10_000) { conversations.requests.size == 2 }
             waitFor(hasTestTag("chat-input") and hasText(""))
+            dismissImeIfVisible(scenario)
+            waitFor(hasTestTag("chat-messages"))
             compose.onNodeWithTag("chat-messages").performScrollToNode(hasText("first exchange"))
             compose.onNodeWithText("first exchange").assertExists()
             compose.onNodeWithTag("chat-messages").performScrollToNode(hasText("second exchange"))
@@ -360,6 +381,16 @@ class CopilotConnectionJourneyTest {
     }
 
     private fun text(resource: Int) = InstrumentationRegistry.getInstrumentation().targetContext.getString(resource)
+
+    private fun captureConnectionPopup(state: String) {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val screenshot = instrumentation.uiAutomation.takeScreenshot() ?: return
+        val directory = File(instrumentation.targetContext.filesDir, "test-screenshots").apply { mkdirs() }
+        File(directory, "conversation-connection-popup-$state.png").outputStream().use {
+            check(screenshot.compress(Bitmap.CompressFormat.PNG, 100, it))
+        }
+        screenshot.recycle()
+    }
 
     private fun returnHomeFromConversation(scenario: ActivityScenario<MainActivity>) {
         dismissImeIfVisible(scenario)

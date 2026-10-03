@@ -24,6 +24,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusProperties
@@ -89,9 +93,34 @@ fun ConversationScreen(
     val focus = LocalFocusManager.current
     val view = LocalView.current
     val imeVisible = WindowInsets.isImeVisible
-    val connectionFailure = state.connectionProblem != null
+    var connectionRecoveryRequested by rememberSaveable(friendId) { mutableStateOf(false) }
+    val connectionRecovered = state.connection == ConversationConnection.READY && state.connectionProblem == null
     val networkChecking = state.connection == ConversationConnection.CHECKING && state.connectionRetrying
-    val connectionDialog = interactionAllowed && (connectionFailure || networkChecking)
+    val connectionDialog =
+        interactionAllowed &&
+            (
+                connectionRecoveryRequested &&
+                    !connectionRecovered ||
+                    state.connectionProblem != null &&
+                    !state.connectionProblem.isRecoverableConnectionProblem
+            )
+    val recheckConnection = {
+        connectionRecoveryRequested = true
+        onRecheckConnection()
+    }
+    val leaveConnectionRecovery = {
+        connectionRecoveryRequested = false
+        onReturnHome()
+    }
+    LaunchedEffect(connectionRecoveryRequested, interactionAllowed, state.connection, state.connectionProblem) {
+        if (!interactionAllowed ||
+            connectionRecovered ||
+            state.connection == ConversationConnection.SIGNED_OUT &&
+            state.connectionProblem == null
+        ) {
+            connectionRecoveryRequested = false
+        }
+    }
     val panelState = if (connectionDialog && state.failed) state.copy(failed = false) else state
     val back = {
         // adjustResize can consume Compose's IME bounds; check the window at the time of the action.
@@ -122,7 +151,7 @@ fun ConversationScreen(
         back()
     }
     BackHandler(enabled = !interactionAllowed) { onReturnHome() }
-    BackHandler(enabled = connectionDialog) { onReturnHome() }
+    BackHandler(enabled = connectionDialog) { leaveConnectionRecovery() }
     LaunchedEffect(interactionAllowed, connectionDialog, onCancelVoice) {
         if (!interactionAllowed || connectionDialog) {
             onCancelVoice()
@@ -194,6 +223,7 @@ fun ConversationScreen(
                         onStopVoice,
                         onCancelVoice,
                         onDismissVoiceProblem,
+                        recheckConnection,
                     )
                     ConversationAuthBadge(
                         connection = state.connection,
@@ -238,6 +268,7 @@ fun ConversationScreen(
                         onStopVoice,
                         onCancelVoice,
                         onDismissVoiceProblem,
+                        recheckConnection,
                     )
                 }
             }
@@ -264,13 +295,13 @@ fun ConversationScreen(
         } else if (connectionDialog) {
             ConversationNetworkOverlay(
                 checking = networkChecking,
-                problem = state.connectionProblem,
-                onHome = onReturnHome,
+                problem = state.connectionProblem ?: state.problem,
+                onHome = leaveConnectionRecovery,
                 onRetry =
                     if (state.connectionProblem == ConversationProblem.ACCOUNT) {
                         onOpenConnection
                     } else {
-                        onRecheckConnection
+                        recheckConnection
                     },
             )
         }

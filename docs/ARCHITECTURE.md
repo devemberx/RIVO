@@ -92,7 +92,11 @@ retain committed bytes and block sends until explicit recovery.
 
 Sending requires current identity, fresh Copilot readiness, validated internet and
 Park/AAOS allowance. Departure, backgrounding or allowance loss cancels work; late
-replies are rejected. Failed turns require explicit Edit/Retry; cancellation cannot
+replies are rejected. Connectivity hints do not cancel pending requests or local saves;
+unavailable readiness offers explicit Recheck without sending messages or silently
+restarting credential rotation.
+Turn-level evidence/transport failures do not invalidate established readiness.
+Failed turns require explicit Edit/Retry; cancellation cannot
 undo provider processing, so retry may consume usage. Composer and draft behavior
 follows [Design](DESIGN.md#conversation).
 

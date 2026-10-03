@@ -54,6 +54,140 @@ class ConversationViewModelTest {
         Dispatchers.resetMain()
     }
 
+    @Test fun transientConnectivityLossDoesNotCancelOrReplayPendingReply() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            val answer = CompletableDeferred<ConversationResult<String>>()
+            provider.answer = { answer.await() }
+            model.edit(TextFieldValue("타이어 상태확인"))
+            model.send()
+            runCurrent()
+            networkStatus.online.value = false
+            runCurrent()
+            assertTrue(model.state.value.replyPending)
+            networkStatus.online.value = true
+            runCurrent()
+            answer.complete(ConversationResult.Success("checked tires"))
+            runCurrent()
+            assertEquals(
+                listOf("타이어 상태확인", "checked tires"),
+                model.state.value.messages
+                    .map { it.text },
+            )
+            assertEquals(1, provider.requests.size)
+            assertEquals(1, provider.connections)
+            assertEquals(null, model.state.value.connectionProblem)
+        }
+
+    @Test fun networkReturnKeepsExplicitReadinessRecheckWithoutSendingAndRespectsPark() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            networkStatus.online.value = false
+            val model = model()
+            runCurrent()
+            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
+            assertFalse(model.state.value.failed)
+            assertTrue(
+                model.state.value.messages
+                    .isEmpty(),
+            )
+            model.edit(TextFieldValue("keep draft"))
+            networkStatus.online.value = true
+            runCurrent()
+            assertEquals(0, provider.connections)
+            model.retryConnection()
+            runCurrent()
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
+            assertEquals(1, provider.connections)
+            assertTrue(provider.requests.isEmpty())
+            assertEquals("keep draft", model.draft.text)
+            model.activate(false)
+            networkStatus.online.value = false
+            runCurrent()
+            networkStatus.online.value = true
+            runCurrent()
+            model.retryConnection()
+            runCurrent()
+            assertEquals(1, provider.connections)
+        }
+
+    @Test fun missingEvidenceIsTurnFailureEvenWhenConnectivitySignalChanges() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val model = model()
+            runCurrent()
+            val answer = CompletableDeferred<ConversationResult<String>>()
+            provider.answer = { answer.await() }
+            model.edit(TextFieldValue("근거 확인"))
+            model.send()
+            runCurrent()
+            networkStatus.online.value = false
+            runCurrent()
+            answer.complete(ConversationResult.Failure(ConversationProblem.NO_EVIDENCE))
+            runCurrent()
+            assertTrue(model.state.value.failed)
+            assertEquals(ConversationProblem.NO_EVIDENCE, model.state.value.problem)
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
+            assertEquals(null, model.state.value.connectionProblem)
+        }
+
+    @Test fun networkReturnDuringReadinessCheckDoesNotReplayPotentialCredentialRefresh() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val first = CompletableDeferred<ConversationResult<String>>()
+            provider.connectionAnswer =
+                { if (provider.connections == 1) first.await() else ConversationResult.Success("gpt-4o") }
+            val model = model()
+            runCurrent()
+            networkStatus.online.value = false
+            runCurrent()
+            networkStatus.online.value = true
+            runCurrent()
+            first.complete(ConversationResult.Failure(ConversationProblem.NETWORK))
+            runCurrent()
+            assertEquals(1, provider.connections)
+            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
+            model.retryConnection()
+            runCurrent()
+            assertEquals(2, provider.connections)
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
+            assertTrue(provider.requests.isEmpty())
+        }
+
+    @Test fun networkReturnDuringCredentialRetryDoesNotReplayOAuthRestore() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            authentication.session.value = GitHubSession.Failure(AuthenticationProblem.NETWORK)
+            val first = CompletableDeferred<Unit>()
+            authentication.restoreAction = {
+                if (authentication.restores == 1) {
+                    first.await()
+                    authentication.session.value = GitHubSession.Failure(AuthenticationProblem.NETWORK)
+                } else {
+                    authentication.session.value = GitHubSession.Authenticated(GitHubAccount(1, "first"))
+                }
+            }
+            val model = model()
+            runCurrent()
+            model.retryConnection()
+            runCurrent()
+            networkStatus.online.value = false
+            runCurrent()
+            networkStatus.online.value = true
+            runCurrent()
+            first.complete(Unit)
+            runCurrent()
+            assertEquals(1, authentication.restores)
+            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
+            model.retryConnection()
+            runCurrent()
+            assertEquals(2, authentication.restores)
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
+            assertTrue(provider.requests.isEmpty())
+        }
+
     @Test fun acceptedMicrophoneRequestClearsTypedInputBeforePermissionResult() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
@@ -289,32 +423,32 @@ class ConversationViewModelTest {
             )
         }
 
-    @Test fun interruptedInitialCredentialRetryRemainsRecoverableWithoutKnownAccount() =
+    @Test fun connectivityHintDoesNotInterruptInitialCredentialRetry() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             authentication.session.value = GitHubSession.Failure(AuthenticationProblem.NETWORK)
             val model = model()
             runCurrent()
             model.edit(TextFieldValue("보존할 초안"))
+            val restored = CompletableDeferred<Unit>()
             authentication.restoreAction = {
                 authentication.session.value = GitHubSession.Restoring
-                CompletableDeferred<Unit>().await()
+                restored.await()
+                authentication.session.value = GitHubSession.Authenticated(GitHubAccount(1, "first"))
             }
             model.retryConnection()
             runCurrent()
             networkStatus.online.value = false
             runCurrent()
-            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
-            assertFalse(model.state.value.connectionRetrying)
+            assertEquals(null, model.state.value.connectionProblem)
+            assertTrue(model.state.value.connectionRetrying)
             assertTrue(provider.requests.isEmpty())
 
             networkStatus.online.value = true
-            authentication.restoreAction = {
-                authentication.session.value = GitHubSession.Authenticated(GitHubAccount(1, "first"))
-            }
             model.retryConnection()
+            restored.complete(Unit)
             runCurrent()
-            assertEquals(2, authentication.restores)
+            assertEquals(1, authentication.restores)
             assertEquals(ConversationConnection.READY, model.state.value.connection)
             assertEquals("보존할 초안", model.draft.text)
             assertTrue(provider.requests.isEmpty())
@@ -356,10 +490,8 @@ class ConversationViewModelTest {
             )
             assertEquals("", model.draft.text)
             assertEquals(ConversationProblem.TIMEOUT, model.state.value.problem)
-            assertEquals(ConversationProblem.TIMEOUT, model.state.value.connectionProblem)
+            assertEquals(null, model.state.value.connectionProblem)
             provider.answer = { ConversationResult.Success("answer") }
-            model.retryConnection()
-            runCurrent()
             assertTrue(model.state.value.failed)
             model.retry()
             runCurrent()
@@ -408,7 +540,7 @@ class ConversationViewModelTest {
             assertEquals("after", model.draft.text)
         }
 
-    @Test fun replyNetworkFailureRequiresRecheckAndKeepsFailedTurnUntilExplicitAction() =
+    @Test fun replyNetworkFailureKeepsReadinessAndFailedTurnUntilExplicitAction() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val model = model()
@@ -418,8 +550,8 @@ class ConversationViewModelTest {
             model.send()
             runCurrent()
 
-            assertEquals(ConversationConnection.UNAVAILABLE, model.state.value.connection)
-            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
+            assertEquals(null, model.state.value.connectionProblem)
             assertTrue(model.state.value.failed)
             model.edit(TextFieldValue("keep me", TextRange(0)))
             assertTrue(model.state.value.failed)
@@ -429,7 +561,9 @@ class ConversationViewModelTest {
                     .map { it.text },
             )
 
-            model.retryConnection()
+            networkStatus.online.value = false
+            runCurrent()
+            networkStatus.online.value = true
             runCurrent()
             assertEquals(ConversationConnection.READY, model.state.value.connection)
             assertEquals(null, model.state.value.connectionProblem)
@@ -455,7 +589,7 @@ class ConversationViewModelTest {
 
             assertEquals(0, provider.requests.size)
             assertEquals(ConversationProblem.NETWORK, model.state.value.problem)
-            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
+            assertEquals(null, model.state.value.connectionProblem)
             assertFalse(model.state.value.replyPending)
             assertEquals(
                 listOf("keep this"),
@@ -477,7 +611,7 @@ class ConversationViewModelTest {
             assertTrue(model.state.value.failed)
         }
 
-    @Test fun idleReadyRecordingReportsNetworkLossForPopupWithoutRestoringOldDraft() =
+    @Test fun idleReadyRecordingIgnoresConnectivityHintWithoutRestoringOldDraft() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val speech = FakeSpeech()
@@ -491,16 +625,18 @@ class ConversationViewModelTest {
 
             networkStatus.online.value = false
             runCurrent()
-            assertEquals(ConversationConnection.UNAVAILABLE, model.state.value.connection)
-            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
+            assertEquals(null, model.state.value.connectionProblem)
             assertFalse(model.state.value.failed)
+            assertEquals(VoiceInputPhase.LISTENING, model.state.value.voice.phase)
+            assertEquals(0, speech.cancellations)
             model.cancelVoice()
             assertEquals(1, speech.cancellations)
             assertEquals("", model.draft.text)
             assertTrue(provider.requests.isEmpty())
         }
 
-    @Test fun disconnectDuringPendingReplyStopsWaitingAndShowsNetworkFailure() =
+    @Test fun persistentDisconnectWaitsForBoundedRequestDeadline() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val model = model()
@@ -514,9 +650,12 @@ class ConversationViewModelTest {
             networkStatus.online.value = false
             runCurrent()
 
+            assertTrue(model.state.value.replyPending)
+            advanceTimeBy(30_000)
+            runCurrent()
             assertFalse(model.state.value.replyPending)
             assertEquals(ConversationProblem.NETWORK, model.state.value.problem)
-            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
+            assertEquals(null, model.state.value.connectionProblem)
             assertEquals(1, provider.requests.size)
         }
 
@@ -958,7 +1097,7 @@ class ConversationViewModelTest {
             assertEquals(3, provider.requests.last().size)
         }
 
-    @Test fun networkRecoveryWaitsForInterruptedSaveEvenWhenItFailsAfterCancellation() =
+    @Test fun networkChangesDoNotInterruptSaveOrAllowDuplicateSend() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val disk = FakeConversationStore()
@@ -983,9 +1122,13 @@ class ConversationViewModelTest {
             model.retry()
             runCurrent()
             assertEquals(1, provider.requests.size)
-            assertTrue(model.state.value.storageBusy)
+            assertTrue(model.state.value.replyPending)
             finish.complete(Unit)
             runCurrent()
+            assertEquals(ConversationProblem.STORAGE, model.state.value.problem)
+            model.retry()
+            runCurrent()
+            assertEquals(1, provider.requests.size)
             assertFalse(model.state.value.storageBusy)
             assertEquals(
                 listOf("committed", "answer"),
@@ -994,7 +1137,7 @@ class ConversationViewModelTest {
             )
         }
 
-    @Test fun offlineBeforeSaveCommitRestoresTheUncommittedInput() =
+    @Test fun offlineBeforeSaveCommitDoesNotCancelLocalPersistence() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             val disk = FakeConversationStore()
@@ -1010,11 +1153,15 @@ class ConversationViewModelTest {
             runCurrent()
             networkStatus.online.value = false
             runCurrent()
-            assertEquals("keep unsaved input", model.draft.text)
-            assertTrue(
+            assertTrue(model.state.value.replyPending)
+            finish.complete(Unit)
+            runCurrent()
+            assertEquals(
+                listOf("keep unsaved input", "answer"),
                 model.state.value.messages
-                    .isEmpty(),
+                    .map { it.text },
             )
+            assertEquals("", model.draft.text)
             assertFalse(model.state.value.storageBusy)
             assertEquals(1, provider.requests.size)
         }
@@ -1646,13 +1793,37 @@ class ConversationViewModelTest {
             assertFalse(model.state.value.voice.available)
         }
 
+    @Test fun transientServiceFailurePreservesCaptureAndAllowsNewLocalRecording() =
+        runTest {
+            Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+            val check = CompletableDeferred<ConversationResult<String>>()
+            provider.connectionAnswer = { check.await() }
+            val speech = FakeSpeech()
+            val model = model(speech)
+            runCurrent()
+            model.setVoiceResumed(true)
+            model.requestVoice(true)
+            val listener = requireNotNull(speech.listener)
+            listener.onReady()
+            check.complete(ConversationResult.Failure(ConversationProblem.SERVICE))
+            runCurrent()
+            assertEquals(VoiceInputPhase.LISTENING, model.state.value.voice.phase)
+            assertEquals(0, speech.cancellations)
+            listener.onResult("보존할 음성 초안")
+            assertEquals("보존할 음성 초안", model.draft.text)
+            model.requestVoice(true)
+            assertEquals(2, speech.starts)
+            assertEquals(ConversationConnection.UNAVAILABLE, model.state.value.connection)
+            assertTrue(provider.requests.isEmpty())
+        }
+
     @Test fun blockingCopilotFailuresImmediatelyCancelVoiceAndRejectFurtherStartsAndLateResults() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             for (problem in listOf(
                 ConversationProblem.ACCOUNT,
                 ConversationProblem.ACCESS,
-                ConversationProblem.SERVICE,
+                ConversationProblem.USAGE,
             )) {
                 val check = CompletableDeferred<ConversationResult<String>>()
                 provider.connectionAnswer = { check.await() }
@@ -1773,7 +1944,7 @@ class ConversationViewModelTest {
             assertTrue(provider.requests.isEmpty())
         }
 
-    @Test fun successfulLocalDraftReplacesAFailedTurnAndRemainsEditableWithoutEnablingSend() =
+    @Test fun successfulLocalDraftReplacesAFailedTurnAndCanBeExplicitlySent() =
         runTest {
             Dispatchers.setMain(StandardTestDispatcher(testScheduler))
             provider.answer = { ConversationResult.Failure(ConversationProblem.NETWORK) }
@@ -1798,12 +1969,12 @@ class ConversationViewModelTest {
             )
             model.edit(TextFieldValue("수정한 새 초안"))
             assertEquals("수정한 새 초안", model.draft.text)
-            assertEquals(ConversationConnection.UNAVAILABLE, model.state.value.connection)
-            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
+            assertEquals(null, model.state.value.connectionProblem)
             model.send()
             model.retry()
             runCurrent()
-            assertEquals(1, provider.requests.size)
+            assertEquals(2, provider.requests.size)
         }
 
     @Test fun confirmedDraftAfterRecognitionFailureRemainsEditableAfterAFailedChatTurn() =
@@ -1832,12 +2003,12 @@ class ConversationViewModelTest {
             )
             model.edit(TextFieldValue("수정한 새 초안"))
             assertEquals("수정한 새 초안", model.draft.text)
-            assertEquals(ConversationConnection.UNAVAILABLE, model.state.value.connection)
-            assertEquals(ConversationProblem.NETWORK, model.state.value.connectionProblem)
+            assertEquals(ConversationConnection.READY, model.state.value.connection)
+            assertEquals(null, model.state.value.connectionProblem)
             model.send()
             model.retry()
             runCurrent()
-            assertEquals(1, provider.requests.size)
+            assertEquals(2, provider.requests.size)
         }
 
     @Test fun offlineStartupAndFinalizationStillCancelOnBackgroundParkingAndAuthenticationLoss() =
