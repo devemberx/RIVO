@@ -11,6 +11,7 @@ class ConversationContext(
     val petCondition: String? = null,
     val conditionReasons: List<ConversationConditionReason> = emptyList(),
     val simulatedCondition: Boolean = false,
+    val vehicleCapture: VehicleChatCapture? = null,
 ) {
     override fun toString() = "ConversationContext(REDACTED)"
 }

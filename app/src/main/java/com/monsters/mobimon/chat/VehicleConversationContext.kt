@@ -5,6 +5,8 @@ import com.monsters.mobimon.core.domain.ConversationContext
 import com.monsters.mobimon.core.domain.ConversationContextSource
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
+import com.monsters.mobimon.core.domain.VehicleChatEvidenceSource
+import com.monsters.mobimon.core.domain.VehicleChatTopic
 import com.monsters.mobimon.core.domain.VehicleFreshnessPolicy
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.presentation.vehicleCondition
@@ -18,8 +20,10 @@ class VehicleConversationContext(
     private val nowMillis: () -> Long,
     private val debugModeEnabled: suspend () -> Boolean = { false },
     private val freshness: VehicleFreshnessPolicy = VehicleFreshnessPolicy(15_000),
+    private val evidence: VehicleChatEvidenceSource = VehicleChatEvidenceReader(snapshot, nowMillis, debugModeEnabled),
 ) : ConversationContextSource {
     override suspend fun current(): ConversationContext {
+        val capture = evidence.capture(VehicleChatTopic.BASIC)
         val name = userName()?.trim()?.takeIf { it.isNotEmpty() && it.length <= 100 && it.none(Char::isISOControl) }
         val debug = debugModeEnabled()
         val expectedSource = if (debug) SignalSource.SIMULATED else SignalSource.REAL
@@ -28,7 +32,7 @@ class VehicleConversationContext(
             original.isDebuggerOverride != debug ||
             debugModeEnabled() != debug
         ) {
-            return ConversationContext(userName = name)
+            return ConversationContext(userName = name, vehicleCapture = capture)
         }
         val now = nowMillis()
         val vehicle = freshness.displaySnapshot(original, expectedSource, now)
@@ -52,6 +56,7 @@ class VehicleConversationContext(
                 ConversationConditionReason(it.concern.name, it.signal, it.value, it.description)
             },
             debug,
+            capture,
         )
     }
 }

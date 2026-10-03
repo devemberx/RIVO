@@ -1,6 +1,5 @@
 package com.monsters.mobimon.ui
 
-import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.view.inspector.WindowInspector
@@ -32,6 +31,7 @@ import com.monsters.mobimon.core.navigation.QuestRoute
 import com.monsters.mobimon.core.navigation.VehicleRoute
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonTheme
+import com.monsters.mobimon.testing.ComposeTestApplication
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -44,7 +44,7 @@ import java.io.File
 import com.monsters.mobimon.core.ui.R as CoreUiR
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], application = Application::class, qualifiers = "ko-rKR-w2560dp-h1184dp-mdpi")
+@Config(sdk = [34], application = ComposeTestApplication::class, qualifiers = "ko-rKR-w2560dp-h1184dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class CompanionMenuReviewTest {
     @get:Rule val compose = createComposeRule()

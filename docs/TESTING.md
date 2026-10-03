@@ -32,8 +32,9 @@ Screenshots verify layout, not persistence, authorization or providers.
 | --- | --- |
 | Module boundaries, VSS evidence and foreground vehicle state | `verifyModuleBoundaries`; [domain](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain), [VSS](../core/core-vss/src/test/kotlin/com/monsters/mobimon/core/vss), [runtime](../app/src/test/java/com/monsters/mobimon/runtime) |
 | Atomic rewards, purchase/equipment and populated migrations | [database](../core/core-database/src/test/java/com/monsters/mobimon/core/database), `migrationTest`, device database tests |
-| Credentials, Copilot protocol/tools and conversation ownership | [auth](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth), [auth feature](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth), Debug probe fixtures |
-| Bundled manual retrieval and cited replies | [manual tests](../app/src/testDebug/java/com/monsters/mobimon/manual); lexical recall does not prove model routing or truth |
+| Credentials, bounded identity retries, inline errors, explicit popup recovery and conversation ownership | [auth](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth), [auth feature](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth), [bounded reply correction](../core/core-auth/src/androidTest/java/com/monsters/mobimon/core/auth/CopilotReplyCorrectionDeviceTest.kt), Debug probe fixtures |
+| Chat observation validity, references and multi-tool budgets | [chat tests](../app/src/test/java/com/monsters/mobimon/chat), [native reference validation](../app/src/androidTest/java/com/monsters/mobimon/chat/GroundedConversationReplyPolicyDeviceTest.kt), [60 synthetic cases](../app/src/debug/assets/chat/vehicle-evaluation.json) and [contract runner](../app/src/testDebug/java/com/monsters/mobimon/chat/VehicleConversationEvaluationTest.kt); native checks cover unchanged AI prose, obsolete protocol rejection and manual citations; synthetic cases cover evidence revalidation across both persona inputs and a held-out split, but do not measure model routing, persona quality or prose accuracy |
+| Bundled manual retrieval, per-turn routing and cited replies | [manual tests](../app/src/testDebug/java/com/monsters/mobimon/manual), [routing fixtures](../app/src/testDebug/java/com/monsters/mobimon/chat/VehicleToolRoutingTest.kt) and [transport selection](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth/CopilotToolRoutingTest.kt); [opt-in live fixture probe](../app/src/androidTest/java/com/monsters/mobimon/chat/CopilotGroundingLiveProbeTest.kt) runs only with `live_copilot=true` against the existing verified account and never writes chat history; default device runs skip it. Fixed fixtures and lexical recall do not prove real vehicle behavior or answer truth |
 | Park restrictions, quests, vehicle cards, shared appearance and navigation | Owning [feature](../feature) and [core UI](../core/core-ui/src/test/java/com/monsters/mobimon/core/ui) suites, app journeys |
 | Keystore, microphone, native keyboard and AAOS behavior | [device tests](../app/src/androidTest/java/com/monsters/mobimon), core auth/database device tests |
 
@@ -41,7 +42,7 @@ Screenshots verify layout, not persistence, authorization or providers.
 
 Journeys use isolated storage and fake external providers; they do not verify live
 GitHub, Copilot or real vehicle evidence. Debug tool probes and fake adapters do not
-establish provider/OEM compatibility. Migration fixtures cover populated V1 and both
+establish provider/OEM compatibility. Any live baseline/candidate comparison must use identical fixtures/model settings and report numeric/unit accuracy, unsupported claims, correct/unnecessary abstention, tool omissions, source confusion, latency/deadline failures and token estimates separately from deterministic checks. Migration fixtures cover populated V1 and both
 V3 forms, not a separately populated V2. Assembly, Robolectric and `NO-SOURCE`
 results do not prove device execution. OAuth entitlement, AAOS restrictions,
 offline Korean speech, OEM overlays and the

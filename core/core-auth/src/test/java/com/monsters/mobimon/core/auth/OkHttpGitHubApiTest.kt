@@ -1,19 +1,28 @@
 package com.monsters.mobimon.core.auth
 
 import com.monsters.mobimon.core.domain.AuthenticationProblem
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.SocketPolicy
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.net.InetAddress
+import java.util.concurrent.TimeUnit
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -22,11 +31,29 @@ class OkHttpGitHubApiTest {
     private lateinit var api: OkHttpGitHubApi
 
     @Before fun setup() {
-        server.start()
+        server.start(InetAddress.getByName("127.0.0.1"), 0)
+        // Keep transport retry tests independent of localhost IPv4/IPv6 route selection.
+        val base =
+            server
+                .url("/")
+                .newBuilder()
+                .host("127.0.0.1")
+                .build()
         api =
-            OkHttpGitHubApi(OkHttpClient.Builder().followRedirects(false).build(), "app-id", {
-                1000
-            }, server.url("/"), server.url("/"))
+            OkHttpGitHubApi(
+                OkHttpClient
+                    .Builder()
+                    .followRedirects(
+                        false,
+                    ).retryOnConnectionFailure(false)
+                    .build(),
+                "app-id",
+                {
+                    1000
+                },
+                base,
+                base,
+            )
     }
 
     @After fun close() {
@@ -89,6 +116,104 @@ class OkHttpGitHubApiTest {
             assertFalse(request.path!!.contains("private-token"))
         }
 
+    @Test fun accountRecoversFromTransientServerFailure() =
+        runBlocking {
+            server.enqueue(MockResponse().setResponseCode(503))
+            enqueue("""{"id":42,"login":"driver"}""")
+
+            assertEquals(42L, api.account("private-token").id)
+            assertEquals(2, server.requestCount)
+            repeat(2) {
+                val request = server.takeRequest()
+                assertEquals("GET", request.method)
+                assertEquals("/user", request.path)
+                assertEquals("Bearer private-token", request.getHeader("Authorization"))
+            }
+        }
+
+    @Test fun accountRecoversFromInterruptedResponseBody() =
+        runBlocking {
+            server.enqueue(
+                MockResponse().setBody("x".repeat(1024)).setSocketPolicy(SocketPolicy.DISCONNECT_DURING_RESPONSE_BODY),
+            )
+            enqueue("""{"id":42,"login":"driver"}""")
+
+            assertEquals(42L, api.account("private-token").id)
+            assertEquals(2, server.requestCount)
+        }
+
+    @Test fun accountStopsAfterThreeTransientFailures() =
+        runBlocking {
+            repeat(3) { server.enqueue(MockResponse().setResponseCode(503)) }
+            enqueue("""{"id":42,"login":"driver"}""")
+
+            assertProblem(AuthenticationProblem.NETWORK) { api.account("private-token") }
+            assertEquals(3, server.requestCount)
+        }
+
+    @Test fun accountAllowsProviderDirectedZeroWaitGetFollowup() =
+        runBlocking {
+            server.enqueue(MockResponse().setResponseCode(503).setHeader("Retry-After", "0"))
+            enqueue("""{"id":42,"login":"driver"}""")
+
+            assertEquals(42L, api.account("private-token").id)
+            assertEquals(2, server.requestCount)
+        }
+
+    @Test fun accountBoundsWireRequestsIncludingProviderDirectedZeroWaitFollowups() =
+        runBlocking {
+            repeat(3) {
+                server.enqueue(MockResponse().setResponseCode(503).setHeader("Retry-After", "0"))
+                server.enqueue(MockResponse().setResponseCode(503))
+            }
+            enqueue("""{"id":42,"login":"driver"}""")
+
+            assertProblem(AuthenticationProblem.NETWORK) { api.account("private-token") }
+            assertEquals(6, server.requestCount)
+        }
+
+    @Test fun accountRateLimitWithoutRetryAfterIsNotRetried() =
+        runBlocking {
+            server.enqueue(MockResponse().setResponseCode(429))
+            enqueue("""{"id":42,"login":"driver"}""")
+
+            assertProblem(AuthenticationProblem.NETWORK) { api.account("private-token") }
+            assertEquals(1, server.requestCount)
+        }
+
+    @Test fun cancellationStopsIdentityRecoveryBeforeAnotherRequest() =
+        runBlocking {
+            server.enqueue(MockResponse().setResponseCode(503))
+            enqueue("""{"id":42,"login":"driver"}""")
+            val pending = async(Dispatchers.Default) { api.account("private-token") }
+            assertNotNull(server.takeRequest(5, TimeUnit.SECONDS))
+            pending.cancelAndJoin()
+            delay(400)
+
+            assertTrue(pending.isCancelled)
+            assertEquals(1, server.requestCount)
+        }
+
+    @Test fun deviceCodeRequestIsNotReplayedAfterServerFailure() =
+        runBlocking {
+            server.enqueue(MockResponse().setResponseCode(503).setHeader("Retry-After", "0"))
+            enqueue(
+                """{"device_code":"private-code","user_code":"ABCD-EFGH","verification_uri":"https://github.com/login/device","expires_in":900,"interval":5}""",
+            )
+
+            assertProblem(AuthenticationProblem.NETWORK) { api.requestCode() }
+            assertEquals(1, server.requestCount)
+        }
+
+    @Test fun refreshRequestIsNotReplayedAfterServerFailure() =
+        runBlocking {
+            server.enqueue(MockResponse().setResponseCode(503).setHeader("Retry-After", "0"))
+            enqueue("""{"access_token":"replacement","token_type":"bearer"}""")
+
+            assertProblem(AuthenticationProblem.NETWORK) { api.refresh("rotating-refresh-token") }
+            assertEquals(1, server.requestCount)
+        }
+
     @Test fun invalidOrMaliciousProviderPayloadNeverBecomesAuthentication() =
         runBlocking {
             enqueue(
@@ -110,13 +235,17 @@ class OkHttpGitHubApiTest {
                 403 to AuthenticationProblem.PROVIDER,
                 408 to AuthenticationProblem.NETWORK,
                 429 to AuthenticationProblem.NETWORK,
+                500 to AuthenticationProblem.NETWORK,
+                502 to AuthenticationProblem.NETWORK,
                 503 to AuthenticationProblem.NETWORK,
+                504 to AuthenticationProblem.NETWORK,
             )) {
                 server.enqueue(
                     MockResponse().setResponseCode(code).setHeader("Retry-After", "1").setBody("private details"),
                 )
                 assertProblem(problem) { api.account("private-token") }
             }
+            assertEquals(8, server.requestCount)
         }
 
     @Test fun redirectsAreNotFollowed() =

@@ -73,31 +73,8 @@ class ConversationViewModel(
     private var returnToVoiceReview = false
 
     init {
-        viewModelScope.launch {
-            networkStatus.online.collect { online ->
-                if (online) return@collect
-                if (work?.isActive == true) {
-                    if (savingRequest != null) mutableState.value = state.value.copy(storageBusy = true)
-                    generation++
-                    work?.cancel()
-                    work = null
-                    fail(ConversationProblem.NETWORK)
-                }
-                val interruptedCheck = checkWork?.isActive == true || authenticationRetry?.isActive == true
-                if (interruptedCheck) cancelCheck()
-                if ((accountId != null || interruptedCheck) &&
-                    state.value.connectionProblem in
-                    setOf(null, ConversationProblem.NETWORK, ConversationProblem.TIMEOUT)
-                ) {
-                    mutableState.value =
-                        state.value.copy(
-                            connection = ConversationConnection.UNAVAILABLE,
-                            connectionProblem = ConversationProblem.NETWORK,
-                            connectionRetrying = false,
-                        )
-                }
-            }
-        }
+        // Connectivity callbacks are hints: requests own their result/deadline, and local saves
+        // continue through handovers. Rechecks are explicit because credentials may rotate.
         viewModelScope.launch {
             authentication.session.collect { session ->
                 updateVoice(state.value.voice.copy(available = voiceAvailable()))
@@ -482,7 +459,8 @@ class ConversationViewModel(
             profileId != null &&
             accountId != null &&
             (authentication.session.value as? GitHubSession.Authenticated)?.account?.id == accountId &&
-            state.value.connectionProblem in setOf(null, ConversationProblem.NETWORK, ConversationProblem.TIMEOUT) &&
+            state.value.connectionProblem in
+            setOf(null, ConversationProblem.NETWORK, ConversationProblem.TIMEOUT, ConversationProblem.SERVICE) &&
             !state.value.storageBusy &&
             !state.value.replyPending
 
@@ -607,7 +585,13 @@ class ConversationViewModel(
     }
 
     fun retryConnection() {
-        if (!interactionAvailable() || checkWork?.isActive == true || authenticationRetry?.isActive == true) return
+        if (!interactionAvailable() ||
+            work?.isActive == true ||
+            checkWork?.isActive == true ||
+            authenticationRetry?.isActive == true
+        ) {
+            return
+        }
         if (!networkStatus.isOnline()) {
             mutableState.value =
                 state.value.copy(
@@ -895,7 +879,8 @@ class ConversationViewModel(
                 if (request != checkGeneration || !checkAllowed() || account != accountId) return@launch
                 checkWork = null
                 if (result is ConversationResult.Failure &&
-                    result.problem !in setOf(ConversationProblem.NETWORK, ConversationProblem.TIMEOUT)
+                    result.problem !in
+                    setOf(ConversationProblem.NETWORK, ConversationProblem.TIMEOUT, ConversationProblem.SERVICE)
                 ) {
                     cancelVoice()
                 }
@@ -904,6 +889,11 @@ class ConversationViewModel(
                         is ConversationResult.Success -> {
                             val current = state.value
                             val recoveredAccess = current.failed && current.problem == ConversationProblem.ACCESS
+                            val recoveredWithoutMessage =
+                                current.failed &&
+                                    unansweredTurnText() == null &&
+                                    current.problem !in setOf(ConversationProblem.STORAGE, ConversationProblem.LIMIT)
+                            val clearFailure = recoveredAccess || recoveredWithoutMessage
                             if (recoveredAccess) {
                                 failedTurnText()?.let { draft = TextFieldValue(it, TextRange(it.length)) }
                             }
@@ -912,8 +902,8 @@ class ConversationViewModel(
                                 connectionProblem = null,
                                 connectionRetrying = false,
                                 messages = if (recoveredAccess) history else current.messages,
-                                failed = if (recoveredAccess) false else current.failed,
-                                problem = if (recoveredAccess) null else current.problem,
+                                failed = if (clearFailure) false else current.failed,
+                                problem = if (clearFailure) null else current.problem,
                             )
                         }
                         is ConversationResult.Failure ->
@@ -949,13 +939,17 @@ class ConversationViewModel(
                 failed = true,
                 problem = problem,
                 connection =
-                    if (problem !in setOf(ConversationProblem.LIMIT, ConversationProblem.RESTRICTED)) {
+                    if (problem in
+                        setOf(ConversationProblem.ACCOUNT, ConversationProblem.ACCESS, ConversationProblem.USAGE)
+                    ) {
                         ConversationConnection.UNAVAILABLE
                     } else {
                         state.value.connection
                     },
                 connectionProblem =
-                    if (problem !in setOf(ConversationProblem.LIMIT, ConversationProblem.RESTRICTED)) {
+                    if (problem in
+                        setOf(ConversationProblem.ACCOUNT, ConversationProblem.ACCESS, ConversationProblem.USAGE)
+                    ) {
                         problem
                     } else {
                         state.value.connectionProblem
@@ -980,7 +974,11 @@ class ConversationViewModel(
             } catch (_: TimeoutCancellationException) {
                 ConversationResult.Failure(ConversationProblem.TIMEOUT)
             }
-        return if (result is ConversationResult.Failure && !networkStatus.isOnline()) {
+        return if (result is ConversationResult.Failure &&
+            result.problem in
+            setOf(ConversationProblem.PROVIDER, ConversationProblem.SERVICE, ConversationProblem.TIMEOUT) &&
+            !networkStatus.isOnline()
+        ) {
             ConversationResult.Failure(ConversationProblem.NETWORK)
         } else {
             result

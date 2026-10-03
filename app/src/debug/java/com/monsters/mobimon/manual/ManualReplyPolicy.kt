@@ -6,6 +6,7 @@ import com.monsters.mobimon.core.domain.ConversationProblem
 import com.monsters.mobimon.core.domain.ConversationReplyPolicy
 import com.monsters.mobimon.core.domain.ConversationResult
 import com.monsters.mobimon.core.domain.ConversationToolResult
+import com.monsters.mobimon.core.domain.ManualReplyRejection
 import java.io.StringReader
 
 /** Validates the response envelope and provenance, not semantic truth; source/answer evaluation remains necessary. */
@@ -23,7 +24,7 @@ internal object ManualReplyPolicy : ConversationReplyPolicy {
             } catch (_: Exception) {
                 return failure()
             }
-        val markers = Regex("\\[(?:ne1-|[0-9])[^\\]]*]").findAll(reply.text).map { it.value }.toList()
+        val markers = markers(reply.text)
         return when (reply.status) {
             "CONVERSATION" -> {
                 // A direct companion reply cannot discard a tool result or claim manual provenance.
@@ -37,14 +38,8 @@ internal object ManualReplyPolicy : ConversationReplyPolicy {
                 val sources =
                     result?.evidence?.associateBy { it.id }
                         ?: return ConversationResult.Failure(ConversationProblem.NO_EVIDENCE)
-                if (reply.ids.isEmpty() ||
-                    reply.ids.distinct().size != reply.ids.size ||
-                    reply.ids.any { it !in sources }
-                ) {
-                    return failure()
-                }
+                if (answeredRejection(reply, result) != null) return failure()
                 val appendSingleCitation = reply.ids.size == 1 && markers.isEmpty()
-                if (!appendSingleCitation && markers.distinct() != reply.ids.map { "[$it]" }) return failure()
                 var rendered = if (appendSingleCitation) "${reply.text} [${reply.ids.single()}]" else reply.text
                 reply.ids.forEachIndexed { index, id -> rendered = rendered.replace("[$id]", "[${index + 1}]") }
                 val citations = reply.ids.mapIndexed { index, id -> "[${index + 1}] ${sources.getValue(id).citation}" }
@@ -67,6 +62,40 @@ internal object ManualReplyPolicy : ConversationReplyPolicy {
             else -> failure()
         }
     }
+
+    override fun rejectionReason(
+        text: String,
+        result: ConversationToolResult.Found?,
+    ): ManualReplyRejection? {
+        val reply =
+            try {
+                parse(text)
+            } catch (_: Exception) {
+                return ManualReplyRejection.ENVELOPE
+            }
+        return if (reply.status == "ANSWERED") answeredRejection(reply, result) else null
+    }
+
+    private fun answeredRejection(
+        reply: Reply,
+        result: ConversationToolResult.Found?,
+    ): ManualReplyRejection? {
+        if (reply.ids.isEmpty() || reply.ids.distinct().size != reply.ids.size) return ManualReplyRejection.SOURCE_IDS
+        val sources =
+            result
+                ?.evidence
+                ?.map { it.id }
+                .orEmpty()
+                .toSet()
+        if (reply.ids.any { it !in sources }) return ManualReplyRejection.UNKNOWN_SOURCE
+        val markers = markers(reply.text)
+        if (markers.any { !it.startsWith("[ne1-") }) return ManualReplyRejection.NUMERIC_CITATIONS
+        if (markers.isEmpty()) return if (reply.ids.size == 1) null else ManualReplyRejection.MISSING_CITATIONS
+        return if (markers.distinct() == reply.ids.map { "[$it]" }) null else ManualReplyRejection.CITATION_MISMATCH
+    }
+
+    private fun markers(text: String): List<String> =
+        Regex("\\[(?:ne1-|[0-9])[^\\]]*\\]").findAll(text).map { it.value }.toList()
 
     private class Reply(
         val status: String,

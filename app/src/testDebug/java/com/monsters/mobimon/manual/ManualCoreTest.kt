@@ -8,6 +8,7 @@ import com.monsters.mobimon.core.domain.ConversationResult
 import com.monsters.mobimon.core.domain.ConversationToolCall
 import com.monsters.mobimon.core.domain.ConversationToolResult
 import com.monsters.mobimon.core.domain.ManualEvidence
+import com.monsters.mobimon.core.domain.ManualReplyRejection
 import com.monsters.mobimon.core.domain.ManualSearchResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
@@ -70,6 +71,37 @@ class ManualCoreTest {
                 twoSources,
             ),
         )
+    }
+
+    @Test fun citationFailuresExposeFixedReasonsWithoutRelaxingValidation() {
+        val sources =
+            ConversationToolResult.Found(
+                "fixture excerpts",
+                evidence.evidence + ConversationEvidence("ne1-0021", "fixture second page"),
+            )
+        val ids = listOf("ne1-0020", "ne1-0021")
+        val cases =
+            listOf(
+                reply("ANSWERED", "안내 [1] 주의 [2]", ids) to ManualReplyRejection.NUMERIC_CITATIONS,
+                reply("ANSWERED", "안내와 주의사항", ids) to ManualReplyRejection.MISSING_CITATIONS,
+                reply("ANSWERED", "주의 [ne1-0021] 안내 [ne1-0020]", ids) to ManualReplyRejection.CITATION_MISMATCH,
+                reply("ANSWERED", "안내 [ne1-0020]", ids) to ManualReplyRejection.CITATION_MISMATCH,
+                reply("ANSWERED", "안내 [ne1-9999]", listOf("ne1-9999")) to ManualReplyRejection.UNKNOWN_SOURCE,
+                reply("ANSWERED", "안내", emptyList()) to ManualReplyRejection.SOURCE_IDS,
+                reply("ANSWERED", "안내 [ne1-0020]", listOf("ne1-0020", "ne1-0020")) to ManualReplyRejection.SOURCE_IDS,
+                reply("ANSWERED", "안내 [other]", listOf("other")) to ManualReplyRejection.ENVELOPE,
+            )
+        for ((json, reason) in cases) {
+            assertEquals(
+                ConversationResult.Failure(ConversationProblem.PROVIDER),
+                ManualReplyPolicy.accept(json, sources),
+            )
+            assertEquals(reason, ManualReplyPolicy.rejectionReason(json, sources))
+        }
+        val corrected = reply("ANSWERED", "안내 [ne1-0020] 주의 [ne1-0021]", ids)
+        assertEquals(null, ManualReplyPolicy.rejectionReason(corrected, sources))
+        assertTrue(ManualReplyPolicy.accept(corrected, sources) is ConversationResult.Success)
+        assertEquals(null, ManualReplyPolicy.rejectionReason(reply("ANSWERED", "안내", listOf("ne1-0020")), sources))
     }
 
     @Test fun ordinaryConversationNeedsNoManualEvidenceAndCannotMasqueradeAsACitedReply() {

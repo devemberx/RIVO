@@ -11,6 +11,7 @@ import com.monsters.mobimon.core.domain.VehicleCardVssDefaults
 import com.monsters.mobimon.core.domain.VehicleRepository
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.vss.DefaultParkedVssRawVehicleSource
+import com.monsters.mobimon.core.vss.ObservedVssRawVehicleSource
 import com.monsters.mobimon.core.vss.VssInterpretationOverrides
 import com.monsters.mobimon.core.vss.VssRawVehicleSource
 import com.monsters.mobimon.core.vss.VssRawVehicleState
@@ -50,6 +51,8 @@ class DemoVehicleRepository(
     override val snapshots = mutableSnapshots.asStateFlow()
     private var observation: Job? = null
     private var generation = 0L
+    private var debugEvidence: DebugVehicleEvidence? = null
+    private var debugSession = 0L
 
     @Synchronized
     override fun start() {
@@ -65,6 +68,8 @@ class DemoVehicleRepository(
                     val observedAt = clock.nowMillis()
                     val isDebugOn = settingsRepository.settings.first().debugModeEnabled
                     val debugState = debugStore.state.value
+                    val atomicSource = vssRawSource as? ObservedVssRawVehicleSource
+                    val sourceFrame = atomicSource?.observationFrames?.value
 
                     val snapshot: VehicleSnapshot =
                         if (isDebugOn) {
@@ -89,7 +94,7 @@ class DemoVehicleRepository(
                         } else {
                             val interpreted =
                                 VssVehicleInterpreter.snapshot(
-                                    raw = vssRawSource.state.value,
+                                    raw = if (atomicSource != null) sourceFrame?.raw else vssRawSource.state.value,
                                     id = "$epoch-$nextSequence",
                                     epoch = epoch,
                                     sequence = nextSequence,
@@ -98,12 +103,35 @@ class DemoVehicleRepository(
                                     timeObservedAtMillis = sourceTimeObservation(),
                                     batteryObservedAtMillis = sourceBatteryObservation(observedAt),
                                 )
-                            interpreted.copy(vssCardSignals = fallbackCardSignals())
+                            interpreted.copy(
+                                vssCardSignals = fallbackCardSignals(),
+                                evidenceFrame = sourceFrame?.evidence,
+                            )
                         }
 
                     synchronized(this@DemoVehicleRepository) {
                         if (generation == currentGeneration) {
-                            mutableSnapshots.value = snapshot
+                            mutableSnapshots.value =
+                                if (isDebugOn) {
+                                    val observer =
+                                        debugEvidence
+                                            ?: DebugVehicleEvidence("$epoch-debug-${++debugSession}").also {
+                                                debugEvidence =
+                                                    it
+                                            }
+                                    snapshot.copy(
+                                        evidenceFrame =
+                                            observer.capture(
+                                                snapshot,
+                                                debugState.receivedAtElapsedMillis ?: observedAt,
+                                                observedAt,
+                                                debugState,
+                                            ),
+                                    )
+                                } else {
+                                    debugEvidence = null
+                                    snapshot
+                                }
                         }
                     }
                 }
@@ -120,6 +148,8 @@ class DemoVehicleRepository(
                 }
             },
             vssRawSource.state.drop(1).map { Unit },
+            (vssRawSource as? ObservedVssRawVehicleSource)?.observationFrames?.drop(1)?.map { Unit }
+                ?: kotlinx.coroutines.flow.emptyFlow(),
             debugStore.state.drop(1).map { Unit },
             settingsRepository.settings
                 .map { it.debugModeEnabled }
@@ -133,6 +163,7 @@ class DemoVehicleRepository(
         generation++
         observation?.cancel()
         observation = null
+        debugEvidence = null
         vssRawSource.stop()
         if (vssRawSource is DefaultParkedVssRawVehicleSource) {
             val current = mutableSnapshots.value
@@ -154,6 +185,10 @@ class DemoVehicleRepository(
                 quality = SignalQuality.UNAVAILABLE,
                 drivingState = DrivingState.UNKNOWN,
                 batteryQuality = SignalQuality.UNAVAILABLE,
+                evidenceFrame =
+                    mutableSnapshots.value.evidenceFrame?.let {
+                        it.copy(subscription = it.subscription.copy(connected = false, subscriptionValid = false))
+                    },
             )
     }
 

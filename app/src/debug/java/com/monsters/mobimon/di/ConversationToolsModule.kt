@@ -2,8 +2,12 @@ package com.monsters.mobimon.di
 
 import android.content.Context
 import android.util.Log
+import com.monsters.mobimon.chat.GroundedConversationReplyPolicy
+import com.monsters.mobimon.chat.VehicleConversationTool
+import com.monsters.mobimon.chat.VehicleToolRouting
 import com.monsters.mobimon.core.domain.ConversationTools
 import com.monsters.mobimon.core.domain.ManualRetriever
+import com.monsters.mobimon.core.domain.VehicleChatEvidenceSource
 import com.monsters.mobimon.manual.AssetManualRetriever
 import com.monsters.mobimon.manual.ManualConversationTools
 import dagger.Module
@@ -24,8 +28,20 @@ object ConversationToolsModule {
 
     @Provides
     @Singleton
-    fun conversationTools(retriever: ManualRetriever): ConversationTools =
-        ManualConversationTools.create(retriever) {
-            Log.i("MobiMonManual", it.toString())
-        }
+    fun conversationTools(
+        retriever: ManualRetriever,
+        evidence: VehicleChatEvidenceSource,
+    ): ConversationTools {
+        val manual = ManualConversationTools.create(retriever) { Log.i("MobiMonManual", it.toString()) }
+        return ConversationTools(
+            manual.tools + VehicleConversationTool(evidence),
+            ManualConversationTools.groundingInstruction,
+            onUsage = manual.onUsage,
+            groundedReplyPolicy =
+                GroundedConversationReplyPolicy(evidence, manual.replyPolicy) {
+                    Log.i("MobiMonCopilot", "replyRejected reason=$it")
+                },
+            selectTools = VehicleToolRouting::select,
+        )
+    }
 }

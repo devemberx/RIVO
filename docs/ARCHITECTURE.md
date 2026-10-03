@@ -75,8 +75,11 @@ readiness; UI never receives tokens or polls providers.
 Credentials use atomic authenticated encryption with Android Keystore outside
 backups. Tokens never enter UI/domain state, Room, preferences or logs. Persist token
 rotations and invalidate old revisions before use. Network failure retains credentials; revocation and unreadable
-storage fail closed. Disconnect removes local credentials and key, not the GitHub
-grant, subscription or rewards.
+storage fail closed. Identity GETs retry transient transport/server failures within a
+bounded budget; rate limits and positive provider waits are not immediately retried.
+A provider-directed zero-wait response may retry the idempotent identity read.
+Device-code and refresh writes are never automatically replayed. Disconnect removes
+local credentials and key, not the GitHub grant, subscription or rewards.
 
 ### Keyboard conversation UI
 
@@ -89,7 +92,11 @@ retain committed bytes and block sends until explicit recovery.
 
 Sending requires current identity, fresh Copilot readiness, validated internet and
 Park/AAOS allowance. Departure, backgrounding or allowance loss cancels work; late
-replies are rejected. Failed turns require explicit Edit/Retry; cancellation cannot
+replies are rejected. Connectivity hints do not cancel pending requests or local saves;
+unavailable readiness offers explicit Recheck without sending messages or silently
+restarting credential rotation.
+Turn-level evidence/transport failures do not invalidate established readiness.
+Failed turns require explicit Edit/Retry; cancellation cannot
 undo provider processing, so retry may consume usage. Composer and draft behavior
 follows [Design](DESIGN.md#conversation).
 
@@ -100,27 +107,47 @@ replay. A 401 invalidates only its credential revision. Release logging is off;
 provider bodies, dialogue and tokens never enter logs/errors.
 
 [Tool contracts](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/ConversationTools.kt)
-are pure Kotlin and build-variant bound. Debug enables the bundled manual tool;
-Release registers none.
-An enabled tool turn permits at most two model requests, one allowlisted execution
-and 30 seconds, with bounded arguments, identity/Park checks and final-response
-acceptance. AI never grants rewards or changes vehicle state. The
-[Debug probe](../core/core-auth/src/debug/java/com/monsters/mobimon/core/auth/CopilotToolProbe.kt)
-uses synthetic data and does not establish live compatibility.
+are pure Kotlin. Debug registers manual search and read-only `get_vehicle_context(topic)`.
+[Per-turn routing](../app/src/debug/java/com/monsters/mobimon/chat/VehicleToolRouting.kt)
+restricts recognized current-state requests and their user-context evidence follow-ups to
+vehicle tools; mixed or unrecognized requests retain both. Empty manual results supply
+no citations and do not discard valid vehicle evidence. Release registers no tools but
+uses the same checked reply policy. Sequential validated
+batches share a [turn budget](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/ConversationExecutionBudget.kt):
+30 seconds, 64,000 estimated prompt plus reserved output tokens, 64,000 characters per
+and combined tool results, and 12,000 reply characters. Counts are not fixed. Repeated
+normalized queries with unchanged semantic evidence stop; receipt/ticker changes alone
+are not progress. Identity, Park and source/session checks remain enforced. HTTP failures are not
+automatically replayed; no commands or rewards are available. Synthetic Debug probes do not establish live compatibility.
 
-The curated, pinned 2027 Korean IONIQ 5 bundle fails closed on missing assets;
-retrieval never supplies live vehicle state. Manual answers require current-turn
-evidence checked by the [reply policy](../app/src/debug/java/com/monsters/mobimon/manual/ManualReplyPolicy.kt),
-which renders citations; ordinary chat needs no retrieval. Only uncited
-`CONVERSATION` replies without tool evidence may omit the empty `sourceIds` field.
-Source checks do not prove correct routing or factual truth.
+The pinned 2027 Korean IONIQ 5 bundle fails closed on missing assets; it cannot supply
+current vehicle state. Manual claims need current-turn sources and
+[checked citations](../app/src/debug/java/com/monsters/mobimon/manual/ManualReplyPolicy.kt).
+All app replies use a versioned envelope with separate manual IDs and vehicle references.
+Unused manual/vehicle reference arrays may be omitted and default to empty; required references remain enforced by
+[acceptance](../app/src/main/java/com/monsters/mobimon/chat/GroundedConversationReplyPolicy.kt), which
+preserves AI-authored prose and rechecks referenced source, session, value and validity before storage.
+Equal-value receipts remain acceptable; a changed value rejects the answer without substitution.
+Tools provide structured values, units, signal labels and code meanings; the AI owns explanation and persona.
+There is no vehicle fact substitution or canned reply fallback. Obsolete placeholders require model correction.
+An invalid final envelope, completed non-text body or reference contract gets at most one correction request using the same
+turn evidence, with tools disabled and the original time/token budget and guards. Only a revalidated
+answer is stored; manual corrections identify the citation failure and allowed current-turn source IDs without relaxing
+membership or inline-order checks. Network, explicit refusal, changed evidence and authorization failures do not trigger correction.
+Reference checks do not prove routing, numerical accuracy or arbitrary prose semantics.
 
-Each send may add bounded AAOS user name and independently fresh VSS time, battery
-and condition. Treat these as untrusted data, not instructions or ownership.
-Debugger readings are labeled simulations; with Debug off, unavailable real data
-stays unavailable. A VSS timestamp needs its own observation within 60 seconds;
-ticker updates cannot refresh it. Real adapters supply observation provenance.
-Derived conditions cannot invent diagnoses or historical causes.
+Basic context retains bounded AAOS name, battery, vehicle clock, condition and reasons;
+[the shared reader](../app/src/main/java/com/monsters/mobimon/chat/VehicleChatEvidenceReader.kt)
+also serves every [registered field](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/VehicleChatFieldCatalog.kt)
+by topic. Simulated and real sources share IDs, with explicit origin and unavailable values.
+Receipt, change, publication and capture times are distinct monotonic metadata; reads/ticks
+cannot refresh receipts. Periodic signals use adapter-declared TTLs; on-change signals need
+a synchronized live subscription/lease; unknown delivery fails closed. The atomic
+[source frame](../core/core-vss/src/main/kotlin/com/monsters/mobimon/core/vss/VssObservationFrame.kt)
+is optional: legacy adapters without provenance remain unavailable to chat. Real bindings
+must declare delivery/dependency semantics; this does not change command freshness policy.
+Vehicle clock is an as-of value, not receipt time; Debug clock uses a 60-second TTL.
+Derived conditions expose checked scope and cannot invent diagnoses or historical causes.
 
 Catalog token limits and tokenizer must be supported or sending fails closed.
 The server decides context overflow; no automatic truncation or replay. Local
