@@ -60,7 +60,7 @@ class VehicleReviewTest {
 
         listOf(
             "확인된 공기압 기준",
-            "확인된 경고 신호 기준",
+            "다음 정비까지 남은 거리",
             "워셔액이 충분해요",
         ).forEach(::assertTextFullyVisible)
     }
@@ -74,7 +74,7 @@ class VehicleReviewTest {
             "마지막 확인: 1분 전",
             "마지막 확인: 19초 전",
             "타이어 정보 없음",
-            "운전자 보조 정보 없음",
+            "정비까지 거리",
         ).forEach(::assertTextFullyVisible)
     }
 
@@ -91,7 +91,7 @@ class VehicleReviewTest {
         show({ samples().first().second }, fontScale = 1f)
 
         val reference = compose.onNodeWithTag("vehicle-reference").getUnclippedBoundsInRoot()
-        val finalCardText = compose.onNodeWithText("확인된 경고 신호 기준").getUnclippedBoundsInRoot()
+        val finalCardText = compose.onNodeWithText("다음 정비까지 남은 거리").getUnclippedBoundsInRoot()
 
         assertTrue(
             "Final metric row should settle near the lower content area",
@@ -300,6 +300,7 @@ class VehicleReviewTest {
                 isDistracted = false,
                 isCharging = false,
                 washerFluidLevel = 68,
+                vssCardSignals = VehicleCardVssDefaults.values,
             )
         val partial =
             checked.copy(

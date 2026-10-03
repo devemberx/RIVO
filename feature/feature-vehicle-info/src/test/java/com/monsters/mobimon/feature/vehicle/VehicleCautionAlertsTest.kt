@@ -25,7 +25,7 @@ class VehicleCautionAlertsTest {
     fun `selected caution cards appear in slot order`() {
         assertEquals(
             listOf("tire", "battery"),
-            vehicleCautionAlerts(snapshot, listOf("tire", "charging", "battery", "washer", "environment", "assist"))
+            vehicleCautionAlerts(snapshot, listOf("tire", "charging", "battery", "washer", "low-beam", "fatigue"))
                 .map { it.id },
         )
     }
@@ -34,7 +34,7 @@ class VehicleCautionAlertsTest {
     fun `unselected caution cards also appear`() {
         assertEquals(
             listOf("tire", "battery"),
-            vehicleCautionAlerts(snapshot, listOf("tire", "charging", "washer", "environment", "assist", "distance"))
+            vehicleCautionAlerts(snapshot, listOf("tire", "charging", "washer", "low-beam", "fatigue", "distance"))
                 .map { it.id },
         )
     }
@@ -70,6 +70,29 @@ class VehicleCautionAlertsTest {
         assertEquals(
             emptyList<VehicleCautionAlert>(),
             vehicleCautionAlerts(current.copy(quality = SignalQuality.STALE), VehicleCardSelectionStore.defaults()),
+        )
+    }
+
+    @Test
+    fun `driver warning still creates one alert after grouped card removal`() {
+        val driverWarning =
+            snapshot.copy(
+                batteryPercent = 72,
+                tirePressureStatus = "OK",
+                isDrowsy = true,
+                isDistracted = true,
+            )
+
+        assertEquals(
+            listOf(VehicleCautionAlert("driver-state", "운전자 졸음 감지 신호가 있어요")),
+            vehicleCautionAlerts(driverWarning, VehicleCardSelectionStore.defaults()),
+        )
+        assertEquals(
+            emptyList<VehicleCautionAlert>(),
+            vehicleCautionAlerts(
+                driverWarning.copy(quality = SignalQuality.STALE),
+                VehicleCardSelectionStore.defaults(),
+            ),
         )
     }
 
