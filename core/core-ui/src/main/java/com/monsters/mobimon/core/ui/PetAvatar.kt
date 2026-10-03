@@ -436,7 +436,13 @@ fun PetAvatar(
                 when (status) {
                     CompanionStatus.SICK -> LasSickAnimation(Modifier.fillMaxSize(), motionEnabled)
                     CompanionStatus.HUNGRY -> LasHungryAnimation(Modifier.fillMaxSize(), motionEnabled)
-                    else -> LasIdleAnimation(Modifier.fillMaxSize(), motionEnabled)
+                    else -> {
+                        if (runEnabled) {
+                            LasDanceAnimation(Modifier.fillMaxSize(), movingLeft)
+                        } else {
+                            LasIdleAnimation(Modifier.fillMaxSize(), motionEnabled)
+                        }
+                    }
                 }
             }
         }
@@ -842,6 +848,8 @@ suspend fun preloadPetRunSprite(
         } else if (friendId == "friend:luna") {
             val appearance = lunaAppearance(accessoryId)
             LunaRunAnimationCache.getOrLoadFrames(context, appearance)
+        } else if (friendId == "friend:las") {
+            LasDanceSpriteCache.getOrLoad(context)
         }
     }
 }
