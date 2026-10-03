@@ -394,12 +394,31 @@ fun PetAvatar(
                 lunaAppearance(accessoryId ?: outfitId),
                 onAppeared,
             )
+        } else if (friendId == "friend:las") {
+            LasTransitionAnimation(
+                modifier.size(120.dp).semantics { contentDescription = description },
+                LasTransition.APPEAR,
+                onAppeared,
+            )
         } else {
             LaunchedEffect(Unit) { onAppeared() }
         }
         return
     }
-    if (isDisappearing && friendId != "friend:mobi" && friendId != "friend:luna" && !isMoving) {
+    if (isDisappearing && friendId == "friend:las" && !isMoving) {
+        LasTransitionAnimation(
+            modifier.size(120.dp).semantics { contentDescription = description },
+            LasTransition.DISAPPEAR,
+            onDisappeared,
+        )
+        return
+    }
+    if (isDisappearing &&
+        friendId != "friend:mobi" &&
+        friendId != "friend:luna" &&
+        friendId != "friend:las" &&
+        !isMoving
+    ) {
         LaunchedEffect(Unit) { onDisappeared() }
         return
     }
