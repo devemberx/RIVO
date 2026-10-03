@@ -64,6 +64,14 @@ internal object PetSpeechPhrases {
         isHungry: Boolean,
         timeOfDay: String?,
     ): List<String> {
+        if (friendId == "friend:las") {
+            return when {
+                isSick -> listOf("삐빅, 잠깐 쉬어갈까?", "오늘은 천천히 함께하자.")
+                isHungry -> listOf("에너지 충전할 시간이야!", "잠깐 쉬면서 힘을 채워보자.")
+                isTap -> listOf("라스 여기 있어! 반가워!", "삐빅, 나 불렀어?")
+                else -> listOf("반가워! 나는 라스야.", "오늘도 네 곁에서 함께할게.", "내 불빛 보이지? 인사하는 중이야!")
+            }
+        }
         val isMobi = friendId != "friend:luna"
         if (isSick) return if (isMobi) mobiSick else lunaSick
         if (isHungry) return if (isMobi) mobiHungry else lunaHungry

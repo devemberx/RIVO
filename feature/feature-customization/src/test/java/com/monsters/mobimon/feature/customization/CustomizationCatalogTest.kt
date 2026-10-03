@@ -10,6 +10,15 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CustomizationCatalogTest {
+    @Test fun lasFriendPreviewAndPurchaseCatalogSupport() {
+        val lasItem = CosmeticItem("friend:las", CosmeticSlot.FRIEND, 500)
+        val inventory = CosmeticInventory(setOf("friend:mobi"), mapOf(CosmeticSlot.FRIEND to "friend:mobi"))
+        val preview = customizationCatalog(inventory, listOf(lasItem), CosmeticSlot.FRIEND, "friend:las")
+        assertEquals("friend:las", preview.preview.friendId)
+        assertFalse(preview.selectedOwned)
+        assertFalse(preview.selectedEquipped)
+    }
+
     @Test fun starHangerPreviewDoesNotEquipUntilAppliedAndIsAvailableToBothFriends() {
         val item = CosmeticItem("background:star_hanger", CosmeticSlot.BACKGROUND, 200)
         for (friend in listOf("friend:mobi", "friend:luna")) {

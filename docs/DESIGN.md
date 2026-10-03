@@ -194,6 +194,10 @@ disconnect confirms local-only removal.
 
 ## Motion
 
+Las (라스) is a 500-point character using the unchanged robot master. Its idle renderer keeps the master body fixed while gently waving the connected raised arm from the shoulder,
+shortening the eye symmetrically and fading the head lights. It respects the shared
+motion preference; the generated atlas is retained as source reference, not playback. Hungry uses a separate 24-frame 6×4 RGBA atlas: low-battery blink, an attempted plug connection, a disappearing socket, disappointment, then return to idle. Its padded canvas preserves the idle character scale and keeps the socket/cord inside each frame; reduced motion holds a battery-warning pose. The seated position and crown-to-sole size stay anchored. The cord is stowed without turning around, and both loop endpoints rest the hand on the knee without raising it. Moving poses advance continuously; only battery flashes and idle endpoints pause. Vehicle warnings retain priority over hungry. Sick uses a separate 24-frame sprite loop baked from one fixed body and a rigid head: three fixed face-lamp sectors dim and recover, the ECG flatlines then resumes, and the head tilts sideways once without scaling. Body, arms and feet remain identical across frames; sick emotion or a vehicle warning selects the loop, and reduced motion holds a malfunction pose.
+
 Respect the shared motion preference; animation never authorizes commands. Settings
 controls only floating wandering; unknown/failed reads keep it stationary. Shell
 chat transition returns to its trigger; restrictions replace content immediately.

@@ -71,6 +71,12 @@ class CompanionMenuReviewTest {
         capture("menu")
     }
 
+    @Test fun lasMenuRendersLasName() {
+        show(activeFriendId = "friend:las")
+        compose.onNodeWithText("라스").assertIsDisplayed()
+        capture("menu-las")
+    }
+
     @Test fun emptyNotificationPanelMatchesReferenceBounds() {
         show()
         compose.onNodeWithContentDescription("알림 열기").performClick()
@@ -306,6 +312,7 @@ class CompanionMenuReviewTest {
         onNavigate: (AppRoute) -> Unit = {},
         notifications: List<NotificationItem> = emptyList(),
         motionEnabled: Boolean = false,
+        activeFriendId: String = "friend:mobi",
     ) {
         val visible = mutableStateOf(true)
         compose.setContent {
@@ -322,7 +329,7 @@ class CompanionMenuReviewTest {
                             { visible.value = false },
                             onNavigate,
                             notifications = notifications,
-                            activeFriendId = "friend:mobi",
+                            activeFriendId = activeFriendId,
                         )
                     }
                 }

@@ -42,11 +42,11 @@ private val IDLE_BREATH_FRAME_DURATIONS_MS =
 internal val RUN_FRAME_DURATIONS_MS =
     IntArray(24) { 50 }
 
-// Normal/hat sick art ends at y=1048/1254; this lowers it onto Mobi's collapsed baseline (0.926 of the slot).
-internal const val LUNA_REDRAWN_SICK_TRANSLATION_Y_FRACTION = 0.134f
+// Luna sick art ends at y=1048/1254; this lowers it onto Mobi's collapsed baseline (0.926 of the slot).
+internal const val LUNA_SICK_TRANSLATION_Y_FRACTION = 0.134f
 
-// Normal/hat hungry body sits ~77px/1254 left of idle; this recenters it on the idle body.
-internal const val LUNA_REDRAWN_HUNGRY_TRANSLATION_X_FRACTION = 0.053f
+// Luna hungry body sits ~77px/1254 left of idle; this recenters it on the idle body.
+internal const val LUNA_HUNGRY_TRANSLATION_X_FRACTION = 0.053f
 
 enum class LunaAppearance(
     internal val assetName: String,
@@ -54,10 +54,6 @@ enum class LunaAppearance(
     NORMAL("normal"),
     HAT("hat"),
     SUNGLASSES("sunglasses"),
-    ;
-
-    /** Sick/hungry frames redrawn on a shared canvas that needs the offsets below. */
-    internal val hasRedrawnStateArt: Boolean get() = this != SUNGLASSES
 }
 
 private fun lunaAppearance(accessoryId: String?): LunaAppearance =
@@ -381,16 +377,29 @@ fun PetAvatar(
     val motionEnabled = isAnimated && LocalMobiMonMotionEnabled.current
     // Reduced motion keeps the gentle idle breath and drops travel animation only.
     val runEnabled = isAnimated && isMoving && LocalMobiMonMotionEnabled.current
-    val description = stringResource(if (cat) R.string.mobimon_luna_description else R.string.mobimon_mobi_description)
+    val description =
+        stringResource(
+            when (friendId) {
+                "friend:las" -> R.string.mobimon_las_description
+                "friend:luna" -> R.string.mobimon_luna_description
+                else -> R.string.mobimon_mobi_description
+            },
+        )
     if (isAppearing) {
         if (friendId == "friend:mobi") {
             MobiAppearAnimation(modifier, accessoryId ?: outfitId, onAppeared)
+        } else if (friendId == "friend:luna") {
+            LunaAppearAnimation(
+                modifier.size(120.dp).semantics { contentDescription = description },
+                lunaAppearance(accessoryId ?: outfitId),
+                onAppeared,
+            )
         } else {
             LaunchedEffect(Unit) { onAppeared() }
         }
         return
     }
-    if (isDisappearing && friendId != "friend:mobi" && !isMoving) {
+    if (isDisappearing && friendId != "friend:mobi" && friendId != "friend:luna" && !isMoving) {
         LaunchedEffect(Unit) { onDisappeared() }
         return
     }
@@ -402,6 +411,34 @@ fun PetAvatar(
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Fit,
             )
+        }
+        return
+    }
+    if (friendId == "friend:las") {
+        Box(modifier = modifier.size(120.dp).semantics { contentDescription = description }) {
+            backgroundId?.let { CharacterArtwork.backgrounds[it] }?.let {
+                CharacterAssetImage(it, Modifier.fillMaxSize())
+            }
+            val sick = vehicleWarning || emotion == PetEmotion.SICK
+            val hungry =
+                (vehicleHungry || emotion == PetEmotion.HUNGRY) &&
+                    !sick
+            CompanionStatusCrossfade(
+                state =
+                    when {
+                        sick -> CompanionStatus.SICK
+                        hungry -> CompanionStatus.HUNGRY
+                        else -> CompanionStatus.NORMAL
+                    },
+                motionEnabled = motionEnabled,
+                modifier = Modifier.fillMaxSize(),
+            ) { status ->
+                when (status) {
+                    CompanionStatus.SICK -> LasSickAnimation(Modifier.fillMaxSize(), motionEnabled)
+                    CompanionStatus.HUNGRY -> LasHungryAnimation(Modifier.fillMaxSize(), motionEnabled)
+                    else -> LasIdleAnimation(Modifier.fillMaxSize(), motionEnabled)
+                }
+            }
         }
         return
     }
@@ -482,7 +519,10 @@ fun PetAvatar(
                         )
                 }
             } else if (friendId == "friend:luna") {
-                if (runEnabled && !isSick && !isHungry) {
+                val showLunaRun = runEnabled && !isSick && !isHungry
+                if (isDisappearing && !showLunaRun) {
+                    LunaDisappearAnimation(Modifier.fillMaxSize(), appearance, onDisappeared)
+                } else if (showLunaRun) {
                     LunaRunAnimation(
                         modifier = Modifier.fillMaxSize(),
                         movingLeft = movingLeft,
@@ -674,8 +714,7 @@ fun LunaHungryAnimation(
         modifier,
         contentDescription,
         animateFrames,
-        extraTranslationXFraction =
-            if (appearance.hasRedrawnStateArt) LUNA_REDRAWN_HUNGRY_TRANSLATION_X_FRACTION else 0f,
+        extraTranslationXFraction = LUNA_HUNGRY_TRANSLATION_X_FRACTION,
     )
 }
 
@@ -694,8 +733,7 @@ fun LunaSickAnimation(
         modifier,
         contentDescription,
         animateFrames,
-        extraTranslationYFraction =
-            if (appearance.hasRedrawnStateArt) LUNA_REDRAWN_SICK_TRANSLATION_Y_FRACTION else 0f,
+        extraTranslationYFraction = LUNA_SICK_TRANSLATION_Y_FRACTION,
     )
 }
 

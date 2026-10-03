@@ -8,6 +8,7 @@
   <string name="copilot_friend_heading">%1$s와 이야기해요.</string>
   <string name="copilot_mobi">모비</string>
   <string name="copilot_luna">루나</string>
+  <string name="copilot_las">라스</string>
   <string name="copilot_friend_intro">휴대폰으로 QR을 스캔해 연결해요.</string>
   <string name="copilot_friend_waiting">GitHub에서 계정 승인을 기다리고 있어요.</string>
   <string name="copilot_friend_connected">이제 편하게 이야기를 나눠요.</string>

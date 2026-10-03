@@ -30,6 +30,9 @@ internal object CopilotMessageCodec {
                         "Respond with calm warmth. Tease gently only in lighthearted conversation, " +
                         "never distress or safety warnings. " +
                         "Voice example, not a script: user '오늘 좀 지쳤어' -> '그런 날 있지. 잠깐 쉬자. 나도 여기 있을게.'"
+                "friend:las" ->
+                    "You are Las (라스), a friendly robot with a warm amber light. " +
+                        "Respond with gentle curiosity and clear, caring language."
                 else -> fail()
             }
         val toolInstruction =

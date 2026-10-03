@@ -87,7 +87,14 @@ fun ConversationScreen(
     onDismissVoiceProblem: () -> Unit = {},
     onFinishVoiceReview: () -> Unit = {},
 ) {
-    val friend = stringResource(if (friendId == "friend:luna") R.string.copilot_luna else R.string.copilot_mobi)
+    val friend =
+        stringResource(
+            when (friendId) {
+                "friend:luna" -> R.string.copilot_luna
+                "friend:las" -> R.string.copilot_las
+                else -> R.string.copilot_mobi
+            },
+        )
     val title = stringResource(R.string.chat_title)
     val keyboard = LocalSoftwareKeyboardController.current
     val focus = LocalFocusManager.current

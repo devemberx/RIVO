@@ -20,6 +20,7 @@ internal fun cosmeticName(
             )
         itemId == "friend:mobi" -> stringResource(R.string.pet_friend_mobi)
         itemId == "friend:luna" -> stringResource(R.string.pet_friend_luna)
+        itemId == "friend:las" -> stringResource(R.string.pet_friend_las)
         itemId == "accessory:mobi_headphones" -> stringResource(R.string.pet_item_mobi_headphones)
         itemId == "accessory:mobi_goggles" -> stringResource(R.string.pet_item_mobi_goggles)
         itemId == "accessory:luna_cap" -> stringResource(R.string.pet_item_luna_cap)
@@ -29,5 +30,6 @@ internal fun cosmeticName(
         itemId == "background:star" -> stringResource(R.string.pet_background_star)
         itemId == "background:snow" -> stringResource(R.string.pet_background_snow)
         itemId == "background:petal" -> stringResource(R.string.pet_background_petal)
+        itemId == "background:cyberpunk_city" -> stringResource(R.string.pet_background_cyberpunk_city)
         else -> itemId
     }

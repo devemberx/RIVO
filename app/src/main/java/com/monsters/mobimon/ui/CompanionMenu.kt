@@ -114,6 +114,7 @@ private fun drawerProfileName(friendId: String?): Int =
     when (friendId) {
         "friend:mobi" -> R.string.drawer_mobi_name
         "friend:luna" -> R.string.drawer_luna_name
+        "friend:las" -> R.string.drawer_las_name
         else -> R.string.drawer_no_friend
     }
 
@@ -354,12 +355,28 @@ private fun MenuPanel(
                 contentAlignment = Alignment.Center,
             ) {
                 val isRunaOrLuna = friendId == "friend:luna" || friendId == "friend:runa"
-                val faceRes = if (isRunaOrLuna) R.drawable.menu_runa_face else R.drawable.menu_mobi_face
-                val imageSize = if (isRunaOrLuna) (115 * scale).dp else (135 * scale).dp
+                val isLas = friendId == "friend:las"
+                val faceRes =
+                    when {
+                        isRunaOrLuna -> R.drawable.menu_runa_face
+                        isLas -> R.drawable.menu_las_face
+                        else -> R.drawable.menu_mobi_face
+                    }
+                val imageSize = if (isRunaOrLuna || isLas) (115 * scale).dp else (135 * scale).dp
                 Image(
                     painterResource(faceRes),
                     contentDescription = null,
-                    modifier = Modifier.size(imageSize).offset(y = if (isRunaOrLuna) 0.dp else (-5 * scale).dp),
+                    modifier =
+                        Modifier.size(imageSize).offset(
+                            y =
+                                if (isRunaOrLuna ||
+                                    isLas
+                                ) {
+                                    0.dp
+                                } else {
+                                    (-5 * scale).dp
+                                },
+                        ),
                 )
             }
         }

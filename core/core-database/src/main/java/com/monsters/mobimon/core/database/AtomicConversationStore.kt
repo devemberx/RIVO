@@ -78,7 +78,7 @@ class AtomicConversationStore(
         }
 
     private fun file(key: ConversationKey): AtomicFile {
-        require(key.profileId.isNotBlank() && key.friendId in setOf("friend:mobi", "friend:luna"))
+        require(key.profileId.isNotBlank() && key.friendId in setOf("friend:mobi", "friend:luna", "friend:las"))
         if (!directory.isDirectory && !directory.mkdirs()) throw IOException("Conversation storage unavailable")
         val identity = JSONArray().put(key.profileId).put(key.friendId).toString()
         val name =
