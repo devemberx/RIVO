@@ -394,12 +394,31 @@ fun PetAvatar(
                 lunaAppearance(accessoryId ?: outfitId),
                 onAppeared,
             )
+        } else if (friendId == "friend:las") {
+            LasTransitionAnimation(
+                modifier.size(120.dp).semantics { contentDescription = description },
+                LasTransition.APPEAR,
+                onAppeared,
+            )
         } else {
             LaunchedEffect(Unit) { onAppeared() }
         }
         return
     }
-    if (isDisappearing && friendId != "friend:mobi" && friendId != "friend:luna" && !isMoving) {
+    if (isDisappearing && friendId == "friend:las" && !isMoving) {
+        LasTransitionAnimation(
+            modifier.size(120.dp).semantics { contentDescription = description },
+            LasTransition.DISAPPEAR,
+            onDisappeared,
+        )
+        return
+    }
+    if (isDisappearing &&
+        friendId != "friend:mobi" &&
+        friendId != "friend:luna" &&
+        friendId != "friend:las" &&
+        !isMoving
+    ) {
         LaunchedEffect(Unit) { onDisappeared() }
         return
     }
@@ -436,7 +455,13 @@ fun PetAvatar(
                 when (status) {
                     CompanionStatus.SICK -> LasSickAnimation(Modifier.fillMaxSize(), motionEnabled)
                     CompanionStatus.HUNGRY -> LasHungryAnimation(Modifier.fillMaxSize(), motionEnabled)
-                    else -> LasIdleAnimation(Modifier.fillMaxSize(), motionEnabled)
+                    else -> {
+                        if (runEnabled) {
+                            LasDanceAnimation(Modifier.fillMaxSize(), movingLeft)
+                        } else {
+                            LasIdleAnimation(Modifier.fillMaxSize(), motionEnabled)
+                        }
+                    }
                 }
             }
         }
@@ -842,6 +867,8 @@ suspend fun preloadPetRunSprite(
         } else if (friendId == "friend:luna") {
             val appearance = lunaAppearance(accessoryId)
             LunaRunAnimationCache.getOrLoadFrames(context, appearance)
+        } else if (friendId == "friend:las") {
+            LasDanceSpriteCache.getOrLoad(context)
         }
     }
 }
