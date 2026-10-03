@@ -126,7 +126,10 @@ shows a still hanger.
 Use split companion/chat panels, suggestions and a system-keyboard composer.
 Suggestions fill without sending. Signed-out Chat opens connection settings.
 Mobi speaks curious rabbit banmal and Luna quietly caring cat banmal, without
-habitual animal suffixes, emojis or stage directions. Current-thread retention
+habitual animal suffixes, emojis or stage directions. Checked vehicle-linked hunger,
+sickness and battery state are spoken as the companion's own state in first person,
+with the observed reason; this does not imply biological illness or a mechanical diagnosis.
+Current-thread retention
 and New conversation follow the
 [session contract](ARCHITECTURE.md#keyboard-conversation-ui). Keep New conversation
 reachable above the composer; do not invent a name when one is absent.
@@ -152,7 +155,7 @@ Copilot disclosure below the composer: transmitted dialogue, available context/d
 values and AI uncertainty. Local clearing does not promise
 provider deletion. Spoken replies remain planned.
 
-Vehicle facts show app-rendered values and units, explicitly label simulated readings, and explain unavailable observations. Vehicle time is labeled as the clock at lookup. Rejected evidence preserves committed history and requires an explicit retry; raw tool protocol stays hidden.
+The AI explains vehicle information in the companion voice using tool values, units and signal meanings; the app does not replace its prose with fact templates. Identify Debug-simulated readings explicitly; verified VSS readings omit that label. Explain unavailable observations and label vehicle time as the clock at lookup. Rejected evidence preserves committed history and requires an explicit retry; raw tool protocol stays hidden.
 
 Replies keep a friendly companion voice: short paragraphs for explanations,
 bullets for multiple tips and numbered steps when order matters. Keep relevant

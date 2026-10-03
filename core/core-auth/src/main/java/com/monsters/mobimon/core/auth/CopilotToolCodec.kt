@@ -27,10 +27,16 @@ internal object CopilotToolCodec {
         tools: ConversationTools,
     ) {
         val system = request.getJSONArray("messages").getJSONObject(0)
+        val content = system.getString("content")
+        val extra =
+            listOfNotNull(
+                tools.instruction.takeIf { it.isNotBlank() },
+                GroundedReplyCodec.instruction.takeIf { tools.groundedReplyPolicy != null },
+            ).joinToString("\n")
+        val contextAt = content.indexOf(CopilotMessageCodec.CONTEXT_PREFIX).takeIf { it >= 0 } ?: content.length
         system.put(
             "content",
-            system.getString("content") + "\n" + tools.instruction +
-                if (tools.groundedReplyPolicy != null) "\n" + GroundedReplyCodec.instruction else "",
+            content.substring(0, contextAt) + "\n" + extra + content.substring(contextAt),
         )
         val definitions = JSONArray()
         tools.tools.forEach { tool ->
@@ -79,12 +85,34 @@ internal object CopilotToolCodec {
         if (choices.length() != 1) fail()
         val choice = choices.optJSONObject(0) ?: fail()
         val message = choice.optJSONObject("message") ?: fail()
+        CopilotDiagnostics.replyShape(
+            stopped = choice.optString("finish_reason") == "stop",
+            toolBatch = choice.optString("finish_reason") == "tool_calls",
+            validAssistant = message.optString("role") == "assistant",
+            legacyCall = !message.isNull("function_call"),
+            stringContent = message.opt("content") is String,
+            objectContent = message.optJSONObject("content") != null,
+            arrayContent = message.optJSONArray("content") != null,
+            nullContent = message.isNull("content"),
+            refusalPresent = (message.opt("refusal") as? String)?.isNotBlank() == true,
+            emptyContent = (message.opt("content") as? String)?.isBlank() == true,
+            toolCallsAbsent = message.isNull("tool_calls"),
+            emptyToolCalls = message.optJSONArray("tool_calls")?.length() == 0,
+        )
         if (message.optString("role") != "assistant" || !message.isNull("function_call")) fail()
         return when (choice.optString("finish_reason")) {
             "stop" -> {
                 if (!message.isNull("tool_calls")) fail()
-                val text = message.opt("content") as? String ?: fail()
-                if (text.isBlank() || text.length > ConversationLimits.REPLY_CHARACTERS) fail()
+                // A refusal is not a formatting error and must never trigger correction.
+                if ((message.opt("refusal") as? String)?.isNotBlank() == true) fail()
+                val text = message.opt("content") as? String
+                if (text?.length?.let { it > ConversationLimits.REPLY_CHARACTERS } == true) fail()
+                if (text.isNullOrBlank()) {
+                    if (tools.groundedReplyPolicy == null) fail()
+                    // The completed message has no usable body. Let checked acceptance take
+                    // its single bounded correction path; never show/coerce structured data.
+                    return CopilotToolReply.Final("")
+                }
                 CopilotToolReply.Final(text)
             }
             "tool_calls" -> {

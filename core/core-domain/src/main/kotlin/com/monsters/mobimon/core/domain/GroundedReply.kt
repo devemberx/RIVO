@@ -22,4 +22,9 @@ fun interface ConversationGroundedReplyPolicy {
     ): ConversationResult<String>
 
     suspend fun checkCurrent(evidence: ConversationEvidenceSet): Boolean = true
+
+    fun rejectionReason(
+        reply: GroundedReply,
+        evidence: ConversationEvidenceSet,
+    ): ManualReplyRejection? = null
 }

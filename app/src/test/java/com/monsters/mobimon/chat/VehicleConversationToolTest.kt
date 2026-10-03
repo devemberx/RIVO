@@ -11,7 +11,6 @@ import com.monsters.mobimon.core.domain.VehicleSnapshot
 import kotlinx.coroutines.test.runTest
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -57,7 +56,9 @@ class VehicleConversationToolTest {
             listOf("basic", "Vehicle.Speed", "all", "BATTERY", "battery;service").forEach {
                 assertEquals(ConversationToolResult.Unavailable, tool.execute(call(it)))
             }
-            assertFalse(overview.content.contains("72"))
+            // Capture IDs are random and may contain digits; check vehicle values, not metadata.
+            val fields = JSONObject(overview.content).getJSONArray("fields")
+            repeat(fields.length()) { index -> assertTrue(fields.getJSONObject(index).isNull("value")) }
         }
 
     private fun call(topic: String) = ConversationToolCall("id", "get_vehicle_context", topic)

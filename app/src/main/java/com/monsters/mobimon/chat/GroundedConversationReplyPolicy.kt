@@ -7,6 +7,7 @@ import com.monsters.mobimon.core.domain.ConversationReplyPolicy
 import com.monsters.mobimon.core.domain.ConversationResult
 import com.monsters.mobimon.core.domain.ConversationToolResult
 import com.monsters.mobimon.core.domain.GroundedReply
+import com.monsters.mobimon.core.domain.ManualReplyRejection
 import com.monsters.mobimon.core.domain.VehicleChatCapture
 import com.monsters.mobimon.core.domain.VehicleChatEvidenceSource
 import com.monsters.mobimon.core.domain.VehicleChatField
@@ -15,76 +16,124 @@ import com.monsters.mobimon.core.domain.VehicleChatTopic
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** Checks provenance and renders referenced facts, not arbitrary prose semantics. */
+/** Fixed rejection metadata; never includes dialogue, vehicle values or evidence IDs. */
+enum class GroundedReplyRejection {
+    ENVELOPE,
+    MANUAL_LOOKUP_DISCARDED,
+    VEHICLE_REFERENCES,
+    VEHICLE_MARKERS,
+    MANUAL_REFERENCES,
+    MISSING_VEHICLE_EVIDENCE,
+    MANUAL_ANSWER,
+}
+
+/** Revalidates referenced evidence and preserves AI-authored prose; does not prove its semantics. */
 class GroundedConversationReplyPolicy(
     private val source: VehicleChatEvidenceSource,
     private val manual: ConversationReplyPolicy? = null,
+    private val onRejected: (GroundedReplyRejection) -> Unit = {},
 ) : ConversationGroundedReplyPolicy {
     override suspend fun checkCurrent(evidence: ConversationEvidenceSet): Boolean =
         sameSession(evidence, source.capture(VehicleChatTopic.BASIC))
+
+    override fun rejectionReason(
+        reply: GroundedReply,
+        evidence: ConversationEvidenceSet,
+    ): ManualReplyRejection? =
+        if (reply.status == "ANSWERED") {
+            manual?.rejectionReason(manualReply(reply), manualEvidence(evidence))
+        } else {
+            null
+        }
 
     override suspend fun accept(
         reply: GroundedReply,
         evidence: ConversationEvidenceSet,
     ): ConversationResult<String> {
-        if (reply.version != 1 || reply.text.isBlank() || reply.text.length > 12_000) return failure()
-        if (reply.status == "CONVERSATION" && evidence.manualSources.isNotEmpty()) return failure()
+        if (reply.version != 1 || reply.text.isBlank() || reply.text.length > 12_000) {
+            return failure(GroundedReplyRejection.ENVELOPE)
+        }
+        if (reply.status == "CONVERSATION" && evidence.manualLookupAttempted) {
+            return failure(GroundedReplyRejection.MANUAL_LOOKUP_DISCARDED)
+        }
         val refs = reply.vehicleRefs
-        if (refs.size > 32 || refs.distinct().size != refs.size) return failure()
-        val markers = Regex("\\{\\{vehicle:([0-9]+)}}").findAll(reply.text).toList()
-        if (markers.map { it.groupValues[1] }.sorted() != refs.indices.map(Int::toString).sorted()) return failure()
-        if (reply.text.replace(Regex("\\{\\{vehicle:([0-9]+)}}"), "").contains("{{vehicle")) return failure()
-        if (reply.sourceIds.distinct().size != reply.sourceIds.size || reply.sourceIds.size > 4) return failure()
+        if (refs.size > 32 ||
+            refs.distinct().size != refs.size
+        ) {
+            return failure(GroundedReplyRejection.VEHICLE_REFERENCES)
+        }
+        // Obsolete protocol tokens must be corrected by the model, never rendered as canned prose.
+        if (reply.text.contains("{{vehicle")) {
+            return failure(GroundedReplyRejection.VEHICLE_MARKERS)
+        }
+        if (reply.sourceIds.distinct().size != reply.sourceIds.size || reply.sourceIds.size > 4) {
+            return failure(GroundedReplyRejection.MANUAL_REFERENCES)
+        }
         if (reply.status != "ANSWERED" &&
             (
                 reply.sourceIds.isNotEmpty() ||
-                    Regex("\\[(?:ne1-|[0-9])[^\\]]*]").containsMatchIn(reply.text)
+                    sourceReference.containsMatchIn(reply.text)
             )
         ) {
-            return failure()
+            return failure(GroundedReplyRejection.MANUAL_REFERENCES)
         }
         when (reply.status) {
-            "VEHICLE" -> if (refs.isEmpty()) return failure()
-            "ANSWERED" -> if (reply.sourceIds.isEmpty() || manual == null) return failure()
+            "VEHICLE" -> if (refs.isEmpty()) return failure(GroundedReplyRejection.VEHICLE_REFERENCES)
+            "ANSWERED" ->
+                if (reply.sourceIds.isEmpty() ||
+                    manual == null
+                ) {
+                    return failure(GroundedReplyRejection.MANUAL_REFERENCES)
+                }
             "CONVERSATION", "NEEDS_CLARIFICATION", "OUT_OF_SCOPE", "NO_EVIDENCE" -> {
-                if (refs.isNotEmpty()) return failure()
+                if (refs.isNotEmpty()) return failure(GroundedReplyRejection.VEHICLE_REFERENCES)
             }
-            else -> return failure()
+            else -> return failure(GroundedReplyRejection.ENVELOPE)
         }
         val current = source.capture(VehicleChatTopic.OVERVIEW)
         if (!sameSession(evidence, current)) return ConversationResult.Failure(ConversationProblem.RESTRICTED)
-        val facts =
-            refs.map { reference ->
-                val captured = evidence.capture(reference.evidenceId) ?: return failure()
-                val original = captured.field(reference.fieldId) ?: return failure()
-                val latest = current.field(reference.fieldId) ?: return failure()
-                if (!compatible(
-                        original,
-                        latest,
-                        captured,
-                        current,
-                    )
-                ) {
-                    return ConversationResult.Failure(ConversationProblem.NO_EVIDENCE)
-                }
-                VehicleFactRenderer.render(original, captured.sourceKind)
+        refs.forEach { reference ->
+            val captured =
+                evidence.capture(reference.evidenceId)
+                    ?: return failure(GroundedReplyRejection.MISSING_VEHICLE_EVIDENCE)
+            val original =
+                captured.field(reference.fieldId) ?: return failure(GroundedReplyRejection.MISSING_VEHICLE_EVIDENCE)
+            val latest =
+                current.field(reference.fieldId) ?: return failure(GroundedReplyRejection.MISSING_VEHICLE_EVIDENCE)
+            if (!compatible(
+                    original,
+                    latest,
+                    captured,
+                    current,
+                )
+            ) {
+                return ConversationResult.Failure(ConversationProblem.NO_EVIDENCE)
             }
-        val rendered = Regex("\\{\\{vehicle:([0-9]+)}}").replace(reply.text) { facts[it.groupValues[1].toInt()] }
+        }
         if (reply.status == "NO_EVIDENCE") return ConversationResult.Failure(ConversationProblem.NO_EVIDENCE)
         if (reply.status == "ANSWERED") {
-            return manual!!.accept(
-                JSONObject()
-                    .put(
-                        "status",
-                        "ANSWERED",
-                    ).put("text", rendered)
-                    .put("sourceIds", JSONArray(reply.sourceIds))
-                    .toString(),
-                ConversationToolResult.Found("", evidence.manualSources),
-            )
+            val result =
+                manual!!.accept(
+                    manualReply(reply),
+                    manualEvidence(evidence),
+                )
+            if (result is ConversationResult.Failure && result.problem == ConversationProblem.PROVIDER) {
+                onRejected(GroundedReplyRejection.MANUAL_ANSWER)
+            }
+            return result
         }
-        return ConversationResult.Success(rendered)
+        return ConversationResult.Success(reply.text)
     }
+
+    private fun manualReply(reply: GroundedReply): String =
+        JSONObject()
+            .put("status", "ANSWERED")
+            .put("text", reply.text)
+            .put("sourceIds", JSONArray(reply.sourceIds))
+            .toString()
+
+    private fun manualEvidence(evidence: ConversationEvidenceSet): ConversationToolResult.Found =
+        ConversationToolResult.Found("", evidence.manualSources, manualLookupAttempted = evidence.manualLookupAttempted)
 
     private fun sameSession(
         evidence: ConversationEvidenceSet,
@@ -115,5 +164,13 @@ class GroundedConversationReplyPolicy(
         return old.value == latest.value
     }
 
-    private fun failure() = ConversationResult.Failure(ConversationProblem.PROVIDER)
+    private fun failure(reason: GroundedReplyRejection): ConversationResult.Failure {
+        onRejected(reason)
+        return ConversationResult.Failure(ConversationProblem.PROVIDER)
+    }
+
+    private companion object {
+        // Android's ICU regex engine requires literal closing delimiters to be escaped.
+        val sourceReference = Regex("\\[(?:ne1-|[0-9])[^\\]]*\\]")
+    }
 }

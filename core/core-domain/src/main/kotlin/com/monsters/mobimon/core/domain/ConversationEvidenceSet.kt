@@ -8,6 +8,8 @@ class ConversationEvidenceSet(
     private val manual = linkedMapOf<String, ConversationEvidence>()
     val vehicle: List<VehicleChatCapture> get() = captures.values.toList()
     val manualSources: List<ConversationEvidence> get() = manual.values.toList()
+    var manualLookupAttempted: Boolean = false
+        private set
 
     init {
         initial?.let { captures[it.evidenceId] = it }
@@ -24,6 +26,7 @@ class ConversationEvidenceSet(
             require(manual[it.id]?.let { previous -> previous != it } != true)
             manual[it.id] = it
         }
+        manualLookupAttempted = manualLookupAttempted || result.manualLookupAttempted || result.evidence.isNotEmpty()
     }
 
     override fun toString() = "ConversationEvidenceSet(REDACTED)"

@@ -107,23 +107,34 @@ replay. A 401 invalidates only its credential revision. Release logging is off;
 provider bodies, dialogue and tokens never enter logs/errors.
 
 [Tool contracts](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/ConversationTools.kt)
-are pure Kotlin. Debug registers manual search and read-only `get_vehicle_context(topic)`;
-Release registers no tools but uses the same checked reply policy. Sequential validated
+are pure Kotlin. Debug registers manual search and read-only `get_vehicle_context(topic)`.
+[Per-turn routing](../app/src/debug/java/com/monsters/mobimon/chat/VehicleToolRouting.kt)
+restricts recognized current-state requests and their user-context evidence follow-ups to
+vehicle tools; mixed or unrecognized requests retain both. Empty manual results supply
+no citations and do not discard valid vehicle evidence. Release registers no tools but
+uses the same checked reply policy. Sequential validated
 batches share a [turn budget](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/ConversationExecutionBudget.kt):
 30 seconds, 64,000 estimated prompt plus reserved output tokens, 64,000 characters per
 and combined tool results, and 12,000 reply characters. Counts are not fixed. Repeated
 normalized queries with unchanged semantic evidence stop; receipt/ticker changes alone
-are not progress. Identity, Park and source/session checks remain enforced. No automatic
-replay, commands or rewards are available. Synthetic Debug probes do not establish live compatibility.
+are not progress. Identity, Park and source/session checks remain enforced. HTTP failures are not
+automatically replayed; no commands or rewards are available. Synthetic Debug probes do not establish live compatibility.
 
 The pinned 2027 Korean IONIQ 5 bundle fails closed on missing assets; it cannot supply
 current vehicle state. Manual claims need current-turn sources and
 [checked citations](../app/src/debug/java/com/monsters/mobimon/manual/ManualReplyPolicy.kt).
-All app replies use a versioned envelope with separate manual IDs and vehicle references;
-[acceptance](../app/src/main/java/com/monsters/mobimon/chat/GroundedConversationReplyPolicy.kt)
-renders vehicle values/units and rechecks source, session, value and validity before storage.
+All app replies use a versioned envelope with separate manual IDs and vehicle references.
+Unused manual/vehicle reference arrays may be omitted and default to empty; required references remain enforced by
+[acceptance](../app/src/main/java/com/monsters/mobimon/chat/GroundedConversationReplyPolicy.kt), which
+preserves AI-authored prose and rechecks referenced source, session, value and validity before storage.
 Equal-value receipts remain acceptable; a changed value rejects the answer without substitution.
-Reference checks do not prove routing or arbitrary prose semantics.
+Tools provide structured values, units, signal labels and code meanings; the AI owns explanation and persona.
+There is no vehicle fact substitution or canned reply fallback. Obsolete placeholders require model correction.
+An invalid final envelope, completed non-text body or reference contract gets at most one correction request using the same
+turn evidence, with tools disabled and the original time/token budget and guards. Only a revalidated
+answer is stored; manual corrections identify the citation failure and allowed current-turn source IDs without relaxing
+membership or inline-order checks. Network, explicit refusal, changed evidence and authorization failures do not trigger correction.
+Reference checks do not prove routing, numerical accuracy or arbitrary prose semantics.
 
 Basic context retains bounded AAOS name, battery, vehicle clock, condition and reasons;
 [the shared reader](../app/src/main/java/com/monsters/mobimon/chat/VehicleChatEvidenceReader.kt)

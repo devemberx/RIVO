@@ -114,19 +114,26 @@ internal class OkHttpCopilotApi(
         tools: ConversationTools,
         guard: suspend () -> Unit,
     ): String {
-        if (tools.tools.isEmpty() &&
-            tools.groundedReplyPolicy == null
+        val turnTools = tools.forTurn(messages)
+        if (turnTools.tools.isEmpty() &&
+            turnTools.groundedReplyPolicy == null
         ) {
-            return super.completeWithTools(access, model, friendId, messages, tools, guard)
+            return super.completeWithTools(access, model, friendId, messages, turnTools, guard)
         }
         if (model.api != CopilotChatApi.CHAT_COMPLETIONS) fail(ConversationProblem.PROVIDER)
         guard()
         val captured = context.current()
         val request =
             withContext(Dispatchers.Default) {
-                CopilotMessageCodec.request(model, friendId, messages, captured, toolsEnabled = true)
+                CopilotMessageCodec.request(
+                    model,
+                    friendId,
+                    messages,
+                    captured,
+                    toolsEnabled = turnTools.tools.isNotEmpty(),
+                )
             }
-        return CopilotToolConversation(model, tools, {
+        return CopilotToolConversation(model, turnTools, {
             exchange(access, CopilotChatApi.CHAT_COMPLETIONS, it)
         }, guard, turnEvidence = ConversationEvidenceSet(captured.vehicleCapture)).run(request)
     }

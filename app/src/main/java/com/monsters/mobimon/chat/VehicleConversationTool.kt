@@ -19,9 +19,9 @@ class VehicleConversationTool(
     override val definition =
         ConversationToolDefinition(
             "get_vehicle_context",
-            "Read current app-observed vehicle fields by topic. Use for details absent from basic context. Unavailable fields remain unknown; this tool cannot read unregistered signals or control the vehicle.",
+            "Read app-observed vehicle fields missing from this turn's basic context. Returns evidenceId, source, fields with validity and meanings, and condition reasons. This is a cached read, not a sensor refresh or command; unavailable fields remain unknown.",
             "topic",
-            "overview gives basic facts and category coverage; a specific topic returns all registered fields in that category.",
+            "Choose the specific topic for detailed questions, e.g. tires for tire warnings or charging for charging state. overview returns basic facts and category coverage only, not all detailed values; condition explains expression triggers. Use an allowed topic.",
             32,
             VehicleChatTopic.entries.filter { it != VehicleChatTopic.BASIC }.map { it.name.lowercase() },
         )

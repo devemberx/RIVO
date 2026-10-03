@@ -40,6 +40,7 @@ sealed interface ConversationToolResult {
         val content: String,
         val evidence: List<ConversationEvidence> = emptyList(),
         val vehicleCapture: VehicleChatCapture? = null,
+        val manualLookupAttempted: Boolean = false,
     ) : ConversationToolResult {
         override fun toString() = "ConversationToolResult.Found(REDACTED)"
     }
@@ -64,6 +65,21 @@ fun interface ConversationReplyPolicy {
         text: String,
         result: ConversationToolResult.Found?,
     ): ConversationResult<String>
+
+    /** Fixed metadata for a rejected answer; never contains provider prose or source IDs. */
+    fun rejectionReason(
+        text: String,
+        result: ConversationToolResult.Found?,
+    ): ManualReplyRejection? = null
+}
+
+enum class ManualReplyRejection {
+    ENVELOPE,
+    SOURCE_IDS,
+    UNKNOWN_SOURCE,
+    NUMERIC_CITATIONS,
+    MISSING_CITATIONS,
+    CITATION_MISMATCH,
 }
 
 data class ConversationToolUsage(
@@ -81,12 +97,26 @@ class ConversationTools(
     val replyPolicy: ConversationReplyPolicy = ConversationReplyPolicy { text, _ -> ConversationResult.Success(text) },
     val onUsage: (ConversationToolUsage) -> Unit = {},
     val groundedReplyPolicy: ConversationGroundedReplyPolicy? = null,
+    private val selectTools: ((List<ConversationTurn>) -> Set<String>?)? = null,
 ) {
     val tools: List<ConversationTool> = tools.toList()
 
     init {
         require(tools.size <= 4 && tools.map { it.definition.name }.distinct().size == tools.size)
         require(instruction.length <= 8000)
+    }
+
+    /** Null preserves the registry; a selection can only remove registered tools for this turn. */
+    fun forTurn(messages: List<ConversationTurn>): ConversationTools {
+        val selected = selectTools?.invoke(messages.toList()) ?: return this
+        require(selected.all { name -> tools.any { it.definition.name == name } })
+        return ConversationTools(
+            tools.filter { it.definition.name in selected },
+            instruction,
+            replyPolicy,
+            onUsage,
+            groundedReplyPolicy,
+        )
     }
 
     companion object {

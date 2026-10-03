@@ -9,6 +9,7 @@ import com.monsters.mobimon.core.domain.ConversationResult
 import com.monsters.mobimon.core.domain.ConversationToolResult
 import com.monsters.mobimon.core.domain.ConversationToolUsage
 import com.monsters.mobimon.core.domain.ConversationTools
+import com.monsters.mobimon.core.domain.ManualReplyRejection
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -43,6 +44,8 @@ internal class CopilotToolConversation(
         val callIds = mutableSetOf<String>()
         val seenResults = mutableSetOf<Pair<String, String>>()
         var legacyEvidence: ConversationToolResult.Found? = null
+        var correctingReply = false
+        var evidenceClaimRejected = false
 
         suspend fun check() {
             guard()
@@ -90,6 +93,8 @@ internal class CopilotToolConversation(
             while (true) {
                 when (val reply = send()) {
                     is CopilotToolReply.Calls -> {
+                        // Correction uses existing evidence only; never execute another batch.
+                        if (correctingReply) throw ConversationException(ConversationProblem.PROVIDER)
                         // Entire batch is validated, including IDs from previous batches, before any execution.
                         if (reply.values.any { it.id in callIds }) {
                             throw ConversationException(
@@ -142,7 +147,11 @@ internal class CopilotToolConversation(
                                 ) {
                                     result
                                 } else {
-                                    ConversationToolResult.Found(result.content, turnEvidence.manualSources)
+                                    ConversationToolResult.Found(
+                                        result.content,
+                                        turnEvidence.manualSources,
+                                        manualLookupAttempted = turnEvidence.manualLookupAttempted,
+                                    )
                                 }
                             check()
                             request.getJSONArray("messages").put(
@@ -155,9 +164,58 @@ internal class CopilotToolConversation(
                     }
                     is CopilotToolReply.Final -> {
                         check()
+                        var manualRejection: ManualReplyRejection? = null
                         val result =
-                            tools.groundedReplyPolicy?.accept(GroundedReplyCodec.parse(reply.text), turnEvidence)
-                                ?: tools.replyPolicy.accept(reply.text, legacyEvidence)
+                            try {
+                                val grounded = tools.groundedReplyPolicy
+                                if (grounded == null) {
+                                    tools.replyPolicy.accept(reply.text, legacyEvidence)
+                                } else {
+                                    val parsed = GroundedReplyCodec.parse(reply.text)
+                                    if (correctingReply && evidenceClaimRejected && parsed.status == "CONVERSATION") {
+                                        ConversationResult.Failure(ConversationProblem.PROVIDER)
+                                    } else {
+                                        evidenceClaimRejected =
+                                            evidenceClaimRejected ||
+                                            parsed.status in setOf("VEHICLE", "ANSWERED")
+                                        grounded.accept(parsed, turnEvidence).also { accepted ->
+                                            if (accepted is ConversationResult.Failure &&
+                                                accepted.problem == ConversationProblem.PROVIDER
+                                            ) {
+                                                manualRejection = grounded.rejectionReason(parsed, turnEvidence)
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (error: ConversationException) {
+                                if (error.problem != ConversationProblem.PROVIDER) throw error
+                                ConversationResult.Failure(error.problem)
+                            }
+                        if (result is ConversationResult.Failure &&
+                            result.problem == ConversationProblem.PROVIDER &&
+                            tools.groundedReplyPolicy != null &&
+                            !correctingReply
+                        ) {
+                            // A new, bounded correction request, not a replay of a failed HTTP request.
+                            // Nothing from the rejected answer is stored or shown to the user.
+                            check()
+                            correctingReply = true
+                            evidenceClaimRejected = evidenceClaimRejected || executions > 0
+                            request.remove("tools")
+                            request.remove("tool_choice")
+                            val messages = request.getJSONArray("messages")
+                            if (reply.text.isNotBlank()) {
+                                messages.put(JSONObject().put("role", "assistant").put("content", reply.text))
+                            }
+                            messages.put(
+                                JSONObject().put("role", "user").put(
+                                    "content",
+                                    GroundedReplyCodec.correctionInstruction(manualRejection, turnEvidence),
+                                ),
+                            )
+                            CopilotDiagnostics.replyCorrection(manualRejection)
+                            continue
+                        }
                         val accepted =
                             when (result) {
                                 is ConversationResult.Success -> result.value

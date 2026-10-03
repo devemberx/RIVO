@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.monsters.mobimon.chat.GroundedConversationReplyPolicy
 import com.monsters.mobimon.chat.VehicleConversationTool
+import com.monsters.mobimon.chat.VehicleToolRouting
 import com.monsters.mobimon.core.domain.ConversationTools
 import com.monsters.mobimon.core.domain.ManualRetriever
 import com.monsters.mobimon.core.domain.VehicleChatEvidenceSource
@@ -34,9 +35,13 @@ object ConversationToolsModule {
         val manual = ManualConversationTools.create(retriever) { Log.i("MobiMonManual", it.toString()) }
         return ConversationTools(
             manual.tools + VehicleConversationTool(evidence),
-            manual.instruction.substringBefore("# Response contract"),
+            ManualConversationTools.groundingInstruction,
             onUsage = manual.onUsage,
-            groundedReplyPolicy = GroundedConversationReplyPolicy(evidence, manual.replyPolicy),
+            groundedReplyPolicy =
+                GroundedConversationReplyPolicy(evidence, manual.replyPolicy) {
+                    Log.i("MobiMonCopilot", "replyRejected reason=$it")
+                },
+            selectTools = VehicleToolRouting::select,
         )
     }
 }

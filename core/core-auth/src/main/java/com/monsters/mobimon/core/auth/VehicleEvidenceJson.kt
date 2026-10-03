@@ -2,6 +2,7 @@ package com.monsters.mobimon.core.auth
 
 import com.monsters.mobimon.core.domain.VehicleChatCapture
 import com.monsters.mobimon.core.domain.VehicleChatFieldCatalog
+import com.monsters.mobimon.core.domain.VehicleChatFieldMeaning
 import com.monsters.mobimon.core.domain.VehicleValue
 import org.json.JSONArray
 import org.json.JSONObject
@@ -28,7 +29,9 @@ object VehicleEvidenceJson {
                         put(
                             JSONObject()
                                 .put("id", field.spec.id)
+                                .put("label", VehicleChatFieldMeaning.label(field.spec.id))
                                 .put("value", value)
+                                .put("valueMeaning", VehicleChatFieldMeaning.valueMeaning(field) ?: JSONObject.NULL)
                                 .put("unit", field.spec.unit ?: JSONObject.NULL)
                                 .put("quality", field.validity.quality.name)
                                 .put("unavailableReason", field.validity.reason ?: JSONObject.NULL)
