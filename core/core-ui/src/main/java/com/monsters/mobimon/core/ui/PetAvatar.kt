@@ -494,18 +494,22 @@ fun PetAvatar(
                 val showMobiStatus = (isSick || isHungry) && !isDisappearing
 
                 when {
-                    isDisappearing && !showMobiRun ->
-                        MobiDisappearAnimation(Modifier.fillMaxSize(), onDisappeared)
                     showMobiStatus || !showMobiRun ->
-                        MobiIdleBreathAnimation(
+                        MobiDisappearAnimation(
                             modifier = Modifier.fillMaxSize(),
-                            accessoryId = equippedAccessory,
-                            fallbackAsset = CharacterArtwork.preview(friendId, equippedAccessory),
-                            vehicleWarning = isSick,
-                            vehicleHungry = isHungry,
-                            animateNormal = isAnimated && hasMobiIdleSprite,
-                            motionEnabled = motionEnabled,
-                        )
+                            onFinished = onDisappeared,
+                            isDisappearing = isDisappearing,
+                        ) {
+                            MobiIdleBreathAnimation(
+                                modifier = Modifier.fillMaxSize(),
+                                accessoryId = equippedAccessory,
+                                fallbackAsset = CharacterArtwork.preview(friendId, equippedAccessory),
+                                vehicleWarning = isSick,
+                                vehicleHungry = isHungry,
+                                animateNormal = isAnimated && hasMobiIdleSprite,
+                                motionEnabled = motionEnabled,
+                            )
+                        }
                     else ->
                         MobiRunAnimation(
                             modifier = Modifier.fillMaxSize(),

@@ -3,6 +3,7 @@ package com.monsters.mobimon.core.ui
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidth
@@ -19,8 +20,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -28,15 +32,22 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/** One shot at 15fps; the last two atlas cells are fully transparent. */
+internal const val MOBI_DEPARTURE_HANDOFF_NANOS = 160_000_000L
+internal const val MOBI_DEPARTURE_DURATION_NANOS = MOBI_DEPARTURE_HANDOFF_NANOS + 1_600_000_000L
+
+/** Retain the live idle while loading, then hand off to the size/ground-aligned exit. */
 @Composable
 internal fun MobiDisappearAnimation(
     modifier: Modifier,
     onFinished: () -> Unit,
+    isDisappearing: Boolean,
+    idleContent: @Composable () -> Unit,
 ) {
     val context = LocalContext.current.applicationContext
     val finished by rememberUpdatedState(onFinished)
-    val sheet by produceState<Pair<Boolean, ImageBitmap?>>(false to null, context) {
+    val sheet by produceState<Pair<Boolean, ImageBitmap?>>(false to null, context, isDisappearing) {
+        value = false to null
+        if (!isDisappearing) return@produceState
         val bitmap =
             withContext(Dispatchers.IO) {
                 try {
@@ -55,30 +66,52 @@ internal fun MobiDisappearAnimation(
         value = true to bitmap
     }
     val elapsed = remember { mutableLongStateOf(0L) }
-    LaunchedEffect(sheet) {
-        if (!sheet.first) return@LaunchedEffect
+    LaunchedEffect(isDisappearing, sheet) {
+        elapsed.longValue = 0L
+        if (!isDisappearing || !sheet.first) return@LaunchedEffect
         if (sheet.second != null) {
             val start = withFrameNanos { it }
-            while (elapsed.longValue < 1_600_000_000L) {
+            while (elapsed.longValue < MOBI_DEPARTURE_DURATION_NANOS) {
                 elapsed.longValue = withFrameNanos { it } - start
             }
         }
         finished()
     }
     val bitmap = sheet.second
-    if (bitmap != null) {
-        Box(
-            modifier.mobiSpriteFrames(bitmap, 6, 4, loop = false, blendFrames = false) {
-                (elapsed.longValue / (1_000_000_000.0 / 15)).toInt().coerceAtMost(23).toFloat()
-            },
-        ) {
-            // Frames 2–6: surprise, before the burrowing effect starts.
-            if (elapsed.longValue in DEPARTURE_SURPRISE_NANOS) {
+    val handoff =
+        if (isDisappearing && bitmap != null) {
+            (elapsed.longValue.toFloat() / MOBI_DEPARTURE_HANDOFF_NANOS).coerceIn(0f, 1f)
+        } else {
+            0f
+        }
+    Box(modifier) {
+        if (handoff < 1f) {
+            Box(Modifier.fillMaxSize().graphicsLayer { alpha = 1f - handoff }) { idleContent() }
+        }
+        if (isDisappearing && bitmap != null) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .testTag("mobi-departure-sprite")
+                    .graphicsLayer {
+                        // Uniform correction for the exit atlas's extra padding. Never animate scale down.
+                        scaleX = 1.12f
+                        scaleY = 1.12f
+                        transformOrigin = TransformOrigin(635.5f / 1254f, 1170f / 1254f)
+                        translationX = size.minDimension * (-14f / 1254f)
+                        translationY = size.minDimension * (-48.24f / 1254f)
+                        alpha = handoff
+                        clip = false
+                    }.mobiSpriteFrames(bitmap, 6, 4, loop = false, blendFrames = false) {
+                        val playback = (elapsed.longValue - MOBI_DEPARTURE_HANDOFF_NANOS).coerceAtLeast(0L)
+                        (playback / (1_000_000_000.0 / 15)).toInt().coerceAtMost(23).toFloat()
+                    },
+            )
+            val playback = elapsed.longValue - MOBI_DEPARTURE_HANDOFF_NANOS
+            if (playback in DEPARTURE_SURPRISE_NANOS) {
                 DepartureSurpriseBubble(Modifier.align(Alignment.TopStart))
             }
         }
-    } else if (!sheet.first) {
-        CharacterAssetImage(CharacterArtwork.preview("friend:mobi", null), modifier)
     }
 }
 
