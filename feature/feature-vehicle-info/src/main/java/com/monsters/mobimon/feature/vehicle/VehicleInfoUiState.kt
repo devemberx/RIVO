@@ -8,19 +8,11 @@ import com.monsters.mobimon.core.presentation.vehicleCondition
 
 internal typealias VehicleCondition = com.monsters.mobimon.core.presentation.VehicleCondition
 
-internal enum class DriverAssistWarning { EMERGENCY_BRAKING, DROWSY, DISTRACTED }
-
 internal data class VehicleInfoUiState(
     val condition: VehicleCondition,
     val batteryPercent: Int?,
     val tireStatus: String?,
     val tireWarning: VehicleWarning?,
-    val outsideTemperature: Int?,
-    val isRaining: Boolean?,
-    val attentionLevel: Int?,
-    val frontDistance: Int?,
-    val assistWarning: DriverAssistWarning?,
-    val assistChecked: Boolean,
 )
 
 internal fun VehicleSnapshot.toVehicleInfoUiState(): VehicleInfoUiState {
@@ -34,25 +26,10 @@ internal fun VehicleSnapshot.toVehicleInfoUiState(): VehicleInfoUiState {
                 it.severity != WarningSeverity.NOTICE &&
                 (it.item.contains("타이어") || it.item.contains("바퀴"))
         }
-    val assistWarning =
-        when {
-            current?.isEmergencyBraking == true -> DriverAssistWarning.EMERGENCY_BRAKING
-            current?.isDrowsy == true -> DriverAssistWarning.DROWSY
-            current?.isDistracted == true -> DriverAssistWarning.DISTRACTED
-            else -> null
-        }
-    val assistChecked =
-        current?.isEmergencyBraking != null && current.isDrowsy != null && current.isDistracted != null
     return VehicleInfoUiState(
         condition = vehicleCondition(),
         batteryPercent = battery,
         tireStatus = tire,
         tireWarning = tireWarning,
-        outsideTemperature = current?.outsideTemperature,
-        isRaining = current?.isRaining,
-        attentionLevel = current?.attentionLevel,
-        frontDistance = current?.distanceToFrontVehicle,
-        assistWarning = assistWarning,
-        assistChecked = assistChecked,
     )
 }

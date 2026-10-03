@@ -168,9 +168,12 @@ and keep companion artwork clear of its caption when the keyboard opens.
 
 ## Vehicle information
 
-[Vehicle exports](ui/README.md#vehicle) define layout. Six default cards use icon,
-text and accessible status labels; the selector excludes assigned cards and saves
-alternatives only after confirmation. Label Debug data as simulations.
+[Vehicle exports](ui/README.md#vehicle) define layout. The six default cards are
+battery remaining, tire pressure, front windshield washer fluid, low-beam warning,
+driver fatigue and distance to service. The grouped External environment and Driver
+assistance cards are retired; their individual signal cards remain selectable.
+Cards use icon, text and accessible status labels; the selector excludes assigned
+cards and saves alternatives only after confirmation. Label Debug data as simulations.
 Distinguish Info, Normal, Caution and Unavailable. Missing/stale/invalid is never
 Normal; all four wheels are required for a Normal tire state, while a confirmed
 warning may show Caution. Low battery/washer maps to Hungry; vehicle/assistance
@@ -196,7 +199,7 @@ disconnect confirms local-only removal.
 
 Las (라스) is a 500-point character using the unchanged robot master. Its idle renderer keeps the master body fixed while gently waving the connected raised arm from the shoulder,
 shortening the eye symmetrically and fading the head lights. It respects the shared
-motion preference; the generated atlas is retained as source reference, not playback. Hungry uses a separate 24-frame 6×4 RGBA atlas: low-battery blink, an attempted plug connection, a disappearing socket, disappointment, then return to idle. Its padded canvas preserves the idle character scale and keeps the socket/cord inside each frame; reduced motion holds a battery-warning pose. The seated position and crown-to-sole size stay anchored. The cord is stowed without turning around, and both loop endpoints rest the hand on the knee without raising it. Moving poses advance continuously; only battery flashes and idle endpoints pause. Vehicle warnings retain priority over hungry. Sick uses a separate 24-frame sprite loop baked from one fixed body and a rigid head: three fixed face-lamp sectors dim and recover, the ECG flatlines then resumes, and the head tilts sideways once without scaling. Body, arms and feet remain identical across frames; sick emotion or a vehicle warning selects the loop, and reduced motion holds a malfunction pose.
+motion preference; the generated atlas is retained as source reference, not playback. When moving normally, Las switches directly to a transparent robot-dance sprite mirrored for direction and returns directly to idle when movement stops; reduced motion stays idle. The floating overlay plays the normal 6×4 portal sprites when Las appears or disappears, blending their seated endpoints with idle, showing Las's "I'll be back." bubble during early exit, and hiding the overlay only after the exit finishes. Hungry uses a separate 24-frame 6×4 RGBA atlas: low-battery blink, an attempted plug connection, a disappearing socket, disappointment, then return to idle. Its padded canvas preserves the idle character scale and keeps the socket/cord inside each frame; reduced motion holds a battery-warning pose. The seated position and crown-to-sole size stay anchored. The cord is stowed without turning around, and both loop endpoints rest the hand on the knee without raising it. Moving poses advance continuously; only battery flashes and idle endpoints pause. Vehicle warnings retain priority over hungry. Sick uses a separate 24-frame sprite loop baked from one fixed body and a rigid head: three fixed face-lamp sectors dim and recover, the ECG flatlines then resumes, and the head tilts sideways once without scaling. Body, arms and feet remain identical across frames; sick emotion or a vehicle warning selects the loop, and reduced motion holds a malfunction pose.
 
 Respect the shared motion preference; animation never authorizes commands. Settings
 controls only floating wandering; unknown/failed reads keep it stationary. Shell

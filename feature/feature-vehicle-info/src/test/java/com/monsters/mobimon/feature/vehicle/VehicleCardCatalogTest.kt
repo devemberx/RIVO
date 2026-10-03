@@ -21,11 +21,16 @@ class VehicleCardCatalogTest {
     }
 
     @Test
-    fun initialSlotsMatchTheSixFigmaCards() {
+    fun initialSlotsShowSixIndividualVehicleReadings() {
         assertEquals(
-            listOf("battery", "charging", "tire", "washer", "environment", "assist"),
+            listOf("battery", "tire", "washer", "low-beam", "fatigue", "service-distance"),
             VehicleCardCatalog.defaultSlots.map { it.id },
         )
+        assertNull(VehicleCardCatalog.find("environment"))
+        assertNull(VehicleCardCatalog.find("assist"))
+        assertNotNull(VehicleCardCatalog.find("air-temperature"))
+        assertNotNull(VehicleCardCatalog.find("fatigue"))
+        assertNotNull(VehicleCardCatalog.find("distraction"))
     }
 
     @Test
@@ -66,14 +71,14 @@ class VehicleCardCatalogTest {
         assertEquals("18%", VehicleCardCatalog.reading("battery", current)?.value)
         assertEquals("충전 중", VehicleCardCatalog.reading("charging", current)?.value)
         assertEquals("NG", VehicleCardCatalog.reading("tire", current)?.value)
-        assertEquals("18°", VehicleCardCatalog.reading("environment", current)?.value)
+        assertEquals("18°", VehicleCardCatalog.reading("air-temperature", current)?.value)
         assertEquals("68%", VehicleCardCatalog.reading("washer", current)?.value)
     }
 
     @Test
     fun simulatedDefaultsCoverEveryCardPathAndRenderAllThirtyCards() {
         val definitions = VehicleCardVssDefaults.definitions.associateBy { it.path }
-        val paths = (VehicleCardCatalog.cards + VehicleCardCatalog.defaultSlots).flatMap { it.vssPaths }
+        val paths = VehicleCardCatalog.allCards.flatMap { it.vssPaths }
         assertTrue(paths.all { it in definitions })
 
         val current = snapshot().copy(vssCardSignals = VehicleCardVssDefaults.values)
@@ -177,9 +182,8 @@ class VehicleCardCatalogTest {
                 "fatigue",
                 "distraction",
                 "charging",
-                "environment",
             )
-        val allIds = (VehicleCardCatalog.cards + VehicleCardCatalog.defaultSlots).map { it.id }.toSet()
+        val allIds = VehicleCardCatalog.allCards.map { it.id }.toSet()
         val normal =
             snapshot().copy(
                 batteryPercent = 72,
@@ -193,7 +197,7 @@ class VehicleCardCatalogTest {
                 vssCardSignals = VehicleCardVssDefaults.values,
             )
 
-        assertEquals(35, allIds.size)
+        assertEquals(33, allIds.size)
         infoIds.forEach { assertEquals(it, VehicleCardStatus.INFO, VehicleCardCatalog.status(it, normal)) }
         (allIds - infoIds).forEach { assertEquals(it, VehicleCardStatus.NORMAL, VehicleCardCatalog.status(it, normal)) }
     }

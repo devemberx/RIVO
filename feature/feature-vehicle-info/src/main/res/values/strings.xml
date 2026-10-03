@@ -31,8 +31,6 @@
   <string name="vehicle_battery_card_title">배터리 잔량</string>
   <string name="vehicle_driving_card_title">주행 상태</string>
   <string name="vehicle_tire_card_title">타이어 공기압</string>
-  <string name="vehicle_environment_card_title">외부 환경</string>
-  <string name="vehicle_assist_card_title">운전자 보조</string>
   <string name="vehicle_connection_card_title">차량 연결</string>
   <string name="vehicle_charging_card_title">충전 상태</string>
   <string name="vehicle_charging_active">충전 중</string>
@@ -79,18 +77,6 @@
   <string name="vehicle_tire_low_at_location">%1$s 공기압 낮음</string>
   <string name="vehicle_checked_badge">확인됨</string>
   <string name="vehicle_no_warning_badge">경고 없음</string>
-  <string name="vehicle_temperature_value">%1$d°C</string>
-  <string name="vehicle_raining">비가 감지되었어요</string>
-  <string name="vehicle_not_raining">비 감지 없음</string>
-  <string name="vehicle_weather_unknown">날씨 정보 없음</string>
-  <string name="vehicle_emergency_braking">급제동 신호가 있어요</string>
-  <string name="vehicle_drowsy">졸음 신호가 있어요</string>
-  <string name="vehicle_distracted">주의 분산 신호가 있어요</string>
-  <string name="vehicle_front_distance">앞차와 %1$d m</string>
-  <string name="vehicle_assist_no_issue">경고 없음</string>
-  <string name="vehicle_assist_checked_detail">확인된 경고 신호 기준</string>
-  <string name="vehicle_assist_unavailable">운전자 보조 정보 없음</string>
-  <string name="vehicle_attention_needed">주의 필요</string>
   <string name="vehicle_connection_live">연결됨</string>
   <string name="vehicle_connection_stale">갱신 필요</string>
   <string name="vehicle_connection_unavailable">연결 불가</string>

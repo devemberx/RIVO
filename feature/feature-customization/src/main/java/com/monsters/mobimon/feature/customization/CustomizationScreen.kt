@@ -238,6 +238,8 @@ fun CustomizationScreen(
                 pointBalance,
                 purchasing || submittedId != null,
                 enabled = enabled && selected?.id == confirming.id && !pointLoadFailed,
+                viewportWidth = maxWidth,
+                viewportHeight = maxHeight,
                 onDismiss = { confirmingId = null },
                 onConfirm = {
                     if (enabled && submittedId == null && pointBalance != null && pointBalance >= confirming.price) {

@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
@@ -120,9 +121,14 @@ internal val DEPARTURE_SURPRISE_NANOS = 66_666_667L until 400_000_000L
 
 /** Speech bubble beside the companion's head, aligned to the top start of its avatar slot. */
 @Composable
-internal fun DepartureSurpriseBubble(modifier: Modifier) {
+internal fun DepartureSurpriseBubble(
+    modifier: Modifier,
+    messageRes: Int = R.string.mobimon_departure_surprise,
+    width: Dp = 120.dp,
+    offsetX: Dp = 110.dp,
+) {
     Text(
-        text = stringResource(R.string.mobimon_departure_surprise),
+        text = stringResource(messageRes),
         color = Color(0xFF132238),
         fontSize = 18.sp,
         lineHeight = 24.sp,
@@ -130,8 +136,8 @@ internal fun DepartureSurpriseBubble(modifier: Modifier) {
         maxLines = 1,
         modifier =
             modifier
-                .offset(x = 110.dp, y = (-4).dp)
-                .requiredWidth(120.dp)
+                .offset(x = offsetX, y = (-4).dp)
+                .requiredWidth(width)
                 .background(
                     Color(0xFFFCFBF9),
                     SpeechBubbleShape(
