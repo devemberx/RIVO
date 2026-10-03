@@ -868,6 +868,13 @@ class QuestScreenTest {
         )
     }
 
+    @Test
+    fun lasCharacterDisplaysLasNameInModal() {
+        val reward = QuestRewardSuccess(DrivingQuestIds.SEATBELT, 5)
+        render(presentation(friend = "friend:las").copy(rewardSuccess = reward))
+        compose.onNodeWithText("작은 도전으로 라스와 함께 성장했어요.").assertIsDisplayed()
+    }
+
     private fun render(
         state: QuestScreenState,
         onClaim: (String) -> Unit = {},

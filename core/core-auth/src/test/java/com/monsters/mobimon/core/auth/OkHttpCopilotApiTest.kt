@@ -108,8 +108,9 @@ class OkHttpCopilotApiTest {
         assertTrue(mobi.contains("rabbit"))
         assertTrue(luna.contains("cat"))
         assertTrue(luna.contains("never distress or safety warnings"))
-        assertTrue(las.contains("friendly robot"))
         assertTrue(las.contains("Current-turn context"))
+        assertTrue(las.contains("terminator"))
+        assertTrue(las.contains("yellow"))
         assertTrue(mobi.contains("emoji"))
         assertTrue(luna.contains("banmal"))
     }

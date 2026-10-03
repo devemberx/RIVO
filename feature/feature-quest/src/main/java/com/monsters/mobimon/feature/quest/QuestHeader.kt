@@ -74,12 +74,10 @@ internal fun QuestHeader(
                 text =
                     stringResource(R.string.quest_header_subtitle).replace(
                         "모비",
-                        if (friendId ==
-                            "friend:luna"
-                        ) {
-                            "루나"
-                        } else {
-                            "모비"
+                        when (friendId) {
+                            "friend:luna" -> "루나"
+                            "friend:las" -> "라스"
+                            else -> "모비"
                         },
                     ),
                 style = questTextStyle(28f, scale, bold = false, color = Colors.muted),

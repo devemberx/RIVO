@@ -617,7 +617,11 @@ class FloatingCompanionService : Service() {
                             val shouldEnter =
                                 (hidden || isDisappearing) &&
                                     !appInForeground &&
-                                    (latestFriendId == "friend:mobi" || latestFriendId == "friend:luna")
+                                    (
+                                        latestFriendId == "friend:mobi" ||
+                                            latestFriendId == "friend:luna" ||
+                                            latestFriendId == "friend:las"
+                                    )
                             if (shouldEnter) {
                                 wanderJob?.cancel()
                                 wanderJob = null
