@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -158,7 +159,12 @@ internal fun LasTransitionAnimation(
             bitmap != null &&
             LasTransitionTimeline.showsDepartureBubble(elapsed.longValue)
         ) {
-            DepartureSurpriseBubble(Modifier.align(Alignment.TopStart))
+            DepartureSurpriseBubble(
+                modifier = Modifier.align(Alignment.TopStart),
+                messageRes = R.string.mobimon_las_departure,
+                width = 160.dp,
+                offsetX = 90.dp,
+            )
         }
     }
 }
