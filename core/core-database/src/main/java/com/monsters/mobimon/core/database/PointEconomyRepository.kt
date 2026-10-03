@@ -66,8 +66,12 @@ class PointEconomyRepository(
             } else {
                 val global =
                     equipped
-                        .filter { ':' !in it.slot }
-                        .associate { CosmeticSlot.valueOf(it.slot) to it.itemId }
+                        .filter {
+                            ':' !in it.slot &&
+                                !it.slot.contains("OVERLAY") &&
+                                !it.slot.contains("PROP") &&
+                                !it.slot.contains("EFFECT")
+                        }.associate { CosmeticSlot.valueOf(it.slot) to it.itemId }
                 val perFriend =
                     equipped
                         .filter { ':' in it.slot }
@@ -82,12 +86,42 @@ class PointEconomyRepository(
                     } else {
                         emptyMap()
                     }
+                val bgTheme = equipped.firstOrNull { it.slot == "BACKGROUND" }?.itemId
+                val bgProp =
+                    equipped
+                        .firstOrNull {
+                            it.slot == "BACKGROUND_PROP" ||
+                                (
+                                    it.slot == "BACKGROUND_OVERLAY" &&
+                                        it.itemId in setOf("background:star_hanger", "background:starlight_yarn_basket")
+                                )
+                        }?.itemId
+                val bgEffect =
+                    equipped
+                        .firstOrNull {
+                            it.slot == "BACKGROUND_EFFECT" ||
+                                (
+                                    it.slot == "BACKGROUND_OVERLAY" &&
+                                        it.itemId in setOf("background:star", "background:snow", "background:petal")
+                                )
+                        }?.itemId
+                val bgOverlay = bgProp ?: bgEffect
+                val effectiveBg = bgTheme ?: bgProp ?: bgEffect
+                val finalGlobal =
+                    if (effectiveBg != null) {
+                        global - CosmeticSlot.ACCESSORY + legacyAccessory + (CosmeticSlot.BACKGROUND to effectiveBg) +
+                            (perFriend[activeFriend] ?: emptyMap())
+                    } else {
+                        global - CosmeticSlot.ACCESSORY - CosmeticSlot.BACKGROUND + legacyAccessory +
+                            (perFriend[activeFriend] ?: emptyMap())
+                    }
                 CosmeticInventory(
                     ownedItemIds = owned.mapTo(mutableSetOf()) { it.itemId },
-                    equippedItemIds =
-                        global - CosmeticSlot.ACCESSORY + legacyAccessory +
-                            (perFriend[activeFriend] ?: emptyMap()),
+                    equippedItemIds = finalGlobal,
                     equippedByFriend = perFriend,
+                    backgroundOverlayId = bgOverlay,
+                    backgroundPropId = bgProp,
+                    backgroundEffectId = bgEffect,
                 )
             }
         }.mapNotNull { it }
@@ -172,7 +206,12 @@ class PointEconomyRepository(
                     val rawSlot = itemId.substringAfter("none:").uppercase().ifEmpty { "ACCESSORY" }
                     val activeFriend = dao.equipped(profileId, "FRIEND")?.itemId ?: "friend:mobi"
                     val storageSlot =
-                        if (rawSlot != "FRIEND" && rawSlot != "BACKGROUND") {
+                        if (rawSlot != "FRIEND" &&
+                            rawSlot != "BACKGROUND" &&
+                            rawSlot != "BACKGROUND_OVERLAY" &&
+                            rawSlot != "BACKGROUND_PROP" &&
+                            rawSlot != "BACKGROUND_EFFECT"
+                        ) {
                             "$rawSlot:$activeFriend"
                         } else {
                             rawSlot
@@ -180,17 +219,32 @@ class PointEconomyRepository(
                     dao.deleteEquipped(profileId, storageSlot)
                     dao.deleteEquipped(profileId, rawSlot)
                     dao.deleteEquipped(profileId, "ACCESSORY")
+                    if (rawSlot == "BACKGROUND") {
+                        dao.deleteEquipped(profileId, "BACKGROUND_OVERLAY")
+                        dao.deleteEquipped(profileId, "BACKGROUND_PROP")
+                        dao.deleteEquipped(profileId, "BACKGROUND_EFFECT")
+                    }
                     return@withTransaction EquipResult.Applied
                 }
                 val item = dao.item(itemId) ?: return@withTransaction EquipResult.ItemUnavailable
                 if (dao.owned(profileId, itemId) == null) return@withTransaction EquipResult.NotOwned
                 if (!item.isCompatible()) return@withTransaction EquipResult.Incompatible
                 val slot = CosmeticSlot.valueOf(item.slot)
-                val storageSlot =
-                    if (item.compatibleFriendId != null && slot != CosmeticSlot.FRIEND) {
-                        "${slot.name}:${item.compatibleFriendId}"
+                val isProp = item.id in setOf("background:star_hanger", "background:starlight_yarn_basket")
+                val isEffect = item.id in setOf("background:star", "background:snow", "background:petal")
+                val baseSlotName =
+                    if (isProp) {
+                        "BACKGROUND_PROP"
+                    } else if (isEffect) {
+                        "BACKGROUND_EFFECT"
                     } else {
                         slot.name
+                    }
+                val storageSlot =
+                    if (item.compatibleFriendId != null && slot != CosmeticSlot.FRIEND) {
+                        "$baseSlotName:${item.compatibleFriendId}"
+                    } else {
+                        baseSlotName
                     }
                 if (dao.equipped(profileId, storageSlot)?.itemId == itemId) {
                     return@withTransaction EquipResult.AlreadyApplied

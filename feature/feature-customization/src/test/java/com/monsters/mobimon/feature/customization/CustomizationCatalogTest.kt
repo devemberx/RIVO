@@ -141,6 +141,7 @@ class CustomizationCatalogTest {
             CosmeticInventory(
                 setOf("background:star"),
                 mapOf(CosmeticSlot.FRIEND to "friend:mobi", CosmeticSlot.BACKGROUND to "background:star"),
+                backgroundEffectId = "background:star",
             )
 
         val presentation =
@@ -149,6 +150,7 @@ class CustomizationCatalogTest {
                 listOf(CosmeticItem("background:star", CosmeticSlot.BACKGROUND, 200)),
                 CosmeticSlot.BACKGROUND,
                 "none:background",
+                category = StoreSpaceCategory.EFFECTS,
             )
 
         assertNull(presentation.preview.backgroundId)
@@ -203,5 +205,48 @@ class CustomizationCatalogTest {
         assertEquals(cap.id, presentation.preview.accessoryId)
         assertTrue(presentation.selectedEquipped)
         assertFalse(inventory.isEquippedForFriend(NONE_ACCESSORY_ITEM, "friend:luna"))
+    }
+
+    @Test fun cyberpunkBackgroundSelectionPersistsAcrossPropsAndEffectsCategories() {
+        val cyberpunk = CosmeticItem("background:cyberpunk_city", CosmeticSlot.BACKGROUND, 400)
+        val hanger = CosmeticItem("background:star_hanger", CosmeticSlot.BACKGROUND, 200)
+        val star = CosmeticItem("background:star", CosmeticSlot.BACKGROUND, 200)
+        val inventory =
+            CosmeticInventory(
+                setOf("friend:mobi", cyberpunk.id, hanger.id, star.id),
+                mapOf(CosmeticSlot.FRIEND to "friend:mobi", CosmeticSlot.BACKGROUND to cyberpunk.id),
+                backgroundPropId = hanger.id,
+                backgroundEffectId = star.id,
+            )
+
+        val propsPresentation =
+            customizationCatalog(
+                inventory = inventory,
+                catalog = listOf(hanger),
+                tab = CosmeticSlot.BACKGROUND,
+                selectedItemId = hanger.id,
+                category = StoreSpaceCategory.PROPS,
+                selectedBackgroundThemeId = cyberpunk.id,
+                selectedBackgroundEffectId = star.id,
+            )
+
+        assertEquals("background:cyberpunk_city", propsPresentation.preview.backgroundId)
+        assertEquals("background:star_hanger", propsPresentation.preview.backgroundPropId)
+        assertEquals("background:star", propsPresentation.preview.backgroundEffectId)
+
+        val effectsPresentation =
+            customizationCatalog(
+                inventory = inventory,
+                catalog = listOf(star),
+                tab = CosmeticSlot.BACKGROUND,
+                selectedItemId = star.id,
+                category = StoreSpaceCategory.EFFECTS,
+                selectedBackgroundThemeId = cyberpunk.id,
+                selectedBackgroundPropId = hanger.id,
+            )
+
+        assertEquals("background:cyberpunk_city", effectsPresentation.preview.backgroundId)
+        assertEquals("background:star_hanger", effectsPresentation.preview.backgroundPropId)
+        assertEquals("background:star", effectsPresentation.preview.backgroundEffectId)
     }
 }
