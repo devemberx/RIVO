@@ -168,9 +168,12 @@ and keep companion artwork clear of its caption when the keyboard opens.
 
 ## Vehicle information
 
-[Vehicle exports](ui/README.md#vehicle) define layout. Six default cards use icon,
-text and accessible status labels; the selector excludes assigned cards and saves
-alternatives only after confirmation. Label Debug data as simulations.
+[Vehicle exports](ui/README.md#vehicle) define layout. The six default cards are
+battery remaining, tire pressure, front windshield washer fluid, low-beam warning,
+driver fatigue and distance to service. The grouped External environment and Driver
+assistance cards are retired; their individual signal cards remain selectable.
+Cards use icon, text and accessible status labels; the selector excludes assigned
+cards and saves alternatives only after confirmation. Label Debug data as simulations.
 Distinguish Info, Normal, Caution and Unavailable. Missing/stale/invalid is never
 Normal; all four wheels are required for a Normal tire state, while a confirmed
 warning may show Caution. Low battery/washer maps to Hungry; vehicle/assistance
