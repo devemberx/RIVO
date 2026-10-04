@@ -44,6 +44,10 @@ android {
 
     buildTypes {
         debug { applicationIdSuffix = ".demo" }
+        release {
+            // Local release testing; use a dedicated release key before distribution.
+            signingConfig = signingConfigs.getByName("debug")
+        }
     }
 
     testOptions {
