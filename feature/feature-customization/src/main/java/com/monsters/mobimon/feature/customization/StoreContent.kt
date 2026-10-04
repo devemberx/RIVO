@@ -48,20 +48,22 @@ import androidx.compose.ui.unit.sp
 import com.monsters.mobimon.core.domain.CosmeticInventory
 import com.monsters.mobimon.core.domain.CosmeticItem
 import com.monsters.mobimon.core.domain.CosmeticSlot
+import com.monsters.mobimon.core.ui.BackgroundProp
+import com.monsters.mobimon.core.ui.BackgroundVisual
 import com.monsters.mobimon.core.ui.CharacterArtwork
 import com.monsters.mobimon.core.ui.CharacterAssetImage
+import com.monsters.mobimon.core.ui.CompanionBackgroundCatalog
 import com.monsters.mobimon.core.ui.FallingParticlesEffect
 import com.monsters.mobimon.core.ui.MobiMonButton
 import com.monsters.mobimon.core.ui.MobiMonColors
 import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonSelectionCard
 import com.monsters.mobimon.core.ui.MobiMonTab
-import com.monsters.mobimon.core.ui.ParticleType
 import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.StarHanger
 import com.monsters.mobimon.core.ui.StarlightYarnBasket
 import com.monsters.mobimon.core.ui.companionBackgroundRes
-import com.monsters.mobimon.core.ui.R as CoreUiR
+import com.monsters.mobimon.core.ui.resolveCompanionBackground
 
 @Composable
 internal fun StoreContent(
@@ -454,7 +456,12 @@ private fun StoreCard(
                     .background(MobiMonColors.raised),
                 contentAlignment = Alignment.Center,
             ) {
-                StoreItemArtwork(item, category, timeOfDay, Modifier.fillMaxSize().padding(12.dp * scale))
+                StoreItemArtwork(
+                    item,
+                    category,
+                    timeOfDay,
+                    Modifier.fillMaxSize().padding(12.dp * scale).testTag("store-artwork-${item.id}"),
+                )
             }
             Spacer(Modifier.height(20.dp * scale))
             val itemName =
@@ -498,6 +505,7 @@ private fun StoreItemArtwork(
     timeOfDay: String?,
     modifier: Modifier = Modifier,
 ) {
+    val visual = CompanionBackgroundCatalog.visual(item.id)
     when {
         item.isRemoval && item.slot == CosmeticSlot.BACKGROUND && category == StoreSpaceCategory.BACKGROUNDS ->
             Image(
@@ -517,23 +525,26 @@ private fun StoreItemArtwork(
                 isAnimated =
                     item.id == "friend:luna" || item.id == "friend:las",
             )
-        item.id == "background:star_hanger" -> StarHanger(modifier, centered = true, isAnimated = false)
-        item.id == "background:starlight_yarn_basket" ->
-            StarlightYarnBasket(
-                modifier,
-                centered = true,
-                isAnimated = false,
-            )
-        item.id == "background:cyberpunk_city" ->
+        visual is BackgroundVisual.Prop ->
+            when (visual.kind) {
+                BackgroundProp.STAR_HANGER -> StarHanger(modifier, centered = true, isAnimated = false)
+                BackgroundProp.STARLIGHT_YARN_BASKET ->
+                    StarlightYarnBasket(
+                        modifier,
+                        centered = true,
+                        isAnimated = false,
+                    )
+            }
+        visual is BackgroundVisual.Scene || (item.slot == CosmeticSlot.BACKGROUND && visual == null) ->
             Image(
-                painterResource(CoreUiR.drawable.pet_background_cyberpunk_city),
+                painterResource(companionBackgroundRes(timeOfDay, item.id)),
                 null,
                 modifier,
                 contentScale = ContentScale.Crop,
             )
-        item.slot == CosmeticSlot.BACKGROUND ->
+        visual is BackgroundVisual.Effect ->
             FallingParticlesEffect(
-                particleType = storeParticleType(item.id),
+                particleType = visual.kind,
                 modifier = modifier,
                 particleCount = 18,
             )
@@ -551,14 +562,27 @@ private fun StorePreview(
 ) {
     BoxWithConstraints(modifier.clip(RoundedCornerShape(24.dp))) {
         val zoomBackground = tab == CosmeticSlot.FRIEND || tab == CosmeticSlot.ACCESSORY
-        val backgroundRes =
-            if (preview.backgroundId == "background:cyberpunk_city") {
-                CoreUiR.drawable.pet_background_cyberpunk_city
-            } else {
-                companionBackgroundRes(timeOfDay)
-            }
+        val background =
+            resolveCompanionBackground(
+                timeOfDay,
+                preview.backgroundId,
+                propId =
+                    preview.backgroundPropId
+                        ?: preview.backgroundOverlayId?.takeIf {
+                            CompanionBackgroundCatalog.visual(
+                                it,
+                            ) is BackgroundVisual.Prop
+                        },
+                effectId =
+                    preview.backgroundEffectId
+                        ?: preview.backgroundOverlayId?.takeIf {
+                            CompanionBackgroundCatalog.visual(
+                                it,
+                            ) is BackgroundVisual.Effect
+                        },
+            )
         Image(
-            painterResource(backgroundRes),
+            painterResource(background.layer.frame.drawableRes),
             null,
             (
                 if (zoomBackground) {
@@ -574,24 +598,17 @@ private fun StorePreview(
             contentScale = ContentScale.Crop,
         )
         if (tab != CosmeticSlot.FRIEND) {
-            val activeProp =
-                preview.backgroundPropId
-                    ?: preview.backgroundOverlayId?.takeIf { isPropItem(it) }
-                    ?: preview.backgroundId?.takeIf { isPropItem(it) }
-            val activeEffect =
-                preview.backgroundEffectId
-                    ?: preview.backgroundOverlayId?.takeIf { isEffectItem(it) }
-                    ?: preview.backgroundId?.takeIf { isEffectItem(it) }
-
-            if (activeProp == "background:star_hanger") {
-                StarHanger(Modifier.fillMaxSize().testTag("store-preview-star-hanger"))
-            } else if (activeProp == "background:starlight_yarn_basket") {
-                StarlightYarnBasket(Modifier.fillMaxSize().testTag("store-preview-yarn-basket"))
+            when (background.prop) {
+                BackgroundProp.STAR_HANGER -> StarHanger(Modifier.fillMaxSize().testTag("store-preview-star-hanger"))
+                BackgroundProp.STARLIGHT_YARN_BASKET ->
+                    StarlightYarnBasket(
+                        Modifier.fillMaxSize().testTag("store-preview-yarn-basket"),
+                    )
+                null -> Unit
             }
-
-            if (activeEffect != null) {
+            background.effect?.let { effect ->
                 FallingParticlesEffect(
-                    particleType = storeParticleType(activeEffect),
+                    particleType = effect,
                     modifier = Modifier.fillMaxSize().testTag("store-preview-particles"),
                 )
             }
@@ -622,10 +639,3 @@ private fun StorePreview(
         }
     }
 }
-
-private fun storeParticleType(id: String): ParticleType =
-    when {
-        id.contains("snow") -> ParticleType.SNOW
-        id.contains("petal") || id.contains("flower") -> ParticleType.PETAL
-        else -> ParticleType.STAR
-    }

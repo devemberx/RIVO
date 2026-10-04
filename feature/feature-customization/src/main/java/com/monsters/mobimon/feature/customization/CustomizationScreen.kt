@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import com.monsters.mobimon.core.domain.CosmeticInventory
 import com.monsters.mobimon.core.domain.CosmeticItem
 import com.monsters.mobimon.core.domain.CosmeticSlot
+import com.monsters.mobimon.core.ui.CompanionBackgroundCatalog
 import com.monsters.mobimon.core.ui.MobiMonColors
 import com.monsters.mobimon.core.ui.MobiMonParkingInterruption
 import com.monsters.mobimon.core.ui.MobiMonParkingStatusBadge
@@ -388,13 +389,21 @@ internal fun storePreviewDescription(
                 "background:star" -> stringResource(R.string.pet_preview_desc_background_star)
                 "background:snow" -> stringResource(R.string.pet_preview_desc_background_snow)
                 "background:petal" -> stringResource(R.string.pet_preview_desc_background_petal)
-                "background:cyberpunk_city" -> stringResource(R.string.pet_preview_desc_background_cyberpunk_city)
                 else ->
                     stringResource(
-                        when (category) {
-                            StoreSpaceCategory.BACKGROUNDS -> R.string.pet_preview_desc_background_none
-                            StoreSpaceCategory.EFFECTS -> R.string.pet_preview_desc_effect_none
-                            StoreSpaceCategory.PROPS -> R.string.pet_preview_desc_prop_none
+                        when {
+                            selectedItemId == "none:background" && category == StoreSpaceCategory.EFFECTS ->
+                                R.string.pet_preview_desc_effect_none
+                            selectedItemId == "none:background" && category == StoreSpaceCategory.PROPS ->
+                                R.string.pet_preview_desc_prop_none
+                            else ->
+                                CompanionBackgroundCatalog.scene(selectedItemId)?.descriptionRes
+                                    ?: when (category) {
+                                        StoreSpaceCategory.BACKGROUNDS ->
+                                            CompanionBackgroundCatalog.defaultScene.descriptionRes
+                                        StoreSpaceCategory.EFFECTS -> R.string.pet_preview_desc_effect_none
+                                        StoreSpaceCategory.PROPS -> R.string.pet_preview_desc_prop_none
+                                    }
                         },
                     )
             }

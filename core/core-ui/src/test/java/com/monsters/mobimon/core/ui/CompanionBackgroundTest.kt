@@ -49,7 +49,12 @@ class CompanionBackgroundTest {
                 "night",
             )
         expected.forEachIndexed { hour, period ->
-            assertEquals("Hour $hour", "pet_home_background_$period", resourceName(hour.toString()))
+            assertEquals("Hour $hour", "pet_background_lake_park_$period", resourceName(hour.toString()))
+            assertEquals(
+                "Cyberpunk hour $hour",
+                "pet_background_cyberpunk_city_$period",
+                resources.getResourceEntryName(companionBackgroundRes(hour.toString(), "background:cyberpunk_city")),
+            )
         }
     }
 
@@ -82,14 +87,39 @@ class CompanionBackgroundTest {
             "18:00" to "sunset",
             "20:00" to "night",
         ).forEach { (input, period) ->
-            assertEquals(input, "pet_home_background_$period", resourceName(input))
+            assertEquals(input, "pet_background_lake_park_$period", resourceName(input))
+            assertEquals(
+                input,
+                "pet_background_cyberpunk_city_$period",
+                resources.getResourceEntryName(companionBackgroundRes(input, "background:cyberpunk_city")),
+            )
         }
     }
 
     @Test
     fun missingOrInvalidTimeKeepsDeterministicNightFallback() {
         listOf(null, "", " ", "unknown", "-1", "24", "99").forEach {
-            assertEquals("pet_home_background_night", resourceName(it))
+            assertEquals("pet_background_lake_park_night", resourceName(it))
+            assertEquals(
+                R.drawable.pet_background_cyberpunk_city_night,
+                companionBackgroundRes(it, "background:cyberpunk_city"),
+            )
+        }
+    }
+
+    @Test
+    fun cyberpunkFramesDecodeAtTheirApprovedCanvasWithoutTransparency() {
+        BackgroundPeriod.entries.forEach { period ->
+            val bitmap =
+                BitmapFactory.decodeResource(
+                    resources,
+                    companionBackgroundRes(period.key, "background:cyberpunk_city"),
+                )
+            assertEquals(1672, bitmap.width)
+            assertEquals(941, bitmap.height)
+            assertTrue(!bitmap.hasAlpha())
+            assertEquals(255, Color.alpha(bitmap.getPixel(bitmap.width / 2, bitmap.height / 2)))
+            bitmap.recycle()
         }
     }
 
@@ -110,8 +140,8 @@ class CompanionBackgroundTest {
 
     @Test
     fun midnightDarkensCityAndReflectionsWithoutChangingTheRoad() {
-        val night = BitmapFactory.decodeResource(resources, R.drawable.pet_home_background_night)
-        val midnight = BitmapFactory.decodeResource(resources, R.drawable.pet_home_background_midnight)
+        val night = BitmapFactory.decodeResource(resources, R.drawable.pet_background_lake_park_night)
+        val midnight = BitmapFactory.decodeResource(resources, R.drawable.pet_background_lake_park_midnight)
         try {
             assertTrue(channelSum(midnight, 80, 700, 790, 855) < channelSum(night, 80, 700, 790, 855) * 0.5)
             assertTrue(channelSum(midnight, 200, 650, 855, 925) < channelSum(night, 200, 650, 855, 925) * 0.75)
@@ -128,10 +158,10 @@ class CompanionBackgroundTest {
 
     @Test
     fun sunriseSunAndMidnightMoonMatchTheApprovedDiskSizes() {
-        val morning = BitmapFactory.decodeResource(resources, R.drawable.pet_home_background_morning)
-        val sunrise = BitmapFactory.decodeResource(resources, R.drawable.pet_home_background_sunrise)
-        val night = BitmapFactory.decodeResource(resources, R.drawable.pet_home_background_night)
-        val midnight = BitmapFactory.decodeResource(resources, R.drawable.pet_home_background_midnight)
+        val morning = BitmapFactory.decodeResource(resources, R.drawable.pet_background_lake_park_morning)
+        val sunrise = BitmapFactory.decodeResource(resources, R.drawable.pet_background_lake_park_sunrise)
+        val night = BitmapFactory.decodeResource(resources, R.drawable.pet_background_lake_park_night)
+        val midnight = BitmapFactory.decodeResource(resources, R.drawable.pet_background_lake_park_midnight)
         try {
             val morningSun = brightSpan(morning, 490, 685, 780) { r, g, b -> r > 245 && g > 245 && b > 225 }
             val sunriseSun = brightSpan(sunrise, 703, 685, 780) { r, g, b -> r > 245 && g > 245 && b > 225 }

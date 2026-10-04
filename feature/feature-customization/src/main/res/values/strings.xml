@@ -11,7 +11,6 @@
     <string name="pet_customization_subtab_owned">보유 중</string>
     <string name="pet_customization_count_format">%1$d개</string>
     <string name="pet_item_none">장식 없음</string>
-    <string name="pet_background_default">호수 공원</string>
     <string name="pet_effect_none">효과 없음</string>
     <string name="pet_prop_none">소품 없음</string>
     <string name="pet_item_mobi_headphones">모비 헤드폰</string>
@@ -28,13 +27,10 @@
     <string name="pet_background_star">반짝이는 별</string>
     <string name="pet_background_snow">소복소복 눈</string>
     <string name="pet_background_petal">흩날리는 꽃잎</string>
-    <string name="pet_background_cyberpunk_city">사이버펑크 시티</string>
-    <string name="pet_preview_desc_background_none">호수 공원의 밤하늘과 풍경을 느껴 보세요.</string>
     <string name="pet_preview_desc_effect_none">특수효과 없이 공간의 풍경을 보여줘요.</string>
     <string name="pet_preview_desc_prop_none">소품 없이 공간을 깔끔하게 보여줘요.</string>
     <string name="pet_preview_desc_background_star">작은 별빛으로 공간에 반짝임을 더해요.</string>
     <string name="pet_preview_desc_background_snow">하얀 눈송이로 공간에 겨울 분위기를 더해요.</string>
-    <string name="pet_preview_desc_background_cyberpunk_city">화려한 네온사인과 미래 도시의 풍경을 즐겨 보세요.</string>
     <string name="pet_preview_desc_background_petal">흩날리는 꽃잎으로 공간에 봄기운을 더해요.</string>
     <string name="pet_item_status_equipped">보유 중 · 현재 착용</string>
     <string name="pet_item_status_owned">보유 중 · 선택됨</string>

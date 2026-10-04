@@ -68,15 +68,30 @@ their approved source:
 
 Preserve head/body ratio, ears, limbs, tail and facial proportions across poses.
 
+#### Background resource names
+
+Name scene images `pet_background_<scene>_<period>.<ext>` in `drawable-nodpi`, using
+lowercase ASCII snake case. Scene IDs are `lake_park` and
+`cyberpunk_city`; periods are `midnight`, `sunrise`, `morning`,
+`day`, `afternoon`, `sunset` and `night`, with the [Home scene](#home-scene) hour
+boundaries. New generated scene assets use lossless WebP, preserving canvas and
+decoded pixels during export; format conversion does not authorize relighting.
+Keep existing dimensions when renaming. Temporary
+reference downloads, candidate versions, prompts and review evidence belong in
+ignored `output/imagegen/`. Cosmetic IDs such as `background:cyberpunk_city`
+identify owned items independently of image resource names.
+
 ### Home scene
 
 [Home/Store backgrounds](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/CompanionBackground.kt)
-use VSS time, not device time: Midnight 00–04, Sunrise 05–06, Morning 07–11,
+select Lake Park and Cyberpunk City using the same VSS time in Home, Store previews
+and catalog thumbnails, never device time. Periods are Midnight 00–04, Sunrise 05–06, Morning 07–11,
 Day 12–15, Afternoon 16–17, Sunset 18–19, Night 20–23. Debug uses the same VSS
 interpretation controls. Keep the approved crop, horizon and ground anchors stable
 as text grows; crossfade only the scene/tint, not controls. Midnight keeps its dark
 windows, reflections and road lights. Use the animated Home time phrase rather than
-the export subtitle.
+the export subtitle. Missing time uses the selected scene's Night. Unknown item IDs
+use Lake Park without adding decorations; only registered props/effects render.
 
 ## Screens and navigation
 

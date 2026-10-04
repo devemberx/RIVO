@@ -1,7 +1,11 @@
 package com.monsters.mobimon.feature.customization
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.RectF
 import android.view.View
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
@@ -35,6 +39,7 @@ import com.monsters.mobimon.core.domain.CosmeticInventory
 import com.monsters.mobimon.core.domain.CosmeticItem
 import com.monsters.mobimon.core.domain.CosmeticSlot
 import com.monsters.mobimon.core.ui.MobiMonTheme
+import com.monsters.mobimon.core.ui.companionBackgroundRes
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -51,6 +56,53 @@ import java.io.File
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class StoreReferenceScreenTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test
+    fun committedCityAndBothDecorationsRemainVisibleAsTimeChanges() {
+        val time = mutableStateOf("Midnight")
+        val cityId = "background:cyberpunk_city"
+        compose.setContent {
+            MobiMonTheme {
+                CustomizationScreen(
+                    inventory =
+                        CosmeticInventory(
+                            ownedItemIds = setOf("friend:mobi", cityId, "background:star_hanger", "background:snow"),
+                            equippedItemIds =
+                                mapOf(
+                                    CosmeticSlot.FRIEND to "friend:mobi",
+                                    CosmeticSlot.BACKGROUND to cityId,
+                                ),
+                            backgroundPropId = "background:star_hanger",
+                            backgroundEffectId = "background:snow",
+                        ),
+                    catalog =
+                        listOf(
+                            CosmeticItem("friend:mobi", CosmeticSlot.FRIEND, 0),
+                            CosmeticItem(cityId, CosmeticSlot.BACKGROUND, 400),
+                            CosmeticItem("background:star_hanger", CosmeticSlot.BACKGROUND, 200),
+                            CosmeticItem("background:snow", CosmeticSlot.BACKGROUND, 100),
+                        ),
+                    selectedItemId = cityId,
+                    purchasing = false,
+                    purchaseFailed = false,
+                    onSelectItem = {},
+                    onPurchaseItem = { _, _ -> },
+                    onEquipItem = {},
+                    onEquipFriend = {},
+                    pointBalance = 1200,
+                    pointLoadFailed = false,
+                    timeOfDay = time.value,
+                )
+            }
+        }
+        compose.onNodeWithTag("store-tab-BACKGROUND").performClick()
+        listOf("Midnight", "Sunrise", "Morning", "Day", "Afternoon", "Sunset", "Night").forEach {
+            compose.runOnIdle { time.value = it }
+            compose.onNodeWithTag("preview-background").assertExists()
+            compose.onNodeWithTag("store-preview-star-hanger").assertExists()
+            compose.onNodeWithTag("store-preview-particles").assertExists()
+        }
+    }
 
     @Test fun parkingLossShowsCustomizationPopupWithHomeAction() {
         var parkingRequired by mutableStateOf(false)
@@ -671,6 +723,84 @@ class StoreReferenceScreenTest {
             }
         }
         assertEquals("Each period must render in the preview", 7, colors.size)
+    }
+
+    @Test
+    fun cityPreviewAndCatalogArtworkFollowTheSameVssPeriods() {
+        val cityId = "background:cyberpunk_city"
+        val period = mutableStateOf("Morning")
+        lateinit var view: View
+        compose.setContent {
+            val current = LocalView.current
+            SideEffect { view = current }
+            MobiMonTheme {
+                CustomizationScreen(
+                    inventory =
+                        CosmeticInventory(
+                            setOf("friend:mobi", cityId),
+                            mapOf(
+                                CosmeticSlot.FRIEND to "friend:mobi",
+                                CosmeticSlot.BACKGROUND to cityId,
+                            ),
+                        ),
+                    catalog =
+                        listOf(
+                            CosmeticItem("friend:mobi", CosmeticSlot.FRIEND, 0),
+                            CosmeticItem(cityId, CosmeticSlot.BACKGROUND, 400),
+                        ),
+                    selectedItemId = cityId,
+                    purchasing = false,
+                    purchaseFailed = false,
+                    onSelectItem = {},
+                    onPurchaseItem = { _, _ -> },
+                    onEquipItem = {},
+                    onEquipFriend = {},
+                    pointBalance = 1200,
+                    pointLoadFailed = false,
+                    timeOfDay = period.value,
+                )
+            }
+        }
+        compose.onNodeWithTag("store-tab-BACKGROUND").performClick()
+        compose.onAllNodesWithText("사이버펑크 시티")[0].assertIsDisplayed()
+        listOf("Sunrise", "Morning", "Day", "Afternoon", "Sunset", "Night", "Midnight").forEach { value ->
+            compose.runOnIdle { period.value = value }
+            compose.onNodeWithTag("store-preview-particles").assertDoesNotExist()
+            capture(view, "cyberpunk-${value.lowercase()}")
+            listOf("preview-background", "store-artwork-$cityId").forEach { tag ->
+                val bounds = compose.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+                compose.runOnIdle {
+                    val actual = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+                    view.draw(Canvas(actual))
+                    val source = BitmapFactory.decodeResource(view.resources, companionBackgroundRes(value, cityId))
+                    val scale = maxOf(bounds.width / source.width, bounds.height / source.height)
+                    val left = bounds.left + (bounds.width - source.width * scale) / 2
+                    val top = bounds.top + (bounds.height - source.height * scale) / 2
+                    val expected = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+                    Canvas(expected).drawBitmap(
+                        source,
+                        null,
+                        RectF(left, top, left + source.width * scale, top + source.height * scale),
+                        Paint(Paint.FILTER_BITMAP_FLAG),
+                    )
+                    listOf(0.25f to 0.25f, 0.5f to 0.5f, 0.75f to 0.65f).forEach { (x, y) ->
+                        val px = (bounds.left + x * bounds.width).toInt()
+                        val py = (bounds.top + y * bounds.height).toInt()
+                        val wanted = expected.getPixel(px, py)
+                        val rendered = actual.getPixel(px, py)
+                        listOf(Color::red, Color::green, Color::blue).forEach { channel ->
+                            assertTrue(
+                                "$tag renders $value at ($px, $py): expected $wanted, actual $rendered",
+                                kotlin.math.abs(channel(wanted) - channel(rendered)) <= 25,
+                            )
+                        }
+                    }
+                    source.recycle()
+                    expected.recycle()
+                    actual.recycle()
+                }
+            }
+        }
     }
 
     private fun assertFriendCardFitsCatalogViewport() {

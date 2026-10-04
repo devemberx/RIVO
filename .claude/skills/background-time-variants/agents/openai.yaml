@@ -1,0 +1,4 @@
+interface:
+  display_name: "Background Time Variants"
+  short_description: "Keep scene geometry stable across time variants"
+  default_prompt: "Use $background-time-variants to create and verify time-of-day background variants as lossless WebP assets. First ask me for the reference image's local path or image URL unless I already supplied it."

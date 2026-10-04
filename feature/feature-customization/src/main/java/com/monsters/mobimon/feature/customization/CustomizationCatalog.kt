@@ -3,6 +3,8 @@ package com.monsters.mobimon.feature.customization
 import com.monsters.mobimon.core.domain.CosmeticInventory
 import com.monsters.mobimon.core.domain.CosmeticItem
 import com.monsters.mobimon.core.domain.CosmeticSlot
+import com.monsters.mobimon.core.ui.BackgroundVisual
+import com.monsters.mobimon.core.ui.CompanionBackgroundCatalog
 
 internal val NONE_ACCESSORY_ITEM = CosmeticItem("none:accessory", CosmeticSlot.ACCESSORY, 0)
 internal val NONE_BACKGROUND_ITEM = CosmeticItem("none:background", CosmeticSlot.BACKGROUND, 0)
@@ -25,9 +27,9 @@ internal data class CustomizationCatalog(
     val preview: CosmeticPreview,
 )
 
-internal fun isPropItem(id: String): Boolean = id in setOf("background:star_hanger", "background:starlight_yarn_basket")
+internal fun isPropItem(id: String): Boolean = CompanionBackgroundCatalog.visual(id) is BackgroundVisual.Prop
 
-internal fun isEffectItem(id: String): Boolean = id in setOf("background:star", "background:snow", "background:petal")
+internal fun isEffectItem(id: String): Boolean = CompanionBackgroundCatalog.visual(id) is BackgroundVisual.Effect
 
 internal fun customizationCatalog(
     inventory: CosmeticInventory?,
@@ -51,6 +53,8 @@ internal fun customizationCatalog(
         )
     }
     val activeFriend = inventory.equippedItemIds[CosmeticSlot.FRIEND] ?: "friend:mobi"
+    val committedScene = CompanionBackgroundCatalog.scene(inventory.equippedItemIds[CosmeticSlot.BACKGROUND])
+    val defaultSceneEquipped = committedScene == null || committedScene.id == CompanionBackgroundCatalog.defaultScene.id
     val friend = if (tab == CosmeticSlot.ACCESSORY) clothesFriendId ?: activeFriend else activeFriend
     val available = catalog.filterNot { it.id.contains("necklace") || it.id.contains("mint_scarf") }
     val tabItems =
@@ -79,8 +83,7 @@ internal fun customizationCatalog(
                     when (category) {
                         StoreSpaceCategory.BACKGROUNDS ->
                             if (item.isRemoval) {
-                                inventory.equippedItemIds[CosmeticSlot.BACKGROUND] == null ||
-                                    inventory.equippedItemIds[CosmeticSlot.BACKGROUND] != "background:cyberpunk_city"
+                                defaultSceneEquipped
                             } else {
                                 inventory.equippedItemIds[CosmeticSlot.BACKGROUND] == item.id
                             }
@@ -112,7 +115,9 @@ internal fun customizationCatalog(
         }
 
     val committedTheme =
-        inventory.equippedItemIds[CosmeticSlot.BACKGROUND]?.takeIf { it == "background:cyberpunk_city" }
+        inventory.equippedItemIds[CosmeticSlot.BACKGROUND]?.takeIf {
+            CompanionBackgroundCatalog.visual(it) is BackgroundVisual.Scene
+        }
     val committedProp =
         inventory.backgroundPropId
             ?: inventory.backgroundOverlayId?.takeIf { isPropItem(it) }
@@ -174,8 +179,7 @@ internal fun customizationCatalog(
             when (category) {
                 StoreSpaceCategory.BACKGROUNDS ->
                     if (selected.isRemoval) {
-                        inventory.equippedItemIds[CosmeticSlot.BACKGROUND] == null ||
-                            inventory.equippedItemIds[CosmeticSlot.BACKGROUND] != "background:cyberpunk_city"
+                        defaultSceneEquipped
                     } else {
                         inventory.equippedItemIds[CosmeticSlot.BACKGROUND] == selected.id
                     }
