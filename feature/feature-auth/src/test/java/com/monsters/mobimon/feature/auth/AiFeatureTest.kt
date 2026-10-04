@@ -65,6 +65,7 @@ import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
 import com.monsters.mobimon.core.presentation.VehiclePresentation
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonTheme
+import com.monsters.mobimon.feature.auth.testing.ComposeTestApplication
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -82,7 +83,7 @@ import org.robolectric.annotation.GraphicsMode
 import java.io.IOException
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1248dp-mdpi")
+@Config(sdk = [34], application = ComposeTestApplication::class, qualifiers = "ko-rKR-w2560dp-h1248dp-mdpi")
 class AiFeatureTest {
     @get:Rule val compose = createComposeRule()
 

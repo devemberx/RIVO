@@ -2,6 +2,7 @@ package com.monsters.mobimon.di
 
 import android.content.Context
 import android.util.Log
+import com.monsters.mobimon.BuildConfig
 import com.monsters.mobimon.chat.GroundedConversationReplyPolicy
 import com.monsters.mobimon.chat.VehicleConversationTool
 import com.monsters.mobimon.chat.VehicleToolRouting
@@ -32,14 +33,17 @@ object ConversationToolsModule {
         retriever: ManualRetriever,
         evidence: VehicleChatEvidenceSource,
     ): ConversationTools {
-        val manual = ManualConversationTools.create(retriever) { Log.i("MobiMonManual", it.toString()) }
+        val manual =
+            ManualConversationTools.create(retriever) {
+                if (BuildConfig.DEBUG) Log.i("MobiMonManual", it.toString())
+            }
         return ConversationTools(
             manual.tools + VehicleConversationTool(evidence),
             ManualConversationTools.groundingInstruction,
             onUsage = manual.onUsage,
             groundedReplyPolicy =
                 GroundedConversationReplyPolicy(evidence, manual.replyPolicy) {
-                    Log.i("MobiMonCopilot", "replyRejected reason=$it")
+                    if (BuildConfig.DEBUG) Log.i("MobiMonCopilot", "replyRejected reason=$it")
                 },
             selectTools = VehicleToolRouting::select,
         )
