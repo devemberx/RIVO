@@ -24,7 +24,7 @@ internal object LunaDisappearTimeline {
 
     // Frames 1–2 are the idle pose; holding them keeps the "departing?" bubble readable. The tower stays above
     // the bubble through frame 5 and reaches it in frame 6, which starts when the bubble ends.
-    val SURPRISE_NANOS = 66_666_667L until 1_200_000_000L
+    val SURPRISE_NANOS = DEPARTURE_SURPRISE_NANOS
     const val HOLD_NANOS = 887_500_000L
     const val DURATION_NANOS = HOLD_NANOS + FRAME_COUNT * 1_000_000_000L / FPS
 

@@ -116,8 +116,8 @@ internal fun MobiDisappearAnimation(
     }
 }
 
-/** When the "departing?" bubble shows, measured from the start of a departure animation. */
-internal val DEPARTURE_SURPRISE_NANOS = 66_666_667L until 400_000_000L
+/** Shared departure bubble window, measured from each character's sprite playback start. */
+internal val DEPARTURE_SURPRISE_NANOS = 66_666_667L until 1_200_000_000L
 
 /** Speech bubble beside the companion's head, aligned to the top start of its avatar slot. */
 @Composable
