@@ -12,6 +12,9 @@ internal data class CosmeticPreview(
     val accessoryId: String?,
     val outfitId: String?,
     val backgroundId: String?,
+    val backgroundOverlayId: String? = null,
+    val backgroundPropId: String? = null,
+    val backgroundEffectId: String? = null,
 )
 
 internal data class CustomizationCatalog(
@@ -22,6 +25,10 @@ internal data class CustomizationCatalog(
     val preview: CosmeticPreview,
 )
 
+internal fun isPropItem(id: String): Boolean = id in setOf("background:star_hanger", "background:starlight_yarn_basket")
+
+internal fun isEffectItem(id: String): Boolean = id in setOf("background:star", "background:snow", "background:petal")
+
 internal fun customizationCatalog(
     inventory: CosmeticInventory?,
     catalog: List<CosmeticItem>,
@@ -29,6 +36,10 @@ internal fun customizationCatalog(
     selectedItemId: String?,
     ownedOnly: Boolean = false,
     clothesFriendId: String? = null,
+    category: StoreSpaceCategory = StoreSpaceCategory.BACKGROUNDS,
+    selectedBackgroundThemeId: String? = null,
+    selectedBackgroundPropId: String? = null,
+    selectedBackgroundEffectId: String? = null,
 ): CustomizationCatalog {
     if (inventory == null) {
         return CustomizationCatalog(
@@ -36,7 +47,7 @@ internal fun customizationCatalog(
             selected = null,
             selectedOwned = false,
             selectedEquipped = false,
-            preview = CosmeticPreview("friend:mobi", null, null, null),
+            preview = CosmeticPreview("friend:mobi", null, null, null, null, null, null),
         )
     }
     val activeFriend = inventory.equippedItemIds[CosmeticSlot.FRIEND] ?: "friend:mobi"
@@ -63,22 +74,133 @@ internal fun customizationCatalog(
     val visibleItems = if (ownedOnly) tabItems.filter { inventory.isOwned(it) } else tabItems
     val selected =
         tabItems.firstOrNull { it.id == selectedItemId }
-            ?: tabItems.firstOrNull { inventory.isEquippedForFriend(it, friend) }
+            ?: tabItems.firstOrNull { item ->
+                if (tab == CosmeticSlot.BACKGROUND) {
+                    when (category) {
+                        StoreSpaceCategory.BACKGROUNDS ->
+                            if (item.isRemoval) {
+                                inventory.equippedItemIds[CosmeticSlot.BACKGROUND] == null ||
+                                    inventory.equippedItemIds[CosmeticSlot.BACKGROUND] != "background:cyberpunk_city"
+                            } else {
+                                inventory.equippedItemIds[CosmeticSlot.BACKGROUND] == item.id
+                            }
+                        StoreSpaceCategory.PROPS ->
+                            if (item.isRemoval) {
+                                inventory.backgroundPropId == null
+                            } else {
+                                inventory.backgroundPropId == item.id
+                            }
+                        StoreSpaceCategory.EFFECTS ->
+                            if (item.isRemoval) {
+                                inventory.backgroundEffectId == null
+                            } else {
+                                inventory.backgroundEffectId == item.id
+                            }
+                    }
+                } else {
+                    inventory.isEquippedForFriend(item, friend)
+                }
+            }
             ?: tabItems.firstOrNull()
+
     val previewFriend = if (tab == CosmeticSlot.FRIEND) selected?.id ?: friend else friend
     val equipment =
-        if (previewFriend ==
-            activeFriend
-        ) {
+        if (previewFriend == activeFriend) {
             inventory.equippedItemIds
         } else {
             inventory.equippedByFriend[previewFriend].orEmpty()
         }
+
+    val committedTheme =
+        inventory.equippedItemIds[CosmeticSlot.BACKGROUND]?.takeIf { it == "background:cyberpunk_city" }
+    val committedProp =
+        inventory.backgroundPropId
+            ?: inventory.backgroundOverlayId?.takeIf { isPropItem(it) }
+            ?: inventory.equippedItemIds[CosmeticSlot.BACKGROUND]?.takeIf { isPropItem(it) }
+    val committedEffect =
+        inventory.backgroundEffectId
+            ?: inventory.backgroundOverlayId?.takeIf { isEffectItem(it) }
+            ?: inventory.equippedItemIds[CosmeticSlot.BACKGROUND]?.takeIf { isEffectItem(it) }
+
+    val bgThemeInPreview =
+        if (tab == CosmeticSlot.BACKGROUND) {
+            if (category == StoreSpaceCategory.BACKGROUNDS) {
+                selected?.takeUnless { it.isRemoval }?.id
+            } else {
+                if (selectedBackgroundThemeId == "none:background") {
+                    null
+                } else {
+                    selectedBackgroundThemeId ?: committedTheme
+                }
+            }
+        } else {
+            committedTheme
+        }
+
+    val bgPropInPreview =
+        if (tab == CosmeticSlot.BACKGROUND) {
+            if (category == StoreSpaceCategory.PROPS) {
+                selected?.takeUnless { it.isRemoval }?.id
+            } else {
+                if (selectedBackgroundPropId == "none:background") {
+                    null
+                } else {
+                    selectedBackgroundPropId ?: committedProp
+                }
+            }
+        } else {
+            committedProp
+        }
+
+    val bgEffectInPreview =
+        if (tab == CosmeticSlot.BACKGROUND) {
+            if (category == StoreSpaceCategory.EFFECTS) {
+                selected?.takeUnless { it.isRemoval }?.id
+            } else {
+                if (selectedBackgroundEffectId == "none:background") {
+                    null
+                } else {
+                    selectedBackgroundEffectId ?: committedEffect
+                }
+            }
+        } else {
+            committedEffect
+        }
+
+    val selectedEquipped =
+        if (selected == null) {
+            false
+        } else if (tab == CosmeticSlot.BACKGROUND) {
+            when (category) {
+                StoreSpaceCategory.BACKGROUNDS ->
+                    if (selected.isRemoval) {
+                        inventory.equippedItemIds[CosmeticSlot.BACKGROUND] == null ||
+                            inventory.equippedItemIds[CosmeticSlot.BACKGROUND] != "background:cyberpunk_city"
+                    } else {
+                        inventory.equippedItemIds[CosmeticSlot.BACKGROUND] == selected.id
+                    }
+                StoreSpaceCategory.PROPS ->
+                    if (selected.isRemoval) {
+                        inventory.backgroundPropId == null
+                    } else {
+                        inventory.backgroundPropId == selected.id
+                    }
+                StoreSpaceCategory.EFFECTS ->
+                    if (selected.isRemoval) {
+                        inventory.backgroundEffectId == null
+                    } else {
+                        inventory.backgroundEffectId == selected.id
+                    }
+            }
+        } else {
+            selected.let { inventory.isEquippedForFriend(it, friend) }
+        }
+
     return CustomizationCatalog(
         items = visibleItems,
         selected = selected,
         selectedOwned = selected?.let { inventory.isOwned(it) } == true,
-        selectedEquipped = selected?.let { inventory.isEquippedForFriend(it, friend) } == true,
+        selectedEquipped = selectedEquipped,
         preview =
             CosmeticPreview(
                 friendId = previewFriend,
@@ -90,11 +212,21 @@ internal fun customizationCatalog(
                     },
                 outfitId = selected?.takeIf { it.slot == CosmeticSlot.OUTFIT }?.id ?: equipment[CosmeticSlot.OUTFIT],
                 backgroundId =
-                    if (tab == CosmeticSlot.BACKGROUND && selected != null) {
-                        selected.takeUnless { it.isRemoval }?.id
+                    if (tab == CosmeticSlot.BACKGROUND) {
+                        bgThemeInPreview
+                            ?: if (category != StoreSpaceCategory.BACKGROUNDS) {
+                                committedTheme
+                            } else if (selected?.isRemoval == true) {
+                                null
+                            } else {
+                                inventory.equippedItemIds[CosmeticSlot.BACKGROUND]
+                            }
                     } else {
-                        inventory.equippedItemIds[CosmeticSlot.BACKGROUND]
+                        committedTheme ?: inventory.equippedItemIds[CosmeticSlot.BACKGROUND]
                     },
+                backgroundOverlayId = bgPropInPreview ?: bgEffectInPreview,
+                backgroundPropId = bgPropInPreview,
+                backgroundEffectId = bgEffectInPreview,
             ),
     )
 }

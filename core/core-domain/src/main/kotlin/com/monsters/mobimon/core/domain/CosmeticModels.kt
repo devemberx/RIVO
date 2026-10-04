@@ -13,6 +13,9 @@ data class CosmeticInventory(
     val ownedItemIds: Set<String>,
     val equippedItemIds: Map<CosmeticSlot, String>,
     val equippedByFriend: Map<String, Map<CosmeticSlot, String>> = emptyMap(),
+    val backgroundOverlayId: String? = null,
+    val backgroundPropId: String? = null,
+    val backgroundEffectId: String? = null,
 )
 
 sealed interface PurchaseResult {

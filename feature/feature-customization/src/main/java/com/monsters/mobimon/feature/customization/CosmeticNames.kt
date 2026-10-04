@@ -2,6 +2,31 @@ package com.monsters.mobimon.feature.customization
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
+import com.monsters.mobimon.core.domain.CosmeticItem
+
+internal enum class StoreSpaceCategory(
+    val label: String,
+) {
+    BACKGROUNDS("배경"),
+    EFFECTS("특수효과"),
+    PROPS("소품"),
+    ;
+
+    fun includes(item: CosmeticItem): Boolean =
+        when (this) {
+            PROPS -> item.id in setOf("background:star_hanger", "background:starlight_yarn_basket")
+            EFFECTS -> item.id in setOf("background:star", "background:snow", "background:petal")
+            BACKGROUNDS ->
+                item.id !in
+                    setOf(
+                        "background:star_hanger",
+                        "background:starlight_yarn_basket",
+                        "background:star",
+                        "background:snow",
+                        "background:petal",
+                    )
+        }
+}
 
 @Composable
 internal fun cosmeticName(

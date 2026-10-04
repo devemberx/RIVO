@@ -26,6 +26,9 @@ data class CompanionAppearanceState(
     val accessoryId: String? get() = inventory?.equippedItemIds?.get(CosmeticSlot.ACCESSORY)
     val outfitId: String? get() = inventory?.equippedItemIds?.get(CosmeticSlot.OUTFIT)
     val backgroundId: String? get() = inventory?.equippedItemIds?.get(CosmeticSlot.BACKGROUND)
+    val backgroundOverlayId: String? get() = inventory?.backgroundOverlayId
+    val backgroundPropId: String? get() = inventory?.backgroundPropId
+    val backgroundEffectId: String? get() = inventory?.backgroundEffectId
 }
 
 /** Observes committed Room inventory only; store previews never enter this stream. */

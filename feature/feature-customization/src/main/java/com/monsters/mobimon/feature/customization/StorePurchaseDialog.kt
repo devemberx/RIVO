@@ -63,8 +63,9 @@ internal fun StorePurchaseDialog(
                         .padding(72.dp * scale),
                     verticalArrangement = Arrangement.spacedBy(32.dp * scale),
                 ) {
+                    val itemName = cosmeticName(item.id)
                     Text(
-                        "${cosmeticName(item.id)} 구매할까요?",
+                        "$itemName 구매할까요?",
                         color = MobiMonColors.text,
                         fontSize = (44f * scale).sp,
                         fontWeight = FontWeight.Bold,

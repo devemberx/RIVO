@@ -97,6 +97,9 @@ fun PetHomeScreen(
     accessoryId: String? = null,
     outfitId: String? = null,
     backgroundId: String? = null,
+    backgroundOverlayId: String? = null,
+    backgroundPropId: String? = null,
+    backgroundEffectId: String? = null,
     interactionAllowed: Boolean = false,
     profileObservationFailed: Boolean = false,
     onRetryProfile: () -> Unit = {},
@@ -124,7 +127,7 @@ fun PetHomeScreen(
                 }
             val bubbleLeft = (maxWidth - (2560 * scale).dp) / 2 + (1576 * scale).dp
             val referenceLayout = maxWidth >= 1200.dp && maxHeight >= 700.dp && fontScale <= 1f
-            HomeBackground(backgroundTimeOfDay, backgroundId)
+            HomeBackground(backgroundTimeOfDay, backgroundId, backgroundOverlayId, backgroundPropId, backgroundEffectId)
             val companion: @Composable (Modifier) -> Unit = { companionModifier ->
                 HomeCompanion(
                     profile,
@@ -187,7 +190,12 @@ fun PetHomeScreen(
                                     .offset(
                                         x = bubbleLeft,
                                         y = (500 * scale).dp,
-                                    ).anchorHomeSpeechBubbleTail((130f * homeSpeechBubbleScale(scale, fontScale)).dp),
+                                    ).anchorHomeSpeechBubbleTail(
+                                        (
+                                            130f *
+                                                homeSpeechBubbleScale(scale, fontScale).toFloat()
+                                        ).dp,
+                                    ),
                                 scale = scale,
                                 triggerKey = bubbleTrigger,
                                 friendId = friendId,
@@ -223,7 +231,7 @@ fun PetHomeScreen(
                     if (friendId != null) {
                         Box(
                             Modifier
-                                .widthIn(max = (560 * homeSpeechBubbleScale(0.75f, fontScale)).dp)
+                                .widthIn(max = (560 * homeSpeechBubbleScale(0.75f, fontScale).toFloat()).dp)
                                 .fillMaxWidth(),
                         ) {
                             HomeSpeechBubble(
@@ -247,6 +255,9 @@ fun PetHomeScreen(
 private fun HomeBackground(
     timeOfDay: String?,
     backgroundId: String?,
+    backgroundOverlayId: String? = null,
+    backgroundPropId: String? = null,
+    backgroundEffectId: String? = null,
 ) {
     val backgroundRes =
         if (backgroundId == "background:cyberpunk_city") {
@@ -290,17 +301,36 @@ private fun HomeBackground(
             alignment = HomeBackgroundAlignment,
         )
     }
-    if (backgroundId == "background:starlight_yarn_basket") {
+    val activeProp =
+        backgroundPropId
+            ?: backgroundOverlayId?.takeIf {
+                it == "background:star_hanger" || it == "background:starlight_yarn_basket"
+            }
+            ?: backgroundId?.takeIf { it == "background:star_hanger" || it == "background:starlight_yarn_basket" }
+    val activeEffect =
+        backgroundEffectId
+            ?: backgroundOverlayId?.takeIf {
+                it != "background:star_hanger" &&
+                    it != "background:starlight_yarn_basket" &&
+                    it != "background:cyberpunk_city"
+            }
+            ?: backgroundId?.takeIf {
+                it != "background:star_hanger" &&
+                    it != "background:starlight_yarn_basket" &&
+                    it != "background:cyberpunk_city"
+            }
+
+    if (activeProp == "background:starlight_yarn_basket") {
         StarlightYarnBasket(Modifier.fillMaxSize().testTag("home-yarn-basket"))
-    } else if (backgroundId == "background:star_hanger") {
+    } else if (activeProp == "background:star_hanger") {
         StarHanger(Modifier.fillMaxSize().testTag("home-star-hanger"))
-    } else if (backgroundId == "background:cyberpunk_city") {
-        // Full background image rendered
-    } else if (backgroundId != null) {
+    }
+
+    if (activeEffect != null) {
         val particleType =
             when {
-                backgroundId.contains("snow") -> ParticleType.SNOW
-                backgroundId.contains("petal") || backgroundId.contains("flower") -> ParticleType.PETAL
+                activeEffect.contains("snow") -> ParticleType.SNOW
+                activeEffect.contains("petal") || activeEffect.contains("flower") -> ParticleType.PETAL
                 else -> ParticleType.STAR
             }
         FallingParticlesEffect(
