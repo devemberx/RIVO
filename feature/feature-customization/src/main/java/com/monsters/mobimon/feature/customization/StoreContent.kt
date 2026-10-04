@@ -519,12 +519,7 @@ private fun StoreItemArtwork(
                 Icon(painterResource(R.drawable.store_none), null, Modifier.size(48.dp), tint = MobiMonColors.muted)
             }
         item.slot == CosmeticSlot.FRIEND ->
-            PetAvatar(
-                modifier,
-                friendId = item.id,
-                isAnimated =
-                    item.id == "friend:luna" || item.id == "friend:las",
-            )
+            PetAvatar(modifier, friendId = item.id)
         visual is BackgroundVisual.Prop ->
             when (visual.kind) {
                 BackgroundProp.STAR_HANGER -> StarHanger(modifier, centered = true, isAnimated = false)
