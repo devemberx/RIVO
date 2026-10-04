@@ -67,6 +67,11 @@ class Demo:
         sizes = re.findall(r"(?:Physical|Override) size: (\d+x\d+)", self.command("shell", "wm", "size"))
         if not sizes or sizes[-1] != "2560x1440":
             raise DemoError("메뉴 촬영 조작은 프로젝트의 2560x1440 가로 AAOS 배치를 사용합니다.")
+        # Menu coordinates also depend on density and font scale.
+        densities = re.findall(r"(?:Physical|Override) density: (\d+)", self.command("shell", "wm", "density"))
+        font_scale = self.command("shell", "settings", "get", "system", "font_scale").strip()
+        if not densities or densities[-1] != "160" or font_scale not in ("null", "1", "1.0"):
+            raise DemoError("메뉴 촬영 조작은 화면 밀도 160과 기본 글자 크기를 사용합니다.")
         print(f"준비 확인: {self.serial}, Debug 앱. 앱 데이터는 초기화하지 않습니다.", flush=True)
 
     def snapshot(self):
@@ -112,13 +117,14 @@ class Demo:
                 time.sleep(0.4)
         raise DemoError(f"화면에서 찾지 못했습니다: {pattern}. 현재 화면에서 멈췄습니다.")
 
-    def tap_node(self, node):
+    def clickable(self, node):
         target = node
         while target.get("clickable") != "true" and target in self.parents:
             target = self.parents[target]
-        if target.get("clickable") != "true":
-            target = node
-        x1, y1, x2, y2 = bounds(target)
+        return target if target.get("clickable") == "true" else node
+
+    def tap_node(self, node):
+        x1, y1, x2, y2 = bounds(self.clickable(node))
         self.command("shell", "input", "tap", str((x1 + x2) // 2), str((y1 + y2) // 2))
         time.sleep(0.6)
 
@@ -168,8 +174,16 @@ class Demo:
         self.tap_node(edits[0])
         self.command("shell", "input", "keycombination", "113", "29")  # Ctrl+A
         self.command("shell", "input", "text", value)
-        self.command("shell", "input", "keyevent", "KEYCODE_BACK")
+        self.hide_keyboard()
         time.sleep(0.5)
+
+    def hide_keyboard(self):
+        # Without a keyboard to consume it, BACK leaves the screen or the app.
+        for _ in range(4):
+            if "mInputShown=true" in self.command("shell", "dumpsys", "input_method"):
+                self.command("shell", "input", "keyevent", "KEYCODE_BACK")
+                return
+            time.sleep(0.3)
 
     def automatic_battery(self):
         self.debug(True)
@@ -195,7 +209,8 @@ class Demo:
     def battery(self, percent):
         label = "Vehicle.Powertrain.TractionBattery.StateOfCharge.Displayed"
         for _ in range(3):
-            self.field(label, f"{percent}.0")
+            # The field reformats to "1.0" mid-typing; a later "." would save 0.
+            self.field(label, str(percent))
             time.sleep(0.7)
             if float(self.debug_values().get(label, "nan")) == percent:
                 return
@@ -261,7 +276,11 @@ class Demo:
         self.snapshot()
         if not self.matches("디버그 창 (펼치기|축소)"):
             self.route("설정")
-            self.tap("Debugger")
+            setting = self.clickable(self.find("Debugger"))
+            if setting.get("checked") == "true":
+                # Tapping again would turn debug mode off.
+                raise DemoError("Debugger가 켜져 있지만 디버그 창이 없습니다. X로 닫았다면 Debugger를 껐다 켜고 P 상태를 확인하세요.")
+            self.tap_node(setting)
         self.debug(False)
         self.debug(True)
         self.section("Quest")
@@ -323,7 +342,13 @@ class Demo:
         # Android input text reliably supports ASCII without installing another IME.
         question = "What is the recommended tire pressure for IONIQ 5? Use the manual and reply in Korean with sources."
         self.command("shell", "input", "text", question.replace(" ", "%s").replace("?", "\\?"))
-        self.command("shell", "input", "keyevent", "KEYCODE_BACK")
+        time.sleep(0.5)
+        self.snapshot()
+        edits = [n for n in self.root.iter("node") if n.get("package") == PACKAGE and n.get("class") == "android.widget.EditText"]
+        if len(edits) != 1 or edits[0].get("text", "") != question:
+            # The question reaches a real Copilot account; never send a garbled one.
+            raise DemoError("질문이 정확히 입력되지 않아 전송하지 않았습니다. 입력란을 비운 뒤 다시 실행하세요.")
+        self.hide_keyboard()
         self.hold(3)
         self.tap("메시지 보내기")
         print("응답과 출처를 직접 확인하세요. 답변 내용은 기록하지 않습니다.", flush=True)
@@ -353,6 +378,8 @@ class Demo:
         self.tap(re.escape(self.args.item), scroll=True)
         self.hold(4)
         self.snapshot()
+        if self.matches("[0-9,]+ P 부족"):
+            raise DemoError("포인트가 부족해 아이템을 구매할 수 없습니다. 잔액을 확인하거나 보유 아이템을 고르세요.")
         if self.matches("[0-9,]+ P로 구매하기"):
             self.tap("[0-9,]+ P로 구매하기")
             self.hold(3)
