@@ -112,13 +112,10 @@ fun VehicleInfoScreen(
     val readings = snapshot.toVehicleInfoUiState()
     val mood =
         if (readings.condition == VehicleCondition.CHECKED &&
-            (
-                snapshot.isCharging == null ||
-                    snapshot.washerFluidLevel == null ||
-                    readings.outsideTemperature == null ||
-                    readings.isRaining == null ||
-                    readings.attentionLevel == null
-            )
+            VehicleCardCatalog.defaultSlots.any {
+                VehicleCardCatalog.status(it.id, snapshot) ==
+                    VehicleCardStatus.UNAVAILABLE
+            }
         ) {
             VehicleMood.PARTIAL
         } else {
@@ -127,8 +124,7 @@ fun VehicleInfoScreen(
     val title = stringResource(R.string.vehicle_destination_title)
     var currentCards by remember(selectedCards) {
         mutableStateOf(
-            selectedCards.takeIf { it.size == 6 && it.all { id -> VehicleCardCatalog.find(id) != null } }
-                ?: VehicleCardCatalog.defaultSlots.map { it.id },
+            VehicleCardSelectionStore.validOrDefaults(selectedCards),
         )
     }
     var dialogSlot by remember { mutableStateOf<Int?>(null) }
@@ -679,8 +675,6 @@ private fun VehicleCard(
     when (cardId) {
         "battery" -> BatteryCard(snapshot, readings.batteryPercent, status, modifier)
         "tire" -> TireCard(readings, status, modifier)
-        "environment" -> EnvironmentCard(readings, status, modifier)
-        "assist" -> DriverAssistCard(readings, status, modifier)
         "charging" -> {
             val current = snapshot.takeIf { it.quality == SignalQuality.VALID }?.isCharging
             MetricCard(
@@ -1282,69 +1276,6 @@ private fun TireCard(
 }
 
 @Composable
-private fun EnvironmentCard(
-    readings: VehicleInfoUiState,
-    status: VehicleCardStatus,
-    modifier: Modifier = Modifier,
-) {
-    val temperature = readings.outsideTemperature?.let { stringResource(R.string.vehicle_temperature_value, it) }
-    val rainText =
-        when (readings.isRaining) {
-            true -> stringResource(R.string.vehicle_raining)
-            false -> stringResource(R.string.vehicle_not_raining)
-            null -> stringResource(R.string.vehicle_weather_unknown)
-        }
-    MetricCard(
-        title = stringResource(R.string.vehicle_environment_card_title),
-        value = temperature ?: stringResource(R.string.vehicle_unknown_short),
-        supporting = rainText,
-        badge = stringResource(status.labelRes),
-        badgeTone = status.tone,
-        modifier = modifier,
-        testTag = "vehicle-card-environment",
-    )
-}
-
-@Composable
-private fun DriverAssistCard(
-    readings: VehicleInfoUiState,
-    status: VehicleCardStatus,
-    modifier: Modifier = Modifier,
-) {
-    val issue =
-        when (readings.assistWarning) {
-            DriverAssistWarning.EMERGENCY_BRAKING -> stringResource(R.string.vehicle_emergency_braking)
-            DriverAssistWarning.DROWSY -> stringResource(R.string.vehicle_drowsy)
-            DriverAssistWarning.DISTRACTED -> stringResource(R.string.vehicle_distracted)
-            null -> {
-                when {
-                    readings.frontDistance != null ->
-                        stringResource(
-                            R.string.vehicle_front_distance,
-                            readings.frontDistance,
-                        )
-                    readings.assistChecked -> stringResource(R.string.vehicle_assist_checked_detail)
-                    else -> stringResource(R.string.vehicle_assist_unavailable)
-                }
-            }
-        }
-    MetricCard(
-        title = stringResource(R.string.vehicle_assist_card_title),
-        value =
-            when (status) {
-                VehicleCardStatus.NORMAL -> stringResource(R.string.vehicle_assist_no_issue)
-                VehicleCardStatus.CAUTION -> stringResource(R.string.vehicle_attention_needed)
-                else -> readings.attentionLevel?.let { "$it" } ?: stringResource(R.string.vehicle_unknown_short)
-            },
-        supporting = issue,
-        modifier = modifier,
-        testTag = "vehicle-card-assist",
-        badge = stringResource(status.labelRes),
-        badgeTone = status.tone,
-    )
-}
-
-@Composable
 private fun ConnectionCard(
     snapshot: VehicleSnapshot,
     modifier: Modifier = Modifier,
@@ -1459,9 +1390,9 @@ private fun MetricCard(
     val cardId = testTag?.removePrefix("vehicle-card-")
     val valueSize =
         when (cardId) {
-            "battery", "washer", "environment", "battery-health" -> 76f
+            "battery", "washer", "battery-health" -> 76f
             "tire" -> 68f
-            "charging", "assist", "battery-range", "battery-time" -> 56f
+            "charging", "battery-range", "battery-time" -> 56f
             else -> 64f
         }
     val icon = vehicleCardIcon(cardId)
@@ -1756,8 +1687,6 @@ private fun vehicleCardIcon(cardId: String?): Int =
         "charging" -> R.drawable.vehicle_icon_charging
         "tire" -> R.drawable.vehicle_icon_tire
         "washer" -> R.drawable.vehicle_icon_washer
-        "environment" -> R.drawable.vehicle_icon_environment
-        "assist" -> R.drawable.vehicle_icon_assist
         "battery" -> R.drawable.vehicle_catalog_battery
         "battery-health" -> R.drawable.vehicle_catalog_battery_health
         "battery-range" -> R.drawable.vehicle_catalog_battery_range

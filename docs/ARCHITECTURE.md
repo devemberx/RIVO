@@ -61,8 +61,9 @@ The [core-ui catalog/resolver](../core/core-ui/src/main/java/com/monsters/mobimo
 owns typed periods, complete seven-frame or deliberate static artwork, scene
 labels, contrast/tint and crop alignment. Register scenes and item mappings in the
 [visual catalog](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/CompanionBackgroundCatalog.kt);
-Home/Store need no scene-specific branches. Optional explicit prop/effect inputs
-support independent layers while retaining current single-slot compatibility;
+Home/Store need no scene-specific branches. Home and Store pass independently
+persisted prop/effect selections to the resolver, with registered legacy
+overlay/single-slot compatibility;
 purchase, ownership and persisted equipment remain repository responsibilities.
 
 ### Window geometry

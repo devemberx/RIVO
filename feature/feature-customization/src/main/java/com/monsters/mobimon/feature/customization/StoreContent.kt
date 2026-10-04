@@ -65,22 +65,6 @@ import com.monsters.mobimon.core.ui.StarlightYarnBasket
 import com.monsters.mobimon.core.ui.companionBackgroundRes
 import com.monsters.mobimon.core.ui.resolveCompanionBackground
 
-internal enum class StoreSpaceCategory(
-    val label: String,
-) {
-    BACKGROUNDS("배경"),
-    EFFECTS("특수효과"),
-    PROPS("소품"),
-    ;
-
-    fun includes(item: CosmeticItem): Boolean =
-        when (CompanionBackgroundCatalog.visual(item.id)) {
-            is BackgroundVisual.Prop -> this == PROPS
-            is BackgroundVisual.Effect -> this == EFFECTS
-            else -> this == BACKGROUNDS
-        }
-}
-
 @Composable
 internal fun StoreContent(
     presentation: CustomizationCatalog,
@@ -141,25 +125,31 @@ internal fun StoreContent(
                                 24.dp * scale,
                             ),
                     ) {
-                        Text(
+                        val displayName =
                             if (tab == CosmeticSlot.FRIEND) {
                                 storeFriendName(presentation.preview.friendId)
+                            } else if (presentation.selected != null) {
+                                cosmeticName(presentation.selected.id, category)
                             } else {
-                                presentation.selected?.let { cosmeticName(it.id, category) }.orEmpty()
-                            },
+                                ""
+                            }
+                        Text(
+                            displayName,
                             color = MobiMonColors.text,
                             fontSize = (44f * scale).sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.weight(0.34f),
                         )
-                        Text(
+                        val desc =
                             storePreviewDescription(
                                 tab,
                                 presentation.selected?.id,
                                 presentation.preview.friendId,
                                 presentation.selectedEquipped,
                                 category,
-                            ),
+                            )
+                        Text(
+                            desc,
                             color = MobiMonColors.muted,
                             fontSize = (28f * scale).sp,
                             textAlign = TextAlign.End,
@@ -435,10 +425,11 @@ private fun StoreCard(
     onClick: () -> Unit,
     enabled: Boolean,
 ) {
+    val revealModifier = storeCardRevealModifier(item.id)
     MobiMonSelectionCard(
         selected,
         onClick,
-        Modifier.fillMaxWidth().testTag("store-item-${item.id}").then(storeCardRevealModifier(item.id)),
+        Modifier.fillMaxWidth().testTag("store-item-${item.id}").then(revealModifier),
         enabled = enabled,
         shape =
             RoundedCornerShape(
@@ -473,8 +464,14 @@ private fun StoreCard(
                 )
             }
             Spacer(Modifier.height(20.dp * scale))
+            val itemName =
+                if (item.slot == CosmeticSlot.FRIEND) {
+                    storeFriendName(item.id)
+                } else {
+                    cosmeticName(item.id, category)
+                }
             Text(
-                if (item.slot == CosmeticSlot.FRIEND) storeFriendName(item.id) else cosmeticName(item.id, category),
+                itemName,
                 color = MobiMonColors.text,
                 fontSize = (34f * scale).sp,
                 fontWeight = FontWeight.Bold,
@@ -565,7 +562,25 @@ private fun StorePreview(
 ) {
     BoxWithConstraints(modifier.clip(RoundedCornerShape(24.dp))) {
         val zoomBackground = tab == CosmeticSlot.FRIEND || tab == CosmeticSlot.ACCESSORY
-        val background = resolveCompanionBackground(timeOfDay, preview.backgroundId)
+        val background =
+            resolveCompanionBackground(
+                timeOfDay,
+                preview.backgroundId,
+                propId =
+                    preview.backgroundPropId
+                        ?: preview.backgroundOverlayId?.takeIf {
+                            CompanionBackgroundCatalog.visual(
+                                it,
+                            ) is BackgroundVisual.Prop
+                        },
+                effectId =
+                    preview.backgroundEffectId
+                        ?: preview.backgroundOverlayId?.takeIf {
+                            CompanionBackgroundCatalog.visual(
+                                it,
+                            ) is BackgroundVisual.Effect
+                        },
+            )
         Image(
             painterResource(background.layer.frame.drawableRes),
             null,

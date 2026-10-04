@@ -14,6 +14,9 @@ import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -203,6 +206,40 @@ class StoreLayoutDeviceTest {
         capture("large-text-confirmation")
         compose.onNodeWithText("취소").performScrollTo().performClick()
         assertEquals(0, calls)
+    }
+
+    @Test fun purchaseDialogFitsDriverDisplay() {
+        render()
+        compose.onNodeWithTag("store-tab-ACCESSORY").performClick()
+        compose.onNodeWithText("모비 헤드폰").performClick()
+        compose.onNodeWithTag("store-action").performClick()
+
+        val dialog = compose.onNodeWithTag("store-purchase-dialog").fetchSemanticsNode().boundsInRoot
+        val price =
+            compose
+                .onNode(hasText("300 P") and hasAnyAncestor(hasTestTag("store-purchase-dialog")))
+                .fetchSemanticsNode()
+                .boundsInRoot
+        val remaining = compose.onNodeWithText("900 P").fetchSemanticsNode().boundsInRoot
+        val cancel = compose.onNodeWithText("취소").fetchSemanticsNode().boundsInRoot
+        val buy = compose.onNodeWithText("구매하기").fetchSemanticsNode().boundsInRoot
+        assertTrue("Dialog extends beyond driver display: $dialog", dialog.right <= view.width)
+        assertTrue("Dialog extends below driver display: $dialog", dialog.bottom <= view.height)
+        for (content in listOf(price, remaining, cancel, buy)) {
+            assertTrue(
+                "Content extends beyond dialog: $content",
+                content.left >= dialog.left && content.right <= dialog.right,
+            )
+            assertTrue(
+                "Content extends below dialog: $content",
+                content.top >= dialog.top && content.bottom <= dialog.bottom,
+            )
+        }
+        assertTrue("Cancel extends beyond driver display: $cancel", cancel.right <= view.width)
+        assertTrue("Cancel extends below driver display: $cancel", cancel.bottom <= view.height)
+        assertTrue("Buy extends beyond driver display: $buy", buy.right <= view.width)
+        assertTrue("Buy extends below driver display: $buy", buy.bottom <= view.height)
+        capture("purchase-confirmation-bounds")
     }
 
     private fun capture(name: String) {

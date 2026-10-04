@@ -64,7 +64,9 @@ import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.presentation.VehicleCondition
 import com.monsters.mobimon.core.presentation.vehicleCondition
 import com.monsters.mobimon.core.ui.BackgroundProp
+import com.monsters.mobimon.core.ui.BackgroundVisual
 import com.monsters.mobimon.core.ui.CompanionBackground
+import com.monsters.mobimon.core.ui.CompanionBackgroundCatalog
 import com.monsters.mobimon.core.ui.FallingParticlesEffect
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.LocalMobiMonNotificationCount
@@ -93,6 +95,9 @@ fun PetHomeScreen(
     accessoryId: String? = null,
     outfitId: String? = null,
     backgroundId: String? = null,
+    backgroundOverlayId: String? = null,
+    backgroundPropId: String? = null,
+    backgroundEffectId: String? = null,
     interactionAllowed: Boolean = false,
     profileObservationFailed: Boolean = false,
     onRetryProfile: () -> Unit = {},
@@ -107,7 +112,25 @@ fun PetHomeScreen(
             val windowHeight = maxHeight
             val fontScale = LocalDensity.current.fontScale
             val scale = maxWidth.value / 2560f
-            val background = resolveCompanionBackground(backgroundTimeOfDay, backgroundId)
+            val background =
+                resolveCompanionBackground(
+                    backgroundTimeOfDay,
+                    backgroundId,
+                    propId =
+                        backgroundPropId
+                            ?: backgroundOverlayId?.takeIf {
+                                CompanionBackgroundCatalog.visual(
+                                    it,
+                                ) is BackgroundVisual.Prop
+                            },
+                    effectId =
+                        backgroundEffectId
+                            ?: backgroundOverlayId?.takeIf {
+                                CompanionBackgroundCatalog.visual(
+                                    it,
+                                ) is BackgroundVisual.Effect
+                            },
+                )
             val textShadow =
                 if (!background.layer.frame.needsTextShadow) {
                     null
@@ -181,7 +204,12 @@ fun PetHomeScreen(
                                     .offset(
                                         x = bubbleLeft,
                                         y = (500 * scale).dp,
-                                    ).anchorHomeSpeechBubbleTail((130f * homeSpeechBubbleScale(scale, fontScale)).dp),
+                                    ).anchorHomeSpeechBubbleTail(
+                                        (
+                                            130f *
+                                                homeSpeechBubbleScale(scale, fontScale).toFloat()
+                                        ).dp,
+                                    ),
                                 scale = scale,
                                 triggerKey = bubbleTrigger,
                                 friendId = friendId,
@@ -217,7 +245,7 @@ fun PetHomeScreen(
                     if (friendId != null) {
                         Box(
                             Modifier
-                                .widthIn(max = (560 * homeSpeechBubbleScale(0.75f, fontScale)).dp)
+                                .widthIn(max = (560 * homeSpeechBubbleScale(0.75f, fontScale).toFloat()).dp)
                                 .fillMaxWidth(),
                         ) {
                             HomeSpeechBubble(

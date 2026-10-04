@@ -561,4 +561,25 @@ class PetAvatarTest {
             }
         }
     }
+
+    @Test
+    fun lasMovementUsesDancingSpriteAndItsLoopHasNoEndJump() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        val sheet = requireNotNull(LasDanceSpriteCache.getOrLoad(context))
+        assertEquals(1536, sheet.width)
+        assertEquals(1024, sheet.height)
+        assertEquals(0, LasDanceTimeline.frame(0))
+        assertEquals(11, LasDanceTimeline.frame(11 * 85L))
+        assertEquals(1, LasDanceTimeline.frame(21 * 85L))
+        assertEquals(0, LasDanceTimeline.frame(22 * 85L))
+
+        compose.setContent {
+            MobiMonTheme {
+                PetAvatar(friendId = "friend:las", isMoving = true)
+            }
+        }
+        compose.onNodeWithTag("las-dance-frame", useUnmergedTree = true).assertExists()
+    }
 }
