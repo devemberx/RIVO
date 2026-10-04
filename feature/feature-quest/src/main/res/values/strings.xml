@@ -98,7 +98,7 @@
     <string name="quest_safe_drive_detail_line2">5km 이상 주행을 마쳐보세요.</string>
 
     <string name="quest_100km_name">우리가 함께 달린 100km</string>
-    <string name="quest_100km_short_desc">모비와 함께 누적 100km 주행 달성</string>
+    <string name="quest_100km_short_desc">친구와 함께 누적 100km 주행 달성</string>
     <string name="quest_100km_detail_line1">꾸준히 안전 주행을 실천하여</string>
     <string name="quest_100km_detail_line2">누적 100km 주행 목표를 달성해 보세요.</string>
 
@@ -107,7 +107,7 @@
     <string name="quest_clean_drive_detail_line1">급가속, 급제동, 과속 없이 부드럽게</string>
     <string name="quest_clean_drive_detail_line2">5km 이상 완벽한 클린 주행을 실천해 보세요.</string>
 
-    <string name="quest_first_drive_name">모비와 함께 여는 활기찬 하루</string>
+    <string name="quest_first_drive_name">친구와 함께 여는 활기찬 하루</string>
     <string name="quest_first_drive_short_desc">오늘 하루의 첫 번째 주행을 안전하게 완주</string>
     <string name="quest_first_drive_detail_line1">오늘의 첫 주행을 안전하게 마치고</string>
     <string name="quest_first_drive_detail_line2">기분 좋은 보너스 포인트를 받아보세요.</string>
