@@ -38,7 +38,7 @@ android {
         targetSdk = 34
         buildConfigField("String", "GITHUB_CLIENT_ID", "\"$githubClientId\"")
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "1.0.0"
         testInstrumentationRunner = "com.monsters.mobimon.testing.MobiMonTestRunner"
     }
 

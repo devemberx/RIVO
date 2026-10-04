@@ -67,7 +67,7 @@ class CompanionMenuReviewTest {
         val alerts = compose.onNodeWithTag("menu-notifications").fetchSemanticsNode().boundsInRoot
         assertEquals(453f, alerts.top, 1f)
         assertMenuIconAndBadgeAligned()
-        compose.onNodeWithText("v0.1.0").assertIsDisplayed()
+        compose.onNodeWithText("v1.0.0").assertIsDisplayed()
         capture("menu")
     }
 
@@ -212,7 +212,7 @@ class CompanionMenuReviewTest {
                 .boundsInRoot
         assertEquals(244f * scale, name.left, 1f)
         compose.onNodeWithContentDescription("닫기").assertIsDisplayed()
-        compose.onNodeWithText("v0.1.0").assertIsDisplayed()
+        compose.onNodeWithText("v1.0.0").assertIsDisplayed()
         val labels = listOf("홈", "알림", "퀘스트", "차량 상태", "꾸미기", "설정")
         val bounds =
             labels.mapIndexed { index, label ->
@@ -280,7 +280,7 @@ class CompanionMenuReviewTest {
         capture("menu-aaos-enlarged-text")
         compose.onNodeWithText("설정").performScrollTo().assertIsDisplayed()
         capture("menu-aaos-enlarged-text-settings")
-        compose.onNodeWithText("v0.1.0").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("v1.0.0").performScrollTo().assertIsDisplayed()
         compose.onNodeWithContentDescription("닫기").performScrollTo().performClick()
         compose.onNodeWithTag("companion-menu").assertDoesNotExist()
     }
