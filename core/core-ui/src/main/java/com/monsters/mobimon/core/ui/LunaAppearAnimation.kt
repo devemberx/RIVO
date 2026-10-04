@@ -40,8 +40,14 @@ internal object LunaAppearTimeline {
     fun idleBlendAt(elapsedNanos: Long): Float =
         ((elapsedNanos - IDLE_BLEND_START_NANOS).toFloat() / IDLE_BLEND_NANOS).coerceIn(0f, 1f)
 
-    fun load(context: Context): List<ImageBitmap>? =
-        LunaScene.load(context, "characters/luna/normal/appear/luna_appear_normal_%02d.png")
+    fun load(
+        context: Context,
+        appearance: LunaAppearance = LunaAppearance.NORMAL,
+    ): List<ImageBitmap>? =
+        LunaScene.load(
+            context,
+            "characters/luna/${appearance.assetName}/appear/luna_appear_${appearance.assetName}_%02d.png",
+        ) ?: LunaScene.load(context, "characters/luna/normal/appear/luna_appear_normal_%02d.png")
 }
 
 /** One shot at 16fps: a box drops in, Luna peeks out, hops to her seat and hands off to the idle pose. */
@@ -53,8 +59,8 @@ internal fun LunaAppearAnimation(
 ) {
     val context = LocalContext.current.applicationContext
     val finished by rememberUpdatedState(onFinished)
-    val frames by produceState<Pair<Boolean, List<ImageBitmap>?>>(false to null, context) {
-        value = true to withContext(Dispatchers.IO) { LunaAppearTimeline.load(context) }
+    val frames by produceState<Pair<Boolean, List<ImageBitmap>?>>(false to null, context, appearance) {
+        value = true to withContext(Dispatchers.IO) { LunaAppearTimeline.load(context, appearance) }
     }
     val elapsed = remember { mutableLongStateOf(0L) }
     LaunchedEffect(frames) {
