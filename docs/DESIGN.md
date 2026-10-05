@@ -69,6 +69,10 @@ entry point for Mobi, Luna, Las and their items. Each `references/` folder holds
 one current master, turnaround and `reference.json`; these are not packaged.
 Manifests own proportions, attachment rules and review status. Preserve the
 canonical identity and scale; derived views do not override the master.
+An explicitly requested master correction records both original-source and revised
+hashes plus review provenance; reference acceptance does not update or validate
+existing runtime motion. Preserve the corrected attachment and occlusion rules in
+each manifest when deriving new views.
 Use the [character animation workflow](../.agents/skills/character-animation/SKILL.md)
 for reference checks, motion review and runtime export.
 

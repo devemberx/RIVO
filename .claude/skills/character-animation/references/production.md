@@ -11,6 +11,14 @@
 - The original canonical defines identity; fitted canonical defines item fit.
   Turnarounds describe other views but do not override those masters. Their hidden
   surfaces are inferred, and side views are not calibrated orthographic views.
+- An explicitly requested reference correction may use `reviewed_reference_revision`
+  with a `revision_review` binding the original source and revised image hashes,
+  reviewer, authority, date, reason, evidence and signoff provenance. Its scope is
+  `reference_only`: the recorded runtime source stays independently verified and
+  is not claimed to match the corrected master. Current-input review is still required.
+- Read any `construction_references` with the master; preflight includes their bytes
+  in the reviewed inventory. A rotated detail preserves 2D part construction and
+  proportions, not calibrated perspective or a new pose approval.
 - Current sheets contain seated/standing front, left-side and back views; item
   sheets also contain item-only views. Use explicit `cell_rect_px` / `rect_px`, not
   equal grid division. Las has unequal row heights and sunglasses unequal columns.
