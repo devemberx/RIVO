@@ -82,7 +82,7 @@ class StarHangerTest {
             CompositionLocalProvider(LocalMobiMonMotionEnabled provides motion) {
                 Box(Modifier.size(800.dp, 400.dp)) {
                     Image(
-                        painterResource(R.drawable.pet_home_background_day),
+                        painterResource(R.drawable.pet_background_lake_park_day),
                         null,
                         Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,

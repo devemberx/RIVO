@@ -24,7 +24,7 @@ internal object LunaDisappearTimeline {
 
     // Frames 1–2 are the idle pose; holding them keeps the "departing?" bubble readable. The tower stays above
     // the bubble through frame 5 and reaches it in frame 6, which starts when the bubble ends.
-    val SURPRISE_NANOS = 66_666_667L until 1_200_000_000L
+    val SURPRISE_NANOS = DEPARTURE_SURPRISE_NANOS
     const val HOLD_NANOS = 887_500_000L
     const val DURATION_NANOS = HOLD_NANOS + FRAME_COUNT * 1_000_000_000L / FPS
 
@@ -37,8 +37,14 @@ internal object LunaDisappearTimeline {
     fun frameAt(elapsedNanos: Long): Int =
         ((elapsedNanos - HOLD_NANOS).coerceAtLeast(0L) * FPS / 1_000_000_000L).toInt().coerceAtMost(FRAME_COUNT - 1)
 
-    fun load(context: Context): List<ImageBitmap>? =
-        LunaScene.load(context, "characters/luna/normal/disappear/luna_disappear_normal_%02d.png")
+    fun load(
+        context: Context,
+        appearance: LunaAppearance = LunaAppearance.NORMAL,
+    ): List<ImageBitmap>? =
+        LunaScene.load(
+            context,
+            "characters/luna/${appearance.assetName}/disappear/luna_disappear_${appearance.assetName}_%02d.png",
+        ) ?: LunaScene.load(context, "characters/luna/normal/disappear/luna_disappear_normal_%02d.png")
 }
 
 /**
@@ -53,8 +59,8 @@ internal fun LunaDisappearAnimation(
 ) {
     val context = LocalContext.current.applicationContext
     val finished by rememberUpdatedState(onFinished)
-    val frames by produceState<Pair<Boolean, List<ImageBitmap>?>>(false to null, context) {
-        value = true to withContext(Dispatchers.IO) { LunaDisappearTimeline.load(context) }
+    val frames by produceState<Pair<Boolean, List<ImageBitmap>?>>(false to null, context, appearance) {
+        value = true to withContext(Dispatchers.IO) { LunaDisappearTimeline.load(context, appearance) }
     }
     val elapsed = remember { mutableLongStateOf(0L) }
     LaunchedEffect(frames) {

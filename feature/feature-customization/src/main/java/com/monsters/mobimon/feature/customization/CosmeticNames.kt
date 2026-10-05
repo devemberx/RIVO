@@ -2,6 +2,25 @@ package com.monsters.mobimon.feature.customization
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
+import com.monsters.mobimon.core.domain.CosmeticItem
+import com.monsters.mobimon.core.ui.BackgroundVisual
+import com.monsters.mobimon.core.ui.CompanionBackgroundCatalog
+
+internal enum class StoreSpaceCategory(
+    val label: String,
+) {
+    BACKGROUNDS("배경"),
+    EFFECTS("특수효과"),
+    PROPS("소품"),
+    ;
+
+    fun includes(item: CosmeticItem): Boolean =
+        when (CompanionBackgroundCatalog.visual(item.id)) {
+            is BackgroundVisual.Prop -> this == PROPS
+            is BackgroundVisual.Effect -> this == EFFECTS
+            else -> this == BACKGROUNDS
+        }
+}
 
 @Composable
 internal fun cosmeticName(
@@ -13,7 +32,7 @@ internal fun cosmeticName(
         itemId == "none:background" ->
             stringResource(
                 when (category) {
-                    StoreSpaceCategory.BACKGROUNDS -> R.string.pet_background_default
+                    StoreSpaceCategory.BACKGROUNDS -> CompanionBackgroundCatalog.defaultScene.nameRes
                     StoreSpaceCategory.EFFECTS -> R.string.pet_effect_none
                     StoreSpaceCategory.PROPS -> R.string.pet_prop_none
                 },
@@ -30,6 +49,5 @@ internal fun cosmeticName(
         itemId == "background:star" -> stringResource(R.string.pet_background_star)
         itemId == "background:snow" -> stringResource(R.string.pet_background_snow)
         itemId == "background:petal" -> stringResource(R.string.pet_background_petal)
-        itemId == "background:cyberpunk_city" -> stringResource(R.string.pet_background_cyberpunk_city)
-        else -> itemId
+        else -> CompanionBackgroundCatalog.scene(itemId)?.let { stringResource(it.nameRes) } ?: itemId
     }

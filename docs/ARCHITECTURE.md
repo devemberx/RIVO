@@ -53,10 +53,22 @@ state/callbacks to screens. Activity ViewModels survive navigation.
 | Driving evaluation | Repository memory; simulated, not trusted evidence |
 | Preview and animation | Renderer; equipment changes only on commit |
 
+Fresh Activity launches draw the common sky before constructing the feature graph
+and Compose shell. Authentication construction/restoration runs on IO; process-owned
+vehicle observation and foreground restrictions retain their existing lifecycle.
+
 Read failures retain committed data. Notifications are read-only summaries;
 repositories own reward writes. [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
 renders appearance only; display evidence and previews cannot authorize commands.
 Home and Store backgrounds use interpreted VSS time, never device time.
+The [core-ui catalog/resolver](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/CompanionBackground.kt)
+owns typed periods, complete seven-frame or deliberate static artwork, scene
+labels, contrast/tint and crop alignment. Register scenes and item mappings in the
+[visual catalog](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/CompanionBackgroundCatalog.kt);
+Home/Store need no scene-specific branches. Home and Store pass independently
+persisted prop/effect selections to the resolver, with registered legacy
+overlay/single-slot compatibility;
+purchase, ownership and persisted equipment remain repository responsibilities.
 
 ### Window geometry
 
@@ -107,12 +119,12 @@ replay. A 401 invalidates only its credential revision. Release logging is off;
 provider bodies, dialogue and tokens never enter logs/errors.
 
 [Tool contracts](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/ConversationTools.kt)
-are pure Kotlin. Debug registers manual search and read-only `get_vehicle_context(topic)`.
-[Per-turn routing](../app/src/debug/java/com/monsters/mobimon/chat/VehicleToolRouting.kt)
+are pure Kotlin. Debug and Release register manual search and read-only `get_vehicle_context(topic)`.
+[Per-turn routing](../app/src/main/java/com/monsters/mobimon/chat/VehicleToolRouting.kt)
 restricts recognized current-state requests and their user-context evidence follow-ups to
 vehicle tools; mixed or unrecognized requests retain both. Empty manual results supply
-no citations and do not discard valid vehicle evidence. Release registers no tools but
-uses the same checked reply policy. Sequential validated
+no citations and do not discard valid vehicle evidence. Both variants use the same
+checked reply policy; diagnostic logging and evaluation fixtures remain Debug-only. Sequential validated
 batches share a [turn budget](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/ConversationExecutionBudget.kt):
 30 seconds, 64,000 estimated prompt plus reserved output tokens, 64,000 characters per
 and combined tool results, and 12,000 reply characters. Counts are not fixed. Repeated
@@ -122,7 +134,7 @@ automatically replayed; no commands or rewards are available. Synthetic Debug pr
 
 The pinned 2027 Korean IONIQ 5 bundle fails closed on missing assets; it cannot supply
 current vehicle state. Manual claims need current-turn sources and
-[checked citations](../app/src/debug/java/com/monsters/mobimon/manual/ManualReplyPolicy.kt).
+[checked citations](../app/src/main/java/com/monsters/mobimon/manual/ManualReplyPolicy.kt).
 All app replies use a versioned envelope with separate manual IDs and vehicle references.
 Unused manual/vehicle reference arrays may be omitted and default to empty; required references remain enforced by
 [acceptance](../app/src/main/java/com/monsters/mobimon/chat/GroundedConversationReplyPolicy.kt), which

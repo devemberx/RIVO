@@ -45,6 +45,42 @@ class PetHomeScreenTest {
     val compose = createComposeRule()
 
     @Test
+    fun cityKeepsIndependentDecorationsAcrossTimeChangesAndRemoval() {
+        val time = mutableStateOf("Midnight")
+        val prop = mutableStateOf("background:star_hanger")
+        val effect = mutableStateOf("background:snow")
+        compose.setContent {
+            CompositionLocalProvider(LocalMobiMonMotionEnabled provides false) {
+                MobiMonTheme {
+                    PetHomeScreen(
+                        profile = PetProfile("profile"),
+                        snapshot = parkedSnapshot(),
+                        onOpenMenu = {},
+                        onPetClick = {},
+                        backgroundId = "background:cyberpunk_city",
+                        backgroundTimeOfDay = time.value,
+                        backgroundPropId = prop.value,
+                        backgroundEffectId = effect.value,
+                    )
+                }
+            }
+        }
+        listOf("Midnight", "Sunrise", "Morning", "Day", "Afternoon", "Sunset", "Night").forEach {
+            compose.runOnIdle { time.value = it }
+            compose.onNodeWithTag("home-background").assertExists()
+            compose.onNodeWithTag("home-star-hanger").assertExists()
+            compose.onNodeWithTag("home-background-particles").assertExists()
+        }
+        compose.runOnIdle {
+            prop.value = "none:background"
+            effect.value = "none:background"
+        }
+        compose.onNodeWithTag("home-background").assertExists()
+        compose.onNodeWithTag("home-star-hanger").assertDoesNotExist()
+        compose.onNodeWithTag("home-background-particles").assertDoesNotExist()
+    }
+
+    @Test
     fun parkingBadgeUsesSharedTopRightAnchor() {
         render(snapshot = parkedSnapshot())
         val bounds = compose.onNodeWithContentDescription("주차 확인됨").fetchSemanticsNode().boundsInRoot
@@ -407,6 +443,18 @@ class PetHomeScreenTest {
     fun backgroundDecorationDisplaysFallingParticles() {
         render(backgroundId = "background:star")
         compose.onNodeWithTag("home-background-particles").assertExists()
+    }
+
+    @Test
+    fun unknownBackgroundDoesNotDisplayInventedParticles() {
+        render(backgroundId = "background:future_snow")
+        compose.onNodeWithTag("home-background-particles").assertDoesNotExist()
+    }
+
+    @Test
+    fun cityBackgroundDoesNotDisplayParticles() {
+        render(backgroundId = "background:cyberpunk_city")
+        compose.onNodeWithTag("home-background-particles").assertDoesNotExist()
     }
 
     @Test

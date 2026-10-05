@@ -18,6 +18,9 @@ import com.monsters.mobimon.core.domain.EquipResult
 import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.core.domain.GitHubSession
 import com.monsters.mobimon.core.domain.GitHubSignIn
+import com.monsters.mobimon.core.domain.PetAppearance
+import com.monsters.mobimon.core.domain.PetProfile
+import com.monsters.mobimon.core.domain.PetRepository
 import com.monsters.mobimon.core.domain.PointAwardResult
 import com.monsters.mobimon.core.domain.PointEconomy
 import com.monsters.mobimon.core.domain.PointWallet
@@ -162,6 +165,13 @@ class MobiMonAppMotionTest {
                 authentication,
                 conversation,
                 vehiclePresentation,
+                object : PetRepository {
+                    override val profile = flowOf(PetProfile("motion-test"))
+
+                    override suspend fun initialize() = Unit
+
+                    override suspend fun setAppearance(appearance: PetAppearance) = WriteResult.Success
+                },
             )
         }
 

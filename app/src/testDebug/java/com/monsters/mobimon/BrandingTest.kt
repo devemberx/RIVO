@@ -14,6 +14,7 @@ import android.util.TypedValue
 import androidx.compose.ui.graphics.toArgb
 import androidx.test.core.app.ApplicationProvider
 import com.monsters.mobimon.core.ui.MobiMonColors
+import com.monsters.mobimon.ui.StartupBlue
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -53,13 +54,22 @@ class BrandingTest {
     }
 
     @Test
-    fun launchWindowAndSplashUseHomeBackground() {
+    fun launchWindowUsesApprovedSkyWithoutADuplicateNativeIcon() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val theme = context.resources.newTheme().apply { applyStyle(context.applicationInfo.theme, true) }
-        listOf(android.R.attr.windowBackground, android.R.attr.windowSplashScreenBackground).forEach { attribute ->
+        val window = TypedValue()
+        assertTrue(theme.resolveAttribute(android.R.attr.windowBackground, window, true))
+        assertEquals(R.drawable.pet_background_startup_common, window.resourceId)
+        val background = TypedValue()
+        assertTrue(theme.resolveAttribute(android.R.attr.windowSplashScreenBackground, background, true))
+        assertEquals(StartupBlue.toArgb(), background.data)
+        listOf(
+            android.R.attr.windowSplashScreenAnimatedIcon,
+            android.R.attr.windowSplashScreenIconBackgroundColor,
+        ).forEach { attribute ->
             val value = TypedValue()
             assertTrue("Launch theme must define $attribute", theme.resolveAttribute(attribute, value, true))
-            assertEquals(MobiMonColors.background.toArgb(), value.data)
+            assertEquals(Color.TRANSPARENT, value.data)
         }
     }
 

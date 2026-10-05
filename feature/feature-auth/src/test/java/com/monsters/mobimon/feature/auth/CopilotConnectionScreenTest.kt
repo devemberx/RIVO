@@ -8,10 +8,11 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertHeightIsAtLeast
@@ -33,6 +34,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.domain.AuthenticationProblem
 import com.monsters.mobimon.core.ui.MobiMonTheme
+import com.monsters.mobimon.feature.auth.testing.ComposeTestApplication
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -45,11 +47,27 @@ import org.robolectric.annotation.GraphicsMode
 import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1248dp-mdpi")
+@Config(sdk = [34], application = ComposeTestApplication::class, qualifiers = "ko-rKR-w2560dp-h1248dp-mdpi")
 @OptIn(ExperimentalTestApi::class)
 class CopilotConnectionScreenTest {
     @get:Rule val compose = createComposeRule()
     private lateinit var reviewView: View
+    private val referenceStates =
+        linkedMapOf(
+            "P51-introduction" to CopilotUiState.Introduction(),
+            "P52-waiting" to CopilotUiState.Waiting("ABCD · 1234", 272),
+            "P52C-address" to CopilotUiState.Waiting("ABCD · 1234", 272, showAddress = true),
+            "P52B-expired" to CopilotUiState.Expired,
+            "P53-connected" to CopilotUiState.Connected("@mobimon-driver", accountLabel = "예시 계정"),
+            "P54-reconnect" to CopilotUiState.Reconnect("@mobimon-driver", "계정 인증이 만료되어 대화를 잠시 멈췄어요."),
+            "P56-access" to CopilotUiState.AccessCheck("@mobimon-driver", CopilotAccessIssue.PERMISSION),
+            "P55-disconnect" to CopilotUiState.Disconnect("@mobimon-driver"),
+        )
+    private val qrPainter by lazy {
+        BitmapPainter(
+            createGitHubQrCode("https://github.com/login/device").asImageBitmap(),
+        )
+    }
 
     @Test
     @Config(qualifiers = "ko-rKR-w2560dp-h1164dp-mdpi")
@@ -389,12 +407,12 @@ class CopilotConnectionScreenTest {
                     state,
                     actions::add,
                     interactionAllowed = true,
-                    qrCode = painterResource(R.drawable.copilot_preview_qr),
+                    qrCode = qrPainter,
                 )
             }
         }
         val directory = File("build/reports/copilot-ui").apply { mkdirs() }
-        copilotPreviewStates.forEach { (name, sample) ->
+        referenceStates.forEach { (name, sample) ->
             compose.runOnIdle { state = sample }
             val reference = compose.onNodeWithTag("copilot-reference").fetchSemanticsNode().boundsInRoot
             val companion = compose.onNodeWithTag("copilot-companion").fetchSemanticsNode().boundsInRoot
@@ -515,7 +533,7 @@ class CopilotConnectionScreenTest {
                     state,
                     action,
                     interactionAllowed = allowed,
-                    qrCode = if (qr) painterResource(R.drawable.copilot_preview_qr) else null,
+                    qrCode = if (qr) qrPainter else null,
                 )
             }
         }

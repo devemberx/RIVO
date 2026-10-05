@@ -48,44 +48,22 @@ import androidx.compose.ui.unit.sp
 import com.monsters.mobimon.core.domain.CosmeticInventory
 import com.monsters.mobimon.core.domain.CosmeticItem
 import com.monsters.mobimon.core.domain.CosmeticSlot
+import com.monsters.mobimon.core.ui.BackgroundProp
+import com.monsters.mobimon.core.ui.BackgroundVisual
 import com.monsters.mobimon.core.ui.CharacterArtwork
 import com.monsters.mobimon.core.ui.CharacterAssetImage
+import com.monsters.mobimon.core.ui.CompanionBackgroundCatalog
 import com.monsters.mobimon.core.ui.FallingParticlesEffect
 import com.monsters.mobimon.core.ui.MobiMonButton
 import com.monsters.mobimon.core.ui.MobiMonColors
 import com.monsters.mobimon.core.ui.MobiMonMessage
 import com.monsters.mobimon.core.ui.MobiMonSelectionCard
 import com.monsters.mobimon.core.ui.MobiMonTab
-import com.monsters.mobimon.core.ui.ParticleType
 import com.monsters.mobimon.core.ui.PetAvatar
 import com.monsters.mobimon.core.ui.StarHanger
 import com.monsters.mobimon.core.ui.StarlightYarnBasket
 import com.monsters.mobimon.core.ui.companionBackgroundRes
-import com.monsters.mobimon.core.ui.R as CoreUiR
-
-internal enum class StoreSpaceCategory(
-    val label: String,
-) {
-    BACKGROUNDS("배경"),
-    EFFECTS("특수효과"),
-    PROPS("소품"),
-    ;
-
-    fun includes(item: CosmeticItem): Boolean =
-        when (this) {
-            PROPS -> item.id in setOf("background:star_hanger", "background:starlight_yarn_basket")
-            EFFECTS -> item.id in setOf("background:star", "background:snow", "background:petal")
-            BACKGROUNDS ->
-                item.id !in
-                    setOf(
-                        "background:star_hanger",
-                        "background:starlight_yarn_basket",
-                        "background:star",
-                        "background:snow",
-                        "background:petal",
-                    )
-        }
-}
+import com.monsters.mobimon.core.ui.resolveCompanionBackground
 
 @Composable
 internal fun StoreContent(
@@ -147,25 +125,31 @@ internal fun StoreContent(
                                 24.dp * scale,
                             ),
                     ) {
-                        Text(
+                        val displayName =
                             if (tab == CosmeticSlot.FRIEND) {
                                 storeFriendName(presentation.preview.friendId)
+                            } else if (presentation.selected != null) {
+                                cosmeticName(presentation.selected.id, category)
                             } else {
-                                presentation.selected?.let { cosmeticName(it.id, category) }.orEmpty()
-                            },
+                                ""
+                            }
+                        Text(
+                            displayName,
                             color = MobiMonColors.text,
                             fontSize = (44f * scale).sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.weight(0.34f),
                         )
-                        Text(
+                        val desc =
                             storePreviewDescription(
                                 tab,
                                 presentation.selected?.id,
                                 presentation.preview.friendId,
                                 presentation.selectedEquipped,
                                 category,
-                            ),
+                            )
+                        Text(
+                            desc,
                             color = MobiMonColors.muted,
                             fontSize = (28f * scale).sp,
                             textAlign = TextAlign.End,
@@ -441,10 +425,11 @@ private fun StoreCard(
     onClick: () -> Unit,
     enabled: Boolean,
 ) {
+    val revealModifier = storeCardRevealModifier(item.id)
     MobiMonSelectionCard(
         selected,
         onClick,
-        Modifier.fillMaxWidth().testTag("store-item-${item.id}").then(storeCardRevealModifier(item.id)),
+        Modifier.fillMaxWidth().testTag("store-item-${item.id}").then(revealModifier),
         enabled = enabled,
         shape =
             RoundedCornerShape(
@@ -471,11 +456,22 @@ private fun StoreCard(
                     .background(MobiMonColors.raised),
                 contentAlignment = Alignment.Center,
             ) {
-                StoreItemArtwork(item, category, timeOfDay, Modifier.fillMaxSize().padding(12.dp * scale))
+                StoreItemArtwork(
+                    item,
+                    category,
+                    timeOfDay,
+                    Modifier.fillMaxSize().padding(12.dp * scale).testTag("store-artwork-${item.id}"),
+                )
             }
             Spacer(Modifier.height(20.dp * scale))
+            val itemName =
+                if (item.slot == CosmeticSlot.FRIEND) {
+                    storeFriendName(item.id)
+                } else {
+                    cosmeticName(item.id, category)
+                }
             Text(
-                if (item.slot == CosmeticSlot.FRIEND) storeFriendName(item.id) else cosmeticName(item.id, category),
+                itemName,
                 color = MobiMonColors.text,
                 fontSize = (34f * scale).sp,
                 fontWeight = FontWeight.Bold,
@@ -509,6 +505,7 @@ private fun StoreItemArtwork(
     timeOfDay: String?,
     modifier: Modifier = Modifier,
 ) {
+    val visual = CompanionBackgroundCatalog.visual(item.id)
     when {
         item.isRemoval && item.slot == CosmeticSlot.BACKGROUND && category == StoreSpaceCategory.BACKGROUNDS ->
             Image(
@@ -522,29 +519,27 @@ private fun StoreItemArtwork(
                 Icon(painterResource(R.drawable.store_none), null, Modifier.size(48.dp), tint = MobiMonColors.muted)
             }
         item.slot == CosmeticSlot.FRIEND ->
-            PetAvatar(
-                modifier,
-                friendId = item.id,
-                isAnimated =
-                    item.id == "friend:luna" || item.id == "friend:las",
-            )
-        item.id == "background:star_hanger" -> StarHanger(modifier, centered = true, isAnimated = false)
-        item.id == "background:starlight_yarn_basket" ->
-            StarlightYarnBasket(
-                modifier,
-                centered = true,
-                isAnimated = false,
-            )
-        item.id == "background:cyberpunk_city" ->
+            PetAvatar(modifier, friendId = item.id)
+        visual is BackgroundVisual.Prop ->
+            when (visual.kind) {
+                BackgroundProp.STAR_HANGER -> StarHanger(modifier, centered = true, isAnimated = false)
+                BackgroundProp.STARLIGHT_YARN_BASKET ->
+                    StarlightYarnBasket(
+                        modifier,
+                        centered = true,
+                        isAnimated = false,
+                    )
+            }
+        visual is BackgroundVisual.Scene || (item.slot == CosmeticSlot.BACKGROUND && visual == null) ->
             Image(
-                painterResource(CoreUiR.drawable.pet_background_cyberpunk_city),
+                painterResource(companionBackgroundRes(timeOfDay, item.id)),
                 null,
                 modifier,
                 contentScale = ContentScale.Crop,
             )
-        item.slot == CosmeticSlot.BACKGROUND ->
+        visual is BackgroundVisual.Effect ->
             FallingParticlesEffect(
-                particleType = storeParticleType(item.id),
+                particleType = visual.kind,
                 modifier = modifier,
                 particleCount = 18,
             )
@@ -562,14 +557,27 @@ private fun StorePreview(
 ) {
     BoxWithConstraints(modifier.clip(RoundedCornerShape(24.dp))) {
         val zoomBackground = tab == CosmeticSlot.FRIEND || tab == CosmeticSlot.ACCESSORY
-        val backgroundRes =
-            if (preview.backgroundId == "background:cyberpunk_city") {
-                CoreUiR.drawable.pet_background_cyberpunk_city
-            } else {
-                companionBackgroundRes(timeOfDay)
-            }
+        val background =
+            resolveCompanionBackground(
+                timeOfDay,
+                preview.backgroundId,
+                propId =
+                    preview.backgroundPropId
+                        ?: preview.backgroundOverlayId?.takeIf {
+                            CompanionBackgroundCatalog.visual(
+                                it,
+                            ) is BackgroundVisual.Prop
+                        },
+                effectId =
+                    preview.backgroundEffectId
+                        ?: preview.backgroundOverlayId?.takeIf {
+                            CompanionBackgroundCatalog.visual(
+                                it,
+                            ) is BackgroundVisual.Effect
+                        },
+            )
         Image(
-            painterResource(backgroundRes),
+            painterResource(background.layer.frame.drawableRes),
             null,
             (
                 if (zoomBackground) {
@@ -585,19 +593,19 @@ private fun StorePreview(
             contentScale = ContentScale.Crop,
         )
         if (tab != CosmeticSlot.FRIEND) {
-            when (preview.backgroundId) {
-                "background:star_hanger" -> StarHanger(Modifier.fillMaxSize().testTag("store-preview-star-hanger"))
-                "background:starlight_yarn_basket" ->
+            when (background.prop) {
+                BackgroundProp.STAR_HANGER -> StarHanger(Modifier.fillMaxSize().testTag("store-preview-star-hanger"))
+                BackgroundProp.STARLIGHT_YARN_BASKET ->
                     StarlightYarnBasket(
                         Modifier.fillMaxSize().testTag("store-preview-yarn-basket"),
                     )
-                "background:cyberpunk_city" -> Unit
                 null -> Unit
-                else ->
-                    FallingParticlesEffect(
-                        particleType = storeParticleType(preview.backgroundId),
-                        modifier = Modifier.fillMaxSize().testTag("store-preview-particles"),
-                    )
+            }
+            background.effect?.let { effect ->
+                FallingParticlesEffect(
+                    particleType = effect,
+                    modifier = Modifier.fillMaxSize().testTag("store-preview-particles"),
+                )
             }
         }
         val characterSize = minOf(maxWidth, maxHeight) * 0.75f
@@ -626,10 +634,3 @@ private fun StorePreview(
         }
     }
 }
-
-private fun storeParticleType(id: String): ParticleType =
-    when {
-        id.contains("snow") -> ParticleType.SNOW
-        id.contains("petal") || id.contains("flower") -> ParticleType.PETAL
-        else -> ParticleType.STAR
-    }

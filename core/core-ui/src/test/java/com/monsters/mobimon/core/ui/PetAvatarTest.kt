@@ -279,6 +279,98 @@ class PetAvatarTest {
     }
 
     @Test
+    fun equippedLunaAppearLoadsItsOwnTwentyFourFrames() {
+        assertEquippedFramesLoaded(LunaAppearTimeline::load)
+    }
+
+    @Test
+    fun equippedLunaDisappearLoadsItsOwnTwentyFourFrames() {
+        assertEquippedFramesLoaded(LunaDisappearTimeline::load)
+    }
+
+    private fun assertEquippedFramesLoaded(
+        load: (android.content.Context, LunaAppearance) -> List<androidx.compose.ui.graphics.ImageBitmap>?,
+    ) {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        val normal = requireNotNull(load(context, LunaAppearance.NORMAL))
+        listOf(LunaAppearance.HAT, LunaAppearance.SUNGLASSES).forEach { appearance ->
+            val frames = requireNotNull(load(context, appearance))
+            assertEquals(24, frames.size)
+            // A normal-frame fallback would also have 24 frames; Luna is fully visible mid-sequence.
+            assertTrue(
+                appearance.name,
+                !frames[11].asAndroidBitmap().sameAs(normal[11].asAndroidBitmap()),
+            )
+        }
+    }
+
+    @Test
+    fun lunaSunglassesDisappearingPlaysTheExitBeforeReportingCompletion() {
+        var finished = false
+        compose.setContent {
+            PetAvatar(
+                friendId = "friend:luna",
+                accessoryId = "accessory:luna_sunglasses",
+                isDisappearing = true,
+                onDisappeared = { finished = true },
+            )
+        }
+        compose.mainClock.advanceTimeBy(100L)
+        assertTrue(!finished)
+        compose.waitUntil(10_000L) { finished }
+    }
+
+    @Test
+    fun lunaSunglassesAppearingPlaysTheEntranceBeforeReportingCompletion() {
+        var finished = false
+        compose.setContent {
+            PetAvatar(
+                friendId = "friend:luna",
+                accessoryId = "accessory:luna_sunglasses",
+                isAppearing = true,
+                onAppeared = { finished = true },
+            )
+        }
+        compose.mainClock.advanceTimeBy(100L)
+        assertTrue(!finished)
+        compose.waitUntil(10_000L) { finished }
+    }
+
+    @Test
+    fun lunaHatDisappearingPlaysTheExitBeforeReportingCompletion() {
+        var finished = false
+        compose.setContent {
+            PetAvatar(
+                friendId = "friend:luna",
+                accessoryId = "accessory:luna_cap",
+                isDisappearing = true,
+                onDisappeared = { finished = true },
+            )
+        }
+        compose.mainClock.advanceTimeBy(100L)
+        assertTrue(!finished)
+        compose.waitUntil(10_000L) { finished }
+    }
+
+    @Test
+    fun lunaHatAppearingPlaysTheEntranceBeforeReportingCompletion() {
+        var finished = false
+        compose.setContent {
+            PetAvatar(
+                friendId = "friend:luna",
+                accessoryId = "accessory:luna_cap",
+                isAppearing = true,
+                onAppeared = { finished = true },
+            )
+        }
+        compose.mainClock.advanceTimeBy(100L)
+        assertTrue(!finished)
+        compose.waitUntil(10_000L) { finished }
+    }
+
+    @Test
     fun lunaRunAnimationCacheLoadsTwentyFourFramesFromAssets() {
         val context =
             androidx.test.core.app.ApplicationProvider

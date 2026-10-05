@@ -1,0 +1,288 @@
+{
+  "schema_version": 1,
+  "character_id": "friend:mobi",
+  "variant": "normal",
+  "issue": 388,
+  "coordinate_convention": {
+    "paths": "repository-relative",
+    "rectangles": "[left, top, right, bottom), pixels; x right, y down",
+    "landmarks": "Manual visual estimates unless explicitly alpha-measured; hidden anatomy is not measured.",
+    "head_core": "Cranial envelope excluding ears, sprout and robot side modules where separable; not an alpha crop."
+  },
+  "canonical": {
+    "path": "art/characters/mobi/references/mobi_seated_front_master.png",
+    "sha256": "25f5e692bb3a4e9783a42b9752e7990e737213eeb944b560cf6dfc6b7b96c81c",
+    "size_px": [
+      1254,
+      1254
+    ],
+    "mode": "RGBA",
+    "source": {
+      "path": "core/core-ui/src/main/assets/characters/mobi/normal/idle_breath/mobi_idle_breath_normal_01.png",
+      "sha256": "25f5e692bb3a4e9783a42b9752e7990e737213eeb944b560cf6dfc6b7b96c81c",
+      "size_px": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA"
+    },
+    "approval": "existing_project_canonical",
+    "pose": "seated_front",
+    "equipped_item_ids": [],
+    "default_pose_prop": "steering_wheel",
+    "alpha_bounds_px": [
+      176,
+      56,
+      1067,
+      1157
+    ],
+    "alpha_threshold": 128,
+    "ground_y_px": 1157,
+    "ground_measurement": "bottom edge of alpha bounds; contact approximation",
+    "root_anchor_px_estimate": [
+      625,
+      1157
+    ],
+    "head_core_box_px_estimate": [
+      240,
+      295,
+      1000,
+      857
+    ],
+    "eye_centers_px_estimate": [
+      [
+        470,
+        585
+      ],
+      [
+        765,
+        585
+      ]
+    ],
+    "proportions": {
+      "head_core_width_over_alpha_height_estimate": 0.6903,
+      "head_core_height_over_alpha_height_estimate": 0.5104,
+      "head_core_width_over_canvas_width_estimate": 0.6061
+    },
+    "notes": "Preserved byte-for-byte; this remains the identity authority if generated views disagree."
+  },
+  "turnaround": {
+    "path": "art/characters/mobi/references/mobi_turnaround.png",
+    "sha256": "85fdbe23084fa0e74c407ab3d7fd508c44f08f22dfc50137c2c628d82e44687a",
+    "size_px": [
+      1536,
+      1024
+    ],
+    "mode": "RGB",
+    "layout": {
+      "columns": 3,
+      "rows": 2,
+      "column_bounds_px": [
+        0,
+        512,
+        1024,
+        1536
+      ],
+      "row_bounds_px": [
+        0,
+        512,
+        1024
+      ],
+      "note": "Use explicit cell rectangles; equal row heights are not guaranteed by generation."
+    },
+    "background": "opaque neutral gray; reference-only, not a transparent animation frame",
+    "tool": "built-in image_gen",
+    "generation_source_name": "exec-e22ff68b-90b8-45fe-be24-f31b443ac034.png",
+    "review": {
+      "status": "accepted_for_reference",
+      "reviewer": "Codex",
+      "authority": "User delegated pose selection and source-art organization in this task.",
+      "review_date": "2026-10-05",
+      "separate_user_visual_signoff": false,
+      "checks": [
+        "Compared face, materials and silhouette against canonical source.",
+        "Reviewed front/side/rear orientation and compact standing anatomy.",
+        "Checked row baselines and corresponding head sizes using manual landmarks.",
+        "No selectable equipment."
+      ],
+      "corrections": [
+        "Removed colored backdrop and corrected seated/standing head-scale drift."
+      ],
+      "limits": [
+        "Mobi rear anatomy is a conservative generated interpretation; the canonical image does not show the back.",
+        "Side views are left-facing oblique/profile references, not calibrated 90-degree orthographic projections."
+      ]
+    },
+    "views": [
+      {
+        "id": "seated_front",
+        "cell_rect_px": [
+          0,
+          0,
+          512,
+          512
+        ],
+        "view_description": "front-facing",
+        "head_core_box_px_estimate": [
+          111,
+          132,
+          432,
+          372
+        ],
+        "ground_y_px_estimate": 492,
+        "root_anchor_px_estimate": [
+          269,
+          492
+        ],
+        "head_width_px_estimate": 321,
+        "head_height_px_estimate": 240,
+        "prop": "steering_wheel"
+      },
+      {
+        "id": "seated_side_left",
+        "cell_rect_px": [
+          512,
+          0,
+          1024,
+          512
+        ],
+        "view_description": "left-facing oblique/profile; angle not calibrated",
+        "head_core_box_px_estimate": [
+          637,
+          134,
+          931,
+          373
+        ],
+        "ground_y_px_estimate": 490,
+        "root_anchor_px_estimate": [
+          776,
+          490
+        ],
+        "head_width_px_estimate": 294,
+        "head_height_px_estimate": 239,
+        "prop": "steering_wheel"
+      },
+      {
+        "id": "seated_back",
+        "cell_rect_px": [
+          1024,
+          0,
+          1536,
+          512
+        ],
+        "view_description": "rear-facing",
+        "head_core_box_px_estimate": [
+          1102,
+          135,
+          1411,
+          380
+        ],
+        "ground_y_px_estimate": 487,
+        "root_anchor_px_estimate": [
+          1254,
+          487
+        ],
+        "head_width_px_estimate": 309,
+        "head_height_px_estimate": 245,
+        "prop": "steering_wheel"
+      },
+      {
+        "id": "standing_front",
+        "cell_rect_px": [
+          0,
+          512,
+          512,
+          1024
+        ],
+        "view_description": "front-facing",
+        "head_core_box_px_estimate": [
+          111,
+          610,
+          432,
+          848
+        ],
+        "ground_y_px_estimate": 982,
+        "root_anchor_px_estimate": [
+          269,
+          982
+        ],
+        "head_width_px_estimate": 321,
+        "head_height_px_estimate": 238,
+        "prop": null
+      },
+      {
+        "id": "standing_side_left",
+        "cell_rect_px": [
+          512,
+          512,
+          1024,
+          1024
+        ],
+        "view_description": "left-facing oblique/profile; angle not calibrated",
+        "head_core_box_px_estimate": [
+          636,
+          610,
+          912,
+          838
+        ],
+        "ground_y_px_estimate": 982,
+        "root_anchor_px_estimate": [
+          776,
+          982
+        ],
+        "head_width_px_estimate": 276,
+        "head_height_px_estimate": 228,
+        "prop": null
+      },
+      {
+        "id": "standing_back",
+        "cell_rect_px": [
+          1024,
+          512,
+          1536,
+          1024
+        ],
+        "view_description": "rear-facing",
+        "head_core_box_px_estimate": [
+          1104,
+          611,
+          1407,
+          844
+        ],
+        "ground_y_px_estimate": 982,
+        "root_anchor_px_estimate": [
+          1254,
+          982
+        ],
+        "head_width_px_estimate": 303,
+        "head_height_px_estimate": 233,
+        "prop": null
+      }
+    ]
+  },
+  "identity_constraints": [
+    "Two cyan-to-lilac sprout leaves on a short cyan stem; never upright rabbit ears.",
+    "Pearl-white rounded head, drooping ears, black oval eyes, pink cheeks and curved smile.",
+    "Compact soft body and short rounded limbs; no tail is established by the canonical front. Rear reference uses a plain back."
+  ],
+  "animation_contract": {
+    "reference_inputs": [
+      "canonical",
+      "turnaround"
+    ],
+    "pose_selection": {
+      "idle": "Preserve canonical seated default.",
+      "locomotion": "Use standing reference to expose limb attachments; add action-specific key poses before generating a cycle."
+    },
+    "default_prop_policy": "Wheel is a seated pose prop, not equipped clothing. Empty-handed standing is an additional anatomy reference, not an app appearance replacement.",
+    "scale": "Choose one anatomical scale from the canonical head width. Reuse it for a whole clip; never fit each frame independently to its nontransparent bounds.",
+    "anchors": "Keep a fixed root and ground plane; represent jumping and travel as intentional root offsets. Preserve crop offsets when exporting trimmed frames.",
+    "review_tolerances": {
+      "status": "initial review thresholds, not anatomical truth",
+      "same_view_head_dimension_drift_fraction_max": 0.08,
+      "same_pose_ground_spread_sheet_px_max": 10
+    },
+    "rendering": "Use one renderer-specific transform per clip/pose, not per-frame auto-centering. Do not impose identical whole-body heights on seated and standing poses.",
+    "validation": "Review actual-size playback, contact points, loop seam and transitions into/out of seated idle; static references alone do not validate motion."
+  }
+}

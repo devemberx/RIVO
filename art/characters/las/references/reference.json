@@ -1,0 +1,288 @@
+{
+  "schema_version": 1,
+  "character_id": "friend:las",
+  "variant": "normal",
+  "issue": 388,
+  "coordinate_convention": {
+    "paths": "repository-relative",
+    "rectangles": "[left, top, right, bottom), pixels; x right, y down",
+    "landmarks": "Manual visual estimates unless explicitly alpha-measured; hidden anatomy is not measured.",
+    "head_core": "Cranial envelope excluding ears, sprout and robot side modules where separable; not an alpha crop."
+  },
+  "canonical": {
+    "path": "art/characters/las/references/las_seated_front_master.png",
+    "sha256": "f6cc29193567bf28ca2c58077c03d6e536886aeaf2c2dac38f60e67735593d70",
+    "size_px": [
+      475,
+      475
+    ],
+    "mode": "RGBA",
+    "source": {
+      "path": "core/core-ui/src/main/res/drawable-nodpi/mobimon_las.png",
+      "sha256": "f6cc29193567bf28ca2c58077c03d6e536886aeaf2c2dac38f60e67735593d70",
+      "size_px": [
+        475,
+        475
+      ],
+      "mode": "RGBA"
+    },
+    "approval": "existing_project_canonical",
+    "pose": "seated_front_three_quarter",
+    "equipped_item_ids": [],
+    "default_pose_prop": null,
+    "alpha_bounds_px": [
+      41,
+      48,
+      419,
+      428
+    ],
+    "alpha_threshold": 128,
+    "ground_y_px": 428,
+    "ground_measurement": "bottom edge of alpha bounds; contact approximation",
+    "root_anchor_px_estimate": [
+      247,
+      428
+    ],
+    "head_core_box_px_estimate": [
+      128,
+      50,
+      376,
+      267
+    ],
+    "eye_bar_endpoints_px_estimate": [
+      [
+        200,
+        164
+      ],
+      [
+        285,
+        168
+      ]
+    ],
+    "proportions": {
+      "head_core_width_over_alpha_height_estimate": 0.6526,
+      "head_core_height_over_alpha_height_estimate": 0.5711,
+      "head_core_width_over_canvas_width_estimate": 0.5221
+    },
+    "notes": "Preserved byte-for-byte; this remains the identity authority if generated views disagree."
+  },
+  "turnaround": {
+    "path": "art/characters/las/references/las_turnaround.png",
+    "sha256": "86025f914c3c662bb9c29e0e05fe22f4395e7d41d5793c9bc8f579f97cd0758b",
+    "size_px": [
+      1536,
+      1024
+    ],
+    "mode": "RGB",
+    "layout": {
+      "columns": 3,
+      "rows": 2,
+      "column_bounds_px": [
+        0,
+        512,
+        1024,
+        1536
+      ],
+      "row_bounds_px": [
+        0,
+        460,
+        1024
+      ],
+      "note": "Use explicit cell rectangles; equal row heights are not guaranteed by generation."
+    },
+    "background": "opaque neutral gray; reference-only, not a transparent animation frame",
+    "tool": "built-in image_gen",
+    "generation_source_name": "exec-c6ed5fd4-663e-4e55-90be-537fe796297e.png",
+    "review": {
+      "status": "accepted_for_reference",
+      "reviewer": "Codex",
+      "authority": "User delegated pose selection and source-art organization in this task.",
+      "review_date": "2026-10-05",
+      "separate_user_visual_signoff": false,
+      "checks": [
+        "Compared face, materials and silhouette against canonical source.",
+        "Reviewed front/side/rear orientation and compact standing anatomy.",
+        "Checked row baselines and corresponding head sizes using manual landmarks.",
+        "No selectable equipment."
+      ],
+      "corrections": [],
+      "limits": [
+        "The canonical Las pose is front three-quarter, not a calibrated orthographic front.",
+        "Rear panels and unfolded leg structure are conservative generated interpretations, not an existing 3D rig.",
+        "Do not reuse the runtime LasIdleAnimation 475px masks with these reference sheets."
+      ]
+    },
+    "views": [
+      {
+        "id": "seated_front",
+        "cell_rect_px": [
+          0,
+          0,
+          512,
+          460
+        ],
+        "view_description": "front-facing",
+        "head_core_box_px_estimate": [
+          166,
+          57,
+          405,
+          273
+        ],
+        "ground_y_px_estimate": 441,
+        "root_anchor_px_estimate": [
+          278,
+          441
+        ],
+        "head_width_px_estimate": 239,
+        "head_height_px_estimate": 216,
+        "prop": null
+      },
+      {
+        "id": "seated_side_left",
+        "cell_rect_px": [
+          512,
+          0,
+          1024,
+          460
+        ],
+        "view_description": "left-facing oblique/profile; angle not calibrated",
+        "head_core_box_px_estimate": [
+          655,
+          58,
+          897,
+          275
+        ],
+        "ground_y_px_estimate": 438,
+        "root_anchor_px_estimate": [
+          768,
+          438
+        ],
+        "head_width_px_estimate": 242,
+        "head_height_px_estimate": 217,
+        "prop": null
+      },
+      {
+        "id": "seated_back",
+        "cell_rect_px": [
+          1024,
+          0,
+          1536,
+          460
+        ],
+        "view_description": "rear-facing",
+        "head_core_box_px_estimate": [
+          1099,
+          57,
+          1379,
+          275
+        ],
+        "ground_y_px_estimate": 434,
+        "root_anchor_px_estimate": [
+          1245,
+          434
+        ],
+        "head_width_px_estimate": 280,
+        "head_height_px_estimate": 218,
+        "prop": null
+      },
+      {
+        "id": "standing_front",
+        "cell_rect_px": [
+          0,
+          460,
+          512,
+          1024
+        ],
+        "view_description": "front-facing",
+        "head_core_box_px_estimate": [
+          154,
+          486,
+          394,
+          702
+        ],
+        "ground_y_px_estimate": 955,
+        "root_anchor_px_estimate": [
+          278,
+          955
+        ],
+        "head_width_px_estimate": 240,
+        "head_height_px_estimate": 216,
+        "prop": null
+      },
+      {
+        "id": "standing_side_left",
+        "cell_rect_px": [
+          512,
+          460,
+          1024,
+          1024
+        ],
+        "view_description": "left-facing oblique/profile; angle not calibrated",
+        "head_core_box_px_estimate": [
+          649,
+          487,
+          890,
+          704
+        ],
+        "ground_y_px_estimate": 957,
+        "root_anchor_px_estimate": [
+          768,
+          957
+        ],
+        "head_width_px_estimate": 241,
+        "head_height_px_estimate": 217,
+        "prop": null
+      },
+      {
+        "id": "standing_back",
+        "cell_rect_px": [
+          1024,
+          460,
+          1536,
+          1024
+        ],
+        "view_description": "rear-facing",
+        "head_core_box_px_estimate": [
+          1108,
+          483,
+          1383,
+          701
+        ],
+        "ground_y_px_estimate": 962,
+        "root_anchor_px_estimate": [
+          1245,
+          962
+        ],
+        "head_width_px_estimate": 275,
+        "head_height_px_estimate": 218,
+        "prop": null
+      }
+    ]
+  },
+  "identity_constraints": [
+    "Cream-white spherical robot helmet, convex black visor, continuous warm amber rim and one horizontal amber eye bar.",
+    "Black circular side modules with amber centers, cream armor, black joints and compact segmented hands.",
+    "Short limbs; standing only unfolds the seated anatomy. Do not invent a tall human torso, antenna, mouth or second eye.",
+    "Seated wave uses anatomical right arm: screen left in front and screen right in rear."
+  ],
+  "animation_contract": {
+    "reference_inputs": [
+      "canonical",
+      "turnaround"
+    ],
+    "pose_selection": {
+      "idle": "Preserve canonical seated default.",
+      "locomotion": "Use standing reference to expose limb attachments; add action-specific key poses before generating a cycle."
+    },
+    "default_prop_policy": "No props or equipped items.",
+    "scale": "Choose one anatomical scale from the canonical head width. Reuse it for a whole clip; never fit each frame independently to its nontransparent bounds.",
+    "anchors": "Keep a fixed root and ground plane; represent jumping and travel as intentional root offsets. Preserve crop offsets when exporting trimmed frames.",
+    "review_tolerances": {
+      "status": "initial review thresholds, not anatomical truth",
+      "same_view_head_dimension_drift_fraction_max": 0.08,
+      "same_pose_ground_spread_sheet_px_max": 10
+    },
+    "rendering": "Use one renderer-specific transform per clip/pose, not per-frame auto-centering. Do not impose identical whole-body heights on seated and standing poses.",
+    "validation": "Review actual-size playback, contact points, loop seam and transitions into/out of seated idle; static references alone do not validate motion."
+  }
+}

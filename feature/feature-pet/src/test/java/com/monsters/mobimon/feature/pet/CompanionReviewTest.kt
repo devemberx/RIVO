@@ -32,6 +32,7 @@ import com.monsters.mobimon.core.domain.PetProfile
 import com.monsters.mobimon.core.domain.SignalQuality
 import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleSnapshot
+import com.monsters.mobimon.core.ui.CompanionBackgroundAlignment
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonTheme
 import com.monsters.mobimon.core.ui.companionBackgroundRes
@@ -55,13 +56,13 @@ class CompanionReviewTest {
 
     @Test fun changingContentHeightKeepsTheBackgroundHorizonAnchored() {
         val source = IntSize(2560, 1440)
-        val original = HomeBackgroundAlignment.align(source, IntSize(2560, 1268), LayoutDirection.Ltr)
-        val resized = HomeBackgroundAlignment.align(source, IntSize(2560, 1184), LayoutDirection.Ltr)
+        val original = CompanionBackgroundAlignment.align(source, IntSize(2560, 1268), LayoutDirection.Ltr)
+        val resized = CompanionBackgroundAlignment.align(source, IntSize(2560, 1184), LayoutDirection.Ltr)
         assertEquals(IntOffset(0, -106), original)
         assertEquals(original, resized)
         assertEquals(
             IntOffset(0, -74),
-            HomeBackgroundAlignment.align(
+            CompanionBackgroundAlignment.align(
                 IntSize(1792, 1008),
                 IntSize(1792, 829),
                 LayoutDirection.Ltr,
@@ -193,6 +194,36 @@ class CompanionReviewTest {
         assertLightlyTintedCrop(view, period)
     }
 
+    @Test
+    fun cityHomeUpdatesAllPeriodsWithReducedMotionAndLargeText() {
+        val time = mutableStateOf("Morning")
+        lateinit var view: View
+        compose.setContent {
+            val current = LocalView.current
+            SideEffect { view = current }
+            CompositionLocalProvider(
+                LocalMobiMonMotionEnabled provides false,
+                LocalDensity provides Density(1f, 2f),
+            ) {
+                MobiMonTheme { ReviewHome(time.value, backgroundId = "background:cyberpunk_city") }
+            }
+        }
+        val skyColors = mutableSetOf<Int>()
+        listOf("Sunrise", "Morning", "Day", "Afternoon", "Sunset", "Night", "Midnight").forEach { period ->
+            compose.runOnIdle { time.value = period }
+            assertLightlyTintedCrop(view, period, "background:cyberpunk_city")
+            capture(view, "home-cyberpunk-${period.lowercase()}")
+            compose.runOnIdle {
+                val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+                view.draw(Canvas(bitmap))
+                skyColors += bitmap.getPixel(12, 12)
+                bitmap.recycle()
+            }
+        }
+        assertEquals(7, skyColors.size)
+        compose.onNodeWithTag("home-background-particles").assertDoesNotExist()
+    }
+
     private fun assertSpeechBubbleTextAndProportions() {
         compose
             .onNodeWithTag("home-companion-message-text", useUnmergedTree = true)
@@ -215,6 +246,7 @@ class CompanionReviewTest {
     private fun ReviewHome(
         period: String,
         warning: Boolean = false,
+        backgroundId: String? = null,
     ) {
         PetHomeScreen(
             profile = PetProfile("review"),
@@ -237,6 +269,7 @@ class CompanionReviewTest {
             interactionAllowed = true,
             connectionAvailable = true,
             backgroundTimeOfDay = period,
+            backgroundId = backgroundId,
         )
     }
 
@@ -300,16 +333,24 @@ class CompanionReviewTest {
     private fun assertLightlyTintedCrop(
         view: View,
         period: String,
+        backgroundId: String? = null,
     ) {
         compose.runOnIdle {
-            val source = BitmapFactory.decodeResource(view.resources, companionBackgroundRes(period))
+            val source = BitmapFactory.decodeResource(view.resources, companionBackgroundRes(period, backgroundId))
             val expected = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
             val actual = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
             val scale = maxOf(view.width.toFloat() / source.width, view.height.toFloat() / source.height)
             val width = (source.width * scale).roundToInt()
             val height = (source.height * scale).roundToInt()
             val left = ((view.width - width) / 2f).roundToInt().toFloat()
-            val top = (-106f * view.width / 2560f).roundToInt().toFloat()
+            val top =
+                CompanionBackgroundAlignment
+                    .align(
+                        IntSize(width, height),
+                        IntSize(view.width, view.height),
+                        LayoutDirection.Ltr,
+                    ).y
+                    .toFloat()
             Canvas(expected).drawBitmap(
                 source,
                 null,

@@ -660,4 +660,48 @@ class CustomizationScreenTest {
         compose.onNodeWithText("특수효과").performClick()
         compose.onAllNodesWithText("사용 중").assertCountEquals(1)
     }
+
+    @Test fun cyberpunkBackgroundSelectionPersistsInPreviewWhenNavigatingSpaceCategories() {
+        val catalog =
+            listOf(
+                CosmeticItem("friend:mobi", CosmeticSlot.FRIEND, 0),
+                CosmeticItem("background:cyberpunk_city", CosmeticSlot.BACKGROUND, 400),
+                CosmeticItem("background:star_hanger", CosmeticSlot.BACKGROUND, 200),
+            )
+        val inventory =
+            CosmeticInventory(
+                ownedItemIds = setOf("friend:mobi", "background:cyberpunk_city", "background:star_hanger"),
+                equippedItemIds =
+                    mapOf(
+                        CosmeticSlot.FRIEND to "friend:mobi",
+                        CosmeticSlot.BACKGROUND to "background:cyberpunk_city",
+                    ),
+            )
+
+        compose.setContent {
+            var selectedId by androidx.compose.runtime.remember { mutableStateOf<String?>("background:cyberpunk_city") }
+            MobiMonTheme {
+                CustomizationScreen(
+                    inventory = inventory,
+                    catalog = catalog,
+                    selectedItemId = selectedId,
+                    purchasing = false,
+                    purchaseFailed = false,
+                    onSelectItem = { selectedId = it },
+                    onPurchaseItem = { _, _ -> },
+                    onEquipItem = {},
+                    onEquipFriend = {},
+                    pointBalance = 500,
+                    pointLoadFailed = false,
+                )
+            }
+        }
+
+        compose.onNodeWithTag("store-tab-BACKGROUND").performClick()
+        compose.onNodeWithText("배경").performClick()
+        compose.onNodeWithTag("store-item-background:cyberpunk_city").performClick()
+        compose.onNodeWithText("소품").performClick()
+        compose.onNodeWithText("별빛 모빌").performClick()
+        compose.onNodeWithTag("store-preview-star-hanger").assertExists()
+    }
 }

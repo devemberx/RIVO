@@ -1,0 +1,4 @@
+interface:
+  display_name: "Character Animation"
+  short_description: "Reference-gated character motion and export review"
+  default_prompt: "Use $character-animation to create or review a MobiMon animation from its registered character and item references."

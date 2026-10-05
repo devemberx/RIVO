@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.core.domain.ConversationProblem
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonTheme
+import com.monsters.mobimon.feature.auth.testing.ComposeTestApplication
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -59,7 +60,7 @@ import java.io.File
 import kotlin.math.abs
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1248dp-mdpi")
+@Config(sdk = [34], application = ComposeTestApplication::class, qualifiers = "ko-rKR-w2560dp-h1248dp-mdpi")
 @OptIn(ExperimentalTestApi::class)
 class ConversationScreenTest {
     @get:Rule val compose = createComposeRule()

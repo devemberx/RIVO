@@ -136,7 +136,9 @@ def curate(chunks, config):
 def main():
     args = argparse.ArgumentParser(description=__doc__)
     args.add_argument('pdf', type=Path)
-    args.add_argument('--output', type=Path, default=Path('app/src/debug/assets/manuals') / CORPUS)
+    args.add_argument('--output', type=Path, default=Path('app/src/main/assets/manuals') / CORPUS)
+    args.add_argument('--coverage-output', type=Path, default=Path('app/src/debug/assets/manuals') / CORPUS,
+                      help='Debug-only coverage report directory')
     args.add_argument('--download-date', required=True, help='Actual source acquisition date, YYYY-MM-DD')
     opts = args.parse_args()
     if pymupdf.VersionBind != '1.28.2':
@@ -259,7 +261,8 @@ def main():
         chunksSha256=chunks_sha, aliasesSha256=aliases_sha,
         curationVersion=curation['version'], curationSha256=hashlib.sha256(curation_bytes).hexdigest(),
     ))
-    write_json(opts.output / 'coverage.json', dict(
+    opts.coverage_output.mkdir(parents=True, exist_ok=True)
+    write_json(opts.coverage_output / 'coverage.json', dict(
         bodyPagesExtracted=sorted(covered_pages), extractionExcludedPages=EXCLUDED_PAGES,
         extractedChunkCount=extracted_count, includedChunkCount=len(chunks),
         curationVersion=curation['version'], excludedSections=excluded_sections,
