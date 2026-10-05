@@ -62,6 +62,7 @@ class StoreLayoutDeviceTest {
             CosmeticItem("accessory:mobi_headphones", CosmeticSlot.ACCESSORY, 300, "friend:mobi"),
             CosmeticItem("accessory:mobi_goggles", CosmeticSlot.ACCESSORY, 300, "friend:mobi"),
             CosmeticItem("accessory:luna_sunglasses", CosmeticSlot.ACCESSORY, 300, "friend:luna"),
+            CosmeticItem("accessory:luna_cap", CosmeticSlot.ACCESSORY, 300, "friend:luna"),
             CosmeticItem("background:star", CosmeticSlot.BACKGROUND, 200),
             CosmeticItem("background:snow", CosmeticSlot.BACKGROUND, 200),
             CosmeticItem("background:star_hanger", CosmeticSlot.BACKGROUND, 200),
@@ -139,6 +140,10 @@ class StoreLayoutDeviceTest {
         capture("clothes-luna-first-frame")
         awaitLunaFrame("sunglasses")
         capture("clothes-luna-sunglasses")
+        compose.onNodeWithText("루나 모자").performClick()
+        compose.onNodeWithTag("preview-character").assertContentDescriptionEquals("Luna 고양이")
+        awaitLunaFrame("hat")
+        capture("clothes-luna-cap")
     }
 
     @Test fun purchaseRequiresConfirmationAndCommittedOwnership() {

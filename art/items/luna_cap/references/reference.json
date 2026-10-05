@@ -47,7 +47,7 @@
     ],
     "mode": "RGBA",
     "source": {
-      "path": "core/core-ui/src/main/assets/characters/luna/hat/idle_breath/luna_idle_breath_hat_01.png",
+      "path": "art/items/luna_cap/references/luna_cap_original_source.png",
       "sha256": "3ff52a1c86307b34e426ab6c92071ecbb925eb9383fe6234346486b85f9b57c2",
       "size_px": [
         1254,
@@ -110,7 +110,7 @@
       ]
     },
     "item_width_over_base_head_width_estimate": 0.7225,
-    "notes": "Reference-only ear-occlusion and brim-junction revisions. This follow-up changes local RGB at the internal brim seam while preserving the preceding revision alpha exactly. The recorded runtime source remains unchanged.",
+    "notes": "Reference-only ear-occlusion and brim-junction revisions. The original runtime source is archived unchanged here to retain revision provenance when runtime clips adopt this master.",
     "revision_review": {
       "status": "accepted_for_reference",
       "reviewer": "Codex",

@@ -406,6 +406,21 @@ class PetAvatarTest {
     }
 
     @Test
+    fun lunaIdleCapOccludesRightEarThroughoutBreathing() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        val frames = LunaAnimationCache.getOrLoadFrames(context, appearance = LunaAppearance.HAT)
+        frames.forEach { image ->
+            val bitmap = image.asAndroidBitmap()
+            // Interior of the old exposed ear, above the tilted cap crown.
+            assertEquals(0, android.graphics.Color.alpha(bitmap.getPixel(500, 110)))
+            // The opposite ear must remain visible.
+            assertTrue(android.graphics.Color.alpha(bitmap.getPixel(150, 130)) > 240)
+        }
+    }
+
+    @Test
     fun lunaSunglassesFramesReplaceCachedNormalAndHatArtwork() =
         kotlinx.coroutines.test.runTest {
             val context =

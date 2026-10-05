@@ -203,6 +203,7 @@ sprout timing; fitted items follow the head with their own sprout occlusion.
 Still previews retain the canonical open-eye pose.
 Luna idle keeps its 2.2-second loop, blends adjacent breathing poses and uses
 crisp, shorter blink poses; normal, cap and sunglasses retain their fitted artwork.
+The idle cap follows its registered fitted master for the covered ear and brim edge.
 
 Respect the shared motion preference; animation never authorizes commands.
 Settings controls floating wandering; unknown/failed reads keep it stationary.
