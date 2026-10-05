@@ -44,6 +44,15 @@ internal object MobiIdleTimeline {
     const val FRAME_COUNT = COLUMNS * ROWS
     const val TILT_PERIOD_MS = 6_200L
     const val BOB_PERIOD_MS = 6_600L
+    const val GESTURE_PERIOD_MS = 4_800L
+
+    fun blinkClosedAt(elapsedNanos: Long): Boolean =
+        (elapsedNanos.coerceAtLeast(0L) % (GESTURE_PERIOD_MS * 1_000_000L)) in 2_300_000_000L until 2_440_000_000L
+
+    fun sproutShiftAt(elapsedNanos: Long): Float {
+        val phase = elapsedNanos.coerceAtLeast(0L) % (GESTURE_PERIOD_MS * 1_000_000L)
+        return (17 * sin(2 * PI * phase / (GESTURE_PERIOD_MS * 1_000_000L))).toFloat()
+    }
 
     // Sources already contain inhale/exhale and repeated extreme poses; do not ping-pong.
     private val durationsMs =
@@ -119,7 +128,7 @@ internal object MobiIdleTimeline {
     }
 }
 
-/** Idle first frames are exact atlas extracts; the full atlas loads off the main thread. */
+/** Canonical fitted first frames stay available before the gesture layers load. */
 private object MobiIdleFirstFrameCache {
     private val frames = mutableMapOf<String, ImageBitmap>()
 
@@ -135,7 +144,7 @@ private object MobiIdleFirstFrameCache {
                         inSampleSize = 2
                         inScaled = false
                     }
-                context.applicationContext.assets.open(assetPath.replace("_sprite.png", "_01.png")).use { stream ->
+                context.applicationContext.assets.open(assetPath).use { stream ->
                     BitmapFactory.decodeStream(stream, null, options)?.asImageBitmap()?.also { frames[assetPath] = it }
                 }
             } catch (_: java.io.IOException) {
@@ -144,7 +153,7 @@ private object MobiIdleFirstFrameCache {
         }
 }
 
-private fun mobiAppearanceName(accessoryId: String?): String =
+internal fun mobiAppearanceName(accessoryId: String?): String =
     when (accessoryId) {
         "accessory:mobi_headphones" -> "headphones"
         "accessory:mobi_goggles" -> "goggles"
@@ -152,68 +161,28 @@ private fun mobiAppearanceName(accessoryId: String?): String =
     }
 
 internal object MobiSpriteCache {
-    const val DEFAULT_ASSET_PATH = "characters/mobi/normal/idle_breath/mobi_idle_breath_normal_sprite.png"
+    const val DEFAULT_ASSET_PATH = "characters/mobi/normal/idle_breath/mobi_idle_breath_normal_01.png"
 
-    private fun assetPathFor(accessoryId: String?): String =
-        when (accessoryId) {
-            "accessory:mobi_headphones" ->
-                "characters/mobi/headphones/idle_breath/mobi_idle_breath_headphones_sprite.png"
-            "accessory:mobi_goggles" ->
-                "characters/mobi/goggles/idle_breath/mobi_idle_breath_goggles_sprite.png"
-            else -> DEFAULT_ASSET_PATH
-        }
-
-    @Volatile private var cached: ImageBitmap? = null
-
-    @Volatile private var cachedAccessoryId: String? = null
-
-    fun peek(accessoryId: String? = null): ImageBitmap? = if (cachedAccessoryId == accessoryId) cached else null
+    fun peek(accessoryId: String? = null): ImageBitmap? = MobiIdleArtworkCache.peek(accessoryId)?.original
 
     fun firstFrame(
         context: Context,
         accessoryId: String? = null,
-    ): ImageBitmap? = MobiIdleFirstFrameCache.getOrLoad(context, assetPathFor(accessoryId))
-
-    fun clear() {
-        cached = null
-        cachedAccessoryId = null
+    ): ImageBitmap? {
+        val appearance = mobiAppearanceName(accessoryId)
+        val path = "characters/mobi/$appearance/idle_breath/mobi_idle_breath_${appearance}_01.png"
+        return MobiIdleFirstFrameCache.getOrLoad(context, path)
     }
+
+    fun clear() = MobiIdleArtworkCache.clear()
 
     fun getOrLoad(
         context: Context,
         accessoryId: String? = null,
-    ): ImageBitmap? {
-        val current = cached
-        if (current != null && cachedAccessoryId == accessoryId) return current
-        return synchronized(this) {
-            val syncCurrent = cached
-            if (syncCurrent != null && cachedAccessoryId == accessoryId) return syncCurrent
-            val assets = context.applicationContext.assets
-            val assetPath = assetPathFor(accessoryId)
-            val options =
-                BitmapFactory.Options().apply {
-                    inSampleSize = 2
-                    inScaled = false
-                }
-            try {
-                assets.open(assetPath).use { stream ->
-                    val bitmap = requireNotNull(BitmapFactory.decodeStream(stream, null, options))
-                    require(
-                        bitmap.width == 627 * MobiIdleTimeline.COLUMNS && bitmap.height == 627 * MobiIdleTimeline.ROWS,
-                    )
-                    bitmap.asImageBitmap().also {
-                        cachedAccessoryId = accessoryId
-                        cached = it
-                    }
-                }
-            } catch (_: java.io.IOException) {
-                null
-            }
-        }
-    }
+    ): ImageBitmap? = MobiIdleArtworkCache.getOrLoad(context, accessoryId)?.original
 }
 
-/** One atlas, a fixed destination, and draw/layer-only clock reads. No per-frame composition or bitmap crops. */
+/** One shared motion clock and cached source parts for normal, headphones and goggles. */
 @Composable
 internal fun NormalMobiIdleAnimation(
     modifier: Modifier = Modifier,
@@ -224,24 +193,25 @@ internal fun NormalMobiIdleAnimation(
 ) {
     val context = LocalContext.current.applicationContext
     val firstFrame = remember(context, accessoryId) { MobiSpriteCache.firstFrame(context, accessoryId) }
-    var sprite by remember(context, accessoryId) { mutableStateOf(MobiSpriteCache.peek(accessoryId)) }
+    var artwork by remember(context, accessoryId) { mutableStateOf(MobiIdleArtworkCache.peek(accessoryId)) }
     LaunchedEffect(context, accessoryId, animateFrames) {
         if (!animateFrames) return@LaunchedEffect
-        val loaded = withContext(Dispatchers.IO) { MobiSpriteCache.getOrLoad(context, accessoryId) }
-        withContext(Dispatchers.Main.immediate) { sprite = loaded }
+        val loaded = withContext(Dispatchers.IO) { MobiIdleArtworkCache.getOrLoad(context, accessoryId) }
+        artwork = loaded
     }
-    val sheet = sprite ?: firstFrame
-    if (sheet == null) {
+    if (firstFrame == null) {
         Box(modifier.testTag("mobi-animation-loading-${mobiAppearanceName(accessoryId)}"))
         return
     }
-    val elapsed = remember(accessoryId) { mutableLongStateOf(0L) }
-    val animate = animateFrames && sprite != null
-    LaunchedEffect(sheet, animate) {
+    val elapsed = remember { mutableLongStateOf(0L) }
+    val animate = animateFrames
+    LaunchedEffect(animate) {
         if (!animate) return@LaunchedEffect
-        val origin = withInfiniteAnimationFrameNanos { it }
+        var previous = withInfiniteAnimationFrameNanos { it }
         while (isActive) {
-            elapsed.longValue = withInfiniteAnimationFrameNanos { it } - origin
+            val now = withInfiniteAnimationFrameNanos { it }
+            elapsed.longValue += (now - previous).coerceIn(0L, 100_000_000L)
+            previous = now
         }
     }
     Box(
@@ -255,18 +225,12 @@ internal fun NormalMobiIdleAnimation(
                 scaleY = MobiIdleTimeline.scaleYAt(time)
                 translationY =
                     size.minDimension * (MobiIdleTimeline.liftFractionAt(time) + fallbackAsset.translationYFraction)
-                // Isolate premultiplied interpolation from the Home background; keep body/hands/wheel together.
+                // Preserve the selected body motion and item fit as a single layer.
                 compositingStrategy = CompositingStrategy.Offscreen
                 transformOrigin = TransformOrigin(0.5f, 0.9f)
                 clip = false
-            }.mobiSpriteFrames(
-                sheet,
-                if (sprite != null) MobiIdleTimeline.COLUMNS else 1,
-                if (sprite != null) MobiIdleTimeline.ROWS else 1,
-            ) {
-                val time = if (animate) elapsed.longValue else 0L
-                val frame = MobiIdleTimeline.frameAt(time)
-                frame + MobiIdleTimeline.blendAt(time, frame)
+            }.mobiIdleParts(firstFrame, if (animate) artwork else null) {
+                if (animate) elapsed.longValue else 0L
             },
     )
 }
