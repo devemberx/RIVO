@@ -42,6 +42,8 @@ original menu face with Noto Sans KR Regular. Local profile/inventory readiness
 releases it to unchanged Home; failures reach Home's retry UI without waiting for
 OAuth or vehicle evidence. Completed startup does not replay on restoration; system-disabled
 animation uses a still face. After eight seconds a Home escape remains available.
+On a fresh launch the common sky draws before feature initialization and Compose;
+Activity restoration skips this preview and restores the existing shell directly.
 
 ## Reusable Compose library and asset handoff
 

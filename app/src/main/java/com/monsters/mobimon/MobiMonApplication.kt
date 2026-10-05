@@ -9,7 +9,9 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.runtime.CompanionRuntime
+import dagger.Lazy
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -19,7 +21,7 @@ import javax.inject.Inject
 class MobiMonApplication : Application() {
     @Inject lateinit var runtime: CompanionRuntime
 
-    @Inject lateinit var authentication: GitHubAuthentication
+    @Inject lateinit var authentication: Lazy<GitHubAuthentication>
 
     private val _activityInForeground = MutableStateFlow(false)
     val activityInForeground = _activityInForeground.asStateFlow()
@@ -58,7 +60,8 @@ class MobiMonApplication : Application() {
             object : DefaultLifecycleObserver {
                 override fun onStart(owner: LifecycleOwner) {
                     runtime.start()
-                    owner.lifecycleScope.launch { authentication.restore() }
+                    // Client/credential construction is not required to draw the loading sky.
+                    owner.lifecycleScope.launch(Dispatchers.IO) { authentication.get().restore() }
                 }
 
                 override fun onStop(owner: LifecycleOwner) {

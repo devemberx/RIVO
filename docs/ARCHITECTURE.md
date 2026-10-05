@@ -53,6 +53,10 @@ state/callbacks to screens. Activity ViewModels survive navigation.
 | Driving evaluation | Repository memory; simulated, not trusted evidence |
 | Preview and animation | Renderer; equipment changes only on commit |
 
+Fresh Activity launches draw the common sky before constructing the feature graph
+and Compose shell. Authentication construction/restoration runs on IO; process-owned
+vehicle observation and foreground restrictions retain their existing lifecycle.
+
 Read failures retain committed data. Notifications are read-only summaries;
 repositories own reward writes. [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt)
 renders appearance only; display evidence and previews cannot authorize commands.
