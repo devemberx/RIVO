@@ -13,8 +13,8 @@ vehicle or replace warnings.
 
 ## Visual language
 
-- Target 2560 × 1440 AAOS with actual system insets and export content bounds.
-  Preserve artwork proportions and compatibility-density fonts.
+- Target 2560 × 1440 AAOS with system insets and export content bounds. Preserve
+  artwork proportions and compatibility-density fonts.
 - Use `MobiMonTheme`, Twilight colors, Noto Sans KR and shared controls. Reflow or
   scroll for enlarged text and IME; keep actions visible.
 - Touch bounds are at least 76 × 76dp, with 24dp clearance where possible. Use
@@ -24,11 +24,10 @@ vehicle or replace warnings.
   nonmoving P shows “주차 확인됨”; other states show “주차 후 이용” with red icon/text.
   Keep points and simulation labels separate. Chat has its own adjacent badge.
 
-Losing verified Park on Vehicle, Store or Quest shows the route's blocking parking
-dialog. Hide underlying selectors/reward dialogs; restore the route if Park returns
-before Home is chosen. Pending writes show success only after repository commit.
-Initial unavailable data uses the route's ordinary unavailable state. Follow the
-[parking export](ui/vehicle/parking-required.svg).
+Losing verified Park on Vehicle, Store or Quest shows the
+[blocking parking dialog](ui/vehicle/parking-required.svg), hiding selectors and
+reward dialogs. Restore the route if Park returns before Home is chosen. Initial
+unavailable data uses the ordinary unavailable state; success requires a committed write.
 
 ### Launcher icon and native splash
 
@@ -37,199 +36,162 @@ clearance. The splash ends on the first app frame.
 
 ## Reusable Compose library and asset handoff
 
-Use `core-ui` primitives first. Full-screen SVGs are references, not runtime assets.
+Use `core-ui` primitives and replaceable
+[PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt).
 Prefix feature icons; share fonts/artwork in `core-ui` and retain licenses.
+Full-screen SVGs are references, not runtime assets.
 
 ### Image asset locations
 
 | Asset | Location |
 | --- | --- |
-| Character frames/sprites | `core/core-ui/src/main/assets/characters/<friend>/<variant>/<action>/` |
-| Luna accessory source art | `art/characters/luna/variants/<variant>/` (not packaged) |
-| Mobi warning masters | `art/characters/mobi/unhealthy/` (not packaged) |
+| Character masters, turnarounds and proportions | `art/characters/<friend>/references/` |
+| Item masters, turnarounds and attachment contracts | `art/items/<item>/references/` |
+| Runtime character frames/sprites | `core/core-ui/src/main/assets/characters/<friend>/<variant>/<action>/` |
 | Shared artwork/accessories/backgrounds | `core/core-ui/src/main/res/drawable-nodpi/` |
 | Feature artwork/icons | Owning module's `res/drawable[-nodpi]/` |
-| References / drafts | [docs/ui](ui/README.md) / ignored `output/imagegen/`, `tmp/imagegen/` |
+| UI references / temporary drafts | [docs/ui](ui/README.md) / ignored `output/imagegen/`, `tmp/imagegen/` |
 
-Generate from approved masters and change only requested properties. Compare
-identity, proportions, framing, anchors, transparency and dimensions; reject drift.
-Use replaceable `PetAvatar` for rendering. Mobi and Luna crossfade only the
-outgoing and incoming normal, hungry or sick poses over 200ms in a fixed
-ground-anchored slot. Reduced motion switches poses immediately while gentle idle
-breathing continues.
+#### Character and item references
 
-#### Luna generation references
-
-Every Luna generation/edit includes both approved references; variants also include
-their approved source:
-
-- Front: [luna_idle_breath_normal_01.png](../core/core-ui/src/main/assets/characters/luna/normal/idle_breath/luna_idle_breath_normal_01.png).
-- Side/back: [Luna_Side_Back.png](../art/characters/luna/references/Luna_Side_Back.png).
-
-Preserve head/body ratio, ears, limbs, tail and facial proportions across poses.
+The [reference catalog](../art/characters/reference_catalog.json) is the common
+entry point for Mobi, Luna, Las and their items. Each `references/` folder holds
+one current master, turnaround and `reference.json`; these are not packaged.
+Manifests own proportions, attachment rules and review status. Preserve the
+canonical identity and scale; derived views do not override the master.
 
 #### Background resource names
 
-Name scene images `pet_background_<scene>_<period>.<ext>` in `drawable-nodpi`, using
-lowercase ASCII snake case. Scene IDs are `lake_park` and
-`cyberpunk_city`; periods are `midnight`, `sunrise`, `morning`,
-`day`, `afternoon`, `sunset` and `night`, with the [Home scene](#home-scene) hour
-boundaries. New generated scene assets use lossless WebP, preserving canvas and
-decoded pixels during export; format conversion does not authorize relighting.
-Keep existing dimensions when renaming. Temporary
-reference downloads, candidate versions, prompts and review evidence belong in
-ignored `output/imagegen/`. Cosmetic IDs such as `background:cyberpunk_city`
-identify owned items independently of image resource names.
+Use `pet_background_<scene>_<period>.<ext>` in `drawable-nodpi`, with lowercase
+snake case and lossless WebP for new scene assets. Scene IDs are `lake_park` and
+`cyberpunk_city`; periods are `midnight`, `sunrise`, `morning`, `day`, `afternoon`,
+`sunset` and `night`. Cosmetic ownership IDs are independent of resource names.
 
 ### Home scene
 
 [Home/Store backgrounds](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/CompanionBackground.kt)
-select Lake Park and Cyberpunk City using the same VSS time in Home, Store previews
-and catalog thumbnails, never device time. Periods are Midnight 00–04, Sunrise 05–06, Morning 07–11,
-Day 12–15, Afternoon 16–17, Sunset 18–19, Night 20–23. Debug uses the same VSS
-interpretation controls. Keep the approved crop, horizon and ground anchors stable
-as text grows; crossfade only the scene/tint, not controls. Midnight keeps its dark
-windows, reflections and road lights. Use the animated Home time phrase rather than
-the export subtitle. Missing time uses the selected scene's Night. Unknown item IDs
-use Lake Park without adding decorations; only registered props/effects render.
+use the same VSS time for scenes, previews and thumbnails, never device time.
+Periods are Midnight 00–04, Sunrise 05–06, Morning 07–11, Day 12–15,
+Afternoon 16–17, Sunset 18–19 and Night 20–23. Missing time uses the selected
+scene's Night; unknown item IDs use Lake Park without decorations.
+Keep crop, horizon and ground anchors stable as text grows; crossfade the scene,
+not controls. Use the animated Home time phrase and only registered props/effects.
 
 ## Screens and navigation
 
 [Exports](ui/README.md#screen-index) own screen inventory and geometry. Back closes
 keyboard, then dialog/menu, then destination. Menu destinations return Home;
-connection returns to its entry route. Menus close through close, backdrop, Back or
-selection. Notifications show a Home dot and positive Menu count; opening them
-expands the Menu panel. Keep the header fixed while alerts scroll; quest alerts
-remain until receipt. Driving quest reward alerts open their detail without
-a list transition; hidden quest rewards open the claim modal. Pending actions
-block duplicates, and uncertain writes reconcile before retry.
+connection returns to its entry route. Notifications show a Home dot and positive
+Menu count, open the Menu panel and remain until receipt. Quest alerts open the
+appropriate detail or claim view. Keep headers fixed while alerts scroll.
+Pending actions block duplicates; uncertain writes reconcile before retry.
 
 ## Quests and points
 
-Use catalog rewards and actual repeat eligibility, not export values or an assumed
-daily reset. Show one committed Points balance; unknown is not zero. Celebrate only
-committed amounts, once per claim, and show persisted completion dates. Keep claim
-controls in place while saving. The reward popup labels amounts P; reduced motion
-shows it immediately. Quest detail preserves list scroll on Back and keeps
-“작은 도전, 큰 여정” in both views.
+Use catalog rewards and actual repeat eligibility. Show one committed Points
+balance; unknown is not zero. Celebrate committed amounts once per claim, label
+them P and show persisted completion dates. Keep claim controls in place while
+saving; reduced motion shows rewards immediately. Quest detail preserves scroll
+and the “작은 도전, 큰 여정” message.
 
 ## Customization
 
 [Store](../feature/feature-customization/src/main/java/com/monsters/mobimon/feature/customization/CustomizationScreen.kt)
-uses a preview with its action on the left and a catalog on the right. Backgrounds
-use two columns; friends, clothes, effects and props use three. Clothes can preview
-each friend; Space groups the existing background slot into backgrounds, effects
-and props. Both friends show their first sprite frame immediately, then animate
-when the remaining frames load; still cards use the same first frame. The owned filter limits the catalog.
-Purchase confirmation shows price and remaining points before committing; pending
-writes retain selection. Enlarged text uses scrolling panels.
+places preview/actions left and catalog right: two columns for backgrounds,
+three for friends, clothes, effects and props. Allow per-friend clothing previews
+and an owned filter. Show the first frame while animations load; still cards use
+the same frame. Panels scroll for enlarged text.
 
-Friends, accessories and backgrounds are independent; equipment persists per
-friend. Preview stays local until Apply. Items can be purchased for either owned
-friend without switching companions; purchase grants ownership, not equipment.
-Owned items Apply without another charge. Show compatibility, price, balance and
-shortfall. Cancellation spends nothing; pending writes block duplicates, retain
-selection and offer Retry on failure. There is no cash/top-up/conversion.
-
-The 200-point `background:star_hanger` (별빛 모빌) is shared by both friends and
-occupies the background slot. Use the supplied body/glow artwork on Home and in
-Store previews; keep its chain and ornaments connected in motion. Reduced motion
-shows a still hanger.
+Preview stays local until Apply. Equipment persists per friend; purchases grant
+ownership without switching or equipping. Owned items apply without another
+charge. Show compatibility, price, balance and shortfall; confirm price and
+remaining points before purchase. Cancellation spends nothing. Pending writes
+retain selection and block duplicates; failures offer Retry. There is no cash,
+top-up or conversion. Shared decorations retain their shape in motion and show
+still artwork with reduced motion.
 
 ## Conversation
 
 Use split companion/chat panels, suggestions and a system-keyboard composer.
-Suggestions fill without sending. Signed-out Chat opens connection settings.
+Suggestions fill without sending; signed-out Chat opens connection settings.
 Mobi speaks curious rabbit banmal and Luna quietly caring cat banmal, without
-habitual animal suffixes, emojis or stage directions. Checked vehicle-linked hunger,
-sickness and battery state are spoken as the companion's own state in first person,
-with the observed reason; this does not imply biological illness or a mechanical diagnosis.
-Current-thread retention
-and New conversation follow the
-[session contract](ARCHITECTURE.md#keyboard-conversation-ui). Keep New conversation
-reachable above the composer; do not invent a name when one is absent.
+habitual animal suffixes, emojis or stage directions. Verified vehicle-linked
+states use the companion's first-person voice and observed reason, without
+implying biological illness or mechanical diagnosis. Keep New conversation
+reachable above the composer and follow the
+[session contract](ARCHITECTURE.md#keyboard-conversation-ui).
 
-Recoverable network/readiness failures first use inline guidance. Explicit Recheck opens
-the [recovery popup](ui/conversation/network-error.svg) until readiness succeeds and never
-resends messages. Show Retry only when an unanswered user message exists. Failed replies,
-including missing evidence, keep the turn for explicit Edit/Retry; account/access/usage
-failures open the same popup. Show “Copilot 확인 중” until
-readiness is verified, then “Copilot 연결됨”. Parking recovery blocks editing and hides IME;
-AAOS restrictions remove the screen. After Send, show the sent bubble and a waiting
-hint; canceling a reply restores its text for editing, while Home clears the composer.
+Use inline guidance for recoverable network/readiness failures. Explicit Recheck
+opens the [recovery popup](ui/conversation/network-error.svg) without resending;
+account/access/usage failures use the same popup. Failed replies retain the turn
+for Edit/Retry; Retry requires an unanswered message. Show “Copilot 확인 중” until
+verified, then “Copilot 연결됨”. Parking recovery blocks editing and hides IME;
+AAOS restrictions remove the screen. Send shows the bubble and waiting hint;
+cancel restores editable text, while Home clears the composer.
 
 Follow the [keyboard](ui/conversation/keyboard-input.svg),
 [recording](ui/conversation/voice-listening.svg) and
-[review](ui/conversation/voice-review.svg) layouts. Capture has separate Stop and
-Send actions; Stop yields editable text, only Send submits, and errors retain
-confirmed text. Microphone permission is explicit; an accepted request clears typed input,
-even if permission is later denied. Settings guidance appears when the system
-dialog cannot reopen. Inline network errors preserve capture and unsent drafts;
-explicit popup recovery releases capture and keeps drafts. Keep the
-Copilot disclosure below the composer: transmitted dialogue, available context/debug
-values and AI uncertainty. Local clearing does not promise
-provider deletion. Spoken replies remain planned.
+[review](ui/conversation/voice-review.svg) layouts. Stop yields editable text;
+only Send submits. Microphone permission is explicit; accepting the request clears
+typed input even if permission is denied. Offer Settings when the system dialog
+cannot reopen. Errors preserve confirmed text and drafts; inline network errors
+preserve capture, while popup recovery releases it. Disclose transmitted dialogue,
+available context/debug values and AI uncertainty below the composer. Local
+clearing does not promise provider deletion. Spoken replies are unavailable.
 
-The AI explains vehicle information in the companion voice using tool values, units and signal meanings; the app does not replace its prose with fact templates. Identify Debug-simulated readings explicitly; verified VSS readings omit that label. Explain unavailable observations and label vehicle time as the clock at lookup. Rejected evidence preserves committed history and requires an explicit retry; raw tool protocol stays hidden.
-
-Replies keep a friendly companion voice: short paragraphs for explanations,
-bullets for multiple tips and numbered steps when order matters. Keep relevant
-conditions/warnings and place citations beside supported claims. Manual answers
-show a regular-weight source heading with smaller entries/markers; raw tool output stays hidden. Follow new replies unless
-reading history; the return button shows typing dots or a down arrow. Render
-strong Markdown emphasis; failed-turn Edit reverses the short arrival motion
-in place unless motion is reduced,
-and keep companion artwork clear of its caption when the keyboard opens.
+Explain vehicle information from tool evidence in the companion voice, with units
+and signal meanings. Label Debug simulations and unavailable observations; vehicle
+time is the clock at lookup. Rejected evidence preserves history and requires
+explicit retry. Keep raw tool protocol hidden and retain relevant conditions and
+warnings. Use short paragraphs, lists when helpful and citations beside claims;
+manual sources use a regular-weight heading
+and smaller entries. Follow new replies unless reading history, offer a return
+button and keep artwork clear of its caption when the keyboard opens.
 
 ## Vehicle information
 
-[Vehicle exports](ui/README.md#vehicle) define layout. The six default cards are
-battery remaining, tire pressure, front windshield washer fluid, low-beam warning,
-driver fatigue and distance to service. The grouped External environment and Driver
-assistance cards are retired; their individual signal cards remain selectable.
-Cards use icon, text and accessible status labels; the selector excludes assigned
-cards and saves alternatives only after confirmation. Label Debug data as simulations.
-Distinguish Info, Normal, Caution and Unavailable. Missing/stale/invalid is never
-Normal; all four wheels are required for a Normal tire state, while a confirmed
-warning may show Caution. Low battery/washer maps to Hungry; vehicle/assistance
-warnings map to Sick with precedence. Include warnings from unselected cards;
-expressions do not diagnose.
+[Vehicle exports](ui/README.md#vehicle) define layout. Default cards cover battery,
+tire pressure, washer fluid, low beam, driver fatigue and service distance.
+Selectors offer individual unassigned signals and save only after confirmation.
+Use icon/text status cues and label Debug simulations. Distinguish Info, Normal,
+Caution and Unavailable: missing/stale/invalid is never Normal, and Normal tire
+status requires all four wheels. Confirmed warnings may show Caution. Low
+battery/washer maps to Hungry; vehicle/assistance warnings map to Sick with
+precedence, including warnings from unselected cards. Expressions do not diagnose.
 
 ## AI connection and settings
 
-Debug controls default off; Release data follows the
+Debug controls default off; Release follows the
 [vehicle authorization contract](ARCHITECTURE.md#vehicle-interaction-authorization).
-In an allowed Release session, ten version taps with no gap over three seconds reveal
-Debugger settings; ten more hide them and turn Debugger mode off. Show the
-remaining count for the last five taps and confirm each transition.
-Spoken replies and vehicle-home display are unavailable; omit voice reply and
-Do Not Disturb settings.
+The version-tap gesture reveals/hides Debugger settings with progress and
+confirmation; hiding also disables Debugger mode. Omit unavailable spoken-reply,
+vehicle-home display and Do Not Disturb controls.
+
 Configured builds show GitHub approval QR, code and address help; unconfigured
-builds disable sign-in. Only verified authentication shows the connected state,
-account and equipped friend's chat action. Explain local persistence and separate
-Copilot readiness. Network failure offers retry without clearing credentials;
-disconnect confirms local-only removal.
+builds disable sign-in. Only verified authentication shows connected account and
+chat actions. Explain local persistence separately from Copilot readiness.
+Network retry retains credentials; disconnect confirms local-only removal.
 
 ## Motion
 
-Las (라스) is a 500-point character using the unchanged robot master. Its idle renderer keeps the master body fixed while gently waving the connected raised arm from the shoulder,
-shortening the eye symmetrically and fading the head lights. It respects the shared
-motion preference; the generated atlas is retained as source reference, not playback. When moving normally, Las switches directly to a transparent robot-dance sprite mirrored for direction and returns directly to idle when movement stops; reduced motion stays idle. The floating overlay plays the normal 6×4 portal sprites when Las appears or disappears, blending their seated endpoints with idle, showing Las's "I'll be back." bubble during early exit, and hiding the overlay only after the exit finishes. Hungry uses a separate 24-frame 6×4 RGBA atlas: low-battery blink, an attempted plug connection, a disappearing socket, disappointment, then return to idle. Its padded canvas preserves the idle character scale and keeps the socket/cord inside each frame; reduced motion holds a battery-warning pose. The seated position and crown-to-sole size stay anchored. The cord is stowed without turning around, and both loop endpoints rest the hand on the knee without raising it. Moving poses advance continuously; only battery flashes and idle endpoints pause. Vehicle warnings retain priority over hungry. Sick uses a separate 24-frame sprite loop baked from one fixed body and a rigid head: three fixed face-lamp sectors dim and recover, the ECG flatlines then resumes, and the head tilts sideways once without scaling. Body, arms and feet remain identical across frames; sick emotion or a vehicle warning selects the loop, and reduced motion holds a malfunction pose.
+Keep character identity, scale and ground anchors stable across states. Mobi/Luna
+crossfade normal, hungry and sick poses over 200ms; reduced motion switches
+immediately while gentle idle breathing continues. Las uses restrained robot
+idle, movement, portal, low-battery and malfunction motions; reduced motion keeps
+a representative pose. Vehicle warnings take priority over hunger.
 
-Respect the shared motion preference; animation never authorizes commands. Settings
-controls only floating wandering; unknown/failed reads keep it stationary. Shell
-chat transition returns to its trigger; restrictions replace content immediately.
-Existing messages stay still. Home speech replays on entry, tap or interval, not
-data updates.
+Respect the shared motion preference; animation never authorizes commands.
+Settings controls floating wandering; unknown/failed reads keep it stationary.
+Restrictions replace content immediately. Chat transitions return to their
+trigger; existing messages stay still. Home speech replays on entry, tap or
+interval, not data updates.
 
 ## Vehicle launcher
 
-Outside-app companion needs explicit opt-in and overlay permission. Non-P or
-unverified parking stops wandering and triggers Mobi's departure animation. Keep
-the live idle visible while loading; the exit preserves its body scale and ground anchor
-through the handoff, without a scale-down transition;
-verified P restores Mobi with a 1.4-second entrance before wandering resumes.
-The Debug parking button uses the same vehicle stream; a renewed non-P signal
-during entrance queues departure after the entrance completes. Intended placement is vehicle Home; hide it
-while MobiMon is foreground. Target-OEM placement and lifecycle remain unverified under the
+The outside-app companion requires opt-in and overlay permission. Non-P or
+unverified parking stops wandering and triggers departure; verified P restores
+entry before wandering resumes. Keep idle visible while loading and preserve
+scale/ground anchors through transitions. A renewed non-P signal during entrance
+queues departure. Hide the overlay while MobiMon is foreground. Target-OEM Home
+placement and lifecycle remain unverified under the
 [platform contract](ARCHITECTURE.md#shared-vehicle-condition-and-overlay).

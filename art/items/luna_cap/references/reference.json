@@ -1,0 +1,329 @@
+{
+  "schema_version": 1,
+  "item_id": "accessory:luna_cap",
+  "character_id": "friend:luna",
+  "asset_variant": "hat",
+  "issue": 388,
+  "coordinates": {
+    "paths": "repository-relative",
+    "rectangles": "[left,top,right,bottom), pixels; x right, y down",
+    "landmarks": "Manual visual estimates on canonical fitted PNG; item box excludes character anatomy.",
+    "head_normalization": "(point - base head-box top-left) / base head-box dimensions. Values may fall outside 0..1 for equipment extending past head."
+  },
+  "base_character": {
+    "manifest_path": "art/characters/luna/references/reference.json",
+    "manifest_sha256": "ea5d3a05f051bceafccb0082ebe43418a95e11c45123ecc66dc6ab94fc423dc0",
+    "canonical": {
+      "path": "core/core-ui/src/main/assets/characters/luna/normal/idle_breath/luna_idle_breath_normal_01.png",
+      "sha256": "95450ffb9baf3f660f98d720decce12de474cf71b7452c4ebe49d9be7260bf05",
+      "size_px": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA"
+    },
+    "turnaround": {
+      "path": "art/characters/luna/references/luna_turnaround.png",
+      "sha256": "12e893fdbe403d279cc6763e015b5452502d1cae94170f427d13701ba66a09fa",
+      "size_px": [
+        1536,
+        1024
+      ],
+      "mode": "RGB"
+    },
+    "head_core_box_px_estimate": [
+      176,
+      208,
+      1048,
+      790
+    ]
+  },
+  "canonical_fitted": {
+    "path": "art/items/luna_cap/references/luna_cap_seated_front_master.png",
+    "sha256": "3ff52a1c86307b34e426ab6c92071ecbb925eb9383fe6234346486b85f9b57c2",
+    "size_px": [
+      1254,
+      1254
+    ],
+    "mode": "RGBA",
+    "source": {
+      "path": "core/core-ui/src/main/assets/characters/luna/hat/idle_breath/luna_idle_breath_hat_01.png",
+      "sha256": "3ff52a1c86307b34e426ab6c92071ecbb925eb9383fe6234346486b85f9b57c2",
+      "size_px": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA"
+    },
+    "approval": "existing_project_canonical",
+    "pose": "seated_front",
+    "equipped_item_ids": [
+      "accessory:luna_cap"
+    ],
+    "alpha_bounds_px": [
+      175,
+      29,
+      1177,
+      1172
+    ],
+    "alpha_threshold": 128,
+    "item_bounds_px_estimate": [
+      418,
+      29,
+      1048,
+      462
+    ],
+    "attachment_points_px_estimate": {
+      "badge": [
+        724,
+        273
+      ],
+      "brim_screen_left": [
+        452,
+        286
+      ],
+      "brim_screen_right": [
+        964,
+        443
+      ],
+      "crown_contact": [
+        715,
+        276
+      ]
+    },
+    "attachment_points_head_uv_estimate": {
+      "badge": [
+        0.6284,
+        0.1117
+      ],
+      "brim_screen_left": [
+        0.3165,
+        0.134
+      ],
+      "brim_screen_right": [
+        0.9037,
+        0.4038
+      ],
+      "crown_contact": [
+        0.6181,
+        0.1168
+      ]
+    },
+    "item_width_over_base_head_width_estimate": 0.7225,
+    "notes": "Preserved byte-for-byte. This fitted master takes precedence over inferred sheet views."
+  },
+  "turnaround": {
+    "path": "art/items/luna_cap/references/luna_cap_turnaround.png",
+    "sha256": "ae804f3f929e90136caf0401501cb809036a5423d3c59fd01ca1ba70ea520a59",
+    "size_px": [
+      1254,
+      1254
+    ],
+    "mode": "RGB",
+    "tool": "built-in image_gen",
+    "generation_source_name": "exec-f9d69bef-100f-4b31-94f3-a5cd933e372d.png",
+    "background": "opaque neutral gray; reference-only, not runtime animation frames",
+    "layout": {
+      "columns": 3,
+      "rows": 3,
+      "column_bounds_px": [
+        0,
+        418,
+        836,
+        1254
+      ],
+      "row_bounds_px": [
+        0,
+        325,
+        745,
+        1254
+      ],
+      "note": "Use explicit rectangles; generation does not produce equal-height content rows."
+    },
+    "views": [
+      {
+        "id": "item_front",
+        "subject": "item_only",
+        "pose": null,
+        "view": "front",
+        "rect_px": [
+          0,
+          0,
+          418,
+          325
+        ],
+        "camera": "front-facing",
+        "default_pose_prop": null,
+        "scale_note": "Standalone product view is enlarged for inspection; do not derive fit scale from it."
+      },
+      {
+        "id": "item_side_left",
+        "subject": "item_only",
+        "pose": null,
+        "view": "side_left",
+        "rect_px": [
+          418,
+          0,
+          836,
+          325
+        ],
+        "camera": "illustrative left-facing oblique/profile; not angle-calibrated",
+        "default_pose_prop": null,
+        "scale_note": "Standalone product view is enlarged for inspection; do not derive fit scale from it."
+      },
+      {
+        "id": "item_back",
+        "subject": "item_only",
+        "pose": null,
+        "view": "back",
+        "rect_px": [
+          836,
+          0,
+          1254,
+          325
+        ],
+        "camera": "rear-facing",
+        "default_pose_prop": null,
+        "scale_note": "Standalone product view is enlarged for inspection; do not derive fit scale from it."
+      },
+      {
+        "id": "seated_front",
+        "subject": "equipped_character",
+        "pose": "seated",
+        "view": "front",
+        "rect_px": [
+          0,
+          325,
+          418,
+          745
+        ],
+        "camera": "front-facing",
+        "default_pose_prop": "steering_wheel",
+        "scale_note": "Use canonical fitted source and base head width to establish scale, not sheet cell width."
+      },
+      {
+        "id": "seated_side_left",
+        "subject": "equipped_character",
+        "pose": "seated",
+        "view": "side_left",
+        "rect_px": [
+          418,
+          325,
+          836,
+          745
+        ],
+        "camera": "illustrative left-facing oblique/profile; not angle-calibrated",
+        "default_pose_prop": "steering_wheel",
+        "scale_note": "Use canonical fitted source and base head width to establish scale, not sheet cell width."
+      },
+      {
+        "id": "seated_back",
+        "subject": "equipped_character",
+        "pose": "seated",
+        "view": "back",
+        "rect_px": [
+          836,
+          325,
+          1254,
+          745
+        ],
+        "camera": "rear-facing",
+        "default_pose_prop": "steering_wheel",
+        "scale_note": "Use canonical fitted source and base head width to establish scale, not sheet cell width."
+      },
+      {
+        "id": "standing_front",
+        "subject": "equipped_character",
+        "pose": "standing",
+        "view": "front",
+        "rect_px": [
+          0,
+          745,
+          418,
+          1254
+        ],
+        "camera": "front-facing",
+        "default_pose_prop": null,
+        "scale_note": "Use canonical fitted source and base head width to establish scale, not sheet cell width."
+      },
+      {
+        "id": "standing_side_left",
+        "subject": "equipped_character",
+        "pose": "standing",
+        "view": "side_left",
+        "rect_px": [
+          418,
+          745,
+          836,
+          1254
+        ],
+        "camera": "illustrative left-facing oblique/profile; not angle-calibrated",
+        "default_pose_prop": null,
+        "scale_note": "Use canonical fitted source and base head width to establish scale, not sheet cell width."
+      },
+      {
+        "id": "standing_back",
+        "subject": "equipped_character",
+        "pose": "standing",
+        "view": "back",
+        "rect_px": [
+          836,
+          745,
+          1254,
+          1254
+        ],
+        "camera": "rear-facing",
+        "default_pose_prop": null,
+        "scale_note": "Use canonical fitted source and base head width to establish scale, not sheet cell width."
+      }
+    ],
+    "review": {
+      "status": "accepted_for_reference",
+      "reviewer": "Codex",
+      "authority": "User requested item reference production following delegated art decisions.",
+      "date": "2026-10-05",
+      "separate_user_visual_signoff": false,
+      "checks": [
+        "Compared front item shape, colors and fit against runtime masters.",
+        "Reviewed front/side/rear visibility and occlusion.",
+        "Reviewed seated/standing body proportions against base character reference.",
+        "Checked nine complete views and actual cell boundaries."
+      ],
+      "limits": [
+        "Hidden surfaces and fittings are conservative generated interpretations, not surveyed 3D geometry.",
+        "Side views are oblique/profile references, not calibrated orthographic projections.",
+        "Static reference review does not prove frame-to-frame animation stability; use canonical measurements to correct generated drift."
+      ]
+    }
+  },
+  "identity_constraints": [
+    "Rounded cream-white cap, navy band with one thin white stripe, short navy brim.",
+    "One central round navy badge with a cyan five-point star.",
+    "Two cyan leaves on a short stem are part of the CAP, not Luna anatomy."
+  ],
+  "attachment_contract": {
+    "pivot": "crown_contact",
+    "fit": [
+      "Cap sits between the ears with the canonical brim sloping down toward screen right in front view.",
+      "Maintain anatomical tilt under rotation: rear screen slope reverses.",
+      "Ears remain attached and visible where not occluded; no clipping hole through the ear.",
+      "Back shows cream crown and striped navy band, not a duplicate brim/star badge."
+    ],
+    "occlusion": [
+      "Crown above head; front brim in front of forehead.",
+      "Near ear may overlap cap edge; preserve natural far-ear occlusion."
+    ],
+    "transform": "Rigidly follow skull translation/rotation at the canonical relative scale. No independent floating, stretching or per-frame fit-to-bounds.",
+    "character_invariants": "Preserve base head/body ratio, silhouette and anchors. Luna tail curls to anatomical left: screen right in front, screen left in rear. Cap sprout is equipment only."
+  },
+  "generation_gate": {
+    "requires": [
+      "base_character canonical and turnaround",
+      "canonical_fitted",
+      "reviewed item turnaround"
+    ],
+    "on_missing_or_hash_mismatch": "Stop generation and resolve missing/unreviewed references; do not invent a replacement.",
+    "pose_selection": "Seated wheel-holding idle and empty-handed standing use the same fitted item geometry and skull attachment.",
+    "runtime_boundary": "Reference-only files under art. No runtime resource replacement or automatic image-path loading is introduced."
+  }
+}
