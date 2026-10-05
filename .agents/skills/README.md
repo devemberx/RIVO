@@ -1,7 +1,7 @@
 # Project development skills
 
 This project vendors three skills for Android development and UI/UX design and
-maintains a local background asset workflow.
+maintains local background and character animation workflows.
 Upstream content is preserved except for trailing whitespace cleanup in
 UI/UX Pro Max's `scripts/design_system.py`, including a docstring. Code logic is unchanged.
 
@@ -19,6 +19,11 @@ skill generates time variants from one approved master, separating fixed scene
 geometry from time-dependent lighting and requiring post-generation visual review.
 Its complete folder is mirrored in `.claude/skills/`.
 
+The project-maintained [character-animation](character-animation/SKILL.md) skill
+uses the character/item reference catalog to gate production, preserve scale and
+attachment, review playback and export measured runtime derivatives. Its complete
+folder is also mirrored in `.claude/skills/`.
+
 ## Usage
 
 Codex discovers these skills in `.agents/skills/`. For other agents, use their
@@ -30,6 +35,7 @@ Example prompts:
 - `Use compose-agent to review state restoration and animation lifecycle in this feature.`
 - `Use testing-setup to review the current Android test setup and identify the checks needed for this change.`
 - `Use background-time-variants to create and verify Cyberpunk City time variants while preserving building heights and object placement.`
+- `Use character-animation to create a Luna cap idle gesture from the registered references and review it before runtime export.`
 
 Apply these workflows within the user's requested scope and the repository's
 instructions. Check upstream version assumptions against the project's actual
