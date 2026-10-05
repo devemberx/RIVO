@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.roundToInt
 
 /** Canonical coordinates shared with the selected idle preview; never fit parts to their alpha bounds. */
@@ -55,10 +56,10 @@ internal data class MobiIdleArtwork(
 
 /** Build source-part layers once on IO, rather than retaining 24 full-body poses per appearance. */
 internal object MobiIdleArtworkCache {
-    private val entries = mutableMapOf<String, MobiIdleArtwork>()
+    private val entries = ConcurrentHashMap<String, MobiIdleArtwork>()
     private var sharedSprout: Bitmap? = null
 
-    @Synchronized
+    // Composition reads must not wait for the construction lock held during decoding.
     fun peek(accessoryId: String?): MobiIdleArtwork? = entries[mobiAppearanceName(accessoryId)]
 
     @Synchronized
