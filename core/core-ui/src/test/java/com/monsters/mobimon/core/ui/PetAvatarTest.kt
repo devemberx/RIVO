@@ -57,16 +57,16 @@ class PetAvatarTest {
     }
 
     @Test
-    fun mobiFirstFramesMatchTheirAnimationAtlases() {
+    fun mobiLayersRetainCanonicalFirstFrames() {
         val context =
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
         listOf(null, "accessory:mobi_headphones", "accessory:mobi_goggles").forEach { accessory ->
-            val atlas = requireNotNull(MobiSpriteCache.getOrLoad(context, accessory)).asAndroidBitmap()
-            val first = requireNotNull(MobiSpriteCache.firstFrame(context, accessory)).asAndroidBitmap()
-            val expected = Bitmap.createBitmap(atlas, 0, 0, atlas.width / 6, atlas.height / 4)
-            assertTrue("First frame must match atlas for $accessory", expected.sameAs(first))
-            expected.recycle()
+            val loaded = requireNotNull(MobiSpriteCache.getOrLoad(context, accessory))
+            val first = requireNotNull(MobiSpriteCache.firstFrame(context, accessory))
+            assertTrue("Loading gesture layers must not replace the first frame for $accessory", loaded === first)
+            assertEquals(627, loaded.width)
+            assertEquals(627, loaded.height)
         }
     }
 
@@ -145,28 +145,25 @@ class PetAvatarTest {
     }
 
     @Test
-    fun mobiAnimationCacheLoadsOneSheetAndReusesIt() {
+    fun mobiAnimationCacheReusesSmallLayersForEveryAppearance() {
         val context =
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
-        val sprite = requireNotNull(MobiSpriteCache.getOrLoad(context))
-        assertEquals(627 * 6, sprite.width)
-        assertEquals(627 * 4, sprite.height)
-        assertTrue(sprite === MobiSpriteCache.getOrLoad(context))
-        assertEquals(
-            listOf("mobi_idle_breath_normal_01.png", "mobi_idle_breath_normal_sprite.png"),
-            context.assets.list("characters/mobi/normal/idle_breath")!!.toList(),
-        )
-
-        val headphonesSprite = requireNotNull(MobiSpriteCache.getOrLoad(context, "accessory:mobi_headphones"))
-        assertEquals(627 * 6, headphonesSprite.width)
-        assertEquals(627 * 4, headphonesSprite.height)
-        assertTrue(headphonesSprite === MobiSpriteCache.getOrLoad(context, "accessory:mobi_headphones"))
-
-        val gogglesSprite = requireNotNull(MobiSpriteCache.getOrLoad(context, "accessory:mobi_goggles"))
-        assertEquals(627 * 6, gogglesSprite.width)
-        assertEquals(627 * 4, gogglesSprite.height)
-        assertTrue(gogglesSprite === MobiSpriteCache.getOrLoad(context, "accessory:mobi_goggles"))
+        val appearances = listOf(null, "accessory:mobi_headphones", "accessory:mobi_goggles")
+        val loaded = appearances.map { requireNotNull(MobiIdleArtworkCache.getOrLoad(context, it)) }
+        appearances.zip(loaded).forEach { (accessory, artwork) ->
+            assertTrue(artwork === MobiIdleArtworkCache.getOrLoad(context, accessory))
+            assertEquals(627, artwork.body.width)
+            assertEquals(627, artwork.closedEyesBody.height)
+            val name = mobiAppearanceName(accessory)
+            assertEquals(
+                listOf("mobi_idle_breath_${name}_01.png"),
+                context.assets.list("characters/mobi/$name/idle_breath")!!.toList(),
+            )
+        }
+        assertTrue(loaded.all { it.sprout === loaded.first().sprout })
+        assertTrue(loaded[1].sproutInFront)
+        assertTrue(!loaded[2].sproutInFront)
     }
 
     @Test

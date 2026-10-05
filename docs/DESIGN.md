@@ -194,6 +194,10 @@ immediately while gentle idle breathing continues. Las uses restrained robot
 idle, movement, portal, low-battery and malfunction motions; reduced motion keeps
 a representative pose. Vehicle warnings take priority over hunger.
 
+Mobi normal, headphones and goggles idle share the same body motion, blink and
+sprout timing; fitted items follow the head with their own sprout occlusion.
+Still previews retain the canonical open-eye pose.
+
 Respect the shared motion preference; animation never authorizes commands.
 Settings controls floating wandering; unknown/failed reads keep it stationary.
 Restrictions replace content immediately. Chat transitions return to their
