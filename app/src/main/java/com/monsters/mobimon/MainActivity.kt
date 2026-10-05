@@ -5,88 +5,97 @@ import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.monsters.mobimon.core.domain.ConversationProvider
-import com.monsters.mobimon.core.domain.ConversationStore
-import com.monsters.mobimon.core.domain.GitHubAuthentication
-import com.monsters.mobimon.core.domain.PointEconomy
-import com.monsters.mobimon.core.domain.PointQuestCatalog
-import com.monsters.mobimon.core.domain.SettingsRepository
-import com.monsters.mobimon.core.navigation.FeatureEntry
-import com.monsters.mobimon.core.presentation.CompanionAppearancePresentation
-import com.monsters.mobimon.core.presentation.VehiclePresentation
-import com.monsters.mobimon.feature.auth.ConversationNetworkStatus
-import com.monsters.mobimon.feature.auth.ConversationSpeechInput
-import com.monsters.mobimon.feature.vehicle.VehicleCardSelectionStore
-import com.monsters.mobimon.runtime.AppUseStateSource
 import com.monsters.mobimon.service.FloatingCompanionService
 import com.monsters.mobimon.ui.MobiMonApp
+import com.monsters.mobimon.ui.StartupPreviewView
+import dagger.Lazy
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    @Inject lateinit var entries: Set<@JvmSuppressWildcards FeatureEntry>
+    private var launchReady by mutableStateOf(false)
 
-    @Inject lateinit var appUse: AppUseStateSource
+    @Inject internal lateinit var dependencies: Lazy<MainActivityDependencies>
 
-    @Inject lateinit var appearance: CompanionAppearancePresentation
-
-    @Inject lateinit var settings: SettingsRepository
-
-    @Inject lateinit var authentication: GitHubAuthentication
-
-    @Inject lateinit var conversation: ConversationProvider
-
-    @Inject lateinit var conversationStore: ConversationStore
-
-    @Inject lateinit var networkStatus: ConversationNetworkStatus
-
-    @Inject lateinit var speechInput: ConversationSpeechInput
-
-    @Inject lateinit var vehicle: VehiclePresentation
-
-    @Inject lateinit var points: PointEconomy
-
-    @Inject lateinit var questCatalog: PointQuestCatalog
-
-    @Inject lateinit var vehicleCards: VehicleCardSelectionStore
+    private var contentReady = false
+    private val nativeSplashReleased = CompletableDeferred<Unit>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        launchReady = savedInstanceState != null
+        splashScreen.setOnExitAnimationListener { splash ->
+            splash.remove()
+            launchReady = true
+            nativeSplashReleased.complete(Unit)
+        }
+        if (savedInstanceState == null) {
+            setContentView(
+                StartupPreviewView(this) {
+                    lifecycleScope.launch {
+                        // Leave the UI thread free to remove the system window before feature setup.
+                        // Warm/platform launches may omit the callback; keep their wait bounded.
+                        withTimeoutOrNull(500) { nativeSplashReleased.await() }
+                        awaitFrame()
+                        launchReady = true
+                        if (!isFinishing && !isDestroyed) showAppContent()
+                    }
+                },
+            )
+        } else {
+            showAppContent()
+        }
+    }
+
+    private fun showAppContent() {
+        val services = dependencies.get()
+        contentReady = true
         observeLauncherOverlay()
         setContent {
             MobiMonApp(
-                entries,
-                appUse,
-                appearance,
-                settings,
-                authentication,
-                conversation,
-                vehicle,
-                networkStatus,
-                speechInput,
-                points,
-                questCatalog,
-                vehicleCards,
-                conversationStore,
+                services.entries,
+                services.appUse,
+                services.appearance,
+                services.settings,
+                services.authentication,
+                services.conversation,
+                services.vehicle,
+                services.pets,
+                services.networkStatus,
+                services.speechInput,
+                services.points,
+                services.questCatalog,
+                services.vehicleCards,
+                services.conversationStore,
+                launchReady = launchReady,
             )
         }
     }
 
     override fun onResume() {
         super.onResume()
-        syncLauncherOverlay()
+        if (contentReady) syncLauncherOverlay()
     }
 
     private fun syncLauncherOverlay() {
         lifecycleScope.launch {
-            val current = settings.settings.first()
+            val current =
+                dependencies
+                    .get()
+                    .settings.settings
+                    .first()
             updateOverlayService(current.launcherCharacterEnabled)
         }
     }
@@ -94,7 +103,7 @@ class MainActivity : ComponentActivity() {
     private fun observeLauncherOverlay() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                settings.settings.collect { current ->
+                dependencies.get().settings.settings.collect { current ->
                     updateOverlayService(current.launcherCharacterEnabled)
                 }
             }

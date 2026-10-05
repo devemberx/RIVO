@@ -32,8 +32,18 @@ Initial unavailable data uses the route's ordinary unavailable state. Follow the
 
 ### Launcher icon and native splash
 
-Use shared Mobi artwork on Night, without a wordmark and with adaptive-mask
-clearance. The splash ends on the first app frame.
+Keep the approved launcher artwork and adaptive-mask clearance. The native splash
+uses the common sky color with a transparent icon and ends on the first app frame;
+Opaque activities on Android 14 still show this solid-color system window on launcher
+starts. [Startup](../app/src/main/java/com/monsters/mobimon/ui/StartupLoading.kt)
+shows the approved common sky immediately, expands the icon within it, gathers six curved star trails,
+reveals the equipped Home scene using the shared VSS period/crop, then shows the
+original menu face with Noto Sans KR Regular. Local profile/inventory readiness
+releases it to unchanged Home; failures reach Home's retry UI without waiting for
+OAuth or vehicle evidence. Completed startup does not replay on restoration; system-disabled
+animation uses a still face. After eight seconds a Home escape remains available.
+On a fresh launch the common sky draws before feature initialization and Compose;
+Activity restoration skips this preview and restores the existing shell directly.
 
 ## Reusable Compose library and asset handoff
 
@@ -76,6 +86,8 @@ lowercase ASCII snake case. Scene IDs are `lake_park` and
 `day`, `afternoon`, `sunset` and `night`, with the [Home scene](#home-scene) hour
 boundaries. New generated scene assets use lossless WebP, preserving canvas and
 decoded pixels during export; format conversion does not authorize relighting.
+The app-owned, time-independent loading sky is `pet_background_startup_common.webp`;
+`common` is not a VSS period or a selectable Home scene.
 Keep existing dimensions when renaming. Temporary
 reference downloads, candidate versions, prompts and review evidence belong in
 ignored `output/imagegen/`. Cosmetic IDs such as `background:cyberpunk_city`

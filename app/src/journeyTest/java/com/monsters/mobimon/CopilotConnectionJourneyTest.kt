@@ -37,6 +37,7 @@ import com.monsters.mobimon.testing.JourneyConversationProvider
 import com.monsters.mobimon.testing.JourneyNetworkStatus
 import com.monsters.mobimon.testing.JourneyStorage
 import com.monsters.mobimon.testing.JourneyVehicle
+import com.monsters.mobimon.testing.drawStartupFrame
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import kotlinx.coroutines.CompletableDeferred
@@ -78,9 +79,12 @@ class CopilotConnectionJourneyTest {
         if (::storage.isInitialized) storage.close()
     }
 
+    private fun launchApp(): ActivityScenario<MainActivity> =
+        ActivityScenario.launch(MainActivity::class.java).also(::drawStartupFrame)
+
     @Test
     fun settingsConnectionSurvivesRecreationAndBackReturnsToSettings() {
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+        launchApp().use { scenario ->
             waitFor(hasContentDescription(text(PetR.string.pet_open_menu)))
             compose.onNodeWithContentDescription(text(PetR.string.pet_open_menu)).ensureDisplayed().performClick()
             compose.onNodeWithText(text(R.string.drawer_settings)).ensureDisplayed().performClick()
@@ -101,7 +105,7 @@ class CopilotConnectionJourneyTest {
     @Test
     fun settingsStartChatOnFirstBootOpensConversation() {
         authentication.approve()
-        ActivityScenario.launch(MainActivity::class.java).use {
+        launchApp().use {
             waitFor(hasContentDescription(text(PetR.string.pet_open_menu)))
             compose.onNodeWithContentDescription(text(PetR.string.pet_open_menu)).ensureDisplayed().performClick()
             compose.onNodeWithText(text(R.string.drawer_settings)).ensureDisplayed().performClick()
@@ -122,7 +126,7 @@ class CopilotConnectionJourneyTest {
     @Test
     fun lossOfParkingShowsDialogAndHomeReturnsHome() {
         authentication.approve()
-        ActivityScenario.launch(MainActivity::class.java).use {
+        launchApp().use {
             waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
             compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
             waitFor(hasTestTag("chat-input") and isEnabled())
@@ -138,7 +142,7 @@ class CopilotConnectionJourneyTest {
     fun startupNetworkFailureStaysOnHomeAndConversationCanRecheckWithoutSending() {
         authentication.approve()
         conversations.connectionResult = ConversationResult.Failure(ConversationProblem.NETWORK)
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+        launchApp().use { scenario ->
             waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
             compose.waitUntil(timeoutMillis = 10_000) { conversations.connections >= 1 }
             compose.onNodeWithTag("chat-network-dialog").assertDoesNotExist()
@@ -178,7 +182,7 @@ class CopilotConnectionJourneyTest {
     @Test
     fun transientNetworkLossKeepsDraftAndDoesNotCallCopilot() {
         authentication.approve()
-        ActivityScenario.launch(MainActivity::class.java).use {
+        launchApp().use {
             waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
             compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
             waitFor(hasText(text(AuthR.string.chat_ready)))
@@ -203,7 +207,7 @@ class CopilotConnectionJourneyTest {
     @Test
     fun authenticationNetworkFailureRechecksCredentialsThenModelFromConversation() {
         authentication.failNetwork()
-        ActivityScenario.launch(MainActivity::class.java).use {
+        launchApp().use {
             waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
             compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
             waitFor(hasTestTag("chat-inline-failure"))
@@ -219,7 +223,7 @@ class CopilotConnectionJourneyTest {
     @Test
     fun conversationSendsDirectlyAndKeepsRepliesAcrossRecreationUntilNewConversation() {
         authentication.approve()
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+        launchApp().use { scenario ->
             waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
             compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
             waitFor(hasTestTag("chat-input"))
@@ -243,7 +247,7 @@ class CopilotConnectionJourneyTest {
     @Test
     fun rejectedEvidenceKeepsHistoryAndOnlyExplicitRetrySendsAgain() {
         authentication.approve()
-        ActivityScenario.launch(MainActivity::class.java).use {
+        launchApp().use {
             waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
             compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
             waitFor(hasText(text(AuthR.string.chat_ready)))
@@ -274,7 +278,7 @@ class CopilotConnectionJourneyTest {
     @Test
     fun returningFromHomeKeepsVisibleMessagesAndProviderHistory() {
         authentication.approve()
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+        launchApp().use { scenario ->
             waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
             compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
             waitFor(hasText(text(AuthR.string.chat_ready)))
@@ -326,7 +330,7 @@ class CopilotConnectionJourneyTest {
 
     @Test
     fun signedOutHomeChatOpensConnectionDirectly() {
-        ActivityScenario.launch(MainActivity::class.java).use {
+        launchApp().use {
             waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
             compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
             waitFor(hasText(text(AuthR.string.copilot_connect)))
@@ -336,7 +340,7 @@ class CopilotConnectionJourneyTest {
 
     @Test
     fun authenticationSuccessOffersConversationBeforeSettings() {
-        ActivityScenario.launch(MainActivity::class.java).use {
+        launchApp().use {
             waitFor(hasText(text(PetR.string.pet_talk_action)) and isEnabled())
             compose.onNodeWithText(text(PetR.string.pet_talk_action)).ensureDisplayed().performClick()
             waitFor(hasText(text(AuthR.string.copilot_connect)))
@@ -357,7 +361,7 @@ class CopilotConnectionJourneyTest {
     @Test
     fun menuOffersNotificationsInsteadOfConversation() {
         authentication.approve()
-        ActivityScenario.launch(MainActivity::class.java).use {
+        launchApp().use {
             waitFor(hasContentDescription(text(PetR.string.pet_open_menu)))
             compose.onNodeWithContentDescription(text(PetR.string.pet_open_menu)).performClick()
             compose
@@ -422,7 +426,10 @@ class CopilotConnectionJourneyTest {
     }
 
     private fun waitFor(matcher: SemanticsMatcher) {
-        compose.waitUntil(timeoutMillis = 10_000) { compose.onAllNodes(matcher).fetchSemanticsNodes().size == 1 }
+        // The native sky can be visible before the first Compose root is attached.
+        compose.waitUntil(timeoutMillis = 10_000) {
+            compose.onAllNodes(matcher).fetchSemanticsNodes(atLeastOneRootRequired = false).size == 1
+        }
     }
 
     private fun waitForAbsent(matcher: SemanticsMatcher) {

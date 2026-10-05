@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Native launch surfaces match MobiMonColors.background (Night). -->
+    <!-- Adaptive launcher backing and system bars retain the shared Night color. -->
     <color name="ic_launcher_background">#091525</color>
+    <color name="startup_background">#365681</color>
 </resources>
