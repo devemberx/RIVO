@@ -658,6 +658,36 @@ class DecorativeMotionTest {
     }
 
     @Test
+    fun lunaIdleRendersBetweenSpriteTicksAndReturnsToStillPose() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        LunaAnimationCache.getOrLoadFrames(context)
+        var animate by mutableStateOf(false)
+        show {
+            LunaIdleBreathAnimation(
+                modifier = Modifier.size(300.dp).testTag("smooth-idle"),
+                animateFrames = animate,
+            )
+        }
+        val still = pixels("smooth-idle")
+        updateStateAndDraw { animate = true }
+        awaitLunaAnimation("smooth-idle")
+        // A 90ms sprite player must repeat images over six 16ms samples.
+        // Away from the deliberately crisp blink, every display tick now changes.
+        val samples =
+            (0 until 6).map {
+                compose.mainClock.advanceTimeByFrame()
+                pixels("smooth-idle")
+            }
+        assertTrue("Breathing must update between source frames", samples.zipWithNext().all { (a, b) -> a != b })
+        updateStateAndDraw { animate = false }
+        assertTrue("Still preview restores canonical frame", still == pixels("smooth-idle"))
+        compose.mainClock.advanceTimeBy(300)
+        assertTrue("Still preview stays unchanged", still == pixels("smooth-idle"))
+    }
+
+    @Test
     fun lunaPlaysHungryAndSickAnimationsWhenRequested() {
         show {
             Row {

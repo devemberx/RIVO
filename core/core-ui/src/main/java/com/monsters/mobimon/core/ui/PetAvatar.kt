@@ -711,24 +711,6 @@ fun LunaRunAnimation(
 }
 
 @Composable
-fun LunaIdleBreathAnimation(
-    modifier: Modifier = Modifier,
-    contentDescription: String? = null,
-    appearance: LunaAppearance = LunaAppearance.NORMAL,
-    animateFrames: Boolean = true,
-) {
-    IdleBreathAnimation(
-        LunaAnimationCache::getOrLoadFrames,
-        LunaActiveAnimation.IDLE,
-        appearance,
-        true,
-        modifier,
-        contentDescription,
-        animateFrames,
-    )
-}
-
-@Composable
 fun LunaHungryAnimation(
     modifier: Modifier = Modifier,
     contentDescription: String? = null,

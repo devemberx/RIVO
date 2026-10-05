@@ -201,6 +201,8 @@ a representative pose. Vehicle warnings take priority over hunger.
 Mobi normal, headphones and goggles idle share the same body motion, blink and
 sprout timing; fitted items follow the head with their own sprout occlusion.
 Still previews retain the canonical open-eye pose.
+Luna idle keeps its 2.2-second loop, blends adjacent breathing poses and uses
+crisp, shorter blink poses; normal, cap and sunglasses retain their fitted artwork.
 
 Respect the shared motion preference; animation never authorizes commands.
 Settings controls floating wandering; unknown/failed reads keep it stationary.
