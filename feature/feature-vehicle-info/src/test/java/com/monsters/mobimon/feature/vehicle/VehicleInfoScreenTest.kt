@@ -37,8 +37,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
+// Native decoding is required for the shared character renderer and lossless WebP assets.
 @RunWith(RobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1248dp-mdpi")
 class VehicleInfoScreenTest {
     @get:Rule

@@ -200,7 +200,11 @@ a representative pose. Vehicle warnings take priority over hunger.
 
 Mobi normal, headphones and goggles idle share the same body motion, blink and
 sprout timing; fitted items follow the head with their own sprout occlusion.
-Still previews retain the canonical open-eye pose.
+Still previews retain the canonical open-eye pose. Sick appearances share a
+4.8-second grounded breath and brief sleepy eye opening, with three stars on a
+2.4-second orbit. The fixed-color blue orbit stays broken around each star;
+the home movement preference stops travel while these gestures continue.
+Explicit nonanimated previews hold the first pose. See [sick motion](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/MobiSickArtwork.kt).
 
 Respect the shared motion preference; animation never authorizes commands.
 Settings controls floating wandering; unknown/failed reads keep it stationary.
