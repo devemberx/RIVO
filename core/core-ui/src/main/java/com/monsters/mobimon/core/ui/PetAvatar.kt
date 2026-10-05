@@ -532,6 +532,7 @@ fun PetAvatar(
                                 vehicleWarning = isSick,
                                 vehicleHungry = isHungry,
                                 animateNormal = isAnimated && hasMobiIdleSprite,
+                                animateSick = isAnimated,
                                 motionEnabled = motionEnabled,
                             )
                         }

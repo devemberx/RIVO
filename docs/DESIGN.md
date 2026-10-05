@@ -69,6 +69,10 @@ entry point for Mobi, Luna, Las and their items. Each `references/` folder holds
 one current master, turnaround and `reference.json`; these are not packaged.
 Manifests own proportions, attachment rules and review status. Preserve the
 canonical identity and scale; derived views do not override the master.
+An explicitly requested master correction records both original-source and revised
+hashes plus review provenance; reference acceptance does not update or validate
+existing runtime motion. Preserve the corrected attachment and occlusion rules in
+each manifest when deriving new views.
 Use the [character animation workflow](../.agents/skills/character-animation/SKILL.md)
 for reference checks, motion review and runtime export.
 
@@ -196,7 +200,11 @@ a representative pose. Vehicle warnings take priority over hunger.
 
 Mobi normal, headphones and goggles idle share the same body motion, blink and
 sprout timing; fitted items follow the head with their own sprout occlusion.
-Still previews retain the canonical open-eye pose.
+Still previews retain the canonical open-eye pose. Sick appearances share a
+4.8-second grounded breath and brief sleepy eye opening, with three stars on a
+2.4-second orbit. The fixed-color blue orbit stays broken around each star;
+the home movement preference stops travel while these gestures continue.
+Explicit nonanimated previews hold the first pose. See [sick motion](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/MobiSickArtwork.kt).
 
 Respect the shared motion preference; animation never authorizes commands.
 Settings controls floating wandering; unknown/failed reads keep it stationary.

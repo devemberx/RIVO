@@ -61,6 +61,7 @@ class DecorativeMotionTest {
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
         requireNotNull(MobiCollapsedSpriteCache.getOrLoad(context))
+        requireNotNull(MobiDizzyStarsSpriteCache.getOrLoad(context))
         var warning by mutableStateOf(true)
         show {
             PetAvatar(
@@ -85,6 +86,7 @@ class DecorativeMotionTest {
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
         requireNotNull(MobiCollapsedSpriteCache.getOrLoad(context))
+        requireNotNull(MobiDizzyStarsSpriteCache.getOrLoad(context))
         var hungry by mutableStateOf(true)
         var warning by mutableStateOf(false)
         show {
@@ -263,6 +265,28 @@ class DecorativeMotionTest {
 
         assertTrue("Mobi keeps breathing with reduced motion", reducedMobi != pixels("mobi"))
         assertTrue("Luna keeps breathing with reduced motion", reducedLuna != pixels("luna"))
+    }
+
+    @Test
+    fun sickGesturesContinueWithoutTravelButExplicitPreviewsStayStill() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        requireNotNull(MobiCollapsedSpriteCache.getOrLoad(context))
+        requireNotNull(MobiDizzyStarsSpriteCache.getOrLoad(context))
+        show {
+            CompositionLocalProvider(LocalMobiMonMotionEnabled provides false) {
+                Row {
+                    PetAvatar(Modifier.size(180.dp).testTag("sick-active"), vehicleWarning = true)
+                    PetAvatar(Modifier.size(180.dp).testTag("sick-still"), vehicleWarning = true, isAnimated = false)
+                }
+            }
+        }
+        val active = pixels("sick-active")
+        val still = pixels("sick-still")
+        compose.mainClock.advanceTimeBy(480)
+        assertTrue("Home travel preference must not freeze sick gestures", active != pixels("sick-active"))
+        assertTrue("Explicit nonanimated preview holds the source pose", still == pixels("sick-still"))
     }
 
     @Test
@@ -506,10 +530,11 @@ class DecorativeMotionTest {
                 .getApplicationContext<android.content.Context>()
         assertTrue(context.assets.list("characters/mobi/normal/sick")!!.none { "transition" in it })
         val sprite = requireNotNull(MobiCollapsedSpriteCache.getOrLoad(context))
+        requireNotNull(MobiDizzyStarsSpriteCache.getOrLoad(context))
         assertTrue(sprite === MobiCollapsedSpriteCache.getOrLoad(context))
         assertTrue(
-            sprite.width == MobiCollapsedSpriteCache.CELL * MobiCollapsedTimeline.COLUMNS &&
-                sprite.height == MobiCollapsedSpriteCache.CELL * MobiCollapsedTimeline.ROWS,
+            sprite.width == MobiCollapsedSpriteCache.CELL &&
+                sprite.height == MobiCollapsedSpriteCache.CELL,
         )
         var warning by mutableStateOf(false)
         show {
@@ -543,14 +568,15 @@ class DecorativeMotionTest {
     }
 
     @Test
-    fun collapsedSpriteAtlasLoadsAndAnimatesOverTime() {
+    fun collapsedPoseLoadsAndMovesContinuously() {
         val context =
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
         val sprite = requireNotNull(MobiCollapsedSpriteCache.getOrLoad(context))
+        requireNotNull(MobiDizzyStarsSpriteCache.getOrLoad(context))
         assertTrue(
-            sprite.width == MobiCollapsedSpriteCache.CELL * MobiCollapsedTimeline.COLUMNS &&
-                sprite.height == MobiCollapsedSpriteCache.CELL * MobiCollapsedTimeline.ROWS,
+            sprite.width == MobiCollapsedSpriteCache.CELL &&
+                sprite.height == MobiCollapsedSpriteCache.CELL,
         )
         show {
             MobiIdleBreathAnimation(
@@ -563,7 +589,7 @@ class DecorativeMotionTest {
         val frameA = pixels("collapsed")
         compose.mainClock.advanceTimeBy(500)
         val frameB = pixels("collapsed")
-        assertTrue("Collapsed sprite sheet animates frames over time", frameA != frameB)
+        assertTrue("Collapsed source pose moves continuously over time", frameA != frameB)
     }
 
     @Test

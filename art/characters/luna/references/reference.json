@@ -2,7 +2,7 @@
   "schema_version": 1,
   "character_id": "friend:luna",
   "variant": "normal",
-  "issue": 388,
+  "issue": 396,
   "coordinate_convention": {
     "paths": "repository-relative",
     "rectangles": "[left, top, right, bottom), pixels; x right, y down",
@@ -68,7 +68,7 @@
   },
   "turnaround": {
     "path": "art/characters/luna/references/luna_turnaround.png",
-    "sha256": "12e893fdbe403d279cc6763e015b5452502d1cae94170f427d13701ba66a09fa",
+    "sha256": "a996bd771196c2655855a1e29ab698e884b9a075af315e11da0f01e0f263ac23",
     "size_px": [
       1536,
       1024
@@ -91,27 +91,28 @@
       "note": "Use explicit cell rectangles; equal row heights are not guaranteed by generation."
     },
     "background": "opaque neutral gray; reference-only, not a transparent animation frame",
-    "tool": "built-in image_gen",
-    "generation_source_name": "exec-6780a8fd-9c05-49ff-8af1-76890d464a69.png",
+    "tool": "built-in image_gen patches; user-authorized Python/Pillow regional compositing",
+    "generation_source_name": "exec-2b35da86-2c2c-4721-beab-cb82c0b2c093.png",
     "review": {
       "status": "accepted_for_reference",
       "reviewer": "Codex",
-      "authority": "User delegated pose selection and source-art organization in this task.",
+      "authority": "User requested identity-preserving reference corrections, clarified grounded Las soles and central Luna tail roots, and explicitly authorized Python regional compositing to preserve original pixels.",
       "review_date": "2026-10-05",
       "separate_user_visual_signoff": false,
       "checks": [
-        "Compared face, materials and silhouette against canonical source.",
-        "Reviewed front/side/rear orientation and compact standing anatomy.",
-        "Checked row baselines and corresponding head sizes using manual landmarks.",
-        "No selectable equipment."
+        "Inspected final composited front, side and rear cells against original sheets and seated masters for face identity, short limb proportions, contact and occlusion.",
+        "Verified zero pixel differences outside the recorded edit mask, including its feathered boundary; original masters remain unchanged except the explicitly revised cap alpha.",
+        "Checked final PNG dimensions/modes and linked reference hashes. Anatomical review is visual, not calibrated 3D measurement."
       ],
       "corrections": [
-        "Reversed incorrect standing rear tail to screen left."
+        "Tail starts at the same centered low rear-pelvis attachment in seated and standing poses, then curls to anatomical left (screen right in front, screen left in rear). Side views retain a narrower foreshortened hook and visible air gap from the back; do not flatten the curl onto the torso.",
+        "Seated wheel-holding rear view retains only narrow upper-arm edges below the head; forward hands and feet are occluded by the torso. Do not widen the torso to hide limbs."
       ],
       "limits": [
         "Use the canonical front and reviewed turnaround together; the superseded combined side/back source has been removed.",
         "Side views retain the approved oblique presentation; do not treat them as calibrated 90-degree orthographic projections."
-      ]
+      ],
+      "evidence": "https://github.com/devemberx/mobimon/issues/396"
     },
     "views": [
       {
@@ -177,10 +178,10 @@
           1430,
           326
         ],
-        "ground_y_px_estimate": 465,
+        "ground_y_px_estimate": 473,
         "root_anchor_px_estimate": [
           1264,
-          465
+          473
         ],
         "head_width_px_estimate": 334,
         "head_height_px_estimate": 240,
@@ -258,12 +259,55 @@
         "head_height_px_estimate": 244,
         "prop": null
       }
-    ]
+    ],
+    "compositing": {
+      "regions_px": [
+        [
+          810,
+          312,
+          963,
+          482
+        ],
+        [
+          789,
+          789,
+          959,
+          987
+        ],
+        [
+          1034,
+          326,
+          1295,
+          484
+        ],
+        [
+          1340,
+          329,
+          1420,
+          483
+        ],
+        [
+          1018,
+          799,
+          1292,
+          957
+        ]
+      ],
+      "outside_mask_changed_pixels": 0,
+      "method": "Original RGB plus reviewed generated patches",
+      "feather_radius_px": 2,
+      "head_contour_feather_px": null,
+      "canonical_paste": null,
+      "original_sha256": "12e893fdbe403d279cc6763e015b5452502d1cae94170f427d13701ba66a09fa",
+      "original_git_commit": "26ec198f29077a0d3c0c069ca62b34439e39b401",
+      "mask_sha256": "7788fce2d1db06458f98e4897c90dadc432c3756aa0db1033f5c6df5fdb03b32"
+    }
   },
   "identity_constraints": [
     "Pearl-white cat, triangular ears with lavender interiors, black oval eyes, three black whisker bars per cheek, pink cheeks and a small w-shaped mouth.",
     "Large head, compact body and short rounded limbs.",
-    "Thick white tail starts at rear pelvis and curls to anatomical left: screen right in front view, screen left in rear view."
+    "Tail starts at the same centered low rear-pelvis attachment in seated and standing poses, then curls to anatomical left (screen right in front, screen left in rear). Side views retain a narrower foreshortened hook and visible air gap from the back; do not flatten the curl onto the torso.",
+    "Seated wheel-holding rear view retains only narrow upper-arm edges below the head; forward hands and feet are occluded by the torso. Do not widen the torso to hide limbs."
   ],
   "animation_contract": {
     "reference_inputs": [

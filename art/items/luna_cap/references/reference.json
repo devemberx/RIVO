@@ -3,7 +3,7 @@
   "item_id": "accessory:luna_cap",
   "character_id": "friend:luna",
   "asset_variant": "hat",
-  "issue": 388,
+  "issue": 396,
   "coordinates": {
     "paths": "repository-relative",
     "rectangles": "[left,top,right,bottom), pixels; x right, y down",
@@ -12,7 +12,7 @@
   },
   "base_character": {
     "manifest_path": "art/characters/luna/references/reference.json",
-    "manifest_sha256": "ea5d3a05f051bceafccb0082ebe43418a95e11c45123ecc66dc6ab94fc423dc0",
+    "manifest_sha256": "2293df377e65b9af843acdb3ed5697709fcd86d9e573fcffb46077b6074ff3ef",
     "canonical": {
       "path": "core/core-ui/src/main/assets/characters/luna/normal/idle_breath/luna_idle_breath_normal_01.png",
       "sha256": "95450ffb9baf3f660f98d720decce12de474cf71b7452c4ebe49d9be7260bf05",
@@ -24,7 +24,7 @@
     },
     "turnaround": {
       "path": "art/characters/luna/references/luna_turnaround.png",
-      "sha256": "12e893fdbe403d279cc6763e015b5452502d1cae94170f427d13701ba66a09fa",
+      "sha256": "a996bd771196c2655855a1e29ab698e884b9a075af315e11da0f01e0f263ac23",
       "size_px": [
         1536,
         1024
@@ -40,7 +40,7 @@
   },
   "canonical_fitted": {
     "path": "art/items/luna_cap/references/luna_cap_seated_front_master.png",
-    "sha256": "3ff52a1c86307b34e426ab6c92071ecbb925eb9383fe6234346486b85f9b57c2",
+    "sha256": "f7893dd56e9f3ba43a7382c0509124e964273dbfac9801f54ac53f9a181820a9",
     "size_px": [
       1254,
       1254
@@ -55,7 +55,7 @@
       ],
       "mode": "RGBA"
     },
-    "approval": "existing_project_canonical",
+    "approval": "reviewed_reference_revision",
     "pose": "seated_front",
     "equipped_item_ids": [
       "accessory:luna_cap"
@@ -110,18 +110,66 @@
       ]
     },
     "item_width_over_base_head_width_estimate": 0.7225,
-    "notes": "Preserved byte-for-byte. This fitted master takes precedence over inferred sheet views."
+    "notes": "Reference-only ear-occlusion and brim-junction revisions. This follow-up changes local RGB at the internal brim seam while preserving the preceding revision alpha exactly. The recorded runtime source remains unchanged.",
+    "revision_review": {
+      "status": "accepted_for_reference",
+      "reviewer": "Codex",
+      "authority": "User requested correction of the preceding full reference review; regional Python/Pillow compositing authorization is retained from issue 396.",
+      "date": "2026-10-05",
+      "reason": "Smooth the jagged screen-right brim/band/crown termination without changing cap fit or ear occlusion.",
+      "evidence": "output/imagegen/reference-review-fixes-20261005/review.json",
+      "separate_user_visual_signoff": false,
+      "source_sha256": "3ff52a1c86307b34e426ab6c92071ecbb925eb9383fe6234346486b85f9b57c2",
+      "revised_sha256": "f7893dd56e9f3ba43a7382c0509124e964273dbfac9801f54ac53f9a181820a9",
+      "scope": "reference_only",
+      "tool": "Built-in image_gen patch and previously authorized regional RGB compositing",
+      "compositing": {
+        "before_sha256": "85b4705dae13ba97f4299ae55b4d01e281851e7ac1b7353320c1c7e482054962",
+        "after_sha256": "f7893dd56e9f3ba43a7382c0509124e964273dbfac9801f54ac53f9a181820a9",
+        "mask_sha256": "7d61c18bf2bebeff78ea2ad97a895344d75cb39986617b786e5a869ab98609ff",
+        "outside_mask_changed_pixels": 0,
+        "alpha_changed_pixels": 0,
+        "scope": "Internal screen-right brim junction only; existing alpha and all other artwork preserved."
+      },
+      "previous_revision": {
+        "status": "accepted_for_reference",
+        "reviewer": "Codex",
+        "authority": "User requested identity-preserving reference corrections, clarified grounded Las soles and central Luna tail roots, and explicitly authorized Python regional compositing to preserve original pixels.",
+        "date": "2026-10-05",
+        "reason": "Cover the screen-right ear with the tilted cap, matching the fitted character in mobimon_luna_items.png.",
+        "evidence": "https://github.com/devemberx/mobimon/issues/396",
+        "separate_user_visual_signoff": false,
+        "source_sha256": "3ff52a1c86307b34e426ab6c92071ecbb925eb9383fe6234346486b85f9b57c2",
+        "revised_sha256": "85b4705dae13ba97f4299ae55b4d01e281851e7ac1b7353320c1c7e482054962",
+        "scope": "reference_only",
+        "tool": "User-authorized Python/Pillow alpha-only compositing from an image_gen silhouette",
+        "generation_source_name": "exec-358fa1a8-72ae-4af5-b526-87503b16c647.png",
+        "compositing": {
+          "name": "luna_cap_master",
+          "path": "art/items/luna_cap/references/luna_cap_seated_front_master.png",
+          "region_px": [
+            815,
+            80,
+            1085,
+            600
+          ],
+          "method": "Original RGB unchanged; only alpha in requested ear-occlusion region updated",
+          "outside_mask_changed_pixels": 0,
+          "rgb_changed_pixels": 0
+        }
+      }
+    }
   },
   "turnaround": {
     "path": "art/items/luna_cap/references/luna_cap_turnaround.png",
-    "sha256": "ae804f3f929e90136caf0401501cb809036a5423d3c59fd01ca1ba70ea520a59",
+    "sha256": "465c3bb670af83d53e1108e60608a5fa0f77061e2dedb7ac60a685bcbf733229",
     "size_px": [
       1254,
       1254
     ],
     "mode": "RGB",
-    "tool": "built-in image_gen",
-    "generation_source_name": "exec-f9d69bef-100f-4b31-94f3-a5cd933e372d.png",
+    "tool": "Built-in image_gen local patches and previously authorized Python/Pillow regional compositing",
+    "generation_source_name": "exec-9356a12e-8763-4e15-a8d0-4179f4d652cf.png",
     "background": "opaque neutral gray; reference-only, not runtime animation frames",
     "layout": {
       "columns": 3,
@@ -280,41 +328,235 @@
     "review": {
       "status": "accepted_for_reference",
       "reviewer": "Codex",
-      "authority": "User requested item reference production following delegated art decisions.",
+      "authority": "User requested correction of the preceding full reference review; regional Python/Pillow compositing authorization is retained from issue 396.",
       "date": "2026-10-05",
       "separate_user_visual_signoff": false,
       "checks": [
-        "Compared front item shape, colors and fit against runtime masters.",
-        "Reviewed front/side/rear visibility and occlusion.",
-        "Reviewed seated/standing body proportions against base character reference.",
-        "Checked nine complete views and actual cell boundaries."
+        "Inspected current full sheet and enlarged before/after crops for the requested correction, identity, proportions, occlusion and smooth patch boundaries.",
+        "Confirmed unchanged canvas/mode and zero changed pixels outside the current edit mask; retained prior regional correction provenance.",
+        "Static reference acceptance only; existing animation clips and device rendering were not validated."
       ],
       "limits": [
         "Hidden surfaces and fittings are conservative generated interpretations, not surveyed 3D geometry.",
         "Side views are oblique/profile references, not calibrated orthographic projections.",
         "Static reference review does not prove frame-to-frame animation stability; use canonical measurements to correct generated drift."
+      ],
+      "evidence": "output/imagegen/reference-review-fixes-20261005/review.json",
+      "corrections": [
+        "Tail starts at the same centered low rear-pelvis attachment in seated and standing poses, then curls to anatomical left (screen right in front, screen left in rear). Side views retain a narrower foreshortened hook and visible air gap from the back; do not flatten the curl onto the torso.",
+        "Seated wheel-holding rear view retains only narrow upper-arm edges below the head; forward hands and feet are occluded by the torso. Do not widen the torso to hide limbs.",
+        "Cap covers screen-right ear in front and screen-left ear in rear; the left-facing side may show only the opposite ear behind the crown.",
+        "Standalone rear sprout has the tall leaf on screen right and short lateral leaf on screen left, matching worn rear views.",
+        "Seated side/rear floor residue is removed and contact shadows blend continuously into the original neutral background."
       ]
+    },
+    "compositing": {
+      "method": "Original pixels with reviewed image_gen patches; neutral background matched locally",
+      "before_sha256": "602643f9b435b993b1dd631f8e3921f82f10424b4b16f980ebd505c305761fdf",
+      "after_sha256": "465c3bb670af83d53e1108e60608a5fa0f77061e2dedb7ac60a685bcbf733229",
+      "mask_sha256": "961e13823bcdc0250648d65f77811bb0859e2665a8245ffd5244072b5d3cdbbb",
+      "polygons_px": [
+        [
+          [
+            955,
+            38
+          ],
+          [
+            1140,
+            38
+          ],
+          [
+            1140,
+            145
+          ],
+          [
+            1086,
+            149
+          ],
+          [
+            1010,
+            151
+          ],
+          [
+            955,
+            148
+          ]
+        ],
+        [
+          [
+            647,
+            714
+          ],
+          [
+            739,
+            714
+          ],
+          [
+            755,
+            743
+          ],
+          [
+            738,
+            751
+          ],
+          [
+            630,
+            751
+          ],
+          [
+            630,
+            735
+          ]
+        ],
+        [
+          [
+            891,
+            712
+          ],
+          [
+            962,
+            718
+          ],
+          [
+            1010,
+            720
+          ],
+          [
+            1025,
+            712
+          ],
+          [
+            1070,
+            719
+          ],
+          [
+            1153,
+            717
+          ],
+          [
+            1160,
+            751
+          ],
+          [
+            889,
+            751
+          ]
+        ]
+      ],
+      "outside_mask_changed_pixels": 0,
+      "evidence": "output/imagegen/reference-review-fixes-20261005/review.json",
+      "previous_revision": {
+        "regions_px": [
+          [
+            60,
+            330,
+            396,
+            523
+          ],
+          [
+            480,
+            333,
+            773,
+            531
+          ],
+          [
+            878,
+            333,
+            1195,
+            529
+          ],
+          [
+            60,
+            748,
+            396,
+            936
+          ],
+          [
+            480,
+            751,
+            773,
+            944
+          ],
+          [
+            878,
+            747,
+            1195,
+            946
+          ],
+          [
+            690,
+            500,
+            770,
+            620
+          ],
+          [
+            685,
+            918,
+            770,
+            1030
+          ],
+          [
+            666,
+            612,
+            805,
+            745
+          ],
+          [
+            646,
+            1020,
+            805,
+            1182
+          ],
+          [
+            850,
+            612,
+            1080,
+            745
+          ],
+          [
+            1104,
+            616,
+            1186,
+            745
+          ],
+          [
+            854,
+            1025,
+            1080,
+            1167
+          ]
+        ],
+        "outside_mask_changed_pixels": 0,
+        "method": "Original RGB plus reviewed generated patches",
+        "feather_radius_px": 2,
+        "head_contour_feather_px": 12,
+        "canonical_paste": null,
+        "original_sha256": "ae804f3f929e90136caf0401501cb809036a5423d3c59fd01ca1ba70ea520a59",
+        "original_git_commit": "26ec198f29077a0d3c0c069ca62b34439e39b401",
+        "mask_sha256": "01979af139077a31f3c81147ac99df7e50f6adb25f030e97e426a9cd2587a632"
+      }
     }
   },
   "identity_constraints": [
     "Rounded cream-white cap, navy band with one thin white stripe, short navy brim.",
     "One central round navy badge with a cyan five-point star.",
-    "Two cyan leaves on a short stem are part of the CAP, not Luna anatomy."
+    "Two cyan leaves on a short stem are part of the CAP, not Luna anatomy.",
+    "The asymmetric sprout has its taller leaf on screen left in front and screen right in rear, consistently in standalone and fitted views."
   ],
   "attachment_contract": {
     "pivot": "crown_contact",
     "fit": [
-      "Cap sits between the ears with the canonical brim sloping down toward screen right in front view.",
+      "Cap tilts down toward screen right in front and covers the anatomical-left ear; preserve the opposite ear.",
       "Maintain anatomical tilt under rotation: rear screen slope reverses.",
-      "Ears remain attached and visible where not occluded; no clipping hole through the ear.",
+      "Covered ear stays anatomically attached beneath cap; no ear or purple interior protrudes through crown.",
       "Back shows cream crown and striped navy band, not a duplicate brim/star badge."
     ],
     "occlusion": [
       "Crown above head; front brim in front of forehead.",
-      "Near ear may overlap cap edge; preserve natural far-ear occlusion."
+      "Anatomical-left ear is hidden: screen right in front, screen left in rear, near ear in left-facing view. Only the opposite ear may remain visible behind the crown."
     ],
     "transform": "Rigidly follow skull translation/rotation at the canonical relative scale. No independent floating, stretching or per-frame fit-to-bounds.",
-    "character_invariants": "Preserve base head/body ratio, silhouette and anchors. Luna tail curls to anatomical left: screen right in front, screen left in rear. Cap sprout is equipment only."
+    "character_invariants": "Preserve base head/body ratio, silhouette and anchors. Tail starts at the same centered low rear-pelvis attachment in seated and standing poses, then curls to anatomical left (screen right in front, screen left in rear). Side views retain a narrower foreshortened hook and visible air gap from the back; do not flatten the curl onto the torso. Seated wheel-holding rear view retains only narrow upper-arm edges below the head; forward hands and feet are occluded by the torso. Do not widen the torso to hide limbs. Cap sprout belongs only to the equipment."
   },
   "generation_gate": {
     "requires": [

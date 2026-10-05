@@ -3,7 +3,7 @@
   "item_id": "accessory:luna_sunglasses",
   "character_id": "friend:luna",
   "asset_variant": "sunglasses",
-  "issue": 388,
+  "issue": 396,
   "coordinates": {
     "paths": "repository-relative",
     "rectangles": "[left,top,right,bottom), pixels; x right, y down",
@@ -12,7 +12,7 @@
   },
   "base_character": {
     "manifest_path": "art/characters/luna/references/reference.json",
-    "manifest_sha256": "ea5d3a05f051bceafccb0082ebe43418a95e11c45123ecc66dc6ab94fc423dc0",
+    "manifest_sha256": "2293df377e65b9af843acdb3ed5697709fcd86d9e573fcffb46077b6074ff3ef",
     "canonical": {
       "path": "core/core-ui/src/main/assets/characters/luna/normal/idle_breath/luna_idle_breath_normal_01.png",
       "sha256": "95450ffb9baf3f660f98d720decce12de474cf71b7452c4ebe49d9be7260bf05",
@@ -24,7 +24,7 @@
     },
     "turnaround": {
       "path": "art/characters/luna/references/luna_turnaround.png",
-      "sha256": "12e893fdbe403d279cc6763e015b5452502d1cae94170f427d13701ba66a09fa",
+      "sha256": "a996bd771196c2655855a1e29ab698e884b9a075af315e11da0f01e0f263ac23",
       "size_px": [
         1536,
         1024
@@ -106,14 +106,14 @@
   },
   "turnaround": {
     "path": "art/items/luna_sunglasses/references/luna_sunglasses_turnaround.png",
-    "sha256": "e51bc1f4543bcc21174e4265af64abadeaebc530202489626ed46fb18592097b",
+    "sha256": "e82acf2d41dc7408725c82010fb17db3d86573b311588222b8be60d640bec4c4",
     "size_px": [
       1254,
       1254
     ],
     "mode": "RGB",
-    "tool": "built-in image_gen",
-    "generation_source_name": "exec-cbd986f9-b951-4169-9905-153f65750a6a.png",
+    "tool": "Built-in image_gen local patches and previously authorized Python/Pillow regional compositing",
+    "generation_source_name": "exec-aaf3f483-c4a6-40e9-89b5-bdf7bb2010ea.png",
     "background": "opaque neutral gray; reference-only, not runtime animation frames",
     "layout": {
       "columns": 3,
@@ -272,20 +272,133 @@
     "review": {
       "status": "accepted_for_reference",
       "reviewer": "Codex",
-      "authority": "User requested item reference production following delegated art decisions.",
+      "authority": "User requested correction of the preceding full reference review; regional Python/Pillow compositing authorization is retained from issue 396.",
       "date": "2026-10-05",
       "separate_user_visual_signoff": false,
       "checks": [
-        "Compared front item shape, colors and fit against runtime masters.",
-        "Reviewed front/side/rear visibility and occlusion.",
-        "Reviewed seated/standing body proportions against base character reference.",
-        "Checked nine complete views and actual cell boundaries."
+        "Inspected current full sheet and enlarged before/after crops for the requested correction, identity, proportions, occlusion and smooth patch boundaries.",
+        "Confirmed unchanged canvas/mode and zero changed pixels outside the current edit mask; retained prior regional correction provenance.",
+        "Static reference acceptance only; existing animation clips and device rendering were not validated."
       ],
       "limits": [
         "Hidden surfaces and fittings are conservative generated interpretations, not surveyed 3D geometry.",
         "Side views are oblique/profile references, not calibrated orthographic projections.",
         "Static reference review does not prove frame-to-frame animation stability; use canonical measurements to correct generated drift."
+      ],
+      "evidence": "output/imagegen/reference-review-fixes-20261005/review.json",
+      "corrections": [
+        "Tail starts at the same centered low rear-pelvis attachment in seated and standing poses, then curls to anatomical left (screen right in front, screen left in rear). Side views retain a narrower foreshortened hook and visible air gap from the back; do not flatten the curl onto the torso.",
+        "Seated wheel-holding rear view retains only narrow upper-arm edges below the head; forward hands and feet are occluded by the torso. Do not widen the torso to hide limbs.",
+        "Seated and standing side tail tips are free from the back, with an open background gap; the existing low root, overall silhouette and equipment remain in place."
       ]
+    },
+    "compositing": {
+      "method": "Original pixels with reviewed image_gen patches; neutral background matched locally",
+      "before_sha256": "fa2dfefee85f77e9b78fa520f5f344e9fc2655b901ffbd0216c984066f5a7ef3",
+      "after_sha256": "e82acf2d41dc7408725c82010fb17db3d86573b311588222b8be60d640bec4c4",
+      "mask_sha256": "182621fdc07a828ebbb9c0700d26b53722632c777cbfa32e64e6390c58b41ae6",
+      "polygons_px": [
+        [
+          [
+            665,
+            591
+          ],
+          [
+            736,
+            591
+          ],
+          [
+            738,
+            669
+          ],
+          [
+            683,
+            674
+          ],
+          [
+            680,
+            648
+          ],
+          [
+            675,
+            625
+          ],
+          [
+            667,
+            605
+          ]
+        ],
+        [
+          [
+            656,
+            1012
+          ],
+          [
+            722,
+            1012
+          ],
+          [
+            724,
+            1080
+          ],
+          [
+            665,
+            1085
+          ],
+          [
+            664,
+            1051
+          ],
+          [
+            660,
+            1029
+          ]
+        ]
+      ],
+      "outside_mask_changed_pixels": 0,
+      "evidence": "output/imagegen/reference-review-fixes-20261005/review.json",
+      "previous_revision": {
+        "regions_px": [
+          [
+            664,
+            584,
+            802,
+            732
+          ],
+          [
+            645,
+            1006,
+            805,
+            1174
+          ],
+          [
+            838,
+            587,
+            1080,
+            734
+          ],
+          [
+            1100,
+            596,
+            1185,
+            734
+          ],
+          [
+            837,
+            1012,
+            1080,
+            1160
+          ]
+        ],
+        "outside_mask_changed_pixels": 0,
+        "method": "Original RGB plus reviewed generated patches",
+        "feather_radius_px": 2,
+        "head_contour_feather_px": null,
+        "canonical_paste": null,
+        "original_sha256": "e51bc1f4543bcc21174e4265af64abadeaebc530202489626ed46fb18592097b",
+        "original_git_commit": "26ec198f29077a0d3c0c069ca62b34439e39b401",
+        "mask_sha256": "e9d83c271a58101242862b5477f96f71f4dda61112cd0370ae0fe389100090a1"
+      }
     }
   },
   "identity_constraints": [
@@ -306,7 +419,7 @@
       "Temple arms behind side silhouette/ear base where occluded; no rear-spanning strap."
     ],
     "transform": "Rigidly follow skull translation/rotation at the canonical relative scale. No independent floating, stretching or per-frame fit-to-bounds.",
-    "character_invariants": "Preserve base head/body ratio, silhouette and anchors. Luna tail curls to anatomical left: screen right in front, screen left in rear. Cap sprout is equipment only."
+    "character_invariants": "Preserve base head/body ratio, silhouette and anchors. Tail starts at the same centered low rear-pelvis attachment in seated and standing poses, then curls to anatomical left (screen right in front, screen left in rear). Side views retain a narrower foreshortened hook and visible air gap from the back; do not flatten the curl onto the torso. Seated wheel-holding rear view retains only narrow upper-arm edges below the head; forward hands and feet are occluded by the torso. Do not widen the torso to hide limbs."
   },
   "generation_gate": {
     "requires": [

@@ -120,6 +120,76 @@ class ReferenceGateTest(unittest.TestCase):
         self.assertEqual(result["asset_variant"], "hat")
         self.assertFalse(result["reference_reviews"][ITEM_MANIFEST]["separate_user_visual_signoff"])
 
+    def test_revised_master_preserves_independent_source_provenance(self):
+        data = json.loads((self.repo / ITEM_MANIFEST).read_text())
+        master = data["canonical_fitted"]
+        self.assertEqual(master["approval"], "reviewed_reference_revision")
+        self.assertNotEqual(master["sha256"], master["source"]["sha256"])
+        result = self.check()
+        self.assertIn(master["path"], result["checked_sha256"])
+        self.assertIn(master["source"]["path"], result["checked_sha256"])
+        self.assertFalse(result["generation_ready"])
+
+    def test_revision_cannot_claim_unchanged_canonical(self):
+        self.update(ITEM_MANIFEST, lambda d: d["canonical_fitted"].update(
+            approval="existing_project_canonical"))
+        with self.assertRaisesRegex(ValueError, "Canonical/source mismatch"):
+            self.check()
+
+    def test_revision_requires_review_provenance(self):
+        for key in ("reviewer", "authority", "date", "reason", "evidence"):
+            with self.subTest(key=key):
+                original = (self.repo / ITEM_MANIFEST).read_text()
+                self.update(ITEM_MANIFEST, lambda d: d["canonical_fitted"]["revision_review"].update(
+                    {key: " "}))
+                with self.assertRaisesRegex(ValueError, "Missing canonical revision"):
+                    self.check()
+                (self.repo / ITEM_MANIFEST).write_text(original)
+
+    def test_revision_requires_matching_hashes_and_reference_scope(self):
+        for key, value, message in (
+            ("source_sha256", "0" * 64, "source hash mismatch"),
+            ("revised_sha256", "0" * 64, "review hash mismatch"),
+            ("scope", "runtime", "reference-only scope"),
+            ("status", "pending", "Unreviewed canonical revision"),
+            ("separate_user_visual_signoff", None, "signoff provenance"),
+        ):
+            with self.subTest(key=key):
+                original = (self.repo / ITEM_MANIFEST).read_text()
+                self.update(ITEM_MANIFEST, lambda d: d["canonical_fitted"]["revision_review"].update(
+                    {key: value}))
+                with self.assertRaisesRegex(ValueError, message):
+                    self.check()
+                (self.repo / ITEM_MANIFEST).write_text(original)
+
+    def test_revised_source_still_requires_integrity(self):
+        master = json.loads((self.repo / ITEM_MANIFEST).read_text())["canonical_fitted"]
+        source = self.repo / master["source"]["path"]
+        source.write_bytes(source.read_bytes() + b"changed")
+        with self.assertRaisesRegex(ValueError, "Image hash mismatch"):
+            self.check()
+
+    def test_construction_reference_is_bound_and_hash_checked(self):
+        baseline = PREFLIGHT.audit(REPO, "las")
+        for relative in baseline["checked_sha256"]:
+            target = self.repo / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(REPO / relative, target)
+        base = json.loads((self.repo / "art/characters/las/references/reference.json").read_text())
+        detail = "art/characters/las/references/construction_fixture.png"
+        shutil.copyfile(self.repo / base["canonical"]["path"], self.repo / detail)
+        record = {key: base["canonical"][key] for key in ("sha256", "size_px", "mode")}
+        record.update(path=detail, purpose="Isolated construction-reference integrity fixture")
+        self.update("art/characters/las/references/reference.json",
+                    lambda d: d.update(construction_references=[record]))
+        self.assertIn(detail, PREFLIGHT.audit(self.repo, "las")["images_to_inspect"])
+        review = self.review_record(PREFLIGHT.audit(self.repo, "las"))
+        self.assertTrue(PREFLIGHT.audit(self.repo, "las", reviewed_inputs=review)["generation_ready"])
+        target = self.repo / detail
+        target.write_bytes(target.read_bytes() + b"changed")
+        with self.assertRaisesRegex(ValueError, "Image hash mismatch"):
+            PREFLIGHT.audit(self.repo, "las", reviewed_inputs=review)
+
     def test_missing_image_blocks(self):
         (self.repo / self.baseline["images_to_inspect"][-1]).unlink()
         with self.assertRaisesRegex(ValueError, "Missing file"):
