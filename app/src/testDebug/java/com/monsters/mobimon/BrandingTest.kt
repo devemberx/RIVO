@@ -54,19 +54,22 @@ class BrandingTest {
     }
 
     @Test
-    fun launchWindowUsesApprovedSkyAndNativeSplashMatchesItsBaseColor() {
+    fun launchWindowUsesApprovedSkyWithoutADuplicateNativeIcon() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val theme = context.resources.newTheme().apply { applyStyle(context.applicationInfo.theme, true) }
         val window = TypedValue()
         assertTrue(theme.resolveAttribute(android.R.attr.windowBackground, window, true))
-        assertEquals(R.drawable.startup_common_background, window.resourceId)
+        assertEquals(R.drawable.pet_background_startup_common, window.resourceId)
+        val background = TypedValue()
+        assertTrue(theme.resolveAttribute(android.R.attr.windowSplashScreenBackground, background, true))
+        assertEquals(StartupBlue.toArgb(), background.data)
         listOf(
-            android.R.attr.windowSplashScreenBackground,
+            android.R.attr.windowSplashScreenAnimatedIcon,
             android.R.attr.windowSplashScreenIconBackgroundColor,
         ).forEach { attribute ->
             val value = TypedValue()
             assertTrue("Launch theme must define $attribute", theme.resolveAttribute(attribute, value, true))
-            assertEquals(StartupBlue.toArgb(), value.data)
+            assertEquals(Color.TRANSPARENT, value.data)
         }
     }
 

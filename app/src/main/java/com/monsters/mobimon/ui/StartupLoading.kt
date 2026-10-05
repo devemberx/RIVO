@@ -156,11 +156,10 @@ internal fun StartupLoadingHost(
                 ) {
                     Box(Modifier.fillMaxSize().safeDrawingPadding()) {
                         Image(
-                            painterResource(R.drawable.startup_common_background),
+                            painterResource(R.drawable.pet_background_startup_common),
                             null,
                             Modifier.fillMaxSize().graphicsLayer {
                                 val expansion = startupEase((timeline.value - 100) / 600)
-                                alpha = startupEase(timeline.value / 300f)
                                 scaleX = if (still) 1f else 1.055f - .055f * expansion
                                 scaleY = scaleX
                             },

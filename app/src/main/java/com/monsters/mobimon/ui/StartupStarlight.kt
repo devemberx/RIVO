@@ -24,7 +24,6 @@ import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.monsters.mobimon.R
@@ -77,9 +76,8 @@ internal fun StartupStarlight(
             }
         }
     val trail = remember { Path() }
-    val view = LocalView.current
     BoxWithConstraints(modifier) {
-        // Match the native adaptive splash circle before expanding into the sky.
+        // The branded expansion starts inside the sky, centered in the app's safe area.
         val iconSize = minOf(192.dp, maxWidth * .4f, maxHeight * .5f)
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Image(
@@ -92,14 +90,6 @@ internal fun StartupStarlight(
                         alpha = 1f - startupEase((time() - 180) / 430)
                         scaleX = if (still) 1f else 1f + 1.9f * expansion
                         scaleY = scaleX
-                        // Native splash centers on the whole window; content excludes the system bars.
-                        val bars =
-                            view.rootWindowInsets?.getInsetsIgnoringVisibility(
-                                android.view.WindowInsets.Type
-                                    .systemBars(),
-                            )
-                        translationY =
-                            if (still) 0f else ((bars?.bottom ?: 0) - (bars?.top ?: 0)) / 2f * (1f - expansion)
                     }.clip(CircleShape)
                     .background(MobiMonColors.background),
                 contentScale = ContentScale.Fit,
