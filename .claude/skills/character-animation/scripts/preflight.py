@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only gate for MobiMon reference schema v1; never approves visual motion."""
+"""Check reference files and optionally match a prior, explicit input review."""
 
 import argparse
 import hashlib
@@ -90,7 +90,24 @@ class Gate:
         return review
 
 
-def audit(repo, character, item=None):
+def verify_input_review(path, checked):
+    """Match bytes to a review assertion; this cannot authenticate its author."""
+    raw = Path(path).read_bytes()
+    review = json.loads(raw)
+    require(isinstance(review, dict) and review.get("schema_version") == 1,
+            "Unsupported input review schema")
+    require(review.get("status") == "accepted_for_reference", "Input review is not accepted")
+    for key in ("reviewer", "authority", "date", "evidence"):
+        require(isinstance(review.get(key), str) and bool(review[key].strip()),
+                f"Missing input review {key}")
+    require(isinstance(review.get("separate_user_visual_signoff"), bool),
+            "Missing input review signoff provenance")
+    require(review.get("checked_sha256") == checked,
+            "Reviewed input inventory mismatch; review changed inputs before generation")
+    return {"path": str(path), "sha256": hashlib.sha256(raw).hexdigest(), "record": review}
+
+
+def audit(repo, character, item=None, reviewed_inputs=None):
     gate = Gate(repo)
     catalog = gate.document("art/characters/reference_catalog.json")
     character = character.removeprefix("friend:")
@@ -136,8 +153,11 @@ def audit(repo, character, item=None):
         require(isinstance(variant, str) and bool(variant), "Missing asset variant")
         manifests.append(item_path)
         inputs += [accessory["canonical_fitted"]["path"], accessory["turnaround"]["path"]]
+    input_review = verify_input_review(reviewed_inputs, gate.checked) if reviewed_inputs else None
     return {
-        "status": "reference_gate_passed",
+        "status": "reference_gate_passed" if input_review else "reference_checks_passed",
+        "input_review_status": "matched" if input_review else "pending",
+        "generation_ready": input_review is not None,
         "character_id": base["character_id"],
         "item_id": item,
         "asset_variant": variant,
@@ -145,7 +165,12 @@ def audit(repo, character, item=None):
         "images_to_inspect": inputs,
         "checked_sha256": gate.checked,
         "reference_reviews": reviews,
-        "limits": "File/metadata validation only; visual identity and animation playback remain unverified.",
+        "input_review": input_review,
+        "limits": (
+            "Manifest review fields are declarations, not proof of review of current bytes. "
+            "A matched input review binds those bytes to a recorded assertion, not authenticated "
+            "review authority. Verify its evidence and authority; motion review remains separate."
+        ),
     }
 
 
@@ -154,14 +179,16 @@ def main():
     parser.add_argument("--repo", type=Path, required=True)
     parser.add_argument("--character", required=True)
     parser.add_argument("--item")
+    parser.add_argument("--reviewed-inputs", type=Path,
+                        help="Prior input-review JSON with the exact checked_sha256 inventory")
     args = parser.parse_args()
     try:
-        result = audit(args.repo, args.character, args.item)
+        result = audit(args.repo, args.character, args.item, args.reviewed_inputs)
     except (OSError, ValueError, KeyError, TypeError, AttributeError, Image.DecompressionBombError) as error:
         print(json.dumps({"status": "blocked", "reason": str(error)}))
         return 1
     print(json.dumps(result, indent=2))
-    return 0
+    return 0 if result["generation_ready"] else 2
 
 
 if __name__ == "__main__":
