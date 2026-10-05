@@ -7,4 +7,8 @@
   <string name="floating_service_notification_title">MobiMon 홈 캐릭터</string>
   <string name="floating_service_notification_text">홈 화면에서 캐릭터가 함께하고 있어요.</string>
     <string name="drawer_las_name">라스</string>
+  <string name="startup_meet_mobi">모비를 만나고 있어요</string>
+  <string name="startup_meet_luna">루나를 만나고 있어요</string>
+  <string name="startup_meet_las">라스를 만나고 있어요</string>
+  <string name="startup_continue">홈으로 이동</string>
 </resources>
