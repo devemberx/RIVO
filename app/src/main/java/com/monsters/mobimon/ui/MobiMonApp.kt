@@ -61,6 +61,7 @@ import com.monsters.mobimon.core.domain.ConversationStore
 import com.monsters.mobimon.core.domain.CosmeticSlot
 import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.core.domain.GitHubSession
+import com.monsters.mobimon.core.domain.PetRepository
 import com.monsters.mobimon.core.domain.PointEconomy
 import com.monsters.mobimon.core.domain.PointQuestCatalog
 import com.monsters.mobimon.core.domain.SettingsRepository
@@ -77,11 +78,13 @@ import com.monsters.mobimon.core.presentation.parkedVerified
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.LocalMobiMonNotificationCount
 import com.monsters.mobimon.core.ui.MobiMonTheme
+import com.monsters.mobimon.core.ui.resolveCompanionBackground
 import com.monsters.mobimon.feature.auth.AssumedOnlineConversationNetworkStatus
 import com.monsters.mobimon.feature.auth.ConversationNetworkStatus
 import com.monsters.mobimon.feature.auth.ConversationSpeechInput
 import com.monsters.mobimon.feature.auth.ConversationViewModel
 import com.monsters.mobimon.feature.auth.UnavailableConversationSpeechInput
+import com.monsters.mobimon.feature.pet.PetViewModel
 import com.monsters.mobimon.feature.quest.QuestViewModel
 import com.monsters.mobimon.feature.quest.claimableQuestAlerts
 import com.monsters.mobimon.feature.vehicle.VehicleCardSelectionStore
@@ -112,12 +115,14 @@ fun MobiMonApp(
     authentication: GitHubAuthentication,
     conversation: ConversationProvider,
     vehicle: VehiclePresentation,
+    pets: PetRepository,
     networkStatus: ConversationNetworkStatus = AssumedOnlineConversationNetworkStatus,
     speechInput: ConversationSpeechInput = UnavailableConversationSpeechInput,
     points: PointEconomy? = null,
     questCatalog: PointQuestCatalog? = null,
     vehicleCards: VehicleCardSelectionStore? = null,
     conversationStore: ConversationStore? = null,
+    launchReady: Boolean = true,
 ) {
     val state by appUse.states.collectAsStateWithLifecycle()
     val session by authentication.session.collectAsStateWithLifecycle()
@@ -136,7 +141,11 @@ fun MobiMonApp(
             }
         }
     val conversationModel: ConversationViewModel = viewModel(factory = conversationFactory)
-    val snapshot = vehicle.snapshot()
+    val reading = vehicle.reading()
+    val snapshot = reading.snapshot
+    val petFactory = remember(pets) { viewModelFactory { initializer { PetViewModel(pets) } } }
+    val petModel: PetViewModel = viewModel(factory = petFactory)
+    val pet by petModel.state.collectAsStateWithLifecycle()
     val parked = snapshot.parkedVerified
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val canCheck = parked && state == AppUseState.ALLOWED
@@ -183,39 +192,49 @@ fun MobiMonApp(
             settings.setDebugModeEnabled(false)
         }
     }
-    MobiMonContent(
-        entries = entries,
-        notificationItems = alerts,
-        onQuestNotificationClick = { questModel?.requestOpenQuest(it) },
-        appUseState = state,
-        activeFriendId = activeFriendId,
-        activeAccessoryId = appearance.accessoryId,
-        activeOutfitId = appearance.outfitId,
-        activeBackgroundId = appearance.backgroundId,
-        conversationAuthenticated =
-            currentSession is GitHubSession.Authenticated ||
-                currentSession == GitHubSession.Restoring ||
-                currentSession is GitHubSession.Failure &&
-                currentSession.problem in
-                setOf(AuthenticationProblem.NETWORK, AuthenticationProblem.PROVIDER),
-        currentConversationAuthentication = {
-            val latest = authentication.session.value
-            latest is GitHubSession.Authenticated ||
-                latest == GitHubSession.Restoring ||
-                latest is GitHubSession.Failure &&
-                latest.problem in setOf(AuthenticationProblem.NETWORK, AuthenticationProblem.PROVIDER)
-        },
-        currentConversationStartReady = {
-            when (val latest = authentication.session.value) {
-                is GitHubSession.Authenticated -> true
-                is GitHubSession.Failure ->
+    StartupLoadingHost(
+        StartupContent(
+            appearanceResolved = appearance.inventory != null || appearance.failed,
+            homeResolved = !pet.isLoading && (pet.profile != null || pet.loadFailed),
+            friendId = appearance.friendId,
+            background = resolveCompanionBackground(reading.backgroundTimeOfDay, appearance.backgroundId).layer,
+        ),
+        launchReady = launchReady,
+    ) {
+        MobiMonContent(
+            entries = entries,
+            notificationItems = alerts,
+            onQuestNotificationClick = { questModel?.requestOpenQuest(it) },
+            appUseState = state,
+            activeFriendId = activeFriendId,
+            activeAccessoryId = appearance.accessoryId,
+            activeOutfitId = appearance.outfitId,
+            activeBackgroundId = appearance.backgroundId,
+            conversationAuthenticated =
+                currentSession is GitHubSession.Authenticated ||
+                    currentSession == GitHubSession.Restoring ||
+                    currentSession is GitHubSession.Failure &&
+                    currentSession.problem in
+                    setOf(AuthenticationProblem.NETWORK, AuthenticationProblem.PROVIDER),
+            currentConversationAuthentication = {
+                val latest = authentication.session.value
+                latest is GitHubSession.Authenticated ||
+                    latest == GitHubSession.Restoring ||
+                    latest is GitHubSession.Failure &&
                     latest.problem in setOf(AuthenticationProblem.NETWORK, AuthenticationProblem.PROVIDER)
-                else -> false
-            }
-        },
-        onReleaseDebuggerUnlocked = resetDebugMode,
-        onReleaseDebuggerLocked = resetDebugMode,
-    )
+            },
+            currentConversationStartReady = {
+                when (val latest = authentication.session.value) {
+                    is GitHubSession.Authenticated -> true
+                    is GitHubSession.Failure ->
+                        latest.problem in setOf(AuthenticationProblem.NETWORK, AuthenticationProblem.PROVIDER)
+                    else -> false
+                }
+            },
+            onReleaseDebuggerUnlocked = resetDebugMode,
+            onReleaseDebuggerLocked = resetDebugMode,
+        )
+    }
 }
 
 internal val ShellSaver =

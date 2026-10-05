@@ -32,8 +32,14 @@ Initial unavailable data uses the route's ordinary unavailable state. Follow the
 
 ### Launcher icon and native splash
 
-Use shared Mobi artwork on Night, without a wordmark and with adaptive-mask
-clearance. The splash ends on the first app frame.
+Keep the approved launcher artwork and adaptive-mask clearance. The native splash
+uses the common sky color and ends on the first app frame. [Startup](../app/src/main/java/com/monsters/mobimon/ui/StartupLoading.kt)
+expands the icon into the approved common sky, gathers six curved star trails,
+reveals the equipped Home scene using the shared VSS period/crop, then shows the
+original menu face with Noto Sans KR Regular. Local profile/inventory readiness
+releases it to unchanged Home; failures reach Home's retry UI without waiting for
+OAuth or vehicle evidence. Completed startup does not replay on restoration; system-disabled
+animation uses a still face. After eight seconds a Home escape remains available.
 
 ## Reusable Compose library and asset handoff
 

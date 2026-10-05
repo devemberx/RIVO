@@ -5,6 +5,9 @@ import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -12,6 +15,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.monsters.mobimon.core.domain.ConversationProvider
 import com.monsters.mobimon.core.domain.ConversationStore
 import com.monsters.mobimon.core.domain.GitHubAuthentication
+import com.monsters.mobimon.core.domain.PetRepository
 import com.monsters.mobimon.core.domain.PointEconomy
 import com.monsters.mobimon.core.domain.PointQuestCatalog
 import com.monsters.mobimon.core.domain.SettingsRepository
@@ -31,11 +35,15 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    private var launchReady by mutableStateOf(false)
+
     @Inject lateinit var entries: Set<@JvmSuppressWildcards FeatureEntry>
 
     @Inject lateinit var appUse: AppUseStateSource
 
     @Inject lateinit var appearance: CompanionAppearancePresentation
+
+    @Inject lateinit var pets: PetRepository
 
     @Inject lateinit var settings: SettingsRepository
 
@@ -59,6 +67,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        launchReady = savedInstanceState != null
+        splashScreen.setOnExitAnimationListener { splash ->
+            splash.remove()
+            launchReady = true
+        }
         observeLauncherOverlay()
         setContent {
             MobiMonApp(
@@ -69,14 +82,22 @@ class MainActivity : ComponentActivity() {
                 authentication,
                 conversation,
                 vehicle,
+                pets,
                 networkStatus,
                 speechInput,
                 points,
                 questCatalog,
                 vehicleCards,
                 conversationStore,
+                launchReady = launchReady,
             )
         }
+    }
+
+    override fun onEnterAnimationComplete() {
+        super.onEnterAnimationComplete()
+        // Also release launches for which Android does not create a splash view.
+        launchReady = true
     }
 
     override fun onResume() {
