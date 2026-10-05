@@ -41,6 +41,54 @@ the review-table format below. Leave motion pending until an identified observer
 returns actual observations tied to that candidate. User review is an alternative
 observation route, not mandatory second approval after valid delegated review.
 
+## Comparison HTML
+
+For a loop, use `scripts/prepare_comparison.py --spec <comparison.json>
+--out <new-review-directory>`. It produces the side-by-side dark card layout used
+for Mobi sick review, with a shared clock, 1x/0.25x, pause/restart, light/dark,
+equipped-variant and CSS-size selectors, seek and key poses. Images
+and the trusted local renderer are embedded; the HTML works after relocation.
+The inventory binds source/spec/image/output hashes and remains `prepared_unreviewed`.
+Use pause/seek for still inspection; do not add an app-setting simulation unless
+its actual runtime behavior has been requested and verified. In MobiMon, the home
+movement preference stops wandering, not the sick character gesture.
+Existing directories are never overwritten. This helper currently accepts loops;
+keep the frame helper above for one-shots with terminal contracts.
+When no previous clip exists, the left adapter may draw a reviewed still pose;
+label it clearly as a reference, not an existing animation.
+
+Place the spec, renderer and inputs in one ignored run directory. Example spec:
+
+```json
+{
+  "title": "Character motion comparison",
+  "summary": "Describe the requested visual change.",
+  "beforeLabel": "Before", "afterLabel": "Candidate",
+  "beforeCaption": "Existing timing", "afterCaption": "Proposed timing",
+  "canvas_px": [408, 408], "display_sizes_css_px": [256, 320, 408],
+  "duration_ms": 4800, "loop": true,
+  "variants": [{"id": "normal", "label": "Normal"}],
+  "samples": [{"ms": 0, "label": "Rest"}, {"ms": 2200, "label": "Open eyes"}],
+  "renderer_js": "renderer.js", "assets": {"body": "body.webp"}
+}
+```
+
+The renderer defines `createAnimationReview(images)` returning synchronous
+`drawBefore(canvas, elapsedMs, variantId)` and `drawAfter(canvas, elapsedMs,
+variantId)`. Images are decoded `HTMLImageElement`s keyed by `assets`; each draw
+clears its canvas, restores its own state and scales logical coordinates to the
+canvas backing size. Keep motion deterministic and use each clip's own duration
+for looping. For a frame clip, use its declared durations/crops in the adapter.
+Do not include network dependencies or an HTML script terminator in the JS.
+
+Use the actual procedural renderer when possible. If the app uses another drawing
+API, label the Canvas adapter as a motion reference and validate the app separately;
+matching equations alone cannot prove identical rasterization. Display sizes here
+are **CSS pixels**, with measured CSS size, backing size/DPR and RAF gap shown in
+the player; record zoom and intended target pixels. Observe every requested
+variant, save observations and contact/recording evidence separately, and follow
+the same stage gates below. The helper cannot certify motion or device behavior.
+
 ## Stage gates
 
 | Stage | Required to advance | Work deliberately deferred |
