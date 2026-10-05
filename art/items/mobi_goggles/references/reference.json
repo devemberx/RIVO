@@ -3,7 +3,7 @@
   "item_id": "accessory:mobi_goggles",
   "character_id": "friend:mobi",
   "asset_variant": "goggles",
-  "issue": 388,
+  "issue": 396,
   "coordinates": {
     "paths": "repository-relative",
     "rectangles": "[left,top,right,bottom), pixels; x right, y down",
@@ -12,7 +12,7 @@
   },
   "base_character": {
     "manifest_path": "art/characters/mobi/references/reference.json",
-    "manifest_sha256": "e350fd5b0b975847fb2e24fe60e8a399e67436d2770802aaf5da7119cbd970fa",
+    "manifest_sha256": "a5c161ca4b16b5ac0105f60a54391ac22f00f352979ecb9f2122483f4125c42d",
     "canonical": {
       "path": "core/core-ui/src/main/assets/characters/mobi/normal/idle_breath/mobi_idle_breath_normal_01.png",
       "sha256": "25f5e692bb3a4e9783a42b9752e7990e737213eeb944b560cf6dfc6b7b96c81c",
@@ -24,7 +24,7 @@
     },
     "turnaround": {
       "path": "art/characters/mobi/references/mobi_turnaround.png",
-      "sha256": "85fdbe23084fa0e74c407ab3d7fd508c44f08f22dfc50137c2c628d82e44687a",
+      "sha256": "004d27b4c7d138b0d0fb5a0a73cbe5d92723bd94367b0ac3e3834ac794d9eef6",
       "size_px": [
         1536,
         1024
@@ -106,14 +106,14 @@
   },
   "turnaround": {
     "path": "art/items/mobi_goggles/references/mobi_goggles_turnaround.png",
-    "sha256": "bd2f9c0f6a248a6e242255c83e1e0fbcc3d1ed267616f74d96a73ebb366e0ff6",
+    "sha256": "75ada5b6a752db4da3fd91bdf4dd5b66e1eb766eadbc14e233f5f7ed8844dce4",
     "size_px": [
       1254,
       1254
     ],
     "mode": "RGB",
-    "tool": "built-in image_gen",
-    "generation_source_name": "exec-592484ba-a01c-4f8c-b970-1944191a6db6.png",
+    "tool": "built-in image_gen patches; user-authorized Python/Pillow regional compositing",
+    "generation_source_name": "exec-bbeb5081-cd46-4e93-898e-bba2e1aaaa34.png",
     "background": "opaque neutral gray; reference-only, not runtime animation frames",
     "layout": {
       "columns": 3,
@@ -272,20 +272,41 @@
     "review": {
       "status": "accepted_for_reference",
       "reviewer": "Codex",
-      "authority": "User requested item reference production following delegated art decisions.",
+      "authority": "User requested identity-preserving reference corrections, clarified grounded Las soles and central Luna tail roots, and explicitly authorized Python regional compositing to preserve original pixels.",
       "date": "2026-10-05",
       "separate_user_visual_signoff": false,
       "checks": [
-        "Compared front item shape, colors and fit against runtime masters.",
-        "Reviewed front/side/rear visibility and occlusion.",
-        "Reviewed seated/standing body proportions against base character reference.",
-        "Checked nine complete views and actual cell boundaries."
+        "Inspected final composited front, side and rear cells against original sheets and seated masters for face identity, short limb proportions, contact and occlusion.",
+        "Verified zero pixel differences outside the recorded edit mask, including its feathered boundary; original masters remain unchanged except the explicitly revised cap alpha.",
+        "Checked final PNG dimensions/modes and linked reference hashes. Anatomical review is visual, not calibrated 3D measurement."
       ],
       "limits": [
         "Hidden surfaces and fittings are conservative generated interpretations, not surveyed 3D geometry.",
         "Side views are oblique/profile references, not calibrated orthographic projections.",
         "Static reference review does not prove frame-to-frame animation stability; use canonical measurements to correct generated drift."
+      ],
+      "evidence": "https://github.com/devemberx/mobimon/issues/396",
+      "corrections": [
+        "Seated wheel-holding rear view retains only narrow upper-arm edges below the head; forward hands and feet are occluded by the torso. Do not widen the torso to hide limbs."
       ]
+    },
+    "compositing": {
+      "regions_px": [
+        [
+          920,
+          599,
+          1168,
+          739
+        ]
+      ],
+      "outside_mask_changed_pixels": 0,
+      "method": "Original RGB plus reviewed generated patches",
+      "feather_radius_px": 2,
+      "head_contour_feather_px": null,
+      "canonical_paste": null,
+      "original_sha256": "bd2f9c0f6a248a6e242255c83e1e0fbcc3d1ed267616f74d96a73ebb366e0ff6",
+      "original_git_commit": "26ec198f29077a0d3c0c069ca62b34439e39b401",
+      "mask_sha256": "45437cecb4fb9597f451f5fa2bd6619abf6842b9c4c3a34b775a4f3f82e98ee8"
     }
   },
   "identity_constraints": [
@@ -305,7 +326,7 @@
       "Near buckle in front of near ear boundary; lenses on front forehead only."
     ],
     "transform": "Rigidly follow skull translation/rotation at the canonical relative scale. No independent floating, stretching or per-frame fit-to-bounds.",
-    "character_invariants": "Preserve base head/body ratio, silhouette and anchors. Keep both sprout leaves and stem; do not add a tail or upright ears."
+    "character_invariants": "Preserve base head/body ratio, silhouette and anchors. Keep both sprout leaves and stem; do not add a tail or upright ears. Seated wheel-holding rear view retains only narrow upper-arm edges below the head; forward hands and feet are occluded by the torso. Do not widen the torso to hide limbs."
   },
   "generation_gate": {
     "requires": [

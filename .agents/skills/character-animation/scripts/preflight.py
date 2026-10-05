@@ -49,10 +49,27 @@ class Gate:
         return digest
 
     def canonical(self, record):
-        require(record["approval"] == "existing_project_canonical", "Unsupported canonical approval")
+        approval = record["approval"]
+        require(approval in ("existing_project_canonical", "reviewed_reference_revision"),
+                "Unsupported canonical approval")
         digest = self.image(record)
         source_digest = self.image(record["source"])
-        require(digest == source_digest, f"Canonical/source mismatch: {record['path']}")
+        if approval == "existing_project_canonical":
+            require(digest == source_digest, f"Canonical/source mismatch: {record['path']}")
+            return
+        revision = record.get("revision_review", {})
+        require(revision.get("status") == "accepted_for_reference", "Unreviewed canonical revision")
+        for key in ("reviewer", "authority", "date", "reason", "evidence"):
+            require(isinstance(revision.get(key), str) and bool(revision[key].strip()),
+                    f"Missing canonical revision {key}")
+        require(isinstance(revision.get("separate_user_visual_signoff"), bool),
+                "Missing canonical revision signoff provenance")
+        require(revision.get("source_sha256") == source_digest,
+                "Canonical revision source hash mismatch")
+        require(revision.get("revised_sha256") == digest,
+                "Canonical revision review hash mismatch")
+        require(revision.get("scope") == "reference_only",
+                "Canonical revision must declare reference-only scope")
 
     def sheet(self, record, item=False):
         self.image(record)
@@ -125,6 +142,11 @@ def audit(repo, character, item=None, reviewed_inputs=None):
         require(base["canonical"].get(key) is not None, f"Missing canonical measurement: {key}")
     manifests = [base_path]
     inputs = [base["canonical"]["path"], base["turnaround"]["path"]]
+    for detail in base.get("construction_references", []):
+        require(isinstance(detail.get("purpose"), str) and bool(detail["purpose"].strip()),
+                "Missing construction reference purpose")
+        gate.image(detail)
+        inputs.append(detail["path"])
     variant = "normal"
     if item:
         require(item in catalog["accessories"], f"Unknown item: {item}")
