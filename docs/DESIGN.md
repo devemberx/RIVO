@@ -253,8 +253,11 @@ and reduced-motion rendering. Hungry keeps its existing frame timeline; the fitt
 follows measured skull motion and its thought bubble clears the raised sprout. Run
 and transition cap artwork remain deferred.
 Luna sick appearances use WebP body/heat layers and small local sweat atlases. A
-small 2.2-second ground-anchored breath and continuous heat pulse retain the
-collapsed pose and blush. The sweat patches preserve the original flowing drops
+small 4.4-second ground-anchored breath and lean retain the collapsed pose, with
+the original 2.2-second heat pulse and flowing sweat. The face uses normal-state
+anatomical scale; corrected limbs and tail retain pose-dependent foreshortening.
+Transparent status margins preserve that scale and ground alignment through the
+crossfade without shrinking normal or hungry artwork. The sweat patches preserve the original flowing drops
 and revealed skin, interpolating the authored timing without replaying full bodies. Equipped cap geometry follows the registered
 master; explicit still previews hold the same first pose. See [sick layers](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/LunaSickAnimation.kt).
 

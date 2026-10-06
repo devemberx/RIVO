@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
+import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.RectF
@@ -34,17 +35,30 @@ import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.PI
 import kotlin.math.cos
+import kotlin.math.roundToInt
 import kotlin.math.sin
 
 internal object LunaSickTimeline {
     const val CYCLE_NANOS = 2_200_000_000L
     const val GROUND_Y = 1048f
+    const val BODY_CYCLE_NANOS = 2 * CYCLE_NANOS
+
+    // Rotation-invariant canonical/source cheek span; one scale for the complete pose.
+    const val ANATOMICAL_SCALE = 1.3368827f
+    const val SOURCE_MARGIN = 280f
+    const val SCENE_SIDE = 1814f
+    const val VIEWPORT_SCALE = SCENE_SIDE / 1254f
 
     private fun phase(elapsedNanos: Long): Double =
         (elapsedNanos.coerceAtLeast(0L) % CYCLE_NANOS).toDouble() / CYCLE_NANOS * 2 * PI
 
-    // Small new breath in the existing collapsed pose; do not refit the head or equipment.
-    fun scaleAt(elapsedNanos: Long): Float = 1f + (0.003 * sin(phase(elapsedNanos))).toFloat()
+    private fun bodyPhase(elapsedNanos: Long): Double =
+        (elapsedNanos.coerceAtLeast(0L) % BODY_CYCLE_NANOS).toDouble() / BODY_CYCLE_NANOS * 2 * PI
+
+    // Mobi's planted breath/lean, restrained for Luna's collapsed pose.
+    fun scaleAt(elapsedNanos: Long): Float = 1f + (0.006 * (1 - cos(bodyPhase(elapsedNanos)))).toFloat()
+
+    fun leanAt(elapsedNanos: Long): Float = (0.022 * sin(bodyPhase(elapsedNanos))).toFloat()
 
     fun heatAlphaAt(elapsedNanos: Long): Float = (0.8 + 0.2 * cos(phase(elapsedNanos))).toFloat()
 
@@ -84,7 +98,7 @@ internal object LunaSickArtworkCache {
         val sweat =
             decode(context, "${appearance.assetName}/sick/luna_sick_${appearance.assetName}_sweat.webp", 732, 1062)
                 ?: return null
-        val bitmap = Bitmap.createBitmap(627, 627, Bitmap.Config.ARGB_8888)
+        val bitmap = Bitmap.createBitmap(907, 907, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         canvas.scale(.5f, .5f)
         val artwork = LunaSickArtwork(body, sharedHeat, sweat, body)
@@ -128,6 +142,8 @@ internal class LunaSickRenderer(
     private val sweatSource = Rect()
     private val foreheadSweat = RectF(630f, 350f, 820f, 560f)
     private val cheekSweat = RectF(945f, 475f, 1115f, 825f)
+    private val bodyMatrix = Matrix()
+    private val bodyValues = floatArrayOf(1f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 1f)
 
     fun draw(
         canvas: Canvas,
@@ -135,7 +151,21 @@ internal class LunaSickRenderer(
     ) {
         val save = canvas.save()
         val breath = LunaSickTimeline.scaleAt(elapsedNanos)
-        canvas.scale(breath, breath, 627f, LunaSickTimeline.GROUND_Y)
+        canvas.translate(LunaSickTimeline.SOURCE_MARGIN, LunaSickTimeline.SOURCE_MARGIN)
+        canvas.scale(
+            LunaSickTimeline.ANATOMICAL_SCALE,
+            LunaSickTimeline.ANATOMICAL_SCALE,
+            627f,
+            LunaSickTimeline.GROUND_Y,
+        )
+        val lean = LunaSickTimeline.leanAt(elapsedNanos)
+        bodyValues[0] = breath
+        bodyValues[1] = lean
+        bodyValues[2] = 627f * (1 - breath) - LunaSickTimeline.GROUND_Y * lean
+        bodyValues[4] = breath
+        bodyValues[5] = LunaSickTimeline.GROUND_Y * (1 - breath)
+        bodyMatrix.setValues(bodyValues)
+        canvas.concat(bodyMatrix)
         canvas.drawBitmap(artwork.body.asAndroidBitmap(), null, destination, paint)
         // Local authored patches include the skin revealed behind the flowing drops.
         val ms = (elapsedNanos.coerceAtLeast(0L) % LunaSickTimeline.CYCLE_NANOS) / 1_000_000.0
@@ -204,12 +234,15 @@ fun LunaSickAnimation(
                 scaleX = asset.visualScale
                 scaleY = asset.visualScale
                 translationX = size.width * asset.translationXFraction
-                translationY = size.height * (asset.translationYFraction + LUNA_SICK_TRANSLATION_Y_FRACTION)
+                translationY = size.height * asset.translationYFraction +
+                    (size.minDimension / LunaSickTimeline.VIEWPORT_SCALE).roundToInt() *
+                    LUNA_SICK_TRANSLATION_Y_FRACTION
             }.testTag(
                 "luna-animation-${if (firstFrame == null && artwork == null) "loading" else "frame"}-${appearance.assetName}",
             ).semantics { if (contentDescription != null) this.contentDescription = contentDescription }
             .drawWithCache {
-                val side = size.minDimension
+                val nominalSide = (size.minDimension / LunaSickTimeline.VIEWPORT_SCALE).roundToInt().toFloat()
+                val side = nominalSide * LunaSickTimeline.VIEWPORT_SCALE
                 val renderer = artwork?.let { LunaSickRenderer(it, appearance) }
                 onDrawBehind {
                     val time = if (animateFrames) elapsed.longValue else 0L
@@ -217,11 +250,16 @@ fun LunaSickAnimation(
                         val native = canvas.nativeCanvas
                         val save = native.save()
                         native.translate((size.width - side) / 2f, (size.height - side) / 2f)
-                        native.scale(side / 1254f, side / 1254f)
+                        native.scale(nominalSide / 1254f, nominalSide / 1254f)
                         if (renderer != null) {
                             renderer.draw(native, time)
                         } else if (firstFrame != null) {
-                            native.drawBitmap(firstFrame.asAndroidBitmap(), null, RectF(0f, 0f, 1254f, 1254f), null)
+                            native.drawBitmap(
+                                firstFrame.asAndroidBitmap(),
+                                null,
+                                RectF(0f, 0f, LunaSickTimeline.SCENE_SIDE, LunaSickTimeline.SCENE_SIDE),
+                                null,
+                            )
                         }
                         native.restoreToCount(save)
                     }

@@ -24,17 +24,20 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import java.util.Locale
+import kotlin.math.roundToInt
 
 private val IDLE_BREATH_FRAME_DURATIONS_MS =
     IntArray(24) { if (it == 23) 130 else 90 }
@@ -42,8 +45,8 @@ private val IDLE_BREATH_FRAME_DURATIONS_MS =
 internal val RUN_FRAME_DURATIONS_MS =
     IntArray(24) { 50 }
 
-// Luna sick art ends at y=1048/1254; this lowers it onto Mobi's collapsed baseline (0.926 of the slot).
-internal const val LUNA_SICK_TRANSLATION_Y_FRACTION = 0.134f
+// Match Luna idle's planted baseline using the shared 0.87 visual scale.
+internal const val LUNA_SICK_TRANSLATION_Y_FRACTION = 0.87f * (1172f - 1048f) / 1254f
 
 // Luna hungry body sits ~77px/1254 left of idle; this recenters it on the idle body.
 internal const val LUNA_HUNGRY_TRANSLATION_X_FRACTION = 0.053f
@@ -484,7 +487,7 @@ fun PetAvatar(
                     CompanionStatusCrossfade(
                         state = lunaState,
                         motionEnabled = motionEnabled,
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxSize().lunaStatusViewport(),
                     ) { state ->
                         LunaStateArtwork(state, appearance, isAnimated)
                     }
@@ -515,6 +518,7 @@ private fun LunaStateArtwork(
 ) {
     val stateName = if (state == CompanionStatus.NORMAL) "idle" else state.name.lowercase()
     Box(Modifier.fillMaxSize().testTag("luna-state-$stateName")) {
+        val nominalSlot = Modifier.fillMaxSize().lunaNominalSlot()
         when (state) {
             CompanionStatus.SICK ->
                 LunaSickAnimation(
@@ -524,13 +528,13 @@ private fun LunaStateArtwork(
                 )
             CompanionStatus.HUNGRY ->
                 LunaHungryAnimation(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = nominalSlot,
                     appearance = appearance,
                     animateFrames = animateFrames,
                 )
             CompanionStatus.NORMAL ->
                 LunaIdleBreathAnimation(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = nominalSlot,
                     appearance = appearance,
                     animateFrames = animateFrames,
                 )
@@ -620,6 +624,40 @@ fun LunaRunAnimation(
         ) {}
     }
 }
+
+private fun Modifier.lunaStatusViewport(): Modifier =
+    layout { measurable, constraints ->
+        val inset =
+            (
+                minOf(
+                    constraints.maxWidth,
+                    constraints.maxHeight,
+                ) * LunaSickTimeline.SOURCE_MARGIN / 1254f
+            ).roundToInt()
+        val child =
+            measurable.measure(
+                Constraints.fixed(
+                    constraints.maxWidth + inset * 2,
+                    constraints.maxHeight + inset * 2,
+                ),
+            )
+        layout(constraints.maxWidth, constraints.maxHeight) { child.placeRelative(-inset, -inset) }
+    }
+
+private fun Modifier.lunaNominalSlot(): Modifier =
+    layout { measurable, constraints ->
+        val side = minOf(constraints.maxWidth, constraints.maxHeight)
+        val nominalSide = (side / LunaSickTimeline.VIEWPORT_SCALE).roundToInt()
+        val inset = (side - nominalSide) / 2
+        val child =
+            measurable.measure(
+                Constraints.fixed(
+                    constraints.maxWidth - inset * 2,
+                    constraints.maxHeight - inset * 2,
+                ),
+            )
+        layout(constraints.maxWidth, constraints.maxHeight) { child.placeRelative(inset, inset) }
+    }
 
 @Composable
 fun LunaHungryAnimation(
