@@ -156,29 +156,13 @@ class PetAvatarTest {
             assertEquals(627, artwork.body.width)
             assertEquals(627, artwork.closedEyesBody.height)
             val name = mobiAppearanceName(accessory)
-            assertEquals(
-                listOf("mobi_idle_breath_${name}_01.png"),
-                context.assets.list("characters/mobi/$name/idle_breath")!!.toList(),
-            )
+            val files = mutableSetOf("mobi_idle_breath_${name}_01.png")
+            if (name != "normal") files.add("mobi_idle_breath_${name}_underlay.webp")
+            assertEquals(files, context.assets.list("characters/mobi/$name/idle_breath")!!.toSet())
         }
         assertTrue(loaded.all { it.sprout === loaded.first().sprout })
         assertTrue(loaded[1].sproutInFront)
         assertTrue(!loaded[2].sproutInFront)
-    }
-
-    @Test
-    fun mobiHungryAnimationCacheLoadsOneSheetAndReusesIt() {
-        val context =
-            androidx.test.core.app.ApplicationProvider
-                .getApplicationContext<android.content.Context>()
-        val sprite = requireNotNull(MobiHungrySpriteCache.getOrLoad(context))
-        assertEquals(256 * 6, sprite.width)
-        assertEquals(256 * 4, sprite.height)
-        assertTrue(sprite === MobiHungrySpriteCache.getOrLoad(context))
-        assertEquals(
-            listOf("mobi_hungry_normal_sprite.png"),
-            context.assets.list("characters/mobi/normal/hungry")!!.toList(),
-        )
     }
 
     @Test
@@ -454,34 +438,45 @@ class PetAvatarTest {
         }
 
     @Test
-    fun itemIconsCropBoundsMatchItemSpans() {
-        val headphonesCrop = CharacterArtwork.itemIcons.getValue("accessory:mobi_headphones").crop
-        assertNotNull(headphonesCrop)
-        assertEquals(0, headphonesCrop!!.x)
-        assertEquals(475, headphonesCrop.width)
-        assertEquals(150, headphonesCrop.y)
-        assertEquals(470, headphonesCrop.height)
-
-        val gogglesCrop = CharacterArtwork.itemIcons.getValue("accessory:mobi_goggles").crop
-        assertNotNull(gogglesCrop)
-        assertEquals(480, gogglesCrop!!.x)
-        assertEquals(468, gogglesCrop.width)
-        assertEquals(275, gogglesCrop.y)
-        assertEquals(320, gogglesCrop.height)
-
-        val capCrop = CharacterArtwork.itemIcons.getValue("accessory:luna_cap").crop
-        assertNotNull(capCrop)
-        assertEquals(0, capCrop!!.x)
-        assertEquals(500, capCrop.width)
-        assertEquals(140, capCrop.y)
-        assertEquals(480, capCrop.height)
-
-        val sunglassesCrop = CharacterArtwork.itemIcons.getValue("accessory:luna_sunglasses").crop
-        assertNotNull(sunglassesCrop)
-        assertEquals(510, sunglassesCrop!!.x)
-        assertEquals(460, sunglassesCrop.width)
-        assertEquals(285, sunglassesCrop.y)
-        assertEquals(330, sunglassesCrop.height)
+    fun standaloneItemIconsPreserveOriginalCropPixelsAndCanvas() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        // RGBA hashes captured from the original Store crop regions before removing the sheets.
+        val expected =
+            mapOf(
+                "accessory:mobi_headphones" to
+                    Triple(475, 470, "7cf4dc750cba2fa9f2e83d5746224c2fcb6ab29f0ea031b99e4b56f62d98bc4a"),
+                "accessory:mobi_goggles" to
+                    Triple(468, 320, "84a935d8ad6e1d91690faaa8a86de12210ad329a5f2cbb749795f313998ccf2f"),
+                "accessory:luna_cap" to
+                    Triple(500, 480, "f7f405d754ff1cb9afa13b81234cb98c8b4a4538b5dc047a8bbb0f5b0a79e972"),
+                "accessory:luna_sunglasses" to
+                    Triple(460, 330, "f1afdded2044a0590ec3347f4fca2a62e4eb5517c9131db962c2b7ef5cc3a092"),
+            )
+        for ((id, baseline) in expected) {
+            val asset = CharacterArtwork.itemIcons.getValue(id)
+            assertNull(asset.crop)
+            val bitmap =
+                android.graphics.BitmapFactory.decodeResource(
+                    context.resources,
+                    asset.resourceId,
+                    android.graphics.BitmapFactory.Options().apply {
+                        inScaled = false
+                        inPremultiplied = false
+                    },
+                )
+            assertEquals(baseline.first, bitmap.width)
+            assertEquals(baseline.second, bitmap.height)
+            val pixels = IntArray(bitmap.width * bitmap.height)
+            bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+            val digest = java.security.MessageDigest.getInstance("SHA-256")
+            for (pixel in pixels) {
+                for (shift in listOf(16, 8, 0, 24)) digest.update((pixel ushr shift).toByte())
+            }
+            assertEquals(id, baseline.third, digest.digest().joinToString("") { "%02x".format(it) })
+            bitmap.recycle()
+        }
     }
 
     @Test
@@ -551,20 +546,6 @@ class PetAvatarTest {
         assertNotEquals(signatures.getValue("mobi-happy"), signatures.getValue("luna-happy"))
         assertTrue(signatures.getValue("mobi-happy").toSet().size > 100)
         assertTrue(signatures.getValue("luna-happy").toSet().size > 100)
-    }
-
-    @Test
-    fun hungryAndSickArtworkAreDefinedForMobiAndLuna() {
-        val mobiHungry = CharacterArtwork.hungry("friend:mobi")
-        val lunaHungry = CharacterArtwork.hungry("friend:luna")
-        val lunaSick = CharacterArtwork.sick("friend:luna")
-        assertNotNull(mobiHungry)
-        assertNotNull(lunaHungry)
-        assertNotNull(lunaSick)
-        assertEquals(0.87f, lunaHungry.visualScale)
-        assertEquals(0.87f, lunaSick.visualScale)
-        assertEquals(R.drawable.mobimon_luna_hungry, lunaHungry.resourceId)
-        assertEquals(R.drawable.mobimon_luna_sick, lunaSick.resourceId)
     }
 
     @Test

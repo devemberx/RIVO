@@ -524,6 +524,7 @@ fun PetAvatar(
                             modifier = Modifier.fillMaxSize(),
                             onFinished = onDisappeared,
                             isDisappearing = isDisappearing,
+                            accessoryId = equippedAccessory,
                         ) {
                             MobiIdleBreathAnimation(
                                 modifier = Modifier.fillMaxSize(),
@@ -574,13 +575,7 @@ fun PetAvatar(
                     }
                 }
             } else {
-                val asset =
-                    when {
-                        isSick -> CharacterArtwork.sick(friendId, equippedAccessory)
-                        isHungry -> CharacterArtwork.hungry(friendId, equippedAccessory)
-                        else -> CharacterArtwork.preview(friendId, equippedAccessory)
-                    }
-                CharacterAssetImage(asset, Modifier.fillMaxSize())
+                CharacterAssetImage(CharacterArtwork.preview(friendId, equippedAccessory), Modifier.fillMaxSize())
             }
         }
         return

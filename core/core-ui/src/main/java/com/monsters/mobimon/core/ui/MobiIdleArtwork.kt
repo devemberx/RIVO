@@ -77,8 +77,8 @@ internal object MobiIdleArtworkCache {
         entries[appearance]?.let { return it }
         val original = MobiSpriteCache.firstFrame(context, accessoryId) ?: return null
         val normal = MobiSpriteCache.firstFrame(context) ?: return null
-        val eyes = decode(context, "closed_eyes") ?: return null
-        val underlay = if (appearance == "normal") null else decode(context, "${appearance}_underlay")
+        val eyes = decode(context, "shared", "closed_eyes") ?: return null
+        val underlay = if (appearance == "normal") null else decode(context, appearance, "underlay")
         if (appearance != "normal" && underlay == null) {
             eyes.recycle()
             return null
@@ -128,28 +128,32 @@ internal object MobiIdleArtworkCache {
 
     private fun decode(
         context: Context,
-        name: String,
+        appearance: String,
+        part: String,
     ): Bitmap? =
         try {
-            context.assets.open("characters/mobi/idle_layers/$name.webp").use { stream ->
-                BitmapFactory
-                    .decodeStream(
-                        stream,
-                        null,
-                        BitmapFactory.Options().apply {
-                            inSampleSize = 2
-                            inScaled = false
-                        },
-                    )?.let { bitmap ->
-                        if (bitmap.width == 627 && bitmap.height == 627) {
-                            bitmap
-                        } else {
-                            // Keep the canonical fallback when a decoder cannot read the gesture asset.
-                            bitmap.recycle()
-                            null
+            context.assets
+                .open(
+                    "characters/mobi/$appearance/idle_breath/mobi_idle_breath_${appearance}_$part.webp",
+                ).use { stream ->
+                    BitmapFactory
+                        .decodeStream(
+                            stream,
+                            null,
+                            BitmapFactory.Options().apply {
+                                inSampleSize = 2
+                                inScaled = false
+                            },
+                        )?.let { bitmap ->
+                            if (bitmap.width == 627 && bitmap.height == 627) {
+                                bitmap
+                            } else {
+                                // Keep the canonical fallback when a decoder cannot read the gesture asset.
+                                bitmap.recycle()
+                                null
+                            }
                         }
-                    }
-            }
+                }
         } catch (_: java.io.IOException) {
             null
         }
