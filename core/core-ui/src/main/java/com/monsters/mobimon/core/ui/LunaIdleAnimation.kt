@@ -32,6 +32,7 @@ import kotlin.math.sin
 internal object LunaIdleTimeline {
     const val CYCLE_NANOS = 2_200_000_000L
     const val GROUND_FRACTION = 1172f / 1254f
+    const val HAT_TOP_OUTSET_FRACTION = 192f / 1254f
 
     // Measured ear-top lift from the previously reviewed 24 normal poses.
     // Hermite interpolation preserves their inhale/exhale timing without holding raster frames.
@@ -97,7 +98,7 @@ internal fun lunaIdleDestination(
     side: Int,
     appearance: LunaAppearance,
 ): Pair<IntOffset, IntSize> {
-    val top = if (appearance == LunaAppearance.HAT) (side * 192f / 1254f).toInt() else 0
+    val top = if (appearance == LunaAppearance.HAT) (side * LunaIdleTimeline.HAT_TOP_OUTSET_FRACTION).toInt() else 0
     return IntOffset(0, -top) to IntSize(side, side + top)
 }
 

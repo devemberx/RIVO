@@ -525,6 +525,8 @@ fun PetAvatar(
                         state = lunaState,
                         motionEnabled = motionEnabled,
                         modifier = Modifier.fillMaxSize(),
+                        topOutsetFraction =
+                            if (appearance == LunaAppearance.HAT) LunaIdleTimeline.HAT_TOP_OUTSET_FRACTION else 0f,
                     ) { state ->
                         LunaStateArtwork(state, appearance, isAnimated)
                     }

@@ -228,6 +228,7 @@ Luna idle uses a continuous 2.2-second grounded breath without restarting on
 equipment changes. Cap idle and happy follow the large fitted master and retain
 the body's scale beneath added hat padding, including still previews. Other cap
 actions/statuses retain earlier artwork until separately migrated.
+Status and appearance fades include the cap's headroom without changing the body slot.
 
 Respect the shared motion preference; animation never authorizes commands.
 Settings controls floating wandering; unknown/failed reads keep it stationary.
