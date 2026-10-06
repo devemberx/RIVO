@@ -225,6 +225,9 @@ Mobi equipped idle shares body, blink and sprout timing. Hungry motion keeps the
 six-second carrot-thought, scrunch and two-shake sequence; equipment follows the
 head rigidly. Sick motion uses sleepy breathing and three stars with a broken blue
 orbit. Texture density must preserve the master at the target display size.
+Hungry facial patches are prepared on the artwork loader worker before the
+selected appearance is published. Playback interpolates unchanged cached
+textures; draw callbacks must not reconstruct pixels or rewrite bitmaps.
 
 Luna idle uses a continuous 2.2-second grounded breath without restarting on
 equipment changes. Cap idle and happy follow the large fitted master and retain
