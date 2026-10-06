@@ -1,70 +1,30 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "character_id": "friend:las",
   "variant": "normal",
-  "issue": 396,
-  "coordinate_convention": {
-    "paths": "repository-relative",
-    "rectangles": "[left, top, right, bottom), pixels; x right, y down",
-    "landmarks": "Manual visual estimates unless explicitly alpha-measured; hidden anatomy is not measured.",
-    "head_core": "Cranial envelope excluding ears, sprout and robot side modules where separable; not an alpha crop."
-  },
   "canonical": {
     "path": "art/characters/las/references/las_seated_front_master.png",
     "sha256": "38753ec0a762cfacff05d6e93e4111713c8fddc94912a5414003927addc0dc6b",
-    "size_px": [
-      475,
-      475
-    ],
+    "size_px": [475, 475],
     "mode": "RGBA",
     "source": {
       "path": "core/core-ui/src/main/res/drawable-nodpi/pet_las_normal_preview.png",
       "sha256": "f6cc29193567bf28ca2c58077c03d6e536886aeaf2c2dac38f60e67735593d70",
-      "size_px": [
-        475,
-        475
-      ],
+      "size_px": [475, 475],
       "mode": "RGBA"
     },
     "approval": "reviewed_reference_revision",
     "pose": "seated_front_three_quarter",
-    "equipped_item_ids": [],
     "default_pose_prop": null,
-    "alpha_bounds_px": [
-      46,
-      48,
-      420,
-      428
-    ],
+    "alpha_bounds_px": [46, 48, 420, 428],
     "alpha_threshold": 128,
     "ground_y_px": 428,
-    "ground_measurement": "bottom edge of alpha bounds; contact approximation",
-    "root_anchor_px_estimate": [
-      247,
-      428
-    ],
-    "head_core_box_px_estimate": [
-      128,
-      50,
-      376,
-      267
-    ],
+    "root_anchor_px_estimate": [247, 428],
+    "head_core_box_px_estimate": [128, 50, 376, 267],
     "eye_bar_endpoints_px_estimate": [
-      [
-        200,
-        164
-      ],
-      [
-        285,
-        168
-      ]
+      [200, 164],
+      [285, 168]
     ],
-    "proportions": {
-      "head_core_width_over_alpha_height_estimate": 0.6526,
-      "head_core_height_over_alpha_height_estimate": 0.5711,
-      "head_core_width_over_canvas_width_estimate": 0.5221
-    },
-    "notes": "Reference-only single foot seam and arm-joint corrections. The raised right shoulder uses the resting left/standing rounded housing, rotated so its lamp faces upward. Runtime artwork is unchanged.",
     "revision_review": {
       "status": "accepted_for_reference",
       "reviewer": "Codex",
@@ -75,309 +35,87 @@
       "separate_user_visual_signoff": false,
       "source_sha256": "f6cc29193567bf28ca2c58077c03d6e536886aeaf2c2dac38f60e67735593d70",
       "revised_sha256": "38753ec0a762cfacff05d6e93e4111713c8fddc94912a5414003927addc0dc6b",
-      "scope": "reference_only",
-      "tool": "Built-in image_gen and previously authorized regional compositing",
-      "compositing": {
-        "before_sha256": "4df7f1a096fb5bebbcd56263e5c8d57b4daba0cba4f4cbb4577a1e5f36b3bda6",
-        "after_sha256": "38753ec0a762cfacff05d6e93e4111713c8fddc94912a5414003927addc0dc6b",
-        "mask_sha256": "c02c511d73331de042d3349b3a728e05ab86a523d912fe486033ec6f40fa5f7b",
-        "outside_mask_changed_pixels": 0,
-        "scope": "Raised right shoulder joint only; preserve the opposite arm and all other master pixels."
-      },
-      "previous_revision": {
-        "status": "accepted_for_reference",
-        "reviewer": "Codex",
-        "authority": "User explicitly requested that the seated front foot use one seam, matching the side reference.",
-        "date": "2026-10-05",
-        "reason": "Unify the black foot-rim segmentation across views without changing the character identity.",
-        "evidence": "https://github.com/devemberx/mobimon/issues/396",
-        "separate_user_visual_signoff": false,
-        "source_sha256": "f6cc29193567bf28ca2c58077c03d6e536886aeaf2c2dac38f60e67735593d70",
-        "revised_sha256": "fcf5e7c1fe8a873d117cf9e97fec4067d1262141c8d1c74cb8c49ce5dd531632",
-        "scope": "reference_only",
-        "tool": "Built-in image_gen patch and previously authorized regional compositing",
-        "compositing": {
-          "before_sha256": "f6cc29193567bf28ca2c58077c03d6e536886aeaf2c2dac38f60e67735593d70",
-          "after_sha256": "fcf5e7c1fe8a873d117cf9e97fec4067d1262141c8d1c74cb8c49ce5dd531632",
-          "mask_sha256": "781308b64b93d2826d65c7508a19a4e6ace6a62c5552f694c0bbc9d45e0c336f",
-          "outside_mask_changed_pixels": 0,
-          "alpha_changed_pixels": 0,
-          "scope": "Replace two black-rim grooves with one; preserve all geometry and alpha."
-        }
-      }
+      "scope": "reference_only"
     }
   },
   "turnaround": {
     "path": "art/characters/las/references/las_turnaround.png",
     "sha256": "87503f454a9b4610ad102f135d29acf8bb677129603737d078c34c9fd549a8d9",
-    "size_px": [
-      1536,
-      1024
-    ],
+    "size_px": [1536, 1024],
     "mode": "RGB",
-    "layout": {
-      "columns": 3,
-      "rows": 2,
-      "column_bounds_px": [
-        0,
-        512,
-        1024,
-        1536
-      ],
-      "row_bounds_px": [
-        0,
-        460,
-        1024
-      ],
-      "note": "Use explicit cell rectangles; equal row heights are not guaranteed by generation."
-    },
-    "background": "opaque neutral gray; reference-only, not a transparent animation frame",
-    "tool": "Built-in image_gen with previously authorized regional compositing",
     "review": {
       "status": "accepted_for_reference",
       "reviewer": "Codex",
       "authority": "User specified that the anatomical right raised shoulder must retain the opposite left shoulder and standing joint construction, with its lamp rotating upward as the arm rises.",
-      "review_date": "2026-10-05",
       "separate_user_visual_signoff": false,
       "checks": [
         "Compared raised right shoulder to the resting left and all standing shoulders: rounded housing and upward-facing lamp rotate together in seated front, side and rear.",
         "Inspected enlarged joint details and the transparent master on gray; no added long cylindrical upper-arm section.",
         "Pixel comparison confirmed zero changes to the complete standing row, the opposite arms and all pixels outside the three joint masks."
       ],
-      "corrections": [
-        "Use the seated foot as the size and material authority. Standing shoes have a thicker cream upper and shorter front-to-back length, with a rounded blunt toe, nearly flat top and flat sole. Cream and black meet flush as one solid, without a stacked cap or inflated black pad.",
-        "Rear standing views expose an upright heel wall with a nearly flat top edge and softly rounded rectangular corners, rather than duplicating the domed front toe. The ankle enters the rear/top of the same shoe; the forward toe is hidden in depth.",
-        "Standing front and rear black faces have no vertical seam. Only the midpoint of the black side band has one narrow seam; preserve the single-seam seated front foot and original seated side foot.",
-        "Seated rear has no visible feet or cream foot slivers. Preserve the two black leg housings and the outward-facing amber leg lights shown in the user-supplied rear crop.",
-        "Each black leg carries matching amber circular lights on both outer and inner side faces, as in the canonical master. Restore medial rings at the same height as lateral lights in standing front/rear; perspective narrows them to ellipses. Keep occluded medial faces hidden in side profile and never duplicate disks on one face.",
-        "Standing views, including their inner and outer leg lights, remain pixel-identical to the current baseline. Seated arms and rear foot visibility are revised; runtime sources and animation frames are unchanged.",
-        "Both shoulders retain the same compact rounded, tapered joint housing shown in standing front/side/rear views. The lamp is attached to the movable housing: it faces outward at rest and rotates upward on the raised anatomical right arm. Show the upward lamp on the upper curved surface consistently across seated views, with head occlusion respected; never substitute a bracelet-shaped barrel or a camera-facing lamp disk."
-      ],
       "limits": [
         "The canonical Las pose is front three-quarter, not a calibrated orthographic front.",
         "Rear surfaces and standing contact are inferred from the seated master, not a measured 3D rig.",
         "Do not reuse the runtime LasIdleAnimation 475px masks with these reference sheets."
       ],
-      "evidence": "https://github.com/devemberx/mobimon/issues/396"
+      "evidence": "https://github.com/devemberx/mobimon/issues/396",
+      "date": "2026-10-05"
     },
     "views": [
       {
         "id": "seated_front",
-        "cell_rect_px": [
-          0,
-          0,
-          512,
-          460
-        ],
+        "cell_rect_px": [0, 0, 512, 460],
         "view_description": "canonical seated front three-quarter; original placement with matching revised shoulder patches",
-        "head_core_box_px_estimate": [
-          168,
-          61,
-          416,
-          278
-        ],
+        "head_core_box_px_estimate": [168, 61, 416, 278],
         "ground_y_px_estimate": 439,
-        "root_anchor_px_estimate": [
-          287,
-          439
-        ],
-        "head_width_px_estimate": 248,
-        "head_height_px_estimate": 217,
+        "root_anchor_px_estimate": [287, 439],
         "prop": null
       },
       {
         "id": "seated_side_left",
-        "cell_rect_px": [
-          512,
-          0,
-          1024,
-          460
-        ],
+        "cell_rect_px": [512, 0, 1024, 460],
         "view_description": "left-facing oblique/profile; angle not calibrated",
-        "head_core_box_px_estimate": [
-          655,
-          58,
-          897,
-          275
-        ],
+        "head_core_box_px_estimate": [655, 58, 897, 275],
         "ground_y_px_estimate": 438,
-        "root_anchor_px_estimate": [
-          768,
-          438
-        ],
-        "head_width_px_estimate": 242,
-        "head_height_px_estimate": 217,
+        "root_anchor_px_estimate": [768, 438],
         "prop": null
       },
       {
         "id": "seated_back",
-        "cell_rect_px": [
-          1024,
-          0,
-          1536,
-          460
-        ],
+        "cell_rect_px": [1024, 0, 1536, 460],
         "view_description": "rear-facing",
-        "head_core_box_px_estimate": [
-          1099,
-          57,
-          1379,
-          275
-        ],
+        "head_core_box_px_estimate": [1099, 57, 1379, 275],
         "ground_y_px_estimate": 434,
-        "root_anchor_px_estimate": [
-          1245,
-          434
-        ],
-        "head_width_px_estimate": 280,
-        "head_height_px_estimate": 218,
+        "root_anchor_px_estimate": [1245, 434],
         "prop": null
       },
       {
         "id": "standing_front",
-        "cell_rect_px": [
-          0,
-          460,
-          512,
-          1024
-        ],
+        "cell_rect_px": [0, 460, 512, 1024],
         "view_description": "front-facing",
-        "head_core_box_px_estimate": [
-          154,
-          486,
-          394,
-          702
-        ],
+        "head_core_box_px_estimate": [154, 486, 394, 702],
         "ground_y_px_estimate": 948,
-        "root_anchor_px_estimate": [
-          278,
-          948
-        ],
-        "head_width_px_estimate": 240,
-        "head_height_px_estimate": 216,
+        "root_anchor_px_estimate": [278, 948],
         "prop": null
       },
       {
         "id": "standing_side_left",
-        "cell_rect_px": [
-          512,
-          460,
-          1024,
-          1024
-        ],
+        "cell_rect_px": [512, 460, 1024, 1024],
         "view_description": "left-facing oblique/profile; angle not calibrated",
-        "head_core_box_px_estimate": [
-          649,
-          487,
-          890,
-          704
-        ],
+        "head_core_box_px_estimate": [649, 487, 890, 704],
         "ground_y_px_estimate": 948,
-        "root_anchor_px_estimate": [
-          768,
-          948
-        ],
-        "head_width_px_estimate": 241,
-        "head_height_px_estimate": 217,
+        "root_anchor_px_estimate": [768, 948],
         "prop": null
       },
       {
         "id": "standing_back",
-        "cell_rect_px": [
-          1024,
-          460,
-          1536,
-          1024
-        ],
+        "cell_rect_px": [1024, 460, 1536, 1024],
         "view_description": "rear-facing",
-        "head_core_box_px_estimate": [
-          1108,
-          483,
-          1383,
-          701
-        ],
+        "head_core_box_px_estimate": [1108, 483, 1383, 701],
         "ground_y_px_estimate": 948,
-        "root_anchor_px_estimate": [
-          1245,
-          948
-        ],
-        "head_width_px_estimate": 275,
-        "head_height_px_estimate": 218,
+        "root_anchor_px_estimate": [1245, 948],
         "prop": null
       }
-    ],
-    "compositing": {
-      "method": "Apply three reviewed image_gen joint patches; preserve all pixels outside joint masks, including standing poses and the existing rear foot deletion.",
-      "regions_px": [
-        [
-          0,
-          0,
-          512,
-          460
-        ],
-        [
-          1120,
-          328,
-          1385,
-          443
-        ],
-        [
-          148,
-          788,
-          390,
-          981
-        ],
-        [
-          660,
-          788,
-          845,
-          981
-        ],
-        [
-          1127,
-          788,
-          1385,
-          981
-        ],
-        [
-          68,
-          140,
-          1481,
-          444
-        ]
-      ],
-      "original_sha256": "86025f914c3c662bb9c29e0e05fe22f4395e7d41d5793c9bc8f579f97cd0758b",
-      "original_git_commit": "26ec198f29077a0d3c0c069ca62b34439e39b401",
-      "mask_sha256": "187e16ca559a79939a030baca9a5bfb2e3a72390efe474c71a9ab265579aff0d",
-      "outside_mask_changed_pixels": 0,
-      "feather_radius_px": 2,
-      "canonical_paste": {
-        "scale": 1,
-        "offset_px": [
-          40,
-          11
-        ],
-        "source": "Original master placement retained; both front arm regions are derived from the same reviewed image_gen patch as the revised canonical master."
-      },
-      "latest_revision": {
-        "before_sha256": "422166b7c13efd36d27d9126a0ec57481778766f82055cf142d413694ba54005",
-        "after_sha256": "87503f454a9b4610ad102f135d29acf8bb677129603737d078c34c9fd549a8d9",
-        "mask_sha256": "181687a1ef964f22d0ad80f5d1a8fb7b5006f10b4529700599a3d6bea088b583",
-        "outside_mask_changed_pixels": 0,
-        "standing_changed_pixels": 0
-      }
-    },
-    "generation_source_names": [
-      "exec-0dfb6903-de03-436f-819d-1b51fe664700.png",
-      "exec-f330a2ea-8b4e-492f-8fef-1fa858837e53.png",
-      "exec-2e5e42d5-599c-4f45-bc14-7aa8a1261261.png",
-      "exec-76fa08d9-fc97-4f68-ade2-d5ff0988bd78.png",
-      "exec-39769086-c806-4c79-be06-f559d7569ea3.png",
-      "exec-f292f9aa-d675-4107-a93c-fc263e706951.png",
-      "exec-bbc63b63-0ba8-4640-b767-79af2695e90d.png",
-      "exec-cdae92c5-d969-4271-a185-c73c7c53e846.png",
-      "exec-38661b86-a4a3-41f8-a813-1795a312d270.png",
-      "exec-883c4428-80e8-4e5d-aedf-fa1e23c56d2b.png"
     ]
   },
   "identity_constraints": [
@@ -391,25 +129,5 @@
     "Seated rear has no visible feet or cream foot slivers. Preserve the two black leg housings and the outward-facing amber leg lights shown in the user-supplied rear crop.",
     "Each black leg carries matching amber circular lights on both outer and inner side faces, as in the canonical master. Restore medial rings at the same height as lateral lights in standing front/rear; perspective narrows them to ellipses. Keep occluded medial faces hidden in side profile and never duplicate disks on one face.",
     "Both shoulders retain the same compact rounded, tapered joint housing shown in standing front/side/rear views. The lamp is attached to the movable housing: it faces outward at rest and rotates upward on the raised anatomical right arm. Show the upward lamp on the upper curved surface consistently across seated views, with head occlusion respected; never substitute a bracelet-shaped barrel or a camera-facing lamp disk."
-  ],
-  "animation_contract": {
-    "reference_inputs": [
-      "canonical",
-      "turnaround"
-    ],
-    "pose_selection": {
-      "idle": "Preserve canonical seated default.",
-      "locomotion": "Use standing reference to expose limb attachments; add action-specific key poses before generating a cycle."
-    },
-    "default_prop_policy": "No props or equipped items.",
-    "scale": "Choose one anatomical scale from the canonical head width. Reuse it for a whole clip; never fit each frame independently to its nontransparent bounds.",
-    "anchors": "Keep a fixed root and ground plane; represent jumping and travel as intentional root offsets. Preserve crop offsets when exporting trimmed frames.",
-    "review_tolerances": {
-      "status": "initial review thresholds, not anatomical truth",
-      "same_view_head_dimension_drift_fraction_max": 0.08,
-      "same_pose_ground_spread_sheet_px_max": 10
-    },
-    "rendering": "Use one renderer-specific transform per clip/pose, not per-frame auto-centering. Do not impose identical whole-body heights on seated and standing poses.",
-    "validation": "Review actual-size playback, contact points, loop seam and transitions into/out of seated idle; static references alone do not validate motion."
-  }
+  ]
 }

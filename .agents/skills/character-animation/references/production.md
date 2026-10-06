@@ -5,17 +5,24 @@
 - Start at `art/characters/reference_catalog.json`. For an equipped clip resolve
   the item ID through `accessories`; use its `asset_variant` rather than deriving
   a folder from the item ID (`accessory:luna_cap` uses `hat`).
-- Base input: `canonical`, `turnaround`, `identity_constraints` and
-  `animation_contract`. Item input additionally requires `canonical_fitted`,
-  `base_character`, `attachment_contract` and `generation_gate`.
+- Schema 2 keeps current image records, pixel landmarks, identity/attachment rules
+  and review declarations. Base input is `canonical`, `turnaround` and
+  `identity_constraints`; item input adds `canonical_fitted`, `base_character`
+  and `attachment_contract`. Resolve base images/landmarks through the linked
+  manifest rather than copying them into each item.
+- `source` is optional for a separate original image still used as a current input.
+  Omit duplicate or retired originals; Git retains their bytes and edit history.
+  Every retained source must pass current integrity checks.
 - The original canonical defines identity; fitted canonical defines item fit.
   Turnarounds describe other views but do not override those masters. Their hidden
   surfaces are inferred, and side views are not calibrated orthographic views.
 - An explicitly requested reference correction may use `reviewed_reference_revision`
   with a `revision_review` binding the original source and revised image hashes,
   reviewer, authority, date, reason, evidence and signoff provenance. Its scope is
-  `reference_only`: the recorded runtime source stays independently verified and
-  is not claimed to match the corrected master. Current-input review is still required.
+  `reference_only`: a retained source is independently verified, while an archived
+  source hash records provenance through the review evidence and Git history.
+  Neither is claimed to match the corrected master. The revised image hash and
+  current-input review remain required.
 - Read any `construction_references` with the master; preflight includes their bytes
   in the reviewed inventory. A rotated detail preserves 2D part construction and
   proportions, not calibrated perspective or a new pose approval.
@@ -28,11 +35,25 @@
 - Item-only drawings are enlarged inspection views, not a fit-scale authority.
   Use fitted masters and head-relative attachment points. Normalized item points
   may lie outside 0..1 when equipment extends beyond the skull.
-- `*_estimate` landmarks are manual estimates. The current head-drift and sheet
-  ground-spread thresholds apply only to comparable views/poses; they are not a
-  promise of calibrated anatomy or a universal tolerance for moving frames.
+- `*_estimate` landmarks are manual estimates, not calibrated anatomy. Head boxes
+  exclude ears, sprouts and robot side modules where separable. Alpha bounds use
+  the recorded threshold; their bottom edge approximates contact, not hidden anatomy.
 - Right-side motion cannot automatically mirror asymmetric details. Request or
   establish any additional required view in a separately scoped reference task.
+
+Paths are repository-relative. Rectangles are `[left, top, right, bottom)` pixels,
+with x right and y down. View IDs encode pose and direction (`seated_front`,
+`standing_side_left`, `item_back`); item-only views have no character pose.
+Preflight derives head dimensions, item-width ratio and attachment UV from pixel
+landmarks. Use the fitted head box when recorded (Luna cap has a different canvas),
+otherwise the base head box. UV is `(point - head origin) / head dimensions` and may
+extend outside 0..1. Do not maintain duplicate derived values in manifests.
+
+Idle preserves the canonical seated pose and its recorded default prop; standing
+references establish limb attachments for locomotion, which still needs action keys.
+Equipped clips inherit base identity/anchors and keep the fitted item rigidly attached
+to its named pivot with the recorded occlusion. Review alpha on light/dark backgrounds;
+preserve intentional gaps and props while removing residue.
 
 ### Bind review to the current inputs
 
@@ -52,8 +73,9 @@ After that check, record `input-review.json` with `schema_version: 1`,
 `status: "accepted_for_reference"`, nonempty `reviewer`, `authority`, `date`,
 `evidence` (the inspection record or durable review link), boolean
 `separate_user_visual_signoff`, and the exact `checked_sha256` map from preflight.
-The map covers the catalog, selected manifests and checked images, including
-source copies. No helper creates an accepted record. Capture it at review time;
+The map covers the catalog, shared contract, selected manifests and checked images,
+including separate sources. Archived manifest links preserve review declarations,
+not missing captures or playback evidence. No helper creates an accepted record. Capture it at review time;
 copying a current inventory alone is not a review. Reuse a valid existing record
 instead of requesting redundant signoff.
 
@@ -96,7 +118,7 @@ Current renderer inspection points (verify current code before editing):
 
 | Owner | Relevant contract |
 | --- | --- |
-| `PetAvatar.kt`, `LunaIdleArtwork.kt`, `LunaIdleAnimation.kt`, `LunaHungryArtwork.kt`, `LunaScene.kt` | Luna idle/hungry shared WebP body/equipment, fixed sprout root and procedural gestures; other clips retain numbered frames and pose-specific transforms |
+| `PetAvatar.kt`, `LunaIdleArtwork.kt`, `LunaIdleAnimation.kt`, `LunaScene.kt` | Luna idle WebP layers, fixed sprout root and procedural breath; other clips retain numbered frames and pose-specific transforms |
 | `MobiIdleAnimation.kt`, `MobiIdleArtwork.kt` | Mobi source parts, eye poses, procedural transforms, first-pose fallback and sampling |
 | `LasIdleAnimation.kt` | Procedural masks/pivots tied to the 475px canonical; never apply them to turnaround sheets |
 | `Las*Animation.kt`, `Luna*Animation.kt` | Entry/exit and status playback, completion callbacks and fallbacks |
