@@ -15,6 +15,7 @@ import com.monsters.mobimon.core.domain.IdGenerator
 import com.monsters.mobimon.core.domain.PointAwardResult
 import com.monsters.mobimon.core.domain.PointEconomy
 import com.monsters.mobimon.core.domain.PointQuestCatalog
+import com.monsters.mobimon.core.domain.PointQuestDefinition
 import com.monsters.mobimon.core.domain.PointQuestSchedule
 import com.monsters.mobimon.core.domain.PointWallet
 import com.monsters.mobimon.core.domain.PurchaseResult
@@ -23,11 +24,15 @@ import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.SignalSourceProvider
 import com.monsters.mobimon.core.domain.UtcClock
 import com.monsters.mobimon.core.domain.VehicleSnapshot
+import com.monsters.mobimon.core.domain.hasCustomBackground
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.mapNotNull
 import java.time.DateTimeException
 import java.time.Instant
@@ -131,11 +136,6 @@ class PointEconomyRepository(
             items.map { it.toDomain() }
         }
 
-    override val completedQuestIds: Flow<Set<String>> =
-        dao.observeQuestCompletions(profileId).mapNotNull { items ->
-            items.mapTo(mutableSetOf()) { it.questId }
-        }
-
     override val completedQuestDates: Flow<Map<String, Long>> =
         dao.observeQuestCompletions(profileId).mapNotNull { items ->
             items.associate { it.questId to it.completedAtUtcMillis }
@@ -143,6 +143,19 @@ class PointEconomyRepository(
 
     private val _driveEvaluation = MutableStateFlow(DriveEvaluationData())
     override val driveEvaluation: Flow<DriveEvaluationData> = _driveEvaluation.asStateFlow()
+
+    // A quest is completed when the occurrence a claim would use now is committed; ticks move day/week resets.
+    override val completedQuestIds: Flow<Set<String>> =
+        combine(dao.observeQuestCompletions(profileId), _driveEvaluation, occurrenceTicks()) { items, evaluation, _ ->
+            val now = utcClock.nowEpochMillis()
+            items
+                .groupBy({ it.questId }, { it.occurrenceKey })
+                .filter { (questId, keys) ->
+                    val definition = quests.find(questId) ?: return@filter true
+                    val count = drivingEvaluator.evaluateById(questId, evaluation)?.dailyCount
+                    definition.currentOccurrence(now, evaluation.driveId, count, keys)?.key in keys
+                }.keys
+        }.distinctUntilChanged()
 
     override fun updateDriveEvaluation(data: DriveEvaluationData) {
         _driveEvaluation.value = data
@@ -219,10 +232,8 @@ class PointEconomyRepository(
                     dao.deleteEquipped(profileId, storageSlot)
                     dao.deleteEquipped(profileId, rawSlot)
                     dao.deleteEquipped(profileId, "ACCESSORY")
-                    if (rawSlot == "BACKGROUND") {
+                    if (rawSlot == "BACKGROUND_PROP" || rawSlot == "BACKGROUND_EFFECT") {
                         dao.deleteEquipped(profileId, "BACKGROUND_OVERLAY")
-                        dao.deleteEquipped(profileId, "BACKGROUND_PROP")
-                        dao.deleteEquipped(profileId, "BACKGROUND_EFFECT")
                     }
                     return@withTransaction EquipResult.Applied
                 }
@@ -286,11 +297,21 @@ class PointEconomyRepository(
 
                 // Gate driving quests on their per-quest evidence; hidden quests rely on appearance.
                 val isHiddenQuest = questId.startsWith("quest_hidden_")
-                val drivingResult = drivingEvaluator.evaluateById(questId, _driveEvaluation.value)
+                val evaluation = _driveEvaluation.value
+                val drivingResult = drivingEvaluator.evaluateById(questId, evaluation)
                 if (!isHiddenQuest) {
-                    if (current != displayedSnapshot) return@withTransaction PointAwardResult.EvidenceChanged
+                    // Publications can advance while the claim waits for the transaction.
+                    // Revalidate both observations, retaining source/session and ordering guards.
+                    if (evaluator.validateSnapshot(displayedSnapshot, expectedSource, clock.nowMillis()) != null ||
+                        current.epoch != displayedSnapshot.epoch ||
+                        current.sequence < displayedSnapshot.sequence ||
+                        current.receivedAtMillis < displayedSnapshot.receivedAtMillis
+                    ) {
+                        return@withTransaction PointAwardResult.EvidenceChanged
+                    }
+                    // Driving evidence must come from the profile's own source, never a Debug simulation in Release.
                     if (drivingResult != null &&
-                        !drivingResult.isSatisfied
+                        (!drivingResult.isSatisfied || evaluation.source != source)
                     ) {
                         return@withTransaction PointAwardResult.ConditionNotMet
                     }
@@ -305,8 +326,9 @@ class PointEconomyRepository(
                                     dao.equipped(profileId, "OUTFIT") != null
                             }
                             com.monsters.mobimon.core.domain.DrivingQuestIds.HIDDEN_BACKGROUND -> {
-                                val bg = dao.equipped(profileId, "BACKGROUND")?.itemId
-                                bg != null && bg != "none" && bg != "background:default"
+                                hasCustomBackground(
+                                    *BACKGROUND_SLOTS.map { dao.equipped(profileId, it)?.itemId }.toTypedArray(),
+                                )
                             }
                             com.monsters.mobimon.core.domain.DrivingQuestIds.HIDDEN_NEW_FRIEND -> {
                                 activeFriend != "friend:mobi"
@@ -315,16 +337,35 @@ class PointEconomyRepository(
                         }
                     if (!valid) return@withTransaction PointAwardResult.ConditionNotMet
                 }
-                val awardedPoints = drivingResult?.earnedPoints ?: definition.rewardPoints
-                val basePoints = drivingResult?.basePoints ?: definition.rewardPoints
-                val weatherMultiplier = drivingResult?.weatherCondition?.multiplier ?: 1.0f
+                if (definition.schedule == PointQuestSchedule.PerDrive && evaluation.driveId.isBlank()) {
+                    return@withTransaction PointAwardResult.ConditionNotMet
+                }
                 val completedAt = utcClock.nowEpochMillis()
-                val occurrence =
-                    definition.schedule.occurrenceKey(completedAt)
-                        ?: return@withTransaction PointAwardResult.QuestUnavailable
-                if (dao.questCompletion(profileId, questId, occurrence) != null) {
+                val claim =
+                    definition.currentOccurrence(
+                        completedAt,
+                        evaluation.driveId,
+                        drivingResult?.dailyCount,
+                        dao.questOccurrenceKeys(profileId, questId),
+                    ) ?: return@withTransaction PointAwardResult.QuestUnavailable
+                val occurrence = claim.key
+                if (claim.units <= 0 || dao.questCompletion(profileId, questId, occurrence) != null) {
                     return@withTransaction PointAwardResult.AlreadyAwarded
                 }
+                val capped = definition.schedule is PointQuestSchedule.CappedDaily
+                val basePoints =
+                    if (capped) {
+                        claim.units * definition.rewardPoints
+                    } else {
+                        drivingResult?.basePoints ?: definition.rewardPoints
+                    }
+                val awardedPoints =
+                    when {
+                        drivingResult == null -> basePoints
+                        capped -> drivingEvaluator.calculatePoints(basePoints, drivingResult.weatherCondition)
+                        else -> drivingResult.earnedPoints
+                    }
+                val weatherMultiplier = drivingResult?.weatherCondition?.multiplier ?: 1.0f
                 val account = dao.account(profileId) ?: return@withTransaction PointAwardResult.StorageFailure
                 if (account.balance > Long.MAX_VALUE - awardedPoints) {
                     return@withTransaction PointAwardResult.StorageFailure
@@ -394,34 +435,64 @@ class PointEconomyRepository(
             dao.equipped(profileId, CosmeticSlot.FRIEND.name)?.itemId == compatibleFriendId
 }
 
-private fun PointQuestSchedule.occurrenceKey(utcMillis: Long): String? =
-    when (this) {
-        PointQuestSchedule.OneTime -> "once"
-        is PointQuestSchedule.Daily ->
-            try {
-                "daily:${Instant.ofEpochMilli(utcMillis).atZone(ZoneId.of(resetZoneId)).toLocalDate()}"
-            } catch (_: DateTimeException) {
-                null
-            }
-        is PointQuestSchedule.Weekly ->
-            try {
-                val zdt = Instant.ofEpochMilli(utcMillis).atZone(ZoneId.of(resetZoneId))
+private fun occurrenceTicks() =
+    flow {
+        while (true) {
+            emit(Unit)
+            delay(OCCURRENCE_REFRESH_MILLIS)
+        }
+    }
+
+private const val OCCURRENCE_REFRESH_MILLIS = 60_000L
+
+/** The occurrence a claim would use now; [units] is how many new units it would award. */
+private class QuestOccurrence(
+    val key: String,
+    val units: Int,
+)
+
+/**
+ * Capped daily keys record the cumulative units awarded that day, so a claim awards only units counted
+ * after the last committed key. Returns null when the schedule cannot produce a key.
+ */
+private fun PointQuestDefinition.currentOccurrence(
+    utcMillis: Long,
+    driveId: String,
+    dailyCount: Int?,
+    committedKeys: Collection<String>,
+): QuestOccurrence? =
+    try {
+        when (val schedule = schedule) {
+            PointQuestSchedule.OneTime -> QuestOccurrence("once", 1)
+            is PointQuestSchedule.Daily -> QuestOccurrence("daily:${localDate(utcMillis, schedule.resetZoneId)}", 1)
+            is PointQuestSchedule.Weekly -> {
+                val zdt = Instant.ofEpochMilli(utcMillis).atZone(ZoneId.of(schedule.resetZoneId))
                 val week = zdt.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR)
                 val year = zdt.get(java.time.temporal.IsoFields.WEEK_BASED_YEAR)
-                "weekly:$year-W$week"
-            } catch (_: DateTimeException) {
-                null
+                QuestOccurrence("weekly:$year-W$week", 1)
             }
-        is PointQuestSchedule.PerDrive -> "drive:$driveId"
-        is PointQuestSchedule.CappedDaily ->
-            try {
-                val date = Instant.ofEpochMilli(utcMillis).atZone(ZoneId.of(resetZoneId)).toLocalDate()
-                val count = currentCount.coerceIn(1, maxPerDay)
-                "daily:$date:count:$count"
-            } catch (_: DateTimeException) {
-                null
+            PointQuestSchedule.PerDrive -> driveId.takeIf { it.isNotBlank() }?.let { QuestOccurrence("drive:$it", 1) }
+            is PointQuestSchedule.CappedDaily -> {
+                val prefix = "daily:${localDate(utcMillis, schedule.resetZoneId)}:count:"
+                val awarded =
+                    committedKeys
+                        .filter { it.startsWith(prefix) }
+                        .maxOfOrNull { it.removePrefix(prefix).toIntOrNull() ?: 0 } ?: 0
+                val target = (dailyCount ?: (awarded + 1)).coerceAtMost(schedule.maxPerDay)
+                QuestOccurrence("$prefix${maxOf(target, awarded)}", target - awarded)
             }
+        }
+    } catch (_: DateTimeException) {
+        null
     }
+
+private fun localDate(
+    utcMillis: Long,
+    zoneId: String,
+) = Instant.ofEpochMilli(utcMillis).atZone(ZoneId.of(zoneId)).toLocalDate()
+
+// Theme, prop and effect slots, plus the legacy overlay slot that older builds used for props/effects.
+private val BACKGROUND_SLOTS = listOf("BACKGROUND", "BACKGROUND_PROP", "BACKGROUND_EFFECT", "BACKGROUND_OVERLAY")
 
 private fun CosmeticItemEntity.toDomain() =
     com.monsters.mobimon.core.domain.CosmeticItem(

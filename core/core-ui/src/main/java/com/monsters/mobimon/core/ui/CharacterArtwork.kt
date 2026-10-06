@@ -24,6 +24,13 @@ data class CharacterAsset(
     val visualScale: Float = 1f,
     val translationXFraction: Float = 0f,
     val translationYFraction: Float = 0f,
+    val framing: AssetFraming? = null,
+)
+
+/** Source-image ground coordinate and body extent, independent of equipment padding. */
+data class AssetFraming(
+    val referenceSidePx: Int,
+    val groundYPx: Int,
 )
 
 data class AssetCrop(
@@ -35,6 +42,13 @@ data class AssetCrop(
 
 /** Asset IDs stay independent of composition and can be extended when artwork arrives. */
 object CharacterArtwork {
+    const val HAPPY_GROUND_FRACTION = 0.94f
+
+    // Canonical skull widths are 760px for Mobi and 872px for Luna.
+    // The normal Mobi happy texture has twice the source density of equipped ones.
+    private const val MOBI_HAPPY_REFERENCE_SIDE = 1016
+    private const val LUNA_HAPPY_REFERENCE_SIDE = 1166
+
     val characters =
         mapOf(
             "friend:mobi" to CharacterAsset(R.drawable.pet_mobi_normal_preview, translationYFraction = -35.24f / 1254f),
@@ -67,20 +81,56 @@ object CharacterArtwork {
 
     val happyCharacters =
         mapOf(
-            "friend:mobi" to CharacterAsset(R.drawable.pet_mobi_normal_happy, AssetCrop(244, 96, 2156, 2272)),
-            "friend:luna" to CharacterAsset(R.drawable.pet_luna_normal_happy, AssetCrop(49, 50, 1166, 1158)),
+            "friend:mobi" to
+                CharacterAsset(
+                    R.drawable.pet_mobi_normal_happy,
+                    AssetCrop(244, 96, 2156, 2272),
+                    framing =
+                        AssetFraming(
+                            MOBI_HAPPY_REFERENCE_SIDE * 2,
+                            2207,
+                        ),
+                ),
+            "friend:luna" to
+                CharacterAsset(
+                    R.drawable.pet_luna_normal_happy,
+                    AssetCrop(49, 50, 1166, 1158),
+                    framing = AssetFraming(LUNA_HAPPY_REFERENCE_SIDE, 1127),
+                ),
+            "friend:las" to
+                CharacterAsset(
+                    R.drawable.pet_las_normal_happy,
+                    AssetCrop(49, 50, 1166, 1158),
+                    framing = AssetFraming(1060, 1132),
+                ),
         )
 
     val happyEquippedLooks =
         mapOf(
             "accessory:mobi_headphones" to
-                CharacterAsset(R.drawable.pet_mobi_headphones_happy, AssetCrop(129, 64, 1008, 1139)),
+                CharacterAsset(
+                    R.drawable.pet_mobi_headphones_happy,
+                    AssetCrop(129, 64, 1008, 1139),
+                    framing = AssetFraming(MOBI_HAPPY_REFERENCE_SIDE, 1121),
+                ),
             "accessory:mobi_goggles" to
-                CharacterAsset(R.drawable.pet_mobi_goggles_happy, AssetCrop(152, 58, 985, 1159)),
+                CharacterAsset(
+                    R.drawable.pet_mobi_goggles_happy,
+                    AssetCrop(152, 58, 985, 1159),
+                    framing = AssetFraming(MOBI_HAPPY_REFERENCE_SIDE, 1134),
+                ),
             "accessory:luna_cap" to
-                CharacterAsset(R.drawable.pet_luna_cap_happy, AssetCrop(49, 0, 1166, 1336)),
+                CharacterAsset(
+                    R.drawable.pet_luna_cap_happy,
+                    AssetCrop(49, 0, 1166, 1336),
+                    framing = AssetFraming(LUNA_HAPPY_REFERENCE_SIDE, 1255),
+                ),
             "accessory:luna_sunglasses" to
-                CharacterAsset(R.drawable.pet_luna_sunglasses_happy, AssetCrop(49, 50, 1166, 1204)),
+                CharacterAsset(
+                    R.drawable.pet_luna_sunglasses_happy,
+                    AssetCrop(49, 50, 1166, 1204),
+                    framing = AssetFraming(LUNA_HAPPY_REFERENCE_SIDE, 1127),
+                ),
         )
 
     fun preview(
@@ -104,6 +154,14 @@ fun CharacterAssetImage(
 ) {
     val context = LocalContext.current
     val crop = asset.crop
+    asset.framing?.let { framing ->
+        val bitmap =
+            remember(context, asset.resourceId) {
+                BitmapFactory.decodeResource(context.resources, asset.resourceId).asImageBitmap()
+            }
+        GroundedCharacterAssetImage(bitmap, crop, framing, modifier, contentDescription)
+        return
+    }
     val painter =
         if (crop == null) {
             painterResource(asset.resourceId)

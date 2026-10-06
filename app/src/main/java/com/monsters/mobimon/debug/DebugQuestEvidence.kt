@@ -55,10 +55,12 @@ fun DebugVssState.deriveWeatherCondition(): WeatherCondition =
  * Derives per-quest driving evidence from the simulated VSS signals so toggling a raw signal in the
  * debug overlay advances the matching quest. [safeDriveCount] is the app-accumulated number of
  * completed safe drives (VSS holds no such history), passed in from the overlay counter.
+ * [driveId] identifies the simulated drive for per-drive quests.
  */
 fun DebugVssState.toDriveEvaluationData(
     weather: WeatherCondition = deriveWeatherCondition(),
     safeDriveCount: Int = 0,
+    driveId: String = "",
 ): DriveEvaluationData {
     val driveDistanceKm = raw.traveledDistanceSinceStartKm
     val beltMinutes =
@@ -75,6 +77,7 @@ fun DebugVssState.toDriveEvaluationData(
     val destinationReached = destinationSet && distanceToDestination <= ARRIVAL_RADIUS_METERS
 
     return DriveEvaluationData(
+        driveId = driveId,
         distanceKm = driveDistanceKm,
         safeBeltMinutes = beltMinutes,
         hardBrakeCount = if (isEmergencyBraking) 1 else 0,

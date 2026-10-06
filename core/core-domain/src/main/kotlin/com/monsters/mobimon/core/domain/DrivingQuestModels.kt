@@ -10,6 +10,10 @@ enum class WeatherCondition(
 
 data class DriveEvaluationData(
     val date: String = "",
+    // Identity of the drive this evidence describes; blank when no drive is known.
+    val driveId: String = "",
+    // Origin of this evidence; driving rewards require it to match the profile's source.
+    val source: SignalSource = SignalSource.SIMULATED,
     val distanceKm: Float = 0f,
     val safeBeltMinutes: Int = 0,
     val hardBrakeCount: Int = 0,
@@ -39,4 +43,6 @@ data class DrivingQuestResult(
     val earnedPoints: Long,
     val weatherCondition: WeatherCondition,
     val reason: String,
+    // Units counted today for capped daily quests; null for quests without a daily count.
+    val dailyCount: Int? = null,
 )

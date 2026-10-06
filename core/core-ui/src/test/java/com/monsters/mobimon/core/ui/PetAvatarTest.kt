@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import android.view.View
 import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalView
@@ -599,6 +600,61 @@ class PetAvatarTest {
         assertNotEquals(signatures.getValue("mobi-happy"), signatures.getValue("luna-happy"))
         assertTrue(signatures.getValue("mobi-happy").toSet().size > 100)
         assertTrue(signatures.getValue("luna-happy").toSet().size > 100)
+    }
+
+    @Test
+    fun lasHappyArtworkDiffersFromHisNormalArtwork() {
+        assertNotEquals(
+            CharacterArtwork.preview("friend:las", null).resourceId,
+            CharacterArtwork.happy("friend:las").resourceId,
+        )
+    }
+
+    @Test
+    fun lasHappyAvatarRendersDifferentArtFromIdle() {
+        lateinit var view: View
+        val emotion = mutableStateOf(PetEmotion.IDLE)
+        compose.setContent {
+            val currentView = LocalView.current
+            SideEffect { view = currentView }
+            MobiMonTheme {
+                PetAvatar(
+                    modifier = Modifier.testTag("las-avatar"),
+                    friendId = "friend:las",
+                    emotion = emotion.value,
+                    isAnimated = false,
+                )
+            }
+        }
+
+        val area = compose.onNodeWithTag("las-avatar").fetchSemanticsNode().boundsInRoot
+
+        fun capture(): List<Int> {
+            lateinit var pixels: List<Int>
+            compose.runOnIdle {
+                val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+                view.draw(Canvas(bitmap))
+                pixels =
+                    IntArray(area.width.toInt() * area.height.toInt())
+                        .also { values ->
+                            bitmap.getPixels(
+                                values,
+                                0,
+                                area.width.toInt(),
+                                area.left.toInt(),
+                                area.top.toInt(),
+                                area.width.toInt(),
+                                area.height.toInt(),
+                            )
+                        }.toList()
+                bitmap.recycle()
+            }
+            return pixels
+        }
+
+        val idlePixels = capture()
+        compose.runOnIdle { emotion.value = PetEmotion.HAPPY }
+        assertNotEquals(idlePixels, capture())
     }
 
     @Test

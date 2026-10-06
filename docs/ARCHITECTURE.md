@@ -50,7 +50,7 @@ state/callbacks to screens. Activity ViewModels survive navigation.
 | Profiles, rewards, wallet, inventory, equipment | Room |
 | Motion, Debug and launcher preferences | DataStore; Debug/launcher default off |
 | Vehicle and AAOS connection | `CompanionRuntime`; foreground only |
-| Driving evaluation | Repository memory; simulated, not trusted evidence |
+| Driving evaluation | Repository memory; drive evidence aggregate in DataStore |
 | Preview and animation | Renderer; equipment changes only on commit |
 
 Fresh Activity launches draw the common sky before constructing the feature graph
@@ -206,13 +206,24 @@ split rewards across Room/DataStore or replace committed data on conflict. V1–
 migrations preserve identities, evidence, rewards and equipment, including both V3
 forms; legacy XP is compatibility data, not progression.
 
+Point quest occurrences are one-time, reset-zone day, ISO week, drive ID (none means not met)
+or capped daily keys recording cumulative units, so a claim awards only new units up to
+the cap. Quest status is completed only when its current occurrence is committed;
+day/week changes are rechecked each minute.
+
+Drive evidence advances only from REAL, non-Debug snapshots whose evidence frame comes from
+a connected `VSS_ADAPTER` session with valid observations
+([DriveEvidence](../core/core-domain/src/main/kotlin/com/monsters/mobimon/core/domain/DriveEvidence.kt)).
+Moving starts a drive ID that survives restarts; Park ends it. Unobserved negative-event
+signals (acceleration, speed, lane departure, distraction) count as not met. Driving rewards
+require evidence from the profile's source, so Debug simulation cannot satisfy Release.
+
 ## Planned features
 
 ### Points, cosmetics and quest occurrences
 
-Production rewards need trusted vehicle evidence and occurrence IDs/counts. Recurrence,
-reset time and interrupted runs require explicit rules; completed IDs alone do not
-establish repeat eligibility.
+Interrupted runs require explicit rules. Real-vehicle drive evidence is unverified until a
+Release adapter exists; maintenance arrival and long-trip rest have no signal yet.
 
 ### Shared vehicle condition and overlay
 
