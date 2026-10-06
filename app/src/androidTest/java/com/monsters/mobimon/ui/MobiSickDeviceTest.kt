@@ -130,11 +130,19 @@ class MobiSickDeviceTest {
             animated = false
             Snapshot.sendApplyNotifications()
         }
-        // Settle the shared layer's subcomposition and Android draw before sampling rest pixels.
-        compose.mainClock.advanceTimeBy(200)
-        compose.waitForIdle()
-        val static = names.map { capture(it, "static-preview") }
+        // With a paused clock, nested subcompositions need frames before the still pose reaches draw.
+        var static = emptyList<Bitmap>()
+        compose.waitUntil(15_000) {
+            compose.mainClock.advanceTimeByFrame()
+            compose.waitForIdle()
+            val current = names.map { capture(it, "static-preview") }
+            val settled = static.size == current.size && static.indices.all { static[it].sameAs(current[it]) }
+            static.forEach { it.recycle() }
+            static = current
+            settled
+        }
         compose.mainClock.advanceTimeBy(1000)
+        compose.waitForIdle()
         names.indices.forEach {
             assertTrue("Explicit still previews remain static", static[it].sameAs(capture(names[it], "static-later")))
         }

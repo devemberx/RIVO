@@ -383,12 +383,13 @@ class PetAvatarTest {
     }
 
     @Test
-    fun lunaHungryAnimationCacheLoadsTwentyFourFramesFromAssets() {
+    fun lunaHungryUsesSharedPartsWithIdleGeometry() {
         val context =
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
-        val frames = LunaHungryAnimationCache.getOrLoadFrames(context)
-        assertEquals(24, frames.size)
+        val parts = LunaHungryPartsCache.getOrLoad(context)
+        assertNotNull(parts)
+        assertTrue(parts === LunaHungryPartsCache.getOrLoad(context))
     }
 
     @Test
@@ -407,7 +408,7 @@ class PetAvatarTest {
                 .getApplicationContext<android.content.Context>()
         assertNotNull(LunaIdleArtworkCache.getOrLoad(context, appearance = LunaAppearance.HAT)?.closedEyesBody)
         assertEquals(24, LunaRunAnimationCache.getOrLoadFrames(context, appearance = LunaAppearance.HAT).size)
-        assertEquals(24, LunaHungryAnimationCache.getOrLoadFrames(context, appearance = LunaAppearance.HAT).size)
+        assertNotNull(LunaHungryPartsCache.getOrLoad(context))
         assertEquals(24, LunaSickAnimationCache.getOrLoadFrames(context, appearance = LunaAppearance.HAT).size)
     }
 
@@ -458,10 +459,9 @@ class PetAvatarTest {
             val loaders =
                 listOf(
                     LunaRunAnimationCache::getOrLoadFrames,
-                    LunaHungryAnimationCache::getOrLoadFrames,
                     LunaSickAnimationCache::getOrLoadFrames,
                 )
-            val actions = listOf("run", "hungry", "sick")
+            val actions = listOf("run", "sick")
             loaders.forEachIndexed { index, load ->
                 val normal = load(context, LunaAppearance.NORMAL)
                 val hat = load(context, LunaAppearance.HAT)
@@ -676,40 +676,40 @@ class PetAvatarTest {
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
         LunaIdleArtworkCache.getOrLoad(context)
-        LunaHungryAnimationCache.getOrLoadFrames(context)
+        LunaHungryPartsCache.getOrLoad(context)
         LunaSickAnimationCache.getOrLoadFrames(context)
         LunaRunAnimationCache.getOrLoadFrames(context)
 
         assertNotNull(LunaIdleArtworkCache.peek())
-        assertNotNull(LunaHungryAnimationCache.peek())
+        assertNotNull(LunaHungryPartsCache.peek())
         assertNotNull(LunaSickAnimationCache.peek())
         assertNotNull(LunaRunAnimationCache.peek())
 
         LunaAnimationManager.retainOnly(LunaActiveAnimation.IDLE)
         assertNotNull(LunaIdleArtworkCache.peek())
         assertNotNull(LunaRunAnimationCache.peek())
-        assertNull(LunaHungryAnimationCache.peek())
+        assertNull(LunaHungryPartsCache.peek())
         assertNull(LunaSickAnimationCache.peek())
 
-        LunaHungryAnimationCache.getOrLoadFrames(context)
+        LunaHungryPartsCache.getOrLoad(context)
         LunaSickAnimationCache.getOrLoadFrames(context)
         LunaAnimationManager.retainOnly(LunaActiveAnimation.RUN)
         assertNotNull(LunaIdleArtworkCache.peek())
         assertNotNull(LunaRunAnimationCache.peek())
-        assertNull(LunaHungryAnimationCache.peek())
+        assertNull(LunaHungryPartsCache.peek())
         assertNull(LunaSickAnimationCache.peek())
 
-        LunaHungryAnimationCache.getOrLoadFrames(context)
+        LunaHungryPartsCache.getOrLoad(context)
         LunaSickAnimationCache.getOrLoadFrames(context)
         LunaAnimationManager.retainOnly(LunaActiveAnimation.HUNGRY)
-        assertNull(LunaIdleArtworkCache.peek())
-        assertNotNull(LunaHungryAnimationCache.peek())
+        assertNotNull(LunaIdleArtworkCache.peek())
+        assertNotNull(LunaHungryPartsCache.peek())
         assertNull(LunaSickAnimationCache.peek())
         assertNull(LunaRunAnimationCache.peek())
 
         LunaAnimationManager.clearAll()
         assertNull(LunaIdleArtworkCache.peek())
-        assertNull(LunaHungryAnimationCache.peek())
+        assertNull(LunaHungryPartsCache.peek())
         assertNull(LunaSickAnimationCache.peek())
         assertNull(LunaRunAnimationCache.peek())
     }

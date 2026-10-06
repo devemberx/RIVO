@@ -15,11 +15,13 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.test.StandardTestDispatcher
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -33,8 +35,10 @@ import java.io.File
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "w600dp-h400dp-mdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
+@OptIn(ExperimentalTestApi::class)
 class LunaFadeBoundsTest {
-    @get:Rule val compose = createComposeRule()
+    // Queue IO decode completions on the test clock instead of resuming composition on the IO worker.
+    @get:Rule val compose = createComposeRule(effectContext = StandardTestDispatcher())
     private lateinit var view: View
 
     @Test
