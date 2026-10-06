@@ -1,15 +1,15 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "characters": {
     "mobi": "art/characters/mobi/references/reference.json",
     "luna": "art/characters/luna/references/reference.json",
     "las": "art/characters/las/references/reference.json"
   },
-  "scope": "Mobi, Luna and Las unequipped references plus Mobi headphones/goggles and Luna cap/sunglasses references.",
   "accessories": {
     "accessory:mobi_headphones": "art/items/mobi_headphones/references/reference.json",
     "accessory:mobi_goggles": "art/items/mobi_goggles/references/reference.json",
     "accessory:luna_cap": "art/items/luna_cap/references/reference.json",
     "accessory:luna_sunglasses": "art/items/luna_sunglasses/references/reference.json"
-  }
+  },
+  "contract_path": ".agents/skills/character-animation/references/production.md"
 }

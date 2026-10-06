@@ -617,8 +617,8 @@ class QuestScreenTest {
             }
         }
         compose.onNodeWithText("8 P를 받았어요!").assertIsDisplayed()
-        compose.onNodeWithText("퀘스트 완료 · 날씨 보너스").assertIsDisplayed()
-        compose.onNodeWithText("날씨 보너스 +3 P").assertIsDisplayed()
+        compose.onNodeWithText("퀘스트 완료").assertIsDisplayed()
+        compose.onNodeWithText("날씨 보너스 +3 P").assertDoesNotExist()
         compose.onNodeWithText("보상 · 8 P (날씨 보너스 +3 P)").assertIsDisplayed()
     }
 

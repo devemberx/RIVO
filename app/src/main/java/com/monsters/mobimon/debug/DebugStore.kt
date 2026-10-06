@@ -214,6 +214,17 @@ class DebugStore
             prefs.edit().putInt(SAFE_DRIVE_COUNT_KEY, 0).apply()
         }
 
+        // Simulated drive identity for per-drive quests; it changes only when a new drive is started.
+        private val _driveId = MutableStateFlow(prefs.getString(DRIVE_ID_KEY, null) ?: newDriveId())
+        val driveId: StateFlow<String> = _driveId.asStateFlow()
+
+        fun startNewDrive() {
+            _driveId.value = newDriveId()
+        }
+
+        private fun newDriveId(): String =
+            "debug-drive-${java.util.UUID.randomUUID()}".also { prefs.edit().putString(DRIVE_ID_KEY, it).apply() }
+
         private fun loadState(): DebugVssState =
             DebugVssState(
                 cardExtraSignals =
@@ -422,6 +433,7 @@ class DebugStore
     }
 
 private const val SAFE_DRIVE_COUNT_KEY = "debug.safeDriveCount"
+private const val DRIVE_ID_KEY = "debug.driveId"
 private const val DISTRACTION_THRESHOLD_PERCENT = 70f
 private const val FATIGUE_THRESHOLD_PERCENT = 70f
 private const val ARRIVAL_THRESHOLD_METERS = 100

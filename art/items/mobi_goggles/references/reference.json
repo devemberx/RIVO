@@ -1,58 +1,21 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "item_id": "accessory:mobi_goggles",
   "character_id": "friend:mobi",
   "asset_variant": "goggles",
-  "issue": 396,
-  "coordinates": {
-    "paths": "repository-relative",
-    "rectangles": "[left,top,right,bottom), pixels; x right, y down",
-    "landmarks": "Manual visual estimates on canonical fitted PNG; item box excludes character anatomy.",
-    "head_normalization": "(point - base head-box top-left) / base head-box dimensions. Values may fall outside 0..1 for equipment extending past head."
-  },
   "base_character": {
     "manifest_path": "art/characters/mobi/references/reference.json",
-    "manifest_sha256": "a5c161ca4b16b5ac0105f60a54391ac22f00f352979ecb9f2122483f4125c42d",
-    "canonical": {
-      "path": "core/core-ui/src/main/assets/characters/mobi/normal/idle_breath/mobi_idle_breath_normal_01.png",
-      "sha256": "25f5e692bb3a4e9783a42b9752e7990e737213eeb944b560cf6dfc6b7b96c81c",
-      "size_px": [
-        1254,
-        1254
-      ],
-      "mode": "RGBA"
-    },
-    "turnaround": {
-      "path": "art/characters/mobi/references/mobi_turnaround.png",
-      "sha256": "004d27b4c7d138b0d0fb5a0a73cbe5d92723bd94367b0ac3e3834ac794d9eef6",
-      "size_px": [
-        1536,
-        1024
-      ],
-      "mode": "RGB"
-    },
-    "head_core_box_px_estimate": [
-      240,
-      295,
-      1000,
-      857
-    ]
+    "manifest_sha256": "e4721e96c90f9a9f911f92c3ea5a950207d6336a9a3e65f07ae20cbb2d9cf7ac"
   },
   "canonical_fitted": {
     "path": "art/items/mobi_goggles/references/mobi_goggles_seated_front_master.png",
     "sha256": "f90ba1db9a8afbbd490f0e6136d33b7b9df897c44b62a093b1d76236219f503c",
-    "size_px": [
-      1254,
-      1254
-    ],
+    "size_px": [1254, 1254],
     "mode": "RGBA",
     "source": {
       "path": "core/core-ui/src/main/assets/characters/mobi/goggles/idle_breath/mobi_idle_breath_goggles_01.png",
       "sha256": "f90ba1db9a8afbbd490f0e6136d33b7b9df897c44b62a093b1d76236219f503c",
-      "size_px": [
-        1254,
-        1254
-      ],
+      "size_px": [1254, 1254],
       "mode": "RGBA"
     },
     "approval": "existing_project_canonical",
@@ -60,213 +23,65 @@
     "equipped_item_ids": [
       "accessory:mobi_goggles"
     ],
-    "alpha_bounds_px": [
-      176,
-      56,
-      1067,
-      1157
-    ],
+    "alpha_bounds_px": [176, 56, 1067, 1157],
     "alpha_threshold": 128,
-    "item_bounds_px_estimate": [
-      230,
-      244,
-      1026,
-      525
-    ],
+    "item_bounds_px_estimate": [230, 244, 1026, 525],
     "attachment_points_px_estimate": {
-      "bridge": [
-        628,
-        399
-      ],
-      "buckle_screen_left": [
-        270,
-        407
-      ],
-      "buckle_screen_right": [
-        990,
-        443
-      ]
-    },
-    "attachment_points_head_uv_estimate": {
-      "bridge": [
-        0.5105,
-        0.1851
-      ],
-      "buckle_screen_left": [
-        0.0395,
-        0.1993
-      ],
-      "buckle_screen_right": [
-        0.9868,
-        0.2633
-      ]
-    },
-    "item_width_over_base_head_width_estimate": 1.0474,
-    "notes": "Preserved byte-for-byte. This fitted master takes precedence over inferred sheet views."
+      "bridge": [628, 399],
+      "buckle_screen_left": [270, 407],
+      "buckle_screen_right": [990, 443]
+    }
   },
   "turnaround": {
     "path": "art/items/mobi_goggles/references/mobi_goggles_turnaround.png",
     "sha256": "75ada5b6a752db4da3fd91bdf4dd5b66e1eb766eadbc14e233f5f7ed8844dce4",
-    "size_px": [
-      1254,
-      1254
-    ],
+    "size_px": [1254, 1254],
     "mode": "RGB",
-    "tool": "built-in image_gen patches; user-authorized Python/Pillow regional compositing",
-    "generation_source_name": "exec-bbeb5081-cd46-4e93-898e-bba2e1aaaa34.png",
-    "background": "opaque neutral gray; reference-only, not runtime animation frames",
-    "layout": {
-      "columns": 3,
-      "rows": 3,
-      "column_bounds_px": [
-        0,
-        418,
-        836,
-        1254
-      ],
-      "row_bounds_px": [
-        0,
-        280,
-        720,
-        1254
-      ],
-      "note": "Use explicit rectangles; generation does not produce equal-height content rows."
-    },
     "views": [
       {
         "id": "item_front",
-        "subject": "item_only",
-        "pose": null,
-        "view": "front",
-        "rect_px": [
-          0,
-          0,
-          418,
-          280
-        ],
-        "camera": "front-facing",
-        "default_pose_prop": null,
-        "scale_note": "Standalone product view is enlarged for inspection; do not derive fit scale from it."
+        "rect_px": [0, 0, 418, 280],
+        "camera": "front-facing"
       },
       {
         "id": "item_side_left",
-        "subject": "item_only",
-        "pose": null,
-        "view": "side_left",
-        "rect_px": [
-          418,
-          0,
-          836,
-          280
-        ],
-        "camera": "illustrative left-facing oblique/profile; not angle-calibrated",
-        "default_pose_prop": null,
-        "scale_note": "Standalone product view is enlarged for inspection; do not derive fit scale from it."
+        "rect_px": [418, 0, 836, 280],
+        "camera": "illustrative left-facing oblique/profile; not angle-calibrated"
       },
       {
         "id": "item_back",
-        "subject": "item_only",
-        "pose": null,
-        "view": "back",
-        "rect_px": [
-          836,
-          0,
-          1254,
-          280
-        ],
-        "camera": "rear-facing",
-        "default_pose_prop": null,
-        "scale_note": "Standalone product view is enlarged for inspection; do not derive fit scale from it."
+        "rect_px": [836, 0, 1254, 280],
+        "camera": "rear-facing"
       },
       {
         "id": "seated_front",
-        "subject": "equipped_character",
-        "pose": "seated",
-        "view": "front",
-        "rect_px": [
-          0,
-          280,
-          418,
-          720
-        ],
-        "camera": "front-facing",
-        "default_pose_prop": "steering_wheel",
-        "scale_note": "Use canonical fitted source and base head width to establish scale, not sheet cell width."
+        "rect_px": [0, 280, 418, 720],
+        "camera": "front-facing"
       },
       {
         "id": "seated_side_left",
-        "subject": "equipped_character",
-        "pose": "seated",
-        "view": "side_left",
-        "rect_px": [
-          418,
-          280,
-          836,
-          720
-        ],
-        "camera": "illustrative left-facing oblique/profile; not angle-calibrated",
-        "default_pose_prop": "steering_wheel",
-        "scale_note": "Use canonical fitted source and base head width to establish scale, not sheet cell width."
+        "rect_px": [418, 280, 836, 720],
+        "camera": "illustrative left-facing oblique/profile; not angle-calibrated"
       },
       {
         "id": "seated_back",
-        "subject": "equipped_character",
-        "pose": "seated",
-        "view": "back",
-        "rect_px": [
-          836,
-          280,
-          1254,
-          720
-        ],
-        "camera": "rear-facing",
-        "default_pose_prop": "steering_wheel",
-        "scale_note": "Use canonical fitted source and base head width to establish scale, not sheet cell width."
+        "rect_px": [836, 280, 1254, 720],
+        "camera": "rear-facing"
       },
       {
         "id": "standing_front",
-        "subject": "equipped_character",
-        "pose": "standing",
-        "view": "front",
-        "rect_px": [
-          0,
-          720,
-          418,
-          1254
-        ],
-        "camera": "front-facing",
-        "default_pose_prop": null,
-        "scale_note": "Use canonical fitted source and base head width to establish scale, not sheet cell width."
+        "rect_px": [0, 720, 418, 1254],
+        "camera": "front-facing"
       },
       {
         "id": "standing_side_left",
-        "subject": "equipped_character",
-        "pose": "standing",
-        "view": "side_left",
-        "rect_px": [
-          418,
-          720,
-          836,
-          1254
-        ],
-        "camera": "illustrative left-facing oblique/profile; not angle-calibrated",
-        "default_pose_prop": null,
-        "scale_note": "Use canonical fitted source and base head width to establish scale, not sheet cell width."
+        "rect_px": [418, 720, 836, 1254],
+        "camera": "illustrative left-facing oblique/profile; not angle-calibrated"
       },
       {
         "id": "standing_back",
-        "subject": "equipped_character",
-        "pose": "standing",
-        "view": "back",
-        "rect_px": [
-          836,
-          720,
-          1254,
-          1254
-        ],
-        "camera": "rear-facing",
-        "default_pose_prop": null,
-        "scale_note": "Use canonical fitted source and base head width to establish scale, not sheet cell width."
+        "rect_px": [836, 720, 1254, 1254],
+        "camera": "rear-facing"
       }
     ],
     "review": {
@@ -285,28 +100,7 @@
         "Side views are oblique/profile references, not calibrated orthographic projections.",
         "Static reference review does not prove frame-to-frame animation stability; use canonical measurements to correct generated drift."
       ],
-      "evidence": "https://github.com/devemberx/mobimon/issues/396",
-      "corrections": [
-        "Seated wheel-holding rear view retains only narrow upper-arm edges below the head; forward hands and feet are occluded by the torso. Do not widen the torso to hide limbs."
-      ]
-    },
-    "compositing": {
-      "regions_px": [
-        [
-          920,
-          599,
-          1168,
-          739
-        ]
-      ],
-      "outside_mask_changed_pixels": 0,
-      "method": "Original RGB plus reviewed generated patches",
-      "feather_radius_px": 2,
-      "head_contour_feather_px": null,
-      "canonical_paste": null,
-      "original_sha256": "bd2f9c0f6a248a6e242255c83e1e0fbcc3d1ed267616f74d96a73ebb366e0ff6",
-      "original_git_commit": "26ec198f29077a0d3c0c069ca62b34439e39b401",
-      "mask_sha256": "45437cecb4fb9597f451f5fa2bd6619abf6842b9c4c3a34b775a4f3f82e98ee8"
+      "evidence": "https://github.com/devemberx/mobimon/issues/396"
     }
   },
   "identity_constraints": [
@@ -324,18 +118,6 @@
     "occlusion": [
       "Rear strap behind head in front view.",
       "Near buckle in front of near ear boundary; lenses on front forehead only."
-    ],
-    "transform": "Rigidly follow skull translation/rotation at the canonical relative scale. No independent floating, stretching or per-frame fit-to-bounds.",
-    "character_invariants": "Preserve base head/body ratio, silhouette and anchors. Keep both sprout leaves and stem; do not add a tail or upright ears. Seated wheel-holding rear view retains only narrow upper-arm edges below the head; forward hands and feet are occluded by the torso. Do not widen the torso to hide limbs."
-  },
-  "generation_gate": {
-    "requires": [
-      "base_character canonical and turnaround",
-      "canonical_fitted",
-      "reviewed item turnaround"
-    ],
-    "on_missing_or_hash_mismatch": "Stop generation and resolve missing/unreviewed references; do not invent a replacement.",
-    "pose_selection": "Seated wheel-holding idle and empty-handed standing use the same fitted item geometry and skull attachment.",
-    "runtime_boundary": "Reference-only files under art. No runtime resource replacement or automatic image-path loading is introduced."
+    ]
   }
 }

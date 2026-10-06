@@ -302,6 +302,8 @@ class DecorativeMotionTest {
                 }
             }
         }
+        // The idle fallback already breathes while the run frames are still decoding.
+        awaitLunaAnimation("running")
         awaitLunaAnimation("moving")
         val first = pixels("moving")
         compose.mainClock.advanceTimeBy(320)
@@ -313,7 +315,10 @@ class DecorativeMotionTest {
         // Neighbouring cells rasterize slightly differently, so compare against the run cycle's distance.
         val idleDistance = moving.indices.count { moving[it] != idle[it] }
         val runDistance = moving.indices.count { moving[it] != running[it] }
-        assertTrue("Reduced motion swaps running for the idle breath", idleDistance * 4 < runDistance)
+        assertTrue(
+            "Reduced motion swaps running for the idle breath: idle=$idleDistance, run=$runDistance",
+            idleDistance * 4 < runDistance,
+        )
     }
 
     @Test

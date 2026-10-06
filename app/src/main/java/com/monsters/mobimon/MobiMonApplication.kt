@@ -9,6 +9,7 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.monsters.mobimon.core.domain.GitHubAuthentication
 import com.monsters.mobimon.runtime.CompanionRuntime
+import com.monsters.mobimon.runtime.DriveEvidenceProducer
 import dagger.Lazy
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +22,8 @@ import javax.inject.Inject
 class MobiMonApplication : Application() {
     @Inject lateinit var runtime: CompanionRuntime
 
+    @Inject lateinit var driveEvidence: DriveEvidenceProducer
+
     @Inject lateinit var authentication: Lazy<GitHubAuthentication>
 
     private val _activityInForeground = MutableStateFlow(false)
@@ -28,6 +31,8 @@ class MobiMonApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // Verified vehicle evidence only; Debug and fallback snapshots are ignored.
+        driveEvidence.start()
         registerActivityLifecycleCallbacks(
             object : ActivityLifecycleCallbacks {
                 override fun onActivityResumed(activity: Activity) {

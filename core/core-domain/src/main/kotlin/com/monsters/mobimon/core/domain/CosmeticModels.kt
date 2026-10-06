@@ -2,6 +2,10 @@ package com.monsters.mobimon.core.domain
 
 enum class CosmeticSlot { FRIEND, OUTFIT, ACCESSORY, BACKGROUND }
 
+/** Hidden background quest rule shared by display and award: any non-default theme, prop or effect counts. */
+fun hasCustomBackground(vararg equippedBackgroundIds: String?): Boolean =
+    equippedBackgroundIds.any { !it.isNullOrBlank() && it != "none" && it != "background:default" }
+
 data class CosmeticItem(
     val id: String,
     val slot: CosmeticSlot,
