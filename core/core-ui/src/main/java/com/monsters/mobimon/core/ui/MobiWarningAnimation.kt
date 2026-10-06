@@ -72,14 +72,14 @@ internal object MobiDizzyStarsTimeline {
 internal object MobiCollapsedSpriteCache {
     const val CELL = 408
     const val LOGICAL_CELL = 256
-    const val DEFAULT_ASSET_PATH = "characters/mobi/normal/sick/mobi_collapsed_normal_sprite.png"
+    const val DEFAULT_ASSET_PATH = "characters/mobi/normal/sick/mobi_sick_normal_collapsed_sprite.png"
 
     private fun assetPathFor(accessoryId: String?): String =
         when (accessoryId) {
             "accessory:mobi_headphones" ->
-                "characters/mobi/headphones/sick/mobi_collapsed_headphones_sprite.png"
+                "characters/mobi/headphones/sick/mobi_sick_headphones_collapsed_sprite.png"
             "accessory:mobi_goggles" ->
-                "characters/mobi/goggles/sick/mobi_collapsed_goggles_sprite.png"
+                "characters/mobi/goggles/sick/mobi_sick_goggles_collapsed_sprite.png"
             else -> DEFAULT_ASSET_PATH
         }
 
@@ -127,7 +127,7 @@ internal object MobiCollapsedSpriteCache {
 
 internal object MobiDizzyStarsSpriteCache {
     const val CELL = 408
-    const val ASSET_PATH = "characters/mobi/normal/sick/mobi_dizzy_stars_sprite.png"
+    const val ASSET_PATH = "characters/mobi/normal/sick/mobi_sick_normal_stars_sprite.png"
 
     @Volatile private var cached: ImageBitmap? = null
 
@@ -236,20 +236,13 @@ fun MobiIdleBreathAnimation(
                     }
                 CompanionStatus.HUNGRY ->
                     Box(Modifier.fillMaxSize().testTag("mobi-hungry-layer")) {
-                        if (animateNormal) {
-                            NormalMobiHungryAnimation(
-                                modifier = Modifier.fillMaxSize(),
-                                contentDescription = null,
-                                accessoryId = accessoryId,
-                                fallbackAsset = CharacterArtwork.hungry("friend:mobi", accessoryId),
-                            )
-                        } else {
-                            CharacterAssetImage(
-                                CharacterArtwork.hungry("friend:mobi", accessoryId),
-                                Modifier.fillMaxSize(),
-                                null,
-                            )
-                        }
+                        NormalMobiHungryAnimation(
+                            modifier = Modifier.fillMaxSize(),
+                            contentDescription = null,
+                            accessoryId = accessoryId,
+                            fallbackAsset = CharacterArtwork.preview("friend:mobi", accessoryId),
+                            animateFrames = animateNormal && enabled,
+                        )
                     }
                 CompanionStatus.SICK -> {
                     val sheet = sprite

@@ -40,7 +40,7 @@
   },
   "canonical_fitted": {
     "path": "art/items/mobi_headphones/references/mobi_headphones_seated_front_master.png",
-    "sha256": "37c94c383c0356c8c2cb09061aa6f523c8c7bc9d74c7baef57e0e579bd1bc30e",
+    "sha256": "d87d3aa1e05a6da2685f62ccab4992d916d946577ae447e2f8077b8ea968b3e6",
     "size_px": [
       1254,
       1254
@@ -55,7 +55,7 @@
       ],
       "mode": "RGBA"
     },
-    "approval": "existing_project_canonical",
+    "approval": "reviewed_reference_revision",
     "pose": "seated_front",
     "equipped_item_ids": [
       "accessory:mobi_headphones"
@@ -102,7 +102,34 @@
       ]
     },
     "item_width_over_base_head_width_estimate": 1.3355,
-    "notes": "Preserved byte-for-byte. This fitted master takes precedence over inferred sheet views."
+    "notes": "Localized sprout/headband junction repair. Fitted proportions, anchors and all pixels outside the recorded correction region are preserved. The recorded runtime source remains unchanged.",
+    "revision_review": {
+      "status": "accepted_for_reference",
+      "reviewer": "Codex",
+      "authority": "User explicitly requested repair of broken pixels near the sprout in the art headphones master, with a close-up defect reference.",
+      "date": "2026-10-06",
+      "reason": "Repair white gaps and jagged alpha/color edges where the cyan stem and lower leaves meet the navy headband.",
+      "evidence": "https://github.com/devemberx/mobimon/issues/399",
+      "separate_user_visual_signoff": false,
+      "source_sha256": "37c94c383c0356c8c2cb09061aa6f523c8c7bc9d74c7baef57e0e579bd1bc30e",
+      "revised_sha256": "d87d3aa1e05a6da2685f62ccab4992d916d946577ae447e2f8077b8ea968b3e6",
+      "scope": "reference_only",
+      "tool": "Built-in image_gen with regional Node.js RGBA compositing",
+      "compositing": {
+        "region_px": [
+          570,
+          235,
+          905,
+          340
+        ],
+        "feather_px": 10,
+        "changed_pixels": 30563,
+        "outside_mask_changed_pixels": 0,
+        "width": 1254,
+        "height": 1254,
+        "method": "Built-in image_gen repair, regional RGBA compositing in Node.js"
+      }
+    }
   },
   "turnaround": {
     "path": "art/items/mobi_headphones/references/mobi_headphones_turnaround.png",

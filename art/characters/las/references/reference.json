@@ -18,7 +18,7 @@
     ],
     "mode": "RGBA",
     "source": {
-      "path": "core/core-ui/src/main/res/drawable-nodpi/mobimon_las.png",
+      "path": "core/core-ui/src/main/res/drawable-nodpi/pet_las_normal_preview.png",
       "sha256": "f6cc29193567bf28ca2c58077c03d6e536886aeaf2c2dac38f60e67735593d70",
       "size_px": [
         475,

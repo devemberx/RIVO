@@ -62,6 +62,10 @@ Full-screen SVGs are references, not runtime assets.
 | Feature artwork/icons | Owning module's `res/drawable[-nodpi]/` |
 | UI references / temporary drafts | [docs/ui](ui/README.md) / ignored `output/imagegen/`, `tmp/imagegen/` |
 
+Luna transition frames with identical bytes share files through
+[LunaScene](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/LunaScene.kt);
+the full 24-frame sequence and its timing remain intact.
+
 #### Character and item references
 
 The [reference catalog](../art/characters/reference_catalog.json) is the common
@@ -75,6 +79,26 @@ existing runtime motion. Preserve the corrected attachment and occlusion rules i
 each manifest when deriving new views.
 Use the [character animation workflow](../.agents/skills/character-animation/SKILL.md)
 for reference checks, motion review and runtime export.
+
+#### Character and item asset names
+
+Store accessory icons are pre-extracted lossless WebP files in `drawable-nodpi`;
+keep their original crop canvas so Store sizing stays stable. Do not package mixed
+item/reference sheets after all consumers use standalone exports. Reference masters
+remain under `art/`.
+
+| Use | Name / location | Example |
+| --- | --- | --- |
+| Store accessory icon | `drawable-nodpi/store_item_<character>_<item>.webp` | `store_item_mobi_headphones.webp` |
+| Static character preview or pose | `drawable-nodpi/pet_<character>_<appearance>_<state>.<ext>` | `pet_mobi_headphones_preview.png` |
+| Animation frame, atlas or part | `assets/characters/<character>/<appearance>/<action>/<character>_<action>[_direction]_<appearance>_<part-or-frame>.<ext>` | `mobi_hungry_headphones_base.webp`, `mobi_run_left_normal_sprite.png` |
+| Animation data | Same animation prefix and folder with its data extension | `mobi_hungry_normal_face.morph` |
+
+Use `normal` for an unequipped appearance and `shared` for appearance-independent
+parts. A reused appearance-specific file keeps its source name; consumers alias it
+instead of duplicating bytes. Keep `art` masters and cosmetic ownership IDs
+independent of runtime filenames. Update dynamic loaders, reference source paths
+and tests in the same change when renaming assets.
 
 #### Background resource names
 
@@ -201,6 +225,14 @@ a representative pose. Vehicle warnings take priority over hunger.
 Mobi normal, headphones and goggles idle share the same body motion, blink and
 sprout timing; fitted items follow the head with their own sprout occlusion.
 Still previews retain the canonical open-eye pose.
+Mobi hungry appearances share a six-second loop: a longer carrot thought, a
+scrunched expression and two short hunger shakes. The head dip and expression
+start with the thought bubble fade; equipped crowns use the fitted masters.
+Headphones and goggles follow the head rigidly; reduced motion retains an equipped hungry pose.
+Hungry rendering loads pre-extracted lossless WebP parts and precomputed facial
+morph data; the six-second timeline is procedural, not an animated WebP file.
+Hungry body/equipment textures and expression parts retain the idle master's
+pixel density; logical animation coordinates must not limit texture resolution.
 
 Respect the shared motion preference; animation never authorizes commands.
 Settings controls floating wandering; unknown/failed reads keep it stationary.

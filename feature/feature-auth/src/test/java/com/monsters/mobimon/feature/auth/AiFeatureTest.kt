@@ -20,6 +20,7 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -141,9 +142,16 @@ class AiFeatureTest {
         val normal = avatarPixels()
 
         compose.runOnIdle { vehicleSnapshots.value = vehicleSnapshots.value.copy(batteryPercent = 10) }
+        compose.waitUntil(10_000) {
+            compose.onAllNodesWithTag("mobi-hungry-normal", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+        }
         val hungry = avatarPixels()
 
         compose.runOnIdle { vehicleSnapshots.value = vehicleSnapshots.value.copy(tirePressureStatus = "NG") }
+        // The scene retains the outgoing status until the asynchronously decoded sick artwork is ready.
+        compose.waitUntil(10_000) {
+            compose.onAllNodesWithTag("mobi-sick-layer", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+        }
         val sick = avatarPixels()
 
         val hungryPixels = normal.indices.count { normal[it] != hungry[it] }
