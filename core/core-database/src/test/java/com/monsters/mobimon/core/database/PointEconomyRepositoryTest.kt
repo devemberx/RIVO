@@ -122,7 +122,7 @@ class PointEconomyRepositoryTest {
             companion.initialize()
             assertEquals(item.id, repository.inventory.first().equippedItemIds[CosmeticSlot.BACKGROUND])
             assertEquals(200L, repository.wallet.first().balance)
-            assertEquals(EquipResult.Applied, repository.unequip(CosmeticSlot.BACKGROUND))
+            assertEquals(EquipResult.Applied, repository.equip("none:background_prop"))
             assertNull(repository.inventory.first().equippedItemIds[CosmeticSlot.BACKGROUND])
             assertTrue(item.id in repository.inventory.first().ownedItemIds)
         }
@@ -155,7 +155,7 @@ class PointEconomyRepositoryTest {
             companion.initialize()
             assertEquals(item.id, repository.inventory.first().equippedItemIds[CosmeticSlot.BACKGROUND])
             assertEquals(200L, repository.wallet.first().balance)
-            assertEquals(EquipResult.Applied, repository.unequip(CosmeticSlot.BACKGROUND))
+            assertEquals(EquipResult.Applied, repository.equip("none:background_prop"))
             assertNull(repository.inventory.first().equippedItemIds[CosmeticSlot.BACKGROUND])
             assertTrue(item.id in repository.inventory.first().ownedItemIds)
         }
@@ -226,6 +226,45 @@ class PointEconomyRepositoryTest {
             inv = repository.inventory.first()
             assertEquals("background:cyberpunk_city", inv.equippedItemIds[CosmeticSlot.BACKGROUND])
             assertNull(inv.backgroundPropId)
+        }
+
+    @Test
+    fun applyingDefaultBackgroundPreservesEquippedPropsAndEffects() =
+        runBlocking {
+            val companion =
+                RoomCompanionRepository(
+                    database,
+                    com.monsters.mobimon.core.domain
+                        .ProgressionIdentity("profile", SignalSource.REAL),
+                    Clock { 10_000 },
+                    IdGenerator { "bg-${ids.incrementAndGet()}" },
+                    QuestEvaluator(15_000),
+                    CurrentVehicleEvidence { vehicle },
+                    CurrentAppUse { appUse },
+                )
+            companion.initialize()
+            database.economyDao().credit("profile", 1000, Long.MAX_VALUE - 1000)
+
+            val cyberpunk = repository.catalog.first().single { it.id == "background:cyberpunk_city" }
+            val hanger = repository.catalog.first().single { it.id == "background:star_hanger" }
+            val star = repository.catalog.first().single { it.id == "background:star" }
+
+            assertEquals(PurchaseResult.Purchased(700), repository.purchase(cyberpunk.id, 400))
+            assertEquals(PurchaseResult.Purchased(500), repository.purchase(hanger.id, 200))
+            assertEquals(PurchaseResult.Purchased(300), repository.purchase(star.id, 200))
+
+            assertEquals(EquipResult.Applied, repository.equip(cyberpunk.id))
+            assertEquals(EquipResult.Applied, repository.equip(hanger.id))
+            assertEquals(EquipResult.Applied, repository.equip(star.id))
+
+            var inv = repository.inventory.first()
+            assertEquals("background:star_hanger", inv.backgroundPropId)
+            assertEquals("background:star", inv.backgroundEffectId)
+
+            assertEquals(EquipResult.Applied, repository.equip("none:background"))
+            inv = repository.inventory.first()
+            assertEquals("background:star_hanger", inv.backgroundPropId)
+            assertEquals("background:star", inv.backgroundEffectId)
         }
 
     @Test
