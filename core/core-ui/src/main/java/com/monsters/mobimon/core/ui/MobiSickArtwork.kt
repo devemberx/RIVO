@@ -93,41 +93,22 @@ internal enum class MobiSickArtworkSpec(
     }
 }
 
-/** Fixed ring pixels are revealed by moving gaps; no animated color, glow or overlapping strokes. */
-private class MobiSickRenderer(
-    body: ImageBitmap,
-    star: ImageBitmap,
-    private val spec: MobiSickArtworkSpec,
-) {
-    private val body = body.asAndroidBitmap()
-    private val star = star.asAndroidBitmap()
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
-    private val eyePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(9, 11, 17) }
-    private val maskPaint =
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE
-            strokeWidth = 10f
-            strokeCap = Paint.Cap.ROUND
-            strokeJoin = Paint.Join.ROUND
-        }
-    private val path = Path()
-    private val mask = Path()
-    private val eye = Path()
-    private val ellipse = RectF(-58f, -20f, 58f, 20f)
-    private val orbitMatrix =
-        Matrix().apply {
-            setRotate((-.20 * 180 / PI).toFloat())
-            postTranslate(205f, 122f)
-        }
-    private val bodyMatrix = Matrix()
-    private val bodyValues = floatArrayOf(1f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 1f)
-    private val bounds = RectF(0f, 0f, 408f, 408f)
-    private val bodyBounds = RectF(spec.left, spec.top, spec.left + spec.extent, spec.top + spec.extent)
-    private val starBounds = RectF()
-    private val starOrder = intArrayOf(0, 1, 2)
-    private val ring = makeRing()
+/** Prepare the fixed ring on IO; every appearance and renderer shares its immutable pixels. */
+internal object MobiSickRingCache {
+    @Volatile private var cached: Bitmap? = null
+
+    fun peek(): Bitmap? = cached
+
+    @Synchronized
+    fun getOrLoad(): Bitmap = cached ?: makeRing().also { cached = it }
 
     private fun makeRing(): Bitmap {
+        val ellipse = RectF(-58f, -20f, 58f, 20f)
+        val orbitMatrix =
+            Matrix().apply {
+                setRotate((-.20 * 180 / PI).toFloat())
+                postTranslate(205f, 122f)
+            }
         val bitmap = Bitmap.createBitmap(816, 816, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         canvas.scale(2f, 2f)
@@ -176,6 +157,41 @@ private class MobiSickRenderer(
         canvas.restore()
         return bitmap
     }
+}
+
+/** Fixed ring pixels are revealed by moving gaps; no animated color, glow or overlapping strokes. */
+internal class MobiSickRenderer(
+    body: ImageBitmap,
+    star: ImageBitmap,
+    private val spec: MobiSickArtworkSpec,
+    private val ring: Bitmap,
+) {
+    private val body = body.asAndroidBitmap()
+    private val star = star.asAndroidBitmap()
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+    private val eyePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(9, 11, 17) }
+    private val maskPaint =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 10f
+            strokeCap = Paint.Cap.ROUND
+            strokeJoin = Paint.Join.ROUND
+        }
+    private val path = Path()
+    private val mask = Path()
+    private val eye = Path()
+    private val ellipse = RectF(-58f, -20f, 58f, 20f)
+    private val orbitMatrix =
+        Matrix().apply {
+            setRotate((-.20 * 180 / PI).toFloat())
+            postTranslate(205f, 122f)
+        }
+    private val bodyMatrix = Matrix()
+    private val bodyValues = floatArrayOf(1f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 1f)
+    private val bounds = RectF(0f, 0f, 408f, 408f)
+    private val bodyBounds = RectF(spec.left, spec.top, spec.left + spec.extent, spec.top + spec.extent)
+    private val starBounds = RectF()
+    private val starOrder = intArrayOf(0, 1, 2)
 
     fun draw(
         canvas: Canvas,
@@ -285,10 +301,11 @@ internal fun Modifier.mobiSickArtwork(
     body: ImageBitmap,
     star: ImageBitmap,
     spec: MobiSickArtworkSpec,
+    ring: Bitmap,
     elapsedNanos: () -> Long,
 ): Modifier =
     drawWithCache {
-        val renderer = MobiSickRenderer(body, star, spec)
+        val renderer = MobiSickRenderer(body, star, spec, ring)
         onDrawBehind {
             drawIntoCanvas { canvas ->
                 val native = canvas.nativeCanvas

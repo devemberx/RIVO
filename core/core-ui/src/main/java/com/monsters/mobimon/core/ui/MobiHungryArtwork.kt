@@ -177,6 +177,49 @@ internal class MobiHungryFacePart(
         )
     private val count = rect.width() * rect.height()
 
+    // Prepared on the loader's worker before publishing the cache entry. The two
+    // original endpoints retain their alpha; 64 opaque interior samples can blend
+    // directly over each other without a saveLayer or rewritten texture.
+    val expressions: List<Bitmap> =
+        run {
+            val pixels = IntArray(count)
+            List(EXPRESSION_SAMPLES + 2) { index ->
+                val amount =
+                    when (index) {
+                        0 -> 0f
+                        EXPRESSION_SAMPLES + 1 -> 1f
+                        else -> ((index - 1f) / (EXPRESSION_SAMPLES - 1)).coerceIn(Float.MIN_VALUE, Math.nextDown(1f))
+                    }
+                pixelsAt(amount, pixels)
+                Bitmap.createBitmap(pixels, rect.width(), rect.height(), Bitmap.Config.ARGB_8888)
+            }
+        }
+
+    fun draw(
+        canvas: Canvas,
+        paint: Paint,
+        amount: Float,
+    ) {
+        val expression = amount.coerceIn(0f, 1f)
+        if (expression == 0f || expression == 1f) {
+            canvas.drawBitmap(expressions[if (expression == 0f) 0 else expressions.lastIndex], null, destination, paint)
+            return
+        }
+        val position = 1 + expression * (EXPRESSION_SAMPLES - 1)
+        val lower = position.toInt()
+        canvas.drawBitmap(expressions[lower], null, destination, paint)
+        val alpha = ((position - lower) * 255).roundToInt()
+        if (alpha > 0 && lower < EXPRESSION_SAMPLES) {
+            paint.alpha = alpha
+            canvas.drawBitmap(expressions[lower + 1], null, destination, paint)
+            paint.alpha = 255
+        }
+    }
+
+    private companion object {
+        const val EXPRESSION_SAMPLES = 64
+    }
+
     fun pixelsAt(
         amount: Float,
         out: IntArray,
@@ -217,12 +260,6 @@ internal class MobiHungryRenderer(
 
     private val thoughtBounds = RectF(197f, 8f, 256f, 72f)
     private val wheel = Path().apply { addOval(RectF(86f, 149f, 169f, 223f), Path.Direction.CW) }
-    private val patches =
-        artwork.face.map {
-            Bitmap.createBitmap(it.rect.width(), it.rect.height(), Bitmap.Config.ARGB_8888)
-        }
-    private val pixels = artwork.face.map { IntArray(it.rect.width() * it.rect.height()) }
-    private var lastExpression = -1f
 
     fun draw(
         canvas: Canvas,
@@ -238,23 +275,8 @@ internal class MobiHungryRenderer(
         canvas.clipRect(0f, 0f, 256f, 170f)
         canvas.drawBitmap(artwork.base, null, full, paint)
         if (pose.expression > 0f) {
-            artwork.face.forEachIndexed { index, part ->
-                if (lastExpression != pose.expression) {
-                    part.pixelsAt(pose.expression, pixels[index])
-                    patches[index].setPixels(
-                        pixels[index],
-                        0,
-                        part.rect.width(),
-                        0,
-                        0,
-                        part.rect.width(),
-                        part.rect.height(),
-                    )
-                }
-                canvas.drawBitmap(patches[index], null, part.destination, paint)
-            }
+            artwork.face.forEach { part -> part.draw(canvas, paint, pose.expression) }
         }
-        lastExpression = pose.expression
         canvas.restoreToCount(head)
         val foreground = canvas.save()
         canvas.clipPath(wheel)

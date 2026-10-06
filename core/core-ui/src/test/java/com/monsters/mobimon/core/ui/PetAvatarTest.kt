@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -32,7 +33,7 @@ class PetAvatarTest {
     val compose = createComposeRule()
 
     @Test
-    fun mobiShowsItsSpriteOnTheFirstRenderedFrame() {
+    fun mobiShowsItsCanonicalSpriteAfterColdBackgroundLoad() {
         MobiSpriteCache.clear()
         compose.mainClock.autoAdvance = false
         compose.setContent {
@@ -41,6 +42,7 @@ class PetAvatarTest {
             }
         }
 
+        awaitMobiFirstFrame("headphones")
         compose.onNodeWithTag("mobi-animation-frame-headphones", useUnmergedTree = true).assertExists()
     }
 
@@ -53,8 +55,19 @@ class PetAvatarTest {
             }
         }
 
+        awaitMobiFirstFrame("goggles")
         compose.onNodeWithTag("mobi-animation-frame-goggles", useUnmergedTree = true).assertExists()
         assertNull(MobiSpriteCache.peek("accessory:mobi_goggles"))
+    }
+
+    private fun awaitMobiFirstFrame(appearance: String) {
+        compose.waitUntil(10_000) {
+            compose.mainClock.advanceTimeByFrame()
+            compose
+                .onAllNodesWithTag("mobi-animation-frame-$appearance", useUnmergedTree = true)
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
     }
 
     @Test

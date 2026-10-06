@@ -41,10 +41,11 @@ class MobiHungryPartsTest {
             assertEquals("$name master height", 627, art.base.height)
             assertEquals("$name expression parts", 3, art.face.size)
             assertTrue(
-                "$name decoded bitmap budget",
+                "$name decoded bitmap budget including expression cache (6 MiB)",
                 art.base.allocationByteCount +
-                    art.thought.allocationByteCount + art.rumble.allocationByteCount <
-                    1_900_000,
+                    art.thought.allocationByteCount + art.rumble.allocationByteCount +
+                    art.face.sumOf { part -> part.expressions.sumOf { it.allocationByteCount } } <
+                    6_291_456,
             )
             assertTrue(context.assets.list("characters/mobi/$name/hungry")!!.none { it.endsWith(".png") })
         }
