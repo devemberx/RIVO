@@ -207,8 +207,13 @@ Still previews retain the canonical open-eye pose. Sick appearances share a
 the home movement preference stops travel while these gestures continue.
 Explicit nonanimated previews hold the first pose. See [sick motion](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/MobiSickArtwork.kt).
 
-Luna idle keeps its 2.2-second loop, blends adjacent breathing poses and uses
-crisp, shorter blink poses; normal, cap and sunglasses retain their fitted artwork.
+Luna normal, cap and sunglasses idle share a continuous 2.2-second breath with
+uniform scaling about the ground anchor, retaining the reviewed inhale/exhale
+timing and ear-top excursion. Like Mobi, `idle_layers` WebP sources
+build cached body, eye and hat-sprout layers; sunglasses need no eye overlay.
+The sprout moves about its retained root while the cap stays fitted from the
+master head width and eye line. Equipment changes
+preserve the breath phase; still previews hold the open-eye rest pose.
 Cap idle and happy use the large fitted cap from the registered item reference.
 Idle restores the original body origin beneath added top padding, including still
 and reduced-motion rendering. Other cap action/status clips retain their earlier

@@ -12,9 +12,9 @@
   },
   "base_character": {
     "manifest_path": "art/characters/luna/references/reference.json",
-    "manifest_sha256": "2293df377e65b9af843acdb3ed5697709fcd86d9e573fcffb46077b6074ff3ef",
+    "manifest_sha256": "a288661b4a5400a4c7fbaabec4d4658474cf3a9fa59b090eddef32f3d370a9a0",
     "canonical": {
-      "path": "core/core-ui/src/main/assets/characters/luna/normal/idle_breath/luna_idle_breath_normal_01.png",
+      "path": "art/characters/luna/references/luna_seated_front_master.png",
       "sha256": "95450ffb9baf3f660f98d720decce12de474cf71b7452c4ebe49d9be7260bf05",
       "size_px": [
         1254,

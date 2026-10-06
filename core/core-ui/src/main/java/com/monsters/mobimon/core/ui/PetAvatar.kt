@@ -63,52 +63,6 @@ private fun lunaAppearance(accessoryId: String?): LunaAppearance =
         else -> LunaAppearance.NORMAL
     }
 
-internal object LunaAnimationCache {
-    @Volatile
-    private var cachedFrames: List<ImageBitmap>? = null
-
-    @Volatile
-    private var cachedAppearance: LunaAppearance = LunaAppearance.NORMAL
-
-    fun peek(): List<ImageBitmap>? = cachedFrames
-
-    fun clear() {
-        cachedFrames = null
-        cachedAppearance = LunaAppearance.NORMAL
-    }
-
-    fun getOrLoadFrames(
-        context: Context,
-        appearance: LunaAppearance = LunaAppearance.NORMAL,
-    ): List<ImageBitmap> {
-        val current = cachedFrames
-        if (current != null && cachedAppearance == appearance) return current
-        return synchronized(this) {
-            val syncCurrent = cachedFrames
-            if (syncCurrent != null && cachedAppearance == appearance) return syncCurrent
-            try {
-                val assetManager = context.applicationContext?.assets ?: context.assets
-                val decodeOptions = BitmapFactory.Options().apply { inSampleSize = 2 }
-                val basePath =
-                    "characters/luna/${appearance.assetName}/idle_breath/" +
-                        "luna_idle_breath_${appearance.assetName}_%02d.png"
-                val frames =
-                    (1..24).map { i ->
-                        val path = String.format(Locale.US, basePath, i)
-                        assetManager.open(path).use { stream ->
-                            BitmapFactory.decodeStream(stream, null, decodeOptions)!!.asImageBitmap()
-                        }
-                    }
-                cachedAppearance = appearance
-                cachedFrames = frames
-                frames
-            } catch (_: Exception) {
-                emptyList()
-            }
-        }
-    }
-}
-
 internal object LunaRunAnimationCache {
     @Volatile
     private var cachedFrames: List<ImageBitmap>? = null
@@ -270,7 +224,7 @@ internal object LunaFirstFrameCache {
             val assetName = appearance.assetName
             val fileName =
                 when (animation) {
-                    LunaActiveAnimation.IDLE -> "idle_breath/luna_idle_breath_${assetName}_01.png"
+                    LunaActiveAnimation.IDLE -> "$assetName.webp"
                     LunaActiveAnimation.RUN -> "run/luna_run_left_${assetName}_01.png"
                     LunaActiveAnimation.HUNGRY -> "hungry/luna_hungry_${assetName}_01.png"
                     LunaActiveAnimation.SICK -> "sick/luna_sick_${assetName}_01.png"
@@ -279,8 +233,14 @@ internal object LunaFirstFrameCache {
             try {
                 val assets = context.applicationContext?.assets ?: context.assets
                 val options = BitmapFactory.Options().apply { inSampleSize = 2 }
+                val path =
+                    if (animation == LunaActiveAnimation.IDLE) {
+                        "characters/luna/idle_layers/$assetName.webp"
+                    } else {
+                        "characters/luna/$assetName/$fileName"
+                    }
                 assets
-                    .open("characters/luna/$assetName/$fileName")
+                    .open(path)
                     .use { stream ->
                         BitmapFactory.decodeStream(stream, null, options)?.asImageBitmap()
                     }?.also { frames[key] = it }
@@ -294,7 +254,7 @@ internal object LunaAnimationManager {
     fun retainOnly(active: LunaActiveAnimation) {
         val retainMotion = active == LunaActiveAnimation.IDLE || active == LunaActiveAnimation.RUN
         if (!retainMotion) {
-            LunaAnimationCache.clear()
+            LunaIdleArtworkCache.clear()
             LunaRunAnimationCache.clear()
         }
         if (active != LunaActiveAnimation.HUNGRY) LunaHungryAnimationCache.clear()

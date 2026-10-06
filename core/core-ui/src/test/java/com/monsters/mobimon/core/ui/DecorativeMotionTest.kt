@@ -688,7 +688,7 @@ class DecorativeMotionTest {
         val context =
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
-        LunaAnimationCache.getOrLoadFrames(context)
+        LunaIdleArtworkCache.getOrLoad(context)
         var animate by mutableStateOf(false)
         show {
             LunaIdleBreathAnimation(
@@ -773,23 +773,29 @@ class DecorativeMotionTest {
     }
 
     @Test
-    fun lunaIdleBreathAnimationMaintainsConsistentDirectionRegardlessOfMovingLeft() {
+    fun lunaIdlePoseMaintainsDirectionForEveryAppearance() {
+        var accessory by mutableStateOf<String?>(null)
         var movingLeft by mutableStateOf(true)
         show {
             PetAvatar(
                 modifier = Modifier.size(180.dp).testTag("luna-idle"),
                 friendId = "friend:luna",
+                accessoryId = accessory,
                 isMoving = false,
+                isAnimated = false,
                 movingLeft = movingLeft,
             )
         }
-        val idleLeftPixels = pixels("luna-idle")
-        updateStateAndDraw { movingLeft = false }
-        val idleRightPixels = pixels("luna-idle")
-        assertTrue(
-            "Luna idle breath pixels must be identical regardless of movingLeft",
-            idleLeftPixels == idleRightPixels,
-        )
+        // Freeze breathing so direction is compared at the same pose and pixel origin.
+        for (item in listOf(null, "accessory:luna_cap", "accessory:luna_sunglasses")) {
+            updateStateAndDraw {
+                accessory = item
+                movingLeft = true
+            }
+            val left = pixels("luna-idle")
+            updateStateAndDraw { movingLeft = false }
+            assertTrue("Idle must not mirror $item", left == pixels("luna-idle"))
+        }
     }
 
     @Test

@@ -18,13 +18,15 @@
     ],
     "mode": "RGBA",
     "source": {
-      "path": "core/core-ui/src/main/assets/characters/luna/normal/idle_breath/luna_idle_breath_normal_01.png",
+      "path": "art/characters/luna/references/luna_seated_front_master.png",
       "sha256": "95450ffb9baf3f660f98d720decce12de474cf71b7452c4ebe49d9be7260bf05",
       "size_px": [
         1254,
         1254
       ],
-      "mode": "RGBA"
+      "mode": "RGBA",
+      "original_runtime_path": "core/core-ui/src/main/assets/characters/luna/normal/idle_breath/luna_idle_breath_normal_01.png",
+      "original_git_revision": "dd0efaed3ea86ee9a33a62d7391a03b3e8e23ad6"
     },
     "approval": "existing_project_canonical",
     "pose": "seated_front",
