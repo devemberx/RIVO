@@ -56,9 +56,9 @@ internal object LunaSickTimeline {
         (elapsedNanos.coerceAtLeast(0L) % BODY_CYCLE_NANOS).toDouble() / BODY_CYCLE_NANOS * 2 * PI
 
     // Mobi's planted breath/lean, restrained for Luna's collapsed pose.
-    fun scaleAt(elapsedNanos: Long): Float = 1f + (0.006 * (1 - cos(bodyPhase(elapsedNanos)))).toFloat()
+    fun scaleAt(elapsedNanos: Long): Float = 1f + (0.003 * (1 - cos(bodyPhase(elapsedNanos)))).toFloat()
 
-    fun leanAt(elapsedNanos: Long): Float = (0.022 * sin(bodyPhase(elapsedNanos))).toFloat()
+    fun leanAt(elapsedNanos: Long): Float = (0.010 * sin(bodyPhase(elapsedNanos))).toFloat()
 
     fun heatAlphaAt(elapsedNanos: Long): Float = (0.8 + 0.2 * cos(phase(elapsedNanos))).toFloat()
 
