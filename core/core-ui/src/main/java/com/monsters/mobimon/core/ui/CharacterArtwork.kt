@@ -69,6 +69,7 @@ object CharacterArtwork {
         mapOf(
             "friend:mobi" to CharacterAsset(R.drawable.pet_mobi_normal_happy, AssetCrop(244, 96, 2156, 2272)),
             "friend:luna" to CharacterAsset(R.drawable.pet_luna_normal_happy, AssetCrop(49, 50, 1166, 1158)),
+            "friend:las" to CharacterAsset(R.drawable.pet_las_normal_happy, AssetCrop(49, 50, 1166, 1158)),
         )
 
     val happyEquippedLooks =

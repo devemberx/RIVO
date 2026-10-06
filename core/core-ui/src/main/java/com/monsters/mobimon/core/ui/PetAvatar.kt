@@ -433,6 +433,16 @@ fun PetAvatar(
         }
         return
     }
+    if (emotion == PetEmotion.HAPPY) {
+        val happyAsset = CharacterArtwork.happy(friendId, accessoryId ?: outfitId)
+        Box(modifier = modifier.size(120.dp).semantics { contentDescription = description }) {
+            backgroundId?.let { CharacterArtwork.backgrounds[it] }?.let {
+                CharacterAssetImage(it, Modifier.fillMaxSize())
+            }
+            CharacterAssetImage(happyAsset, Modifier.fillMaxSize())
+        }
+        return
+    }
     if (friendId == "friend:las") {
         Box(modifier = modifier.size(120.dp).semantics { contentDescription = description }) {
             backgroundId?.let { CharacterArtwork.backgrounds[it] }?.let {
@@ -464,16 +474,6 @@ fun PetAvatar(
                     }
                 }
             }
-        }
-        return
-    }
-    if (emotion == PetEmotion.HAPPY) {
-        val happyAsset = CharacterArtwork.happy(friendId, accessoryId ?: outfitId)
-        Box(modifier = modifier.size(120.dp).semantics { contentDescription = description }) {
-            backgroundId?.let { CharacterArtwork.backgrounds[it] }?.let {
-                CharacterAssetImage(it, Modifier.fillMaxSize())
-            }
-            CharacterAssetImage(happyAsset, Modifier.fillMaxSize())
         }
         return
     }
