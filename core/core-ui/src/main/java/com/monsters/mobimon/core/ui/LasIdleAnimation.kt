@@ -52,7 +52,7 @@ internal fun LasIdleAnimation(
     val context = LocalContext.current
     val artwork =
         remember(context) {
-            LasRigidArtwork(BitmapFactory.decodeResource(context.resources, R.drawable.mobimon_las))
+            LasRigidArtwork(BitmapFactory.decodeResource(context.resources, R.drawable.pet_las_normal_preview))
         }
     val elapsed = remember { mutableLongStateOf(0L) }
     LaunchedEffect(animate) {

@@ -37,33 +37,29 @@ data class AssetCrop(
 object CharacterArtwork {
     val characters =
         mapOf(
-            "friend:mobi" to CharacterAsset(R.drawable.mobimon_mobi, translationYFraction = -35.24f / 1254f),
-            "friend:luna" to CharacterAsset(R.drawable.mobimon_luna, visualScale = 0.87f),
-            "friend:las" to CharacterAsset(R.drawable.mobimon_las),
+            "friend:mobi" to CharacterAsset(R.drawable.pet_mobi_normal_preview, translationYFraction = -35.24f / 1254f),
+            "friend:luna" to CharacterAsset(R.drawable.pet_luna_normal_preview, visualScale = 0.87f),
+            "friend:las" to CharacterAsset(R.drawable.pet_las_normal_preview),
         )
 
     val equippedLooks =
         mapOf(
             "accessory:mobi_headphones" to
                 CharacterAsset(
-                    R.drawable.mobimon_mobi_headphones,
+                    R.drawable.pet_mobi_headphones_preview,
                     visualScale = 0.93f,
                     translationYFraction = -35.24f / 1254f,
                 ),
             "accessory:mobi_goggles" to
-                CharacterAsset(R.drawable.mobimon_mobi_goggles, translationYFraction = -35.24f / 1254f),
+                CharacterAsset(R.drawable.pet_mobi_goggles_preview, translationYFraction = -35.24f / 1254f),
         )
 
     val itemIcons =
         mapOf(
-            "accessory:mobi_headphones" to CharacterAsset(R.drawable.mobimon_mobi_items, AssetCrop(0, 150, 475, 470)),
-            "accessory:mobi_goggles" to CharacterAsset(R.drawable.mobimon_mobi_items, AssetCrop(480, 275, 468, 320)),
-            "accessory:luna_cap" to CharacterAsset(R.drawable.mobimon_luna_items, AssetCrop(0, 140, 500, 480)),
-            "accessory:luna_sunglasses" to
-                CharacterAsset(
-                    R.drawable.mobimon_luna_items,
-                    AssetCrop(510, 285, 460, 330),
-                ),
+            "accessory:mobi_headphones" to CharacterAsset(R.drawable.store_item_mobi_headphones),
+            "accessory:mobi_goggles" to CharacterAsset(R.drawable.store_item_mobi_goggles),
+            "accessory:luna_cap" to CharacterAsset(R.drawable.store_item_luna_cap),
+            "accessory:luna_sunglasses" to CharacterAsset(R.drawable.store_item_luna_sunglasses),
         )
 
     // Add drawable resource mappings here when selectable background art is delivered.
@@ -71,20 +67,20 @@ object CharacterArtwork {
 
     val happyCharacters =
         mapOf(
-            "friend:mobi" to CharacterAsset(R.drawable.mobimon_mobi_happy, AssetCrop(244, 96, 2156, 2272)),
-            "friend:luna" to CharacterAsset(R.drawable.mobimon_luna_happy, AssetCrop(49, 50, 1166, 1158)),
+            "friend:mobi" to CharacterAsset(R.drawable.pet_mobi_normal_happy, AssetCrop(244, 96, 2156, 2272)),
+            "friend:luna" to CharacterAsset(R.drawable.pet_luna_normal_happy, AssetCrop(49, 50, 1166, 1158)),
         )
 
     val happyEquippedLooks =
         mapOf(
             "accessory:mobi_headphones" to
-                CharacterAsset(R.drawable.mobimon_mobi_headphones_happy, AssetCrop(129, 64, 1008, 1139)),
+                CharacterAsset(R.drawable.pet_mobi_headphones_happy, AssetCrop(129, 64, 1008, 1139)),
             "accessory:mobi_goggles" to
-                CharacterAsset(R.drawable.mobimon_mobi_goggles_happy, AssetCrop(152, 58, 985, 1159)),
+                CharacterAsset(R.drawable.pet_mobi_goggles_happy, AssetCrop(152, 58, 985, 1159)),
             "accessory:luna_cap" to
-                CharacterAsset(R.drawable.mobimon_luna_cap_happy, AssetCrop(49, 17, 1205, 1237)),
+                CharacterAsset(R.drawable.pet_luna_cap_happy, AssetCrop(49, 17, 1205, 1237)),
             "accessory:luna_sunglasses" to
-                CharacterAsset(R.drawable.mobimon_luna_sunglasses_happy, AssetCrop(49, 50, 1166, 1204)),
+                CharacterAsset(R.drawable.pet_luna_sunglasses_happy, AssetCrop(49, 50, 1166, 1204)),
         )
 
     fun preview(
@@ -98,27 +94,6 @@ object CharacterArtwork {
     ): CharacterAsset =
         happyEquippedLooks[accessoryId] ?: happyCharacters[friendId] ?: characters[friendId]
             ?: happyCharacters.getValue("friend:mobi")
-
-    val hungryCharacters =
-        mapOf(
-            "friend:mobi" to CharacterAsset(R.drawable.mobimon_mobi_hungry, translationYFraction = -35.24f / 1254f),
-            "friend:luna" to CharacterAsset(R.drawable.mobimon_luna_hungry, visualScale = 0.87f),
-        )
-
-    val sickCharacters =
-        mapOf(
-            "friend:luna" to CharacterAsset(R.drawable.mobimon_luna_sick, visualScale = 0.87f),
-        )
-
-    fun hungry(
-        friendId: String,
-        accessoryId: String? = null,
-    ): CharacterAsset = hungryCharacters[friendId] ?: preview(friendId, accessoryId)
-
-    fun sick(
-        friendId: String,
-        accessoryId: String? = null,
-    ): CharacterAsset = sickCharacters[friendId] ?: preview(friendId, accessoryId)
 }
 
 @Composable

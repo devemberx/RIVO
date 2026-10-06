@@ -204,20 +204,13 @@ fun MobiIdleBreathAnimation(
                     }
                 CompanionStatus.HUNGRY ->
                     Box(Modifier.fillMaxSize().testTag("mobi-hungry-layer")) {
-                        if (animateNormal) {
-                            NormalMobiHungryAnimation(
-                                modifier = Modifier.fillMaxSize(),
-                                contentDescription = null,
-                                accessoryId = accessoryId,
-                                fallbackAsset = CharacterArtwork.hungry("friend:mobi", accessoryId),
-                            )
-                        } else {
-                            CharacterAssetImage(
-                                CharacterArtwork.hungry("friend:mobi", accessoryId),
-                                Modifier.fillMaxSize(),
-                                null,
-                            )
-                        }
+                        NormalMobiHungryAnimation(
+                            modifier = Modifier.fillMaxSize(),
+                            contentDescription = null,
+                            accessoryId = accessoryId,
+                            fallbackAsset = CharacterArtwork.preview("friend:mobi", accessoryId),
+                            animateFrames = animateNormal && enabled,
+                        )
                     }
                 CompanionStatus.SICK -> {
                     val sheet = sprite

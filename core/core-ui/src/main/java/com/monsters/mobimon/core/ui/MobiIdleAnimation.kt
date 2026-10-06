@@ -30,6 +30,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
@@ -41,7 +42,6 @@ import kotlin.math.sin
 internal object MobiIdleTimeline {
     const val COLUMNS = 6
     const val ROWS = 4
-    const val FRAME_COUNT = COLUMNS * ROWS
     const val TILT_PERIOD_MS = 6_200L
     const val BOB_PERIOD_MS = 6_600L
     const val GESTURE_PERIOD_MS = 4_800L
@@ -54,55 +54,7 @@ internal object MobiIdleTimeline {
         return (17 * sin(2 * PI * phase / (GESTURE_PERIOD_MS * 1_000_000L))).toFloat()
     }
 
-    // Sources already contain inhale/exhale and repeated extreme poses; do not ping-pong.
-    private val durationsMs =
-        intArrayOf(
-            180,
-            190,
-            190,
-            190,
-            190,
-            190,
-            180,
-            180,
-            210,
-            200,
-            180,
-            180,
-            180,
-            210,
-            205,
-            200,
-            195,
-            195,
-            190,
-            190,
-            190,
-            180,
-            180,
-            180,
-        )
     val cycleMs: Long = 4_050L
-    private val sourceDurationMs = durationsMs.sum().toLong()
-    private val endsMs = durationsMs.runningFold(0L) { sum, duration -> sum + duration }.drop(1).toLongArray()
-
-    fun frameAt(elapsedNanos: Long): Int {
-        val position = sourcePosition(elapsedNanos)
-        for (index in endsMs.indices) if (position < endsMs[index]) return index
-        return 0
-    }
-
-    private fun sourcePosition(elapsedNanos: Long): Double =
-        (elapsedNanos.coerceAtLeast(0L) % (cycleMs * 1_000_000L)).toDouble() *
-            sourceDurationMs / (cycleMs * 1_000_000L)
-
-    fun blendAt(
-        elapsedNanos: Long,
-        frame: Int = frameAt(elapsedNanos),
-    ): Float {
-        val start = if (frame == 0) 0L else endsMs[frame - 1]
-        return ((sourcePosition(elapsedNanos) - start) / durationsMs[frame]).toFloat().coerceIn(0f, 1f)
-    }
 
     fun breathAt(elapsedNanos: Long): Float {
         val phase = (elapsedNanos.coerceAtLeast(0L) % (cycleMs * 1_000_000L)).toDouble()
@@ -235,104 +187,53 @@ internal fun NormalMobiIdleAnimation(
     )
 }
 
-internal object MobiHungrySpriteCache {
-    const val DEFAULT_ASSET_PATH = "characters/mobi/normal/hungry/mobi_hungry_normal_sprite.png"
-
-    private fun assetPathFor(accessoryId: String?): String =
-        when (accessoryId) {
-            "accessory:mobi_headphones" ->
-                "characters/mobi/headphones/hungry/mobi_hungry_headphones_sprite.png"
-            "accessory:mobi_goggles" ->
-                "characters/mobi/goggles/hungry/mobi_hungry_goggles_sprite.png"
-            else -> DEFAULT_ASSET_PATH
-        }
-
-    @Volatile private var cached: ImageBitmap? = null
-
-    @Volatile private var cachedAccessoryId: String? = null
-
-    fun peek(accessoryId: String? = null): ImageBitmap? = if (cachedAccessoryId == accessoryId) cached else null
-
-    fun clear() {
-        cached = null
-        cachedAccessoryId = null
-    }
-
-    fun getOrLoad(
-        context: Context,
-        accessoryId: String? = null,
-    ): ImageBitmap? {
-        val current = cached
-        if (current != null && cachedAccessoryId == accessoryId) return current
-        return synchronized(this) {
-            val syncCurrent = cached
-            if (syncCurrent != null && cachedAccessoryId == accessoryId) return syncCurrent
-            val assets = context.applicationContext.assets
-            val assetPath = assetPathFor(accessoryId)
-            val options =
-                BitmapFactory.Options().apply {
-                    inScaled = false
-                }
-            try {
-                assets.open(assetPath).use { stream ->
-                    val bitmap = requireNotNull(BitmapFactory.decodeStream(stream, null, options))
-                    require(
-                        bitmap.width == 256 * MobiIdleTimeline.COLUMNS && bitmap.height == 256 * MobiIdleTimeline.ROWS,
-                    )
-                    bitmap.asImageBitmap().also {
-                        cachedAccessoryId = accessoryId
-                        cached = it
-                    }
-                }
-            } catch (_: java.io.IOException) {
-                null
-            }
-        }
-    }
-}
-
 @Composable
 internal fun NormalMobiHungryAnimation(
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
     accessoryId: String? = null,
-    fallbackAsset: CharacterAsset = CharacterArtwork.hungry("friend:mobi", accessoryId),
+    fallbackAsset: CharacterAsset = CharacterArtwork.preview("friend:mobi", accessoryId),
+    animateFrames: Boolean = true,
 ) {
     val context = LocalContext.current.applicationContext
-    val sprite by produceState<ImageBitmap?>(
-        initialValue = MobiHungrySpriteCache.peek(accessoryId),
-        context,
-        accessoryId,
-    ) {
-        value = withContext(Dispatchers.IO) { MobiHungrySpriteCache.getOrLoad(context, accessoryId) }
+    // Reset the producer immediately on equipment changes; never display the old item while loading.
+    val artwork by androidx.compose.runtime.key(accessoryId) {
+        produceState<MobiHungryArtwork?>(MobiHungryArtworkCache.peek(accessoryId), context) {
+            value = withContext(Dispatchers.IO) { MobiHungryArtworkCache.getOrLoad(context, accessoryId) }
+        }
     }
-    val sheet = sprite
-    if (sheet == null) {
-        CharacterAssetImage(fallbackAsset, modifier, contentDescription)
+    val loaded = artwork
+    if (loaded == null) {
+        CharacterAssetImage(CharacterArtwork.preview("friend:mobi", accessoryId), modifier, contentDescription)
         return
     }
-    val elapsed = remember { mutableLongStateOf(0L) }
-    LaunchedEffect(sheet) {
-        val origin = withInfiniteAnimationFrameNanos { it }
-        while (isActive) {
-            elapsed.longValue = withInfiniteAnimationFrameNanos { it } - origin
+    val elapsed = remember(accessoryId) { mutableLongStateOf(0L) }
+    val animate = animateFrames && LocalMobiMonMotionEnabled.current
+    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    LaunchedEffect(loaded, animate, lifecycleOwner) {
+        if (!animate) return@LaunchedEffect
+        lifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+            var previous = withInfiniteAnimationFrameNanos { it }
+            while (isActive) {
+                val now = withInfiniteAnimationFrameNanos { it }
+                elapsed.longValue += (now - previous).coerceIn(0L, 100_000_000L)
+                previous = now
+            }
         }
     }
     Box(
         modifier
+            .testTag("mobi-hungry-${mobiAppearanceName(accessoryId)}")
             .semantics { if (contentDescription != null) this.contentDescription = contentDescription }
             .graphicsLayer {
-                // Hungry motion is authored in the atlas; do not add idle sway or breathing.
                 scaleX = MobiIdleTimeline.scaleXAt(0L)
                 scaleY = MobiIdleTimeline.scaleYAt(0L)
                 translationY = size.minDimension * fallbackAsset.translationYFraction
                 compositingStrategy = CompositingStrategy.Offscreen
                 transformOrigin = TransformOrigin(0.5f, 0.9f)
                 clip = false
-            }.mobiSpriteFrames(sheet, MobiIdleTimeline.COLUMNS, MobiIdleTimeline.ROWS) {
-                val time = elapsed.longValue
-                val frame = MobiIdleTimeline.frameAt(time)
-                frame + MobiIdleTimeline.blendAt(time, frame)
+            }.mobiHungryParts(loaded) {
+                if (animate) elapsed.longValue else MobiHungryTimeline.STILL_MS * 1_000_000L
             },
     )
 }

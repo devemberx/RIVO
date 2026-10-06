@@ -597,7 +597,7 @@ class DecorativeMotionTest {
         show { NormalMobiHungryAnimation(Modifier.size(256.dp).testTag("hungry")) }
         pixels("hungry")
         compose.mainClock.advanceTimeByFrame()
-        compose.mainClock.advanceTimeBy(1_450)
+        compose.mainClock.advanceTimeBy(2_000)
         val thought = pixels("hungry")
         compose.mainClock.advanceTimeBy(200)
         val held = pixels("hungry")
@@ -621,12 +621,38 @@ class DecorativeMotionTest {
         assertTrue("Authored hunger expressions still advance", thought != pixels("hungry"))
     }
 
+    @Test
+    fun hungryEquipmentSwitchUsesTheNewItemAndReducedMotionStaysStill() {
+        var accessory by mutableStateOf<String?>(null)
+        show {
+            CompositionLocalProvider(LocalMobiMonMotionEnabled provides false) {
+                NormalMobiHungryAnimation(Modifier.size(256.dp), accessoryId = accessory)
+            }
+        }
+        var previous = pixels("mobi-hungry-normal")
+        for (item in listOf("accessory:mobi_headphones", "accessory:mobi_goggles")) {
+            updateStateAndDraw { accessory = item }
+            compose.waitUntil(10_000) {
+                compose.mainClock.advanceTimeByFrame()
+                compose.onAllNodesWithTag("mobi-hungry-${mobiAppearanceName(item)}").fetchSemanticsNodes().isNotEmpty()
+            }
+            val equipped = pixels("mobi-hungry-${mobiAppearanceName(item)}")
+            assertTrue("Changing equipment must change the hungry pose", previous != equipped)
+            compose.mainClock.advanceTimeBy(1_000)
+            assertTrue(
+                "Reduced-motion hungry pose must stay still",
+                equipped == pixels("mobi-hungry-${mobiAppearanceName(item)}"),
+            )
+            previous = equipped
+        }
+    }
+
     private fun show(content: @Composable () -> Unit) {
         val context =
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
         requireNotNull(MobiSpriteCache.getOrLoad(context))
-        requireNotNull(MobiHungrySpriteCache.getOrLoad(context))
+        requireNotNull(MobiHungryArtworkCache.getOrLoad(context, null))
         compose.mainClock.autoAdvance = false
         compose.setContent {
             val currentView = LocalView.current
@@ -706,13 +732,22 @@ class DecorativeMotionTest {
         }
         awaitLunaAnimation("luna-hungry")
         awaitLunaAnimation("luna-sick")
+        compose.onNodeWithTag("mobi-hungry-normal", useUnmergedTree = true).assertExists()
         val firstMobiHungry = pixels("mobi-hungry")
         val firstHungry = pixels("luna-hungry")
         val firstSick = pixels("luna-sick")
         compose.mainClock.advanceTimeBy(320)
-        assertTrue("Mobi animates while hungry", firstMobiHungry != pixels("mobi-hungry"))
         assertTrue("Luna animates while hungry", firstHungry != pixels("luna-hungry"))
         assertTrue("Luna animates while sick", firstSick != pixels("luna-sick"))
+        // Mobi deliberately holds the carrot and expression; a 320ms window may be stationary.
+        var mobiChanged = firstMobiHungry != pixels("mobi-hungry")
+        repeat((MobiHungryTimeline.CYCLE_MS / 320).toInt() + 1) {
+            if (!mobiChanged) {
+                compose.mainClock.advanceTimeBy(320)
+                mobiChanged = firstMobiHungry != pixels("mobi-hungry")
+            }
+        }
+        assertTrue("Mobi advances within its hungry cycle", mobiChanged)
     }
 
     @Test
