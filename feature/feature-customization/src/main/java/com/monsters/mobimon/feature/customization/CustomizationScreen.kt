@@ -73,9 +73,10 @@ fun CustomizationScreen(
     parkingRequired: Boolean = false,
     onHome: (() -> Unit)? = null,
 ) {
+    val activeFriend = inventory?.equippedItemIds?.get(CosmeticSlot.FRIEND) ?: "friend:mobi"
     var tab by rememberSaveable { mutableStateOf(CosmeticSlot.FRIEND) }
     var ownedOnly by rememberSaveable { mutableStateOf(false) }
-    var clothesFriend by rememberSaveable { mutableStateOf<String?>(null) }
+    var clothesFriend by rememberSaveable(activeFriend) { mutableStateOf<String?>(null) }
     var category by rememberSaveable { mutableStateOf(StoreSpaceCategory.BACKGROUNDS) }
     var selectedBackgroundThemeId by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedBackgroundPropId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -129,7 +130,6 @@ fun CustomizationScreen(
             selectedBackgroundEffectId,
         )
     val selected = presentation.selected
-    val activeFriend = inventory?.equippedItemIds?.get(CosmeticSlot.FRIEND) ?: "friend:mobi"
     val otherFriend = tab == CosmeticSlot.ACCESSORY && presentation.preview.friendId != activeFriend
     val previewFriendOwned =
         storeInventoryReady && inventory?.ownedItemIds?.contains(presentation.preview.friendId) == true
@@ -207,6 +207,7 @@ fun CustomizationScreen(
                 purchaseFailed || saveFailed,
                 onTab = {
                     if (!busy) {
+                        if (it == CosmeticSlot.ACCESSORY && tab != it) clothesFriend = null
                         tab = it
                         onSelectItem(null)
                     }

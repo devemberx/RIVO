@@ -116,8 +116,9 @@ and the “작은 도전, 큰 여정” message.
 
 [Store](../feature/feature-customization/src/main/java/com/monsters/mobimon/feature/customization/CustomizationScreen.kt)
 places preview/actions left and catalog right: two columns for backgrounds,
-three for friends, clothes, effects and props. Allow per-friend clothing previews
-and an owned filter. Show the first frame while animations load; still cards use
+three for friends, clothes, effects and props. Enter Clothes on the equipped friend;
+reset clothing previews when the equipped friend changes. Allow per-friend clothing
+previews and an owned filter. Show the first frame while animations load; still cards use
 the same frame. Panels scroll for enlarged text.
 
 Preview stays local until Apply. Equipment persists per friend; purchases grant
