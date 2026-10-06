@@ -82,7 +82,7 @@ object CharacterArtwork {
             "accessory:mobi_goggles" to
                 CharacterAsset(R.drawable.mobimon_mobi_goggles_happy, AssetCrop(152, 58, 985, 1159)),
             "accessory:luna_cap" to
-                CharacterAsset(R.drawable.mobimon_luna_cap_happy, AssetCrop(49, 17, 1205, 1237)),
+                CharacterAsset(R.drawable.mobimon_luna_cap_happy, AssetCrop(49, 0, 1166, 1336)),
             "accessory:luna_sunglasses" to
                 CharacterAsset(R.drawable.mobimon_luna_sunglasses_happy, AssetCrop(49, 50, 1166, 1204)),
         )

@@ -6,6 +6,21 @@ import org.junit.Test
 
 class LunaIdleTimelineTest {
     @Test
+    fun paddedHatKeepsTheOriginalBodyScaleAndGround() {
+        for (side in listOf(128, 256, 627, 1254)) {
+            val (normalOrigin, normalSize) = lunaIdleDestination(side, LunaAppearance.NORMAL)
+            val (hatOrigin, hatSize) = lunaIdleDestination(side, LunaAppearance.HAT)
+            assertEquals(normalSize.width, hatSize.width)
+            assertEquals(normalOrigin.y + normalSize.height, hatOrigin.y + hatSize.height)
+            assertTrue(hatOrigin.y < normalOrigin.y)
+            assertEquals(
+                lunaIdleDestination(side, LunaAppearance.NORMAL),
+                lunaIdleDestination(side, LunaAppearance.SUNGLASSES),
+            )
+        }
+    }
+
+    @Test
     fun breathingAdvancesBetweenSpriteBoundaries() {
         assertEquals(0, LunaIdleTimeline.frameAt(16_000_000L))
         assertEquals(0, LunaIdleTimeline.frameAt(32_000_000L))

@@ -413,10 +413,12 @@ class PetAvatarTest {
         val frames = LunaAnimationCache.getOrLoadFrames(context, appearance = LunaAppearance.HAT)
         frames.forEach { image ->
             val bitmap = image.asAndroidBitmap()
-            // Interior of the old exposed ear, above the tilted cap crown.
-            assertEquals(0, android.graphics.Color.alpha(bitmap.getPixel(500, 110)))
+            assertEquals(627, bitmap.width)
+            assertEquals(691, bitmap.height)
+            // The former ear must not protrude behind the new crown.
+            assertEquals(0, android.graphics.Color.alpha(bitmap.getPixel(540, 140)))
             // The opposite ear must remain visible.
-            assertTrue(android.graphics.Color.alpha(bitmap.getPixel(150, 130)) > 240)
+            assertTrue(android.graphics.Color.alpha(bitmap.getPixel(150, 194)) > 240)
         }
     }
 
@@ -516,9 +518,17 @@ class PetAvatarTest {
         listOf(mobiHappy, lunaHappy, mobiHeadphonesHappy, mobiGogglesHappy, lunaCapHappy, lunaSunglassesHappy)
             .forEach { asset ->
                 val crop = requireNotNull(asset.crop)
-                val canvas = if (asset == mobiHappy) 2508 else 1254
+                val context =
+                    androidx.test.core.app.ApplicationProvider
+                        .getApplicationContext<android.content.Context>()
+                val options =
+                    android.graphics.BitmapFactory
+                        .Options()
+                        .apply { inJustDecodeBounds = true }
+                android.graphics.BitmapFactory.decodeResource(context.resources, asset.resourceId, options)
+                val canvas = options.outHeight
                 assertTrue(crop.x >= 0 && crop.y >= 0)
-                assertTrue(crop.x + crop.width <= canvas && crop.y + crop.height <= canvas)
+                assertTrue(crop.x + crop.width <= options.outWidth && crop.y + crop.height <= canvas)
                 assertTrue(crop.height >= canvas * 0.87)
                 assertEquals(1f, asset.visualScale)
             }

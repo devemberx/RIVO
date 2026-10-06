@@ -54,6 +54,16 @@ internal object LunaIdleTimeline {
     }
 }
 
+// Hat frames add 128 source pixels above the original 1254-square body canvas.
+// Restore that origin for animated frames and the first-frame/reduced-motion fallback.
+internal fun lunaIdleDestination(
+    side: Int,
+    appearance: LunaAppearance,
+): Pair<IntOffset, IntSize> {
+    val top = if (appearance == LunaAppearance.HAT) (side * 128f / 1254f).toInt() else 0
+    return IntOffset(0, -top) to IntSize(side, side + top)
+}
+
 /** Blend only adjacent, aligned breathing poses; retain crisp authored blinks. */
 @Composable
 fun LunaIdleBreathAnimation(
@@ -97,10 +107,20 @@ fun LunaIdleBreathAnimation(
             ).semantics { if (contentDescription != null) this.contentDescription = contentDescription }
             .drawWithCache {
                 val side = size.minDimension.toInt()
-                val destination = IntSize(side, side)
-                val offset = IntOffset(((size.width - side) / 2).toInt(), ((size.height - side) / 2).toInt())
+                val (origin, destination) = lunaIdleDestination(side, appearance)
+                val offset =
+                    IntOffset(
+                        ((size.width - side) / 2).toInt() + origin.x,
+                        ((size.height - side) / 2).toInt() + origin.y,
+                    )
                 val layerPaint = Paint()
-                val layerBounds = Rect(0f, 0f, size.width, size.height)
+                val layerBounds =
+                    Rect(
+                        offset.x.toFloat(),
+                        offset.y.toFloat(),
+                        (offset.x + destination.width).toFloat(),
+                        (offset.y + destination.height).toFloat(),
+                    )
                 onDrawBehind {
                     val ready = animateFrames && frames.size == LunaIdleTimeline.FRAME_COUNT
                     val time = if (ready) elapsed.longValue else 0L
