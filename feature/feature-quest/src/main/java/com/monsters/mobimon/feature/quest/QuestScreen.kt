@@ -123,6 +123,8 @@ fun QuestScreen(
                     .focusProperties { canFocus = !parkingRequired }
                     .semantics { paneTitle = title },
         ) {
+            val viewportWidth = maxWidth
+            val viewportHeight = maxHeight
             val pointInHeader = maxWidth >= 1400.dp && LocalDensity.current.fontScale <= 1f
             Column(Modifier.fillMaxSize()) {
                 QuestStatusPanel(state, onRetryQuests, onRetryWallet, onRetryAppearance)
@@ -245,6 +247,8 @@ fun QuestScreen(
                             outfitId = state.appearance.outfitId,
                             backgroundId = state.appearance.backgroundId,
                             scale = scale,
+                            viewportWidth = viewportWidth,
+                            viewportHeight = viewportHeight,
                             onConfirm = onDismissRewardSuccess,
                         )
                     }

@@ -98,7 +98,11 @@ object CharacterArtwork {
                     framing = AssetFraming(LUNA_HAPPY_REFERENCE_SIDE, 1127),
                 ),
             "friend:las" to
-                CharacterAsset(R.drawable.pet_las_normal_preview, framing = AssetFraming(432, 428)),
+                CharacterAsset(
+                    R.drawable.pet_las_normal_happy,
+                    AssetCrop(49, 50, 1166, 1158),
+                    framing = AssetFraming(1060, 1132),
+                ),
         )
 
     val happyEquippedLooks =

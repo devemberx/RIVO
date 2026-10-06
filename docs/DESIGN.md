@@ -134,7 +134,10 @@ Use catalog rewards and actual repeat eligibility. Show one committed Points
 balance; unknown is not zero. Celebrate committed amounts once per claim, label
 them P and show persisted completion dates. Keep claim controls in place while
 saving; reduced motion shows rewards immediately. Quest detail preserves scroll
-and the “작은 도전, 큰 여정” message.
+and the “작은 도전, 큰 여정” message. The success popup uses the selected
+friend's happy artwork through
+[PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt);
+Las keeps its celebratory confetti on a transparent background.
 
 The reward dialog uses one ground line for every friend and equipped happy pose.
 Mobi and Luna share a canonical skull-width scale; equipment padding never shrinks

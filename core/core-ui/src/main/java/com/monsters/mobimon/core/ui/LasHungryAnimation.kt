@@ -73,7 +73,7 @@ internal object LasHungryTimeline {
     }
 }
 
-/** Actual 24-frame atlas playback, with the same lowered-hand rest pose at both loop endpoints. */
+/** 48-frame interpolated atlas playback; both loop endpoints share the lowered-hand rest pose. */
 @Composable
 internal fun LasHungryAnimation(
     modifier: Modifier,
@@ -118,10 +118,10 @@ internal fun LasHungryAnimation(
             }.mobiSpriteFrames(
                 sheet = artwork,
                 columns = 6,
-                rows = 4,
+                rows = 8,
                 filterQuality = FilterQuality.High,
             ) {
-                if (animate) LasHungryTimeline.position(elapsed.longValue / 1_000_000L) else 2f
+                if (animate) LasHungryTimeline.position(elapsed.longValue / 1_000_000L) * 2f else 4f
             },
     )
 }

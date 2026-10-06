@@ -23,15 +23,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -50,8 +53,11 @@ internal fun QuestRewardSuccessModal(
     outfitId: String?,
     backgroundId: String?,
     scale: Float,
+    viewportWidth: Dp,
+    viewportHeight: Dp,
     onConfirm: () -> Unit,
 ) {
+    val parentDensity = LocalDensity.current
     val motionEnabled = LocalMobiMonMotionEnabled.current
     val entrance = remember(motionEnabled) { Animatable(if (motionEnabled) 0f else 1f) }
     val avatarPop = remember(motionEnabled) { Animatable(if (motionEnabled) 0.75f else 1f) }
@@ -65,27 +71,29 @@ internal fun QuestRewardSuccessModal(
         onDismissRequest = onConfirm,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        BoxWithConstraints(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(Color(0xBF050C16))
-                    .clickable(onClick = onConfirm),
-            contentAlignment = Alignment.Center,
-        ) {
-            val modalScale = minOf(scale, maxWidth.value / 1120f, maxHeight.value / 940f)
-            QuestRewardSuccessContent(
-                points = points,
-                bonusPoints = bonusPoints,
-                friendId = friendId,
-                accessoryId = accessoryId,
-                outfitId = outfitId,
-                backgroundId = backgroundId,
-                modalScale = modalScale,
-                entranceProgress = { entrance.value },
-                avatarScale = { avatarPop.value },
-                onConfirm = onConfirm,
-            )
+        CompositionLocalProvider(LocalDensity provides parentDensity) {
+            BoxWithConstraints(
+                modifier =
+                    Modifier
+                        .size(viewportWidth, viewportHeight)
+                        .background(Color(0xBF050C16))
+                        .clickable(onClick = onConfirm),
+                contentAlignment = Alignment.Center,
+            ) {
+                val modalScale = minOf(scale, maxWidth.value / 1120f, maxHeight.value / 940f)
+                QuestRewardSuccessContent(
+                    points = points,
+                    bonusPoints = bonusPoints,
+                    friendId = friendId,
+                    accessoryId = accessoryId,
+                    outfitId = outfitId,
+                    backgroundId = backgroundId,
+                    modalScale = modalScale,
+                    entranceProgress = { entrance.value },
+                    avatarScale = { avatarPop.value },
+                    onConfirm = onConfirm,
+                )
+            }
         }
     }
 }
