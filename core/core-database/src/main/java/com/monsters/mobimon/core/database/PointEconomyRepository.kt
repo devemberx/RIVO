@@ -309,8 +309,9 @@ class PointEconomyRepository(
                     ) {
                         return@withTransaction PointAwardResult.EvidenceChanged
                     }
+                    // Driving evidence must come from the profile's own source, never a Debug simulation in Release.
                     if (drivingResult != null &&
-                        !drivingResult.isSatisfied
+                        (!drivingResult.isSatisfied || evaluation.source != source)
                     ) {
                         return@withTransaction PointAwardResult.ConditionNotMet
                     }
