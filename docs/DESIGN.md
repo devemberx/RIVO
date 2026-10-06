@@ -225,6 +225,9 @@ Mobi equipped idle shares body, blink and sprout timing. Hungry motion keeps the
 six-second carrot-thought, scrunch and two-shake sequence; equipment follows the
 head rigidly. Sick motion uses sleepy breathing and three stars with a broken blue
 orbit. Texture density must preserve the master at the target display size.
+Prepare Mobi first frames and the shared sick orbit texture off the UI thread.
+Keep the avatar slot while the matching first frame loads; equipment changes
+must not display the previous item while waiting.
 Hungry facial patches are prepared on the artwork loader worker before the
 selected appearance is published. Playback interpolates unchanged cached
 textures; draw callbacks must not reconstruct pixels or rewrite bitmaps.

@@ -10,6 +10,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -36,6 +37,38 @@ import java.io.File
 @RunWith(AndroidJUnit4::class)
 class MobiSickDeviceTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test
+    fun stillPreviewsLoadMatchingEquippedFirstFrames() {
+        val names = listOf("normal", "headphones", "goggles")
+        compose.setContent {
+            MobiMonTheme {
+                Row(Modifier.background(Color(0xff24354b))) {
+                    names.forEach { name ->
+                        PetAvatar(
+                            modifier = Modifier.size(220.dp).testTag(name),
+                            friendId = "friend:mobi",
+                            accessoryId = if (name == "normal") null else "accessory:mobi_$name",
+                            isAnimated = false,
+                        )
+                    }
+                }
+            }
+        }
+        compose.waitUntil(15_000) {
+            names.all { name ->
+                compose.onAllNodesWithTag("mobi-animation-frame-$name").fetchSemanticsNodes().isNotEmpty()
+            }
+        }
+        val previews = names.map { capture(it, "idle-first-frame") }
+        try {
+            assertFalse("Headphones must retain their fitted first frame", previews[0].sameAs(previews[1]))
+            assertFalse("Goggles must retain their fitted first frame", previews[0].sameAs(previews[2]))
+            assertFalse("Equipped appearances must stay distinct", previews[1].sameAs(previews[2]))
+        } finally {
+            previews.forEach { it.recycle() }
+        }
+    }
 
     @Test
     fun equippedWarningKeepsGesturesWhenWanderingIsDisabled() {
@@ -83,21 +116,32 @@ class MobiSickDeviceTest {
         }
         compose.mainClock.advanceTimeBy(1400)
         names.forEach { capture(it, "closing") }
-        compose.runOnIdle { motion = false }
+        compose.runOnIdle {
+            motion = false
+            Snapshot.sendApplyNotifications()
+        }
         compose.mainClock.advanceTimeBy(32)
         val held = names.map { capture(it, "reduced") }
         compose.mainClock.advanceTimeBy(10_000)
         names.indices.forEach {
             assertFalse("Disabling wandering keeps sick gestures", held[it].sameAs(capture(names[it], "reduced-later")))
         }
-        compose.runOnIdle { animated = false }
-        compose.mainClock.advanceTimeBy(32)
+        compose.runOnIdle {
+            animated = false
+            Snapshot.sendApplyNotifications()
+        }
+        // Settle the shared layer's subcomposition and Android draw before sampling rest pixels.
+        compose.mainClock.advanceTimeBy(200)
+        compose.waitForIdle()
         val static = names.map { capture(it, "static-preview") }
         compose.mainClock.advanceTimeBy(1000)
         names.indices.forEach {
             assertTrue("Explicit still previews remain static", static[it].sameAs(capture(names[it], "static-later")))
         }
-        compose.runOnIdle { warning = false }
+        compose.runOnIdle {
+            warning = false
+            Snapshot.sendApplyNotifications()
+        }
         compose.mainClock.advanceTimeBy(32)
         compose.onAllNodesWithTag("mobi-sick-layer").assertCountEquals(0)
         compose.onAllNodesWithTag("mobi-hungry-layer").assertCountEquals(3)
