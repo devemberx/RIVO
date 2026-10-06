@@ -161,6 +161,35 @@ class PointEconomyRepositoryTest {
         }
 
     @Test
+    fun hiddenBackgroundQuestAcceptsEquippedPropOrEffectButNotNoBackground() =
+        runBlocking {
+            val dao = database.economyDao()
+            catalog = PointQuestDefinition(DrivingQuestIds.HIDDEN_BACKGROUND, 30, PointQuestSchedule.OneTime)
+            dao.insertItem(CosmeticItemEntity("background:star_hanger", "BACKGROUND", 200, null))
+            dao.insertItem(CosmeticItemEntity("background:snow", "BACKGROUND", 200, null))
+            dao.insertOwned(OwnedCosmeticEntity("profile", "background:star_hanger"))
+            dao.insertOwned(OwnedCosmeticEntity("profile", "background:snow"))
+
+            assertEquals(
+                PointAwardResult.ConditionNotMet,
+                repository.awardQuest(DrivingQuestIds.HIDDEN_BACKGROUND, vehicle),
+            )
+            assertEquals(EquipResult.Applied, repository.equip("background:snow"))
+            assertEquals("BACKGROUND_EFFECT", dao.equipped("profile", "BACKGROUND_EFFECT")?.slot)
+            assertNull(dao.equipped("profile", "BACKGROUND"))
+            assertTrue(repository.awardQuest(DrivingQuestIds.HIDDEN_BACKGROUND, vehicle) is PointAwardResult.Awarded)
+            assertEquals(130L, repository.wallet.first().balance)
+
+            database.clearAllTables()
+            database.companionDao().insertProfile(PetProfileEntity("profile", "GOLDEN", 80))
+            dao.insertAccount(PointAccountEntity("profile", 100))
+            dao.insertItem(CosmeticItemEntity("background:star_hanger", "BACKGROUND", 200, null))
+            dao.insertOwned(OwnedCosmeticEntity("profile", "background:star_hanger"))
+            assertEquals(EquipResult.Applied, repository.equip("background:star_hanger"))
+            assertTrue(repository.awardQuest(DrivingQuestIds.HIDDEN_BACKGROUND, vehicle) is PointAwardResult.Awarded)
+        }
+
+    @Test
     fun cyberpunkThemeAndPropOverlayEquipTogetherAndRetainInInventory() =
         runBlocking {
             val companion =

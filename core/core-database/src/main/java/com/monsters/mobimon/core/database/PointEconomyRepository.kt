@@ -24,6 +24,7 @@ import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.SignalSourceProvider
 import com.monsters.mobimon.core.domain.UtcClock
 import com.monsters.mobimon.core.domain.VehicleSnapshot
+import com.monsters.mobimon.core.domain.hasCustomBackground
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -324,8 +325,9 @@ class PointEconomyRepository(
                                     dao.equipped(profileId, "OUTFIT") != null
                             }
                             com.monsters.mobimon.core.domain.DrivingQuestIds.HIDDEN_BACKGROUND -> {
-                                val bg = dao.equipped(profileId, "BACKGROUND")?.itemId
-                                bg != null && bg != "none" && bg != "background:default"
+                                hasCustomBackground(
+                                    *BACKGROUND_SLOTS.map { dao.equipped(profileId, it)?.itemId }.toTypedArray(),
+                                )
                             }
                             com.monsters.mobimon.core.domain.DrivingQuestIds.HIDDEN_NEW_FRIEND -> {
                                 activeFriend != "friend:mobi"
@@ -487,6 +489,9 @@ private fun localDate(
     utcMillis: Long,
     zoneId: String,
 ) = Instant.ofEpochMilli(utcMillis).atZone(ZoneId.of(zoneId)).toLocalDate()
+
+// Theme, prop and effect slots, plus the legacy overlay slot that older builds used for props/effects.
+private val BACKGROUND_SLOTS = listOf("BACKGROUND", "BACKGROUND_PROP", "BACKGROUND_EFFECT", "BACKGROUND_OVERLAY")
 
 private fun CosmeticItemEntity.toDomain() =
     com.monsters.mobimon.core.domain.CosmeticItem(

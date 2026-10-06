@@ -92,6 +92,36 @@ class QuestCatalogTest {
     }
 
     @Test
+    fun hiddenBackgroundQuestFollowsEquippedPropOrEffect() {
+        fun hidden(inventory: CosmeticInventory) =
+            catalog
+                .present(ready(), CompanionAppearanceState(inventory), PointBalanceState.Ready(0), true, Int::toString)
+                .hiddenQuests
+                .any { it.id == DrivingQuestIds.HIDDEN_BACKGROUND }
+
+        val none = CosmeticInventory(emptySet(), mapOf(CosmeticSlot.FRIEND to "friend:mobi"))
+        assertFalse(hidden(none))
+        assertTrue(hidden(none.copy(backgroundPropId = "background:star_hanger")))
+        assertTrue(hidden(none.copy(backgroundEffectId = "background:snow")))
+        assertTrue(
+            hidden(
+                none.copy(
+                    equippedItemIds =
+                        none.equippedItemIds + (CosmeticSlot.BACKGROUND to "background:cyberpunk_city"),
+                ),
+            ),
+        )
+        assertFalse(
+            hidden(
+                none.copy(
+                    equippedItemIds =
+                        none.equippedItemIds + (CosmeticSlot.BACKGROUND to "background:default"),
+                ),
+            ),
+        )
+    }
+
+    @Test
     fun eligibilityDoesNotAuthorizeClaimsWhenParkingOrObservationIsUnavailable() {
         val eligible = ready().copy(satisfiedDrivingQuestIds = setOf(DrivingQuestIds.SEATBELT))
         for (state in listOf(
