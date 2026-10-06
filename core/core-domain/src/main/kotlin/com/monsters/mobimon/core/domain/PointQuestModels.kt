@@ -11,14 +11,13 @@ sealed interface PointQuestSchedule {
         val resetZoneId: String,
     ) : PointQuestSchedule
 
-    data class PerDrive(
-        val driveId: String,
-    ) : PointQuestSchedule
+    /** One occurrence per [DriveEvaluationData.driveId]; claims without a drive identity are not met. */
+    data object PerDrive : PointQuestSchedule
 
+    /** Claims add newly counted units each day until [maxPerDay] units have been awarded. */
     data class CappedDaily(
         val resetZoneId: String,
         val maxPerDay: Int,
-        val currentCount: Int = 1,
     ) : PointQuestSchedule
 }
 
@@ -63,13 +62,13 @@ class DefaultPointQuestCatalog(
                 PointQuestDefinition(
                     id = DrivingQuestIds.SEATBELT,
                     rewardPoints = 5L,
-                    schedule = PointQuestSchedule.PerDrive("default"),
+                    schedule = PointQuestSchedule.PerDrive,
                 ),
             DrivingQuestIds.SAFE_DRIVE to
                 PointQuestDefinition(
                     id = DrivingQuestIds.SAFE_DRIVE,
                     rewardPoints = 20L,
-                    schedule = PointQuestSchedule.PerDrive("default"),
+                    schedule = PointQuestSchedule.PerDrive,
                 ),
             DrivingQuestIds.DISTANCE_100KM to
                 PointQuestDefinition(
@@ -81,7 +80,7 @@ class DefaultPointQuestCatalog(
                 PointQuestDefinition(
                     id = DrivingQuestIds.CLEAN_DRIVE,
                     rewardPoints = 15L,
-                    schedule = PointQuestSchedule.PerDrive("default"),
+                    schedule = PointQuestSchedule.PerDrive,
                 ),
             DrivingQuestIds.FIRST_DRIVE to
                 PointQuestDefinition(
@@ -93,13 +92,13 @@ class DefaultPointQuestCatalog(
                 PointQuestDefinition(
                     id = DrivingQuestIds.FOCUS_DRIVE,
                     rewardPoints = 10L,
-                    schedule = PointQuestSchedule.PerDrive("default"),
+                    schedule = PointQuestSchedule.PerDrive,
                 ),
             DrivingQuestIds.LANE_KEEP to
                 PointQuestDefinition(
                     id = DrivingQuestIds.LANE_KEEP,
                     rewardPoints = 10L,
-                    schedule = PointQuestSchedule.PerDrive("default"),
+                    schedule = PointQuestSchedule.PerDrive,
                 ),
             DrivingQuestIds.MAINTENANCE to
                 PointQuestDefinition(
@@ -129,7 +128,7 @@ class DefaultPointQuestCatalog(
                 PointQuestDefinition(
                     id = DrivingQuestIds.LONG_TRIP_REST,
                     rewardPoints = 25L,
-                    schedule = PointQuestSchedule.PerDrive("default"),
+                    schedule = PointQuestSchedule.PerDrive,
                 ),
             DrivingQuestIds.WASHER_FLUID to
                 PointQuestDefinition(

@@ -117,6 +117,7 @@ fun DebugOverlay() {
     val isDebugEnabled by isDebugEnabledFlow.collectAsStateWithLifecycle(initialValue = false)
     val state by debugStore.state.collectAsStateWithLifecycle()
     val safeDriveCount by debugStore.safeDriveCount.collectAsStateWithLifecycle()
+    val driveId by debugStore.driveId.collectAsStateWithLifecycle()
 
     fun updateState(reducer: (DebugVssState) -> DebugVssState) {
         debugStore.updateState(reducer)
@@ -151,8 +152,8 @@ fun DebugOverlay() {
         // Live-link the simulated VSS signals to per-quest evidence so toggling a raw signal (seatbelt,
         // distraction, distance, turn signal, tire, …) advances the matching quest. The simulator below
         // stays a manual override for aggregates VSS cannot express (safe days, long-trip rest).
-        LaunchedEffect(state, questWeather, safeDriveCount) {
-            pointEconomy.updateDriveEvaluation(state.toDriveEvaluationData(questWeather, safeDriveCount))
+        LaunchedEffect(state, questWeather, safeDriveCount, driveId) {
+            pointEconomy.updateDriveEvaluation(state.toDriveEvaluationData(questWeather, safeDriveCount, driveId))
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
@@ -403,7 +404,7 @@ fun DebugOverlay() {
                                     val qualifies =
                                         DrivingQuestEvaluator()
                                             .evaluateSafeDriveCompletion(
-                                                state.toDriveEvaluationData(questWeather, safeDriveCount),
+                                                state.toDriveEvaluationData(questWeather, safeDriveCount, driveId),
                                             ).isSatisfied
                                     if (qualifies) {
                                         debugStore.recordSafeDrive()
@@ -433,6 +434,20 @@ fun DebugOverlay() {
                             }
                         }
 
+                        // Per-drive quests reopen only for a new simulated drive identity.
+                        Button(
+                            onClick = {
+                                debugStore.startNewDrive()
+                                questStatusMessage = "새 주행 시작: 주행 당 퀘스트를 다시 받을 수 있음"
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF203C58)),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
+                        ) {
+                            Text("새 주행 시작", color = Color.White, fontSize = 11.sp)
+                        }
+
                         Button(
                             onClick = {
                                 scope.launch {
@@ -440,6 +455,7 @@ fun DebugOverlay() {
                                     // Shortcut: satisfy every driving condition so the gated award path grants all.
                                     pointEconomy.updateDriveEvaluation(
                                         DriveEvaluationData(
+                                            driveId = driveId,
                                             distanceKm = 35f,
                                             safeBeltMinutes = 15,
                                             safeDriveScore = 95,
@@ -554,6 +570,7 @@ fun DebugOverlay() {
 
                                 val evalData =
                                     DriveEvaluationData(
+                                        driveId = driveId,
                                         distanceKm = dist,
                                         safeBeltMinutes = belt,
                                         safeDriveScore = score,
@@ -612,6 +629,7 @@ fun DebugOverlay() {
 
                                     val allSatisfiedData =
                                         DriveEvaluationData(
+                                            driveId = driveId,
                                             distanceKm = 35f,
                                             safeBeltMinutes = 15,
                                             safeDriveScore = 95,
@@ -660,7 +678,7 @@ fun DebugOverlay() {
                                     simWasherFluidRefilled = false
                                     simTirePressureNormalWeekly = false
 
-                                    val emptyData = DriveEvaluationData()
+                                    val emptyData = DriveEvaluationData(driveId = driveId)
                                     evalResults = DrivingQuestEvaluator().evaluateAll(emptyData)
                                     pointEconomy.updateDriveEvaluation(emptyData)
                                     questStatusMessage = "모든 주행 조건 초기화됨 (진행 중)"
