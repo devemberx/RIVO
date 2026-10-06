@@ -119,7 +119,7 @@ internal object LunaIdleArtworkCache {
 
     private fun decodeEyes(context: Context): Bitmap? =
         try {
-            context.assets.open("characters/luna/idle_layers/closed_eyes.webp").use {
+            context.assets.open("characters/luna/shared/idle_breath/luna_idle_breath_shared_closed_eyes.webp").use {
                 val options =
                     BitmapFactory.Options().apply {
                         inSampleSize = 2

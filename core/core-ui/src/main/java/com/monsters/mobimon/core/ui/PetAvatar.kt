@@ -224,7 +224,7 @@ internal object LunaFirstFrameCache {
             val assetName = appearance.assetName
             val fileName =
                 when (animation) {
-                    LunaActiveAnimation.IDLE -> "$assetName.webp"
+                    LunaActiveAnimation.IDLE -> "idle_breath/luna_idle_breath_${assetName}_base.webp"
                     LunaActiveAnimation.RUN -> "run/luna_run_left_${assetName}_01.png"
                     LunaActiveAnimation.HUNGRY -> "hungry/luna_hungry_${assetName}_01.png"
                     LunaActiveAnimation.SICK -> "sick/luna_sick_${assetName}_01.png"
@@ -233,12 +233,7 @@ internal object LunaFirstFrameCache {
             try {
                 val assets = context.applicationContext?.assets ?: context.assets
                 val options = BitmapFactory.Options().apply { inSampleSize = 2 }
-                val path =
-                    if (animation == LunaActiveAnimation.IDLE) {
-                        "characters/luna/idle_layers/$assetName.webp"
-                    } else {
-                        "characters/luna/$assetName/$fileName"
-                    }
+                val path = "characters/luna/$assetName/$fileName"
                 assets
                     .open(path)
                     .use { stream ->
@@ -535,13 +530,7 @@ fun PetAvatar(
                     }
                 }
             } else {
-                val asset =
-                    when {
-                        isSick -> CharacterArtwork.sick(friendId, equippedAccessory)
-                        isHungry -> CharacterArtwork.hungry(friendId, equippedAccessory)
-                        else -> CharacterArtwork.preview(friendId, equippedAccessory)
-                    }
-                CharacterAssetImage(asset, Modifier.fillMaxSize())
+                CharacterAssetImage(CharacterArtwork.preview(friendId, equippedAccessory), Modifier.fillMaxSize())
             }
         }
         return

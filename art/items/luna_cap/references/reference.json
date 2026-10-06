@@ -47,13 +47,15 @@
     ],
     "mode": "RGBA",
     "source": {
-      "path": "core/core-ui/src/main/res/drawable-nodpi/mobimon_luna_items.png",
+      "path": "art/items/luna_cap/references/luna_items_source.png",
       "sha256": "2f520b173821b6baee4a8ae3dc9a1aa652b58b75ed35a8e56c43cb28d924bfca",
       "size_px": [
         2172,
         724
       ],
-      "mode": "RGBA"
+      "mode": "RGBA",
+      "original_runtime_path": "core/core-ui/src/main/res/drawable-nodpi/mobimon_luna_items.png",
+      "original_git_revision": "cf1cce616c9333a50ca5c577f16e2fc02b977dc3"
     },
     "approval": "reviewed_reference_revision",
     "pose": "seated_front",
