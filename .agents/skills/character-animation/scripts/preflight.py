@@ -59,8 +59,7 @@ class Gate:
             if "source" in record:
                 require(digest == self.image(record["source"]), f"Canonical/source mismatch: {record['path']}")
             return
-        require(bool(record.get("source")), "Missing original source for revised master")
-        source_digest = self.image(record["source"])
+        source_digest = self.image(record["source"]) if "source" in record else None
         revision = record.get("revision_review", {})
         require(revision.get("status") == "accepted_for_reference", "Unreviewed canonical revision")
         for key in ("reviewer", "authority", "date", "reason", "evidence"):
@@ -68,8 +67,12 @@ class Gate:
                     f"Missing canonical revision {key}")
         require(isinstance(revision.get("separate_user_visual_signoff"), bool),
                 "Missing canonical revision signoff provenance")
-        require(revision.get("source_sha256") == source_digest,
-                "Canonical revision source hash mismatch")
+        source_hash = revision.get("source_sha256")
+        require(isinstance(source_hash, str) and len(source_hash) == 64
+                and all(value in "0123456789abcdef" for value in source_hash),
+                "Missing canonical revision source hash")
+        if source_digest is not None:
+            require(source_hash == source_digest, "Canonical revision source hash mismatch")
         require(revision.get("revised_sha256") == digest,
                 "Canonical revision review hash mismatch")
         require(revision.get("scope") == "reference_only",

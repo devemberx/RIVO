@@ -10,17 +10,19 @@
   `identity_constraints`; item input adds `canonical_fitted`, `base_character`
   and `attachment_contract`. Resolve base images/landmarks through the linked
   manifest rather than copying them into each item.
-- `source` is required for revised masters and optional for unchanged masters
-  with a separate original image. Omit it when it repeats the master itself.
-  Keep current source integrity records; Git owns old paths and edit history.
+- `source` is optional for a separate original image still used as a current input.
+  Omit duplicate or retired originals; Git retains their bytes and edit history.
+  Every retained source must pass current integrity checks.
 - The original canonical defines identity; fitted canonical defines item fit.
   Turnarounds describe other views but do not override those masters. Their hidden
   surfaces are inferred, and side views are not calibrated orthographic views.
 - An explicitly requested reference correction may use `reviewed_reference_revision`
   with a `revision_review` binding the original source and revised image hashes,
   reviewer, authority, date, reason, evidence and signoff provenance. Its scope is
-  `reference_only`: the original source stays independently verified and is not
-  claimed to match the corrected master. Current-input review is still required.
+  `reference_only`: a retained source is independently verified, while an archived
+  source hash records provenance through the review evidence and Git history.
+  Neither is claimed to match the corrected master. The revised image hash and
+  current-input review remain required.
 - Read any `construction_references` with the master; preflight includes their bytes
   in the reviewed inventory. A rotated detail preserves 2D part construction and
   proportions, not calibrated perspective or a new pose approval.

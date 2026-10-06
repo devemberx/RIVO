@@ -64,7 +64,9 @@ turnarounds and character/item manifests under `art/`; these are not packaged.
 Manifests own identity, pixel landmarks, fitted geometry, occlusion and review
 declarations. Masters override inferred views; standalone item views do not define
 worn size. The [shared contract](../.agents/skills/character-animation/references/production.md)
-owns coordinate conventions and production rules; Git retains edit history.
+owns coordinate conventions and production rules. Retired source sheets remain
+in Git history; current revised masters retain their
+review provenance and hash checks.
 Use the [animation workflow](../.agents/skills/character-animation/SKILL.md) to check
 current inputs and review playback before export.
 

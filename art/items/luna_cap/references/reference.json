@@ -12,12 +12,6 @@
     "sha256": "978ca78061911291b38e8f57c14e617085d6a4703a25a3ded3117f1c497d3386",
     "size_px": [1254, 1254],
     "mode": "RGBA",
-    "source": {
-      "path": "art/items/luna_cap/references/luna_items_source.png",
-      "sha256": "2f520b173821b6baee4a8ae3dc9a1aa652b58b75ed35a8e56c43cb28d924bfca",
-      "size_px": [2172, 724],
-      "mode": "RGBA"
-    },
     "approval": "reviewed_reference_revision",
     "pose": "seated_front",
     "equipped_item_ids": [
@@ -129,7 +123,7 @@
   "attachment_contract": {
     "pivot": "crown_contact",
     "fit": [
-      "The canonical_fitted seated front master is the final authority for cap shape and fitted scale. The original item sheet is its provenance; all turnaround and runtime variants must follow the master. No small-cap variant is supported.",
+      "The canonical_fitted seated front master is the final authority for cap shape and fitted scale. Git retains the original item sheet's provenance; all turnaround and runtime variants must follow the master. No small-cap variant is supported.",
       "Cap tilts down toward screen right in front. Preserve the opposite exposed ear tip and purple interior exactly as in the source master; do not expand the crown across that ear tip.",
       "Front: anatomical-left ear is completely hidden. Rear: the corresponding screen-left ear is hidden and the tilt reverses.",
       "Left-facing side/oblique views: both ears are occluded by the cap; no white tip or purple interior may protrude behind the crown.",

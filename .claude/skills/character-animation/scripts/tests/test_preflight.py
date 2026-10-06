@@ -54,6 +54,17 @@ class ReferenceGateTest(unittest.TestCase):
     def check(self):
         return PREFLIGHT.audit(self.repo, "luna", "accessory:luna_cap")
 
+    def add_source_record(self):
+        base = json.loads((self.repo / "art/characters/luna/references/reference.json").read_text())
+        source = {key: base["canonical"][key] for key in ("path", "sha256", "size_px", "mode")}
+        original = self.repo / source["path"]
+        source["path"] = "art/items/luna_cap/references/original_source_fixture.png"
+        shutil.copyfile(original, self.repo / source["path"])
+        self.update(ITEM_MANIFEST, lambda d: d["canonical_fitted"].update(source=source))
+        self.update(ITEM_MANIFEST, lambda d: d["canonical_fitted"]["revision_review"].update(
+            source_sha256=source["sha256"]))
+        return source
+
     def test_current_catalog_targets(self):
         for character in ("mobi", "luna", "las"):
             with self.subTest(character=character):
@@ -108,10 +119,39 @@ class ReferenceGateTest(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "Invalid head box"):
                     self.check()
 
-    def test_revised_master_requires_original_source(self):
+    def test_revised_master_can_archive_original_source(self):
+        source = self.add_source_record()
         self.update(ITEM_MANIFEST, lambda d: d["canonical_fitted"].pop("source"))
-        with self.assertRaisesRegex(ValueError, "Missing original source"):
+        (self.repo / source["path"]).unlink()
+        master = json.loads((self.repo / ITEM_MANIFEST).read_text())["canonical_fitted"]
+        result = self.check()
+        self.assertEqual(result["status"], "reference_checks_passed")
+        self.assertIn(master["path"], result["checked_sha256"])
+        self.assertNotIn(source["path"], result["checked_sha256"])
+        self.assertFalse(result["generation_ready"])
+
+    def test_archived_source_requires_provenance_hash(self):
+        self.update(ITEM_MANIFEST, lambda d: d["canonical_fitted"].pop("source", None))
+        for value in (None, "", "not-a-hash", "g" * 64):
+            with self.subTest(value=value):
+                self.update(ITEM_MANIFEST, lambda d: d["canonical_fitted"]["revision_review"].update(
+                    source_sha256=value))
+                with self.assertRaisesRegex(ValueError, "Missing canonical revision source hash"):
+                    self.check()
+
+    def test_archived_source_still_requires_matching_master_hash(self):
+        self.update(ITEM_MANIFEST, lambda d: d["canonical_fitted"].pop("source", None))
+        self.update(ITEM_MANIFEST, lambda d: d["canonical_fitted"]["revision_review"].update(
+            revised_sha256="0" * 64))
+        with self.assertRaisesRegex(ValueError, "review hash mismatch"):
             self.check()
+
+    def test_archiving_source_invalidates_previous_input_review(self):
+        self.add_source_record()
+        review = self.review_record(self.check())
+        self.update(ITEM_MANIFEST, lambda d: d["canonical_fitted"].pop("source"))
+        with self.assertRaisesRegex(ValueError, "Reviewed input inventory mismatch"):
+            PREFLIGHT.audit(self.repo, "luna", "accessory:luna_cap", review)
 
     def test_unreviewed_base_contract_change_cannot_authorize_generation(self):
         baseline = PREFLIGHT.audit(self.repo, "luna")
@@ -161,6 +201,7 @@ class ReferenceGateTest(unittest.TestCase):
         self.assertFalse(result["reference_reviews"][ITEM_MANIFEST]["separate_user_visual_signoff"])
 
     def test_revised_master_preserves_independent_source_provenance(self):
+        self.add_source_record()
         data = json.loads((self.repo / ITEM_MANIFEST).read_text())
         master = data["canonical_fitted"]
         self.assertEqual(master["approval"], "reviewed_reference_revision")
@@ -187,6 +228,7 @@ class ReferenceGateTest(unittest.TestCase):
                 (self.repo / ITEM_MANIFEST).write_text(original)
 
     def test_revision_requires_matching_hashes_and_reference_scope(self):
+        self.add_source_record()
         for key, value, message in (
             ("source_sha256", "0" * 64, "source hash mismatch"),
             ("revised_sha256", "0" * 64, "review hash mismatch"),
@@ -203,10 +245,17 @@ class ReferenceGateTest(unittest.TestCase):
                 (self.repo / ITEM_MANIFEST).write_text(original)
 
     def test_revised_source_still_requires_integrity(self):
+        self.add_source_record()
         master = json.loads((self.repo / ITEM_MANIFEST).read_text())["canonical_fitted"]
         source = self.repo / master["source"]["path"]
         source.write_bytes(source.read_bytes() + b"changed")
         with self.assertRaisesRegex(ValueError, "Image hash mismatch"):
+            self.check()
+
+    def test_retained_source_missing_file_blocks(self):
+        source = self.add_source_record()
+        (self.repo / source["path"]).unlink()
+        with self.assertRaisesRegex(ValueError, "Missing file"):
             self.check()
 
     def test_construction_reference_is_bound_and_hash_checked(self):
