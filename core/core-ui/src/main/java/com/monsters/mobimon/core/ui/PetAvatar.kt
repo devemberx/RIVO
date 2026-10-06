@@ -470,7 +470,7 @@ fun PetAvatar(
                             isHungry -> CompanionStatus.HUNGRY
                             else -> CompanionStatus.NORMAL
                         }
-                    CompanionStatusCrossfade(
+                    LunaStatusCrossfade(
                         state = lunaState,
                         motionEnabled = motionEnabled,
                         modifier = Modifier.fillMaxSize(),

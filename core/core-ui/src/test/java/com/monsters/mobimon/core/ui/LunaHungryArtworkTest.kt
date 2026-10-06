@@ -22,21 +22,29 @@ class LunaHungryArtworkTest {
         val parts = requireNotNull(LunaHungryPartsCache.getOrLoad(context))
         val glasses = requireNotNull(LunaIdleArtworkCache.getOrLoad(context, LunaAppearance.SUNGLASSES)).body
         val normal = requireNotNull(LunaIdleArtworkCache.getOrLoad(context)).body
-        val result = glasses.copy(Bitmap.Config.ARGB_8888, true)
-        val canvas = Canvas(result)
-        canvas.scale(.5f, .5f)
-        LunaHungryRenderer(parts).draw(canvas, 0L, LunaAppearance.SUNGLASSES)
-        for (y in 260 until 325) {
-            for (x in 245 until 370) {
-                val source = glasses.getPixel(x, y)
-                val bare = normal.getPixel(x, y)
-                // Strong equipment pixels distinguish the frame/lenses from their antialiased boundary.
-                if (android.graphics.Color.red(bare) - android.graphics.Color.red(source) > 50) {
-                    assertEquals("The hungry face must not paint over a lens", source, result.getPixel(x, y))
+        for (time in listOf(
+            1_180_000_000L,
+            1_360_000_000L,
+            LunaHungryTimeline.STILL_NANOS,
+            3_400_000_000L,
+            3_600_000_000L,
+        )) {
+            val result = glasses.copy(Bitmap.Config.ARGB_8888, true)
+            val canvas = Canvas(result)
+            canvas.scale(.5f, .5f)
+            LunaHungryRenderer(parts).draw(canvas, time, LunaAppearance.SUNGLASSES)
+            for (y in 260 until 325) {
+                for (x in 245 until 370) {
+                    val source = glasses.getPixel(x, y)
+                    val bare = normal.getPixel(x, y)
+                    // Strong equipment pixels distinguish the frame/lenses from their antialiased boundary.
+                    if (android.graphics.Color.red(bare) - android.graphics.Color.red(source) > 50) {
+                        assertEquals("The hungry face must not paint over a lens", source, result.getPixel(x, y))
+                    }
                 }
             }
+            result.recycle()
         }
-        result.recycle()
     }
 
     @Test
@@ -49,18 +57,39 @@ class LunaHungryArtworkTest {
                 parts.skin,
                 parts.skinGlasses,
                 parts.mouth,
-                parts.thought,
+                parts.drop,
+                parts.cloud,
+                parts.dot,
             ).sumOf { it.allocationByteCount } < 300_000,
         )
         for (appearance in LunaAppearance.entries) {
             val artwork = requireNotNull(LunaIdleArtworkCache.getOrLoad(context, appearance))
             val idle = LunaIdleRenderer(artwork)
             var first: Bitmap? = null
-            for (ms in listOf(0L, 550L, 1050L, 1100L, 1650L, 2200L)) {
-                val bitmap = Bitmap.createBitmap(760, 760, Bitmap.Config.ARGB_8888)
+            for (ms in listOf(
+                0L,
+                180L,
+                420L,
+                680L,
+                960L,
+                1060L,
+                1180L,
+                1360L,
+                1660L,
+                2000L,
+                2380L,
+                2600L,
+                2900L,
+                3080L,
+                3400L,
+                3600L,
+                3800L,
+                4400L,
+            )) {
+                val bitmap = Bitmap.createBitmap(760, 840, Bitmap.Config.ARGB_8888)
                 val canvas = Canvas(bitmap)
                 canvas.scale(.5f, .5f)
-                canvas.translate(0f, 240f)
+                canvas.translate(0f, 380f)
                 val save = canvas.save()
                 if (appearance == LunaAppearance.HAT) canvas.translate(0f, -192f)
                 idle.draw(canvas, ms * 1_000_000L)
@@ -72,20 +101,34 @@ class LunaHungryArtworkTest {
                     for (x in 0 until bitmap.width) {
                         if (bitmap.getPixel(x, y) != before.getPixel(x, y)) {
                             assertTrue(
-                                "Only face and thought may change: $appearance ($x,$y)",
-                                (x in 246..369 && y in 387..459) || (x in 530..665 && y in 41..179),
+                                "Only face, saliva and thought may change: $appearance ($x,$y)",
+                                (x in 246..369 && y in 450..535) ||
+                                    (x in 312..335 && y in 500..555) ||
+                                    (x in 321..335 && y in 510..735) ||
+                                    (x in 464..686 && y in 35..246),
                             )
                             changes++
                         }
                     }
                 }
-                assertTrue(changes > 1000)
+                if (ms in listOf(0L, 3800L, 4400L)) assertEquals(0, changes) else assertTrue(changes > 0)
+                if (ms == 3800L) {
+                    for (y in 457..525) {
+                        for (x in 246..369) {
+                            assertEquals(
+                                "Closed mouth restores canonical idle pixels",
+                                before.getPixel(x, y),
+                                bitmap.getPixel(x, y),
+                            )
+                        }
+                    }
+                }
                 before.recycle()
-                val output = File("build/reports/luna-hungry-layers/${appearance.assetName}-$ms.png")
+                val output = File("build/reports/luna-hungry-sequence/${appearance.assetName}-$ms.png")
                 output.parentFile?.mkdirs()
                 output.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
                 if (ms == 0L) first = bitmap.copy(Bitmap.Config.ARGB_8888, false)
-                if (ms == 2200L) assertTrue("The complete layered pose closes its loop", bitmap.sameAs(first))
+                if (ms == 4400L) assertTrue("The complete layered pose closes its loop", bitmap.sameAs(first))
                 bitmap.recycle()
             }
             first?.recycle()
@@ -93,13 +136,46 @@ class LunaHungryArtworkTest {
     }
 
     @Test
-    fun localGestureHasContinuousLoopAndDisplayTickMotion() {
-        val duration = LunaHungryTimeline.CYCLE_NANOS
-        assertEquals(LunaHungryTimeline.mouthScaleAt(0), LunaHungryTimeline.mouthScaleAt(duration), 0f)
-        assertEquals(LunaHungryTimeline.thoughtLiftAt(0), LunaHungryTimeline.thoughtLiftAt(duration), 0f)
-        assertEquals(1f, LunaHungryTimeline.mouthScaleAt(duration - 1), .000001f)
-        assertEquals(0f, LunaHungryTimeline.thoughtLiftAt(duration - 1), .000001f)
-        assertTrue(LunaHungryTimeline.thoughtLiftAt(32_000_000) > LunaHungryTimeline.thoughtLiftAt(16_000_000))
-        assertEquals(.68f, LunaHungryTimeline.mouthScaleAt(duration / 2), .000001f)
+    fun thoughtBuildsBeforeTheDripAndFadesAfterIt() {
+        for (index in 0..2) {
+            val time = (280L + 230L * index) * 1_000_000L
+            assertEquals(1f, LunaHungryTimeline.thoughtAlphaAt(time, index), 0f)
+            assertEquals(0f, LunaHungryTimeline.thoughtAlphaAt(time, index + 1), 0f)
+        }
+        assertEquals(1f, LunaHungryTimeline.thoughtAlphaAt(960_000_000L, 3), 0f)
+        assertEquals(0f, LunaHungryTimeline.dropAlphaAt(960_000_000L), 0f)
+        assertEquals(0f, LunaHungryTimeline.mouthScaleAt(1_060_000_000L), 0f)
+        assertEquals(.5f, LunaHungryTimeline.mouthScaleAt(1_360_000_000L), .001f)
+        assertEquals(1f, LunaHungryTimeline.mouthScaleAt(1_660_000_000L), 0f)
+        assertEquals(0f, LunaHungryTimeline.dropAlphaAt(1_660_000_000L), 0f)
+        assertEquals(0f, LunaHungryTimeline.dropAlphaAt(3_080_000_000L), 0f)
+        assertEquals(1f, LunaHungryTimeline.thoughtAlphaAt(3_080_000_000L, 3), 0f)
+        assertEquals(0f, LunaHungryTimeline.thoughtAlphaAt(3_530_000_000L, 3), 0f)
+    }
+
+    @Test
+    fun dropletKeepsPositionAndVelocityWhenItDetaches() {
+        val release = 2_380_000_000L
+        val before = LunaHungryTimeline.dropYAt(release - 1_000_000L)
+        val at = LunaHungryTimeline.dropYAt(release)
+        val after = LunaHungryTimeline.dropYAt(release + 1_000_000L)
+        assertEquals(690f, at, .001f)
+        assertEquals(before, after, .002f)
+        assertEquals(at - before, after - at, .002f)
+        assertEquals(1f, LunaHungryTimeline.dropAlphaAt(release - 1), 0f)
+        assertEquals(1f, LunaHungryTimeline.dropAlphaAt(release + 1), 0f)
+        val firstFall = LunaHungryTimeline.dropYAt(2_580_000_000L) - at
+        val secondFall = LunaHungryTimeline.dropYAt(2_780_000_000L) - LunaHungryTimeline.dropYAt(2_580_000_000L)
+        assertTrue("Gravity accelerates the same drop", secondFall > firstFall)
+    }
+
+    @Test
+    fun closedMouthRestAndStillHungryPoseAreDistinct() {
+        for (time in listOf(0L, 3_800_000_000L, LunaHungryTimeline.CYCLE_NANOS - 1, LunaHungryTimeline.CYCLE_NANOS)) {
+            assertEquals(0f, LunaHungryTimeline.faceAlphaAt(time), 0f)
+            assertEquals(0f, LunaHungryTimeline.dropAlphaAt(time), 0f)
+        }
+        assertEquals(1f, LunaHungryTimeline.mouthScaleAt(LunaHungryTimeline.STILL_NANOS), 0f)
+        assertEquals(1f, LunaHungryTimeline.thoughtAlphaAt(LunaHungryTimeline.STILL_NANOS, 3), 0f)
     }
 }

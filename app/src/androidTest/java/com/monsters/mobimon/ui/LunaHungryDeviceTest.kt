@@ -66,11 +66,13 @@ class LunaHungryDeviceTest {
         }
         awaitFrames()
         val first = names.map { capture(it, "first") }
-        compose.mainClock.advanceTimeBy(550)
-        val moved = names.map { capture(it, "breathing") }
+        compose.mainClock.advanceTimeBy(2000)
+        val moved = names.map { capture(it, "thought-and-drool") }
         names.indices.forEach { assertFalse("Hungry layers advance", first[it].sameAs(moved[it])) }
-        compose.mainClock.advanceTimeBy(500)
-        names.forEach { capture(it, "blink").recycle() }
+        for ((delta, pose) in listOf(380L to "detached", 200L to "falling", 500L to "drop-gone", 720L to "closed")) {
+            compose.mainClock.advanceTimeBy(delta)
+            names.forEach { capture(it, pose).recycle() }
+        }
         compose.runOnIdle { animated = false }
         compose.mainClock.advanceTimeBy(32)
         val still = names.map { capture(it, "still") }
@@ -84,9 +86,23 @@ class LunaHungryDeviceTest {
         awaitFrames()
         val equipped = capture("normal", "equipped-cap")
         assertFalse("Equipment updates while hungry", still.first().sameAs(equipped))
+        compose.runOnIdle { animated = true }
+        compose.mainClock.advanceTimeBy(2200)
+        names.forEach { capture(it, "before-transition").recycle() }
         compose.runOnIdle { hungry = false }
         compose.mainClock.advanceTimeBy(100)
-        names.forEach { capture(it, "transition").recycle() }
+        names.forEach {
+            val transition = capture(it, "transition")
+            val background = transition.getPixel(0, 0)
+            var thoughtPixels = 0
+            for (y in (transition.height * .06f).toInt() until (transition.height * .17f).toInt()) {
+                for (x in (transition.width * .62f).toInt() until (transition.width * .92f).toInt()) {
+                    if (transition.getPixel(x, y) != background) thoughtPixels++
+                }
+            }
+            assertTrue("The fading thought cloud must not clip at the avatar slot", thoughtPixels > 5)
+            transition.recycle()
+        }
         compose.mainClock.advanceTimeBy(240)
         compose.onAllNodesWithTag("luna-state-hungry").assertCountEquals(0)
         compose.onAllNodesWithTag("luna-state-idle").assertCountEquals(3)

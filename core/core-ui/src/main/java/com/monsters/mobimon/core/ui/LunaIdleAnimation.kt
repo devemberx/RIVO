@@ -193,7 +193,11 @@ internal fun LunaSourceLayerAnimation(
                                 if (hungryRenderer != null) {
                                     // Eye and mouth regions never overlap; cap pixels are shared unchanged.
                                     if (appearance == LunaAppearance.HAT) native.translate(0f, 192f)
-                                    hungryRenderer.draw(native, time, appearance)
+                                    hungryRenderer.draw(
+                                        native,
+                                        if (animateFrames) time else LunaHungryTimeline.STILL_NANOS,
+                                        appearance,
+                                    )
                                 }
                                 native.restoreToCount(save)
                             }
