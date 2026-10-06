@@ -12,9 +12,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,31 +43,39 @@ internal fun MobiDisappearAnimation(
     modifier: Modifier,
     onFinished: () -> Unit,
     isDisappearing: Boolean,
+    accessoryId: String?,
     idleContent: @Composable () -> Unit,
 ) {
     val context = LocalContext.current.applicationContext
     val finished by rememberUpdatedState(onFinished)
-    val sheet by produceState<Pair<Boolean, ImageBitmap?>>(false to null, context, isDisappearing) {
-        value = false to null
-        if (!isDisappearing) return@produceState
+    val appearanceName = mobiAppearanceName(accessoryId)
+    var sheet by remember(context, appearanceName, isDisappearing) {
+        mutableStateOf<Pair<Boolean, ImageBitmap?>>(false to null)
+    }
+    LaunchedEffect(context, appearanceName, isDisappearing) {
+        sheet = false to null
+        if (!isDisappearing) return@LaunchedEffect
         val bitmap =
             withContext(Dispatchers.IO) {
                 try {
-                    context.assets.open("characters/mobi/normal/disappear/mobi_disappear_normal_sprite.png").use {
-                        val options =
-                            BitmapFactory.Options().apply {
-                                inSampleSize = 2
-                                inScaled = false
-                            }
-                        BitmapFactory.decodeStream(it, null, options)?.asImageBitmap()
-                    }
+                    context.assets
+                        .open(
+                            "characters/mobi/$appearanceName/disappear/mobi_disappear_${appearanceName}_sprite.png",
+                        ).use {
+                            val options =
+                                BitmapFactory.Options().apply {
+                                    inSampleSize = 2
+                                    inScaled = false
+                                }
+                            BitmapFactory.decodeStream(it, null, options)?.asImageBitmap()
+                        }
                 } catch (_: java.io.IOException) {
                     null
                 }
             }
-        value = true to bitmap
+        sheet = true to bitmap
     }
-    val elapsed = remember { mutableLongStateOf(0L) }
+    val elapsed = remember(appearanceName) { mutableLongStateOf(0L) }
     LaunchedEffect(isDisappearing, sheet) {
         elapsed.longValue = 0L
         if (!isDisappearing || !sheet.first) return@LaunchedEffect
