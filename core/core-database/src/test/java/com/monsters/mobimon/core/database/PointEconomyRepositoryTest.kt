@@ -278,7 +278,7 @@ class PointEconomyRepositoryTest {
         runBlocking {
             catalog = PointQuestDefinition("daily-check", 10, PointQuestSchedule.Daily("Asia/Seoul"))
             val displayed = vehicle
-            vehicle = vehicle.copy(id = "new-card", sequence = 2)
+            vehicle = vehicle.copy(id = "new-card", epoch = "new-session", sequence = 2)
             assertEquals(PointAwardResult.EvidenceChanged, repository.awardQuest("daily-check", displayed))
             val first = repository.awardQuest("daily-check", vehicle)
             assertTrue(first is PointAwardResult.Awarded)
@@ -289,6 +289,51 @@ class PointEconomyRepositoryTest {
             assertEquals(120L, repository.wallet.first().balance)
             assertEquals(2, database.economyDao().questCompletions("profile").size)
             assertEquals(mapOf("daily-check" to utcNow), repository.completedQuestDates.first())
+        }
+
+    @Test
+    fun refreshedParkedEvidenceAwardsOnceAndRecordsCurrentObservation() =
+        runBlocking {
+            catalog = PointQuestDefinition("welcome", 25, PointQuestSchedule.OneTime)
+            val displayed = vehicle.copy(receivedAtMillis = 9_000)
+            vehicle = vehicle.copy(id = "refresh", sequence = 2, batteryPercent = 75)
+            assertTrue(repository.awardQuest("welcome", displayed) is PointAwardResult.Awarded)
+            assertEquals(PointAwardResult.AlreadyAwarded, repository.awardQuest("welcome", displayed))
+            val completion = database.economyDao().questCompletions("profile").single()
+            assertEquals(vehicle.id, completion.snapshotId)
+            assertEquals(vehicle.sequence, completion.snapshotSequence)
+            assertEquals(125L, repository.wallet.first().balance)
+            assertEquals(1, database.economyDao().ledger("profile").size)
+        }
+
+    @Test
+    fun refreshedEvidenceStillRejectsInvalidDisplayAndRestrictedCurrentState() =
+        runBlocking {
+            catalog = PointQuestDefinition("welcome", 25, PointQuestSchedule.OneTime)
+            val displayed = vehicle
+            listOf(
+                displayed.copy(source = SignalSource.SIMULATED),
+                displayed.copy(quality = SignalQuality.STALE),
+                displayed.copy(drivingState = DrivingState.UNKNOWN),
+                displayed.copy(sequence = 2),
+                displayed.copy(receivedAtMillis = 10_001),
+            ).forEach {
+                assertEquals(PointAwardResult.EvidenceChanged, repository.awardQuest("welcome", it))
+            }
+            listOf(
+                displayed.copy(drivingState = DrivingState.MOVING),
+                displayed.copy(quality = SignalQuality.UNAVAILABLE),
+                displayed.copy(source = SignalSource.SIMULATED),
+            ).forEach {
+                vehicle = it
+                assertEquals(PointAwardResult.InteractionRestricted, repository.awardQuest("welcome", displayed))
+            }
+            vehicle = displayed.copy(id = "refresh", sequence = 2)
+            appUse = AppUseState.RESTRICTED
+            assertEquals(PointAwardResult.InteractionRestricted, repository.awardQuest("welcome", displayed))
+            assertEquals(100L, repository.wallet.first().balance)
+            assertTrue(database.economyDao().questCompletions("profile").isEmpty())
+            assertTrue(database.economyDao().ledger("profile").isEmpty())
         }
 
     @Test
@@ -462,7 +507,9 @@ class PointEconomyRepositoryTest {
                 )
 
             // No drive evidence set: seatbelt condition is unsatisfied, so the award is refused.
-            val refused = pointRepo.awardQuest(DrivingQuestIds.SEATBELT, vehicle)
+            val displayed = vehicle
+            vehicle = vehicle.copy(id = "refresh", sequence = 2)
+            val refused = pointRepo.awardQuest(DrivingQuestIds.SEATBELT, displayed)
             assertEquals(PointAwardResult.ConditionNotMet, refused)
             assertEquals(100L, pointRepo.wallet.first().balance)
             assertTrue(database.economyDao().questCompletions("profile").isEmpty())
