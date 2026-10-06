@@ -80,6 +80,20 @@ class PointEconomyRepositoryTest {
         database.close()
     }
 
+    private fun defaultCatalogRepository() =
+        PointEconomyRepository(
+            database,
+            "profile",
+            UtcClock { utcNow },
+            IdGenerator { "entry-${ids.incrementAndGet()}" },
+            SignalSource.REAL,
+            CurrentVehicleEvidence { vehicle },
+            CurrentAppUse { appUse },
+            Clock { 10_000 },
+            QuestEvaluator(15_000),
+            DefaultPointQuestCatalog(),
+        )
+
     @Test
     fun starHangerSeedsPurchasesAppliesAndRemovesForBothFriends() =
         runBlocking {
@@ -374,20 +388,84 @@ class PointEconomyRepositoryTest {
             assertTrue((weeklyResult as PointAwardResult.Awarded).occurrenceKey.startsWith("weekly:"))
             assertEquals(PointAwardResult.AlreadyAwarded, repository.awardQuest("weekly-bonus", vehicle))
 
-            catalog = PointQuestDefinition("drive-seatbelt", 5, PointQuestSchedule.PerDrive("drive-101"))
+            catalog = PointQuestDefinition("drive-seatbelt", 5, PointQuestSchedule.PerDrive)
+            assertEquals(PointAwardResult.ConditionNotMet, repository.awardQuest("drive-seatbelt", vehicle))
+            repository.updateDriveEvaluation(DriveEvaluationData(driveId = "drive-101"))
             val driveResult = repository.awardQuest("drive-seatbelt", vehicle)
             assertEquals(PointAwardResult.Awarded(5, 155, "drive:drive-101"), driveResult)
             assertEquals(PointAwardResult.AlreadyAwarded, repository.awardQuest("drive-seatbelt", vehicle))
 
-            catalog =
-                PointQuestDefinition(
-                    "turn-signal",
-                    1,
-                    PointQuestSchedule.CappedDaily("Asia/Seoul", 10, currentCount = 1),
-                )
+            // Without a counted source, each claim adds one unit until the daily cap.
+            catalog = PointQuestDefinition("turn-signal", 1, PointQuestSchedule.CappedDaily("Asia/Seoul", 2))
             val signal1 = repository.awardQuest("turn-signal", vehicle)
-            assertTrue(signal1 is PointAwardResult.Awarded)
+            assertTrue((signal1 as PointAwardResult.Awarded).occurrenceKey.endsWith(":count:1"))
+            val signal2 = repository.awardQuest("turn-signal", vehicle)
+            assertTrue((signal2 as PointAwardResult.Awarded).occurrenceKey.endsWith(":count:2"))
             assertEquals(PointAwardResult.AlreadyAwarded, repository.awardQuest("turn-signal", vehicle))
+            assertEquals(157L, repository.wallet.first().balance)
+        }
+
+    @Test
+    fun completedQuestIdsFollowTheCurrentDailyOccurrence() =
+        runBlocking {
+            catalog = PointQuestDefinition("daily-check", 10, PointQuestSchedule.Daily("Asia/Seoul"))
+            assertTrue(repository.awardQuest("daily-check", vehicle) is PointAwardResult.Awarded)
+            assertEquals(setOf("daily-check"), repository.completedQuestIds.first())
+            utcNow += 86_400_000L
+            assertTrue(repository.completedQuestIds.first().isEmpty())
+            assertTrue(repository.awardQuest("daily-check", vehicle) is PointAwardResult.Awarded)
+            assertEquals(setOf("daily-check"), repository.completedQuestIds.first())
+        }
+
+    @Test
+    fun perDriveQuestReopensForEachNewDrive() =
+        runBlocking {
+            val pointRepo = defaultCatalogRepository()
+            pointRepo.updateDriveEvaluation(DriveEvaluationData(distanceKm = 10f, safeBeltMinutes = 15))
+            assertEquals(PointAwardResult.ConditionNotMet, pointRepo.awardQuest(DrivingQuestIds.SEATBELT, vehicle))
+
+            pointRepo.updateDriveEvaluation(DriveEvaluationData(driveId = "a", distanceKm = 10f, safeBeltMinutes = 15))
+            assertEquals(
+                PointAwardResult.Awarded(5, 105, "drive:a"),
+                pointRepo.awardQuest(DrivingQuestIds.SEATBELT, vehicle),
+            )
+            assertEquals(PointAwardResult.AlreadyAwarded, pointRepo.awardQuest(DrivingQuestIds.SEATBELT, vehicle))
+            assertEquals(setOf(DrivingQuestIds.SEATBELT), pointRepo.completedQuestIds.first())
+
+            pointRepo.updateDriveEvaluation(DriveEvaluationData(driveId = "b", distanceKm = 10f, safeBeltMinutes = 15))
+            assertTrue(pointRepo.completedQuestIds.first().isEmpty())
+            assertEquals(
+                PointAwardResult.Awarded(5, 110, "drive:b"),
+                pointRepo.awardQuest(DrivingQuestIds.SEATBELT, vehicle),
+            )
+            assertEquals(2, database.economyDao().ledger("profile").size)
+        }
+
+    @Test
+    fun turnSignalAwardsNewlyCountedSignalsUpToTheDailyCap() =
+        runBlocking {
+            val pointRepo = defaultCatalogRepository()
+
+            suspend fun claim(signals: Int): PointAwardResult {
+                pointRepo.updateDriveEvaluation(DriveEvaluationData(turnSignalOnCount = signals))
+                return pointRepo.awardQuest(DrivingQuestIds.TURN_SIGNAL, vehicle)
+            }
+
+            val date = "2027-01-15"
+            assertEquals(PointAwardResult.Awarded(3, 103, "daily:$date:count:3"), claim(3))
+            assertEquals(PointAwardResult.AlreadyAwarded, claim(3))
+            assertEquals(setOf(DrivingQuestIds.TURN_SIGNAL), pointRepo.completedQuestIds.first())
+            pointRepo.updateDriveEvaluation(DriveEvaluationData(turnSignalOnCount = 5))
+            assertTrue(pointRepo.completedQuestIds.first().isEmpty())
+            assertEquals(PointAwardResult.Awarded(2, 105, "daily:$date:count:5"), claim(5))
+            assertEquals(PointAwardResult.Awarded(5, 110, "daily:$date:count:10"), claim(12))
+            assertEquals(PointAwardResult.AlreadyAwarded, claim(12))
+            assertEquals(110L, pointRepo.wallet.first().balance)
+            assertEquals(3, database.economyDao().ledger("profile").size)
+
+            utcNow += 86_400_000L
+            assertTrue(claim(2) is PointAwardResult.Awarded)
+            assertEquals(112L, pointRepo.wallet.first().balance)
         }
 
     @Test
@@ -462,7 +540,9 @@ class PointEconomyRepositoryTest {
             assertEquals(100L, pointRepo.wallet.first().balance)
 
             vehicle = vehicle.copy(drivingState = DrivingState.PARKED)
-            pointRepo.updateDriveEvaluation(DriveEvaluationData(distanceKm = 10f, safeBeltMinutes = 15))
+            pointRepo.updateDriveEvaluation(
+                DriveEvaluationData(driveId = "drive-1", distanceKm = 10f, safeBeltMinutes = 15),
+            )
             val awardResult = pointRepo.awardQuest(DrivingQuestIds.SEATBELT, vehicle)
             assertTrue(awardResult is PointAwardResult.Awarded)
             assertEquals(5L, (awardResult as PointAwardResult.Awarded).points)
@@ -509,7 +589,9 @@ class PointEconomyRepositoryTest {
                     defaultCatalog,
                 )
 
-            debugPointRepo.updateDriveEvaluation(DriveEvaluationData(distanceKm = 10f, safeDriveScore = 90))
+            debugPointRepo.updateDriveEvaluation(
+                DriveEvaluationData(driveId = "drive-1", distanceKm = 10f, safeDriveScore = 90),
+            )
             val awardResult = debugPointRepo.awardQuest(DrivingQuestIds.SAFE_DRIVE, simVehicle)
             assertTrue(awardResult is PointAwardResult.Awarded)
             assertEquals(20L, (awardResult as PointAwardResult.Awarded).points)
@@ -544,7 +626,9 @@ class PointEconomyRepositoryTest {
             assertTrue(database.economyDao().questCompletions("profile").isEmpty())
 
             // Satisfying only the seatbelt evidence unlocks that quest, leaving unrelated ones gated.
-            pointRepo.updateDriveEvaluation(DriveEvaluationData(distanceKm = 10f, safeBeltMinutes = 15))
+            pointRepo.updateDriveEvaluation(
+                DriveEvaluationData(driveId = "drive-1", distanceKm = 10f, safeBeltMinutes = 15),
+            )
             assertEquals(PointAwardResult.ConditionNotMet, pointRepo.awardQuest(DrivingQuestIds.SAFE_DRIVE, vehicle))
             val awarded = pointRepo.awardQuest(DrivingQuestIds.SEATBELT, vehicle)
             assertTrue(awarded is PointAwardResult.Awarded)
@@ -574,6 +658,7 @@ class PointEconomyRepositoryTest {
             // Seatbelt base is 5L. In RAIN_OR_SNOW (1.5x), 5 * 1.5 = 7.5 -> 8L.
             pointRepo.updateDriveEvaluation(
                 DriveEvaluationData(
+                    driveId = "drive-1",
                     distanceKm = 10f,
                     safeBeltMinutes = 15,
                     weather = WeatherCondition.RAIN_OR_SNOW,
