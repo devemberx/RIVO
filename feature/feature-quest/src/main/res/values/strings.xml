@@ -72,10 +72,8 @@
     <string name="quest_detail_time_minutes_format">%1$d분</string>
     <string name="quest_detail_time_hours_minutes_format">%1$d시간 %2$d분</string>
     <string name="quest_modal_badge">퀘스트 완료</string>
-    <string name="quest_modal_badge_weather_bonus">퀘스트 완료 · 날씨 보너스</string>
     <string name="quest_modal_title">%1$d P를 받았어요!</string>
     <string name="quest_modal_subtitle">작은 도전으로 모비와 함께 성장했어요.</string>
-    <string name="quest_modal_weather_bonus">날씨 보너스 +%1$d P</string>
     <string name="quest_modal_chip">보상 · %1$d P</string>
     <string name="quest_modal_chip_weather_bonus">보상 · %1$d P (날씨 보너스 +%2$d P)</string>
 

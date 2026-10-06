@@ -388,7 +388,7 @@ fun PetAvatar(
         }
         return
     }
-    if (friendId == "friend:las") {
+    if (friendId == "friend:las" && (emotion != PetEmotion.HAPPY || vehicleWarning || vehicleHungry)) {
         Box(modifier = modifier.size(120.dp).semantics { contentDescription = description }) {
             backgroundId?.let { CharacterArtwork.backgrounds[it] }?.let {
                 CharacterAssetImage(it, Modifier.fillMaxSize())

@@ -136,6 +136,14 @@ them P and show persisted completion dates. Keep claim controls in place while
 saving; reduced motion shows rewards immediately. Quest detail preserves scroll
 and the “작은 도전, 큰 여정” message.
 
+The reward dialog uses one ground line for every friend and equipped happy pose.
+Mobi and Luna share a canonical skull-width scale; equipment padding never shrinks
+the body. The common layout reserves cap clearance and measures text rows, keeping
+the confirmation button at the same bottom inset with or without a weather bonus.
+Weather bonus details appear once in the green reward line. Large text reduces
+the artwork area before clipping labels. See the
+[reward layout](../feature/feature-quest/src/main/java/com/monsters/mobimon/feature/quest/QuestRewardSuccessContent.kt).
+
 ## Customization
 
 [Store](../feature/feature-customization/src/main/java/com/monsters/mobimon/feature/customization/CustomizationScreen.kt)
