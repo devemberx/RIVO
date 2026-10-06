@@ -1,413 +1,110 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "character_id": "friend:mobi",
   "variant": "normal",
-  "issue": 396,
-  "coordinate_convention": {
-    "paths": "repository-relative",
-    "rectangles": "[left, top, right, bottom), pixels; x right, y down",
-    "landmarks": "Manual visual estimates unless explicitly alpha-measured; hidden anatomy is not measured.",
-    "head_core": "Cranial envelope excluding ears, sprout and robot side modules where separable; not an alpha crop."
-  },
   "canonical": {
     "path": "art/characters/mobi/references/mobi_seated_front_master.png",
     "sha256": "25f5e692bb3a4e9783a42b9752e7990e737213eeb944b560cf6dfc6b7b96c81c",
-    "size_px": [
-      1254,
-      1254
-    ],
+    "size_px": [1254, 1254],
     "mode": "RGBA",
     "source": {
       "path": "core/core-ui/src/main/assets/characters/mobi/normal/idle_breath/mobi_idle_breath_normal_01.png",
       "sha256": "25f5e692bb3a4e9783a42b9752e7990e737213eeb944b560cf6dfc6b7b96c81c",
-      "size_px": [
-        1254,
-        1254
-      ],
+      "size_px": [1254, 1254],
       "mode": "RGBA"
     },
     "approval": "existing_project_canonical",
     "pose": "seated_front",
-    "equipped_item_ids": [],
     "default_pose_prop": "steering_wheel",
-    "alpha_bounds_px": [
-      176,
-      56,
-      1067,
-      1157
-    ],
+    "alpha_bounds_px": [176, 56, 1067, 1157],
     "alpha_threshold": 128,
     "ground_y_px": 1157,
-    "ground_measurement": "bottom edge of alpha bounds; contact approximation",
-    "root_anchor_px_estimate": [
-      625,
-      1157
-    ],
-    "head_core_box_px_estimate": [
-      240,
-      295,
-      1000,
-      857
-    ],
+    "root_anchor_px_estimate": [625, 1157],
+    "head_core_box_px_estimate": [240, 295, 1000, 857],
     "eye_centers_px_estimate": [
-      [
-        470,
-        585
-      ],
-      [
-        765,
-        585
-      ]
-    ],
-    "proportions": {
-      "head_core_width_over_alpha_height_estimate": 0.6903,
-      "head_core_height_over_alpha_height_estimate": 0.5104,
-      "head_core_width_over_canvas_width_estimate": 0.6061
-    },
-    "notes": "Preserved byte-for-byte; this remains the identity authority if generated views disagree."
+      [470, 585],
+      [765, 585]
+    ]
   },
   "turnaround": {
     "path": "art/characters/mobi/references/mobi_turnaround.png",
     "sha256": "004d27b4c7d138b0d0fb5a0a73cbe5d92723bd94367b0ac3e3834ac794d9eef6",
-    "size_px": [
-      1536,
-      1024
-    ],
+    "size_px": [1536, 1024],
     "mode": "RGB",
-    "layout": {
-      "columns": 3,
-      "rows": 2,
-      "column_bounds_px": [
-        0,
-        512,
-        1024,
-        1536
-      ],
-      "row_bounds_px": [
-        0,
-        494,
-        1024
-      ],
-      "note": "Explicit unequal row rectangles keep the adjusted standing sprout inside its cell; the seated row ends at y494."
-    },
-    "background": "opaque neutral gray; reference-only, not a transparent animation frame",
-    "tool": "Built-in image_gen local patches and previously authorized Python/Pillow regional compositing; Mobi head uses a source-part transform after two generated candidates failed the size target.",
-    "generation_source_name": "exec-1bf55f2c-e6aa-4314-a577-99922f59dc5f.png",
     "review": {
       "status": "accepted_for_reference",
       "reviewer": "Codex",
       "authority": "User requested correction of the preceding full reference review; regional Python/Pillow compositing authorization is retained from issue 396.",
-      "review_date": "2026-10-05",
       "separate_user_visual_signoff": false,
       "checks": [
         "Inspected current full sheet and enlarged before/after crops for the requested correction, identity, proportions, occlusion and smooth patch boundaries.",
         "Confirmed unchanged canvas/mode and zero changed pixels outside the current edit mask; retained prior regional correction provenance.",
         "Static reference acceptance only; existing animation clips and device rendering were not validated."
       ],
-      "corrections": [
-        "Seated wheel-holding rear view retains only narrow upper-arm edges below the head; forward hands and feet are occluded by the torso. Do not widen the torso to hide limbs.",
-        "Match the seated rear upper-arm silhouettes in mobi_goggles: slender vertical oval crescents hugging the torso, with upper endpoints hidden under the head and smooth outward-then-inward curves. No horizontal fin, free top tip or shoulder shelf.",
-        "Standing side head uses a 1.055 uniform adjustment of the existing head about neck anchor [769,838], eased to the original neck over y824..848. Face identity, seated row, body below y849 and floor contact remain unchanged."
-      ],
       "limits": [
         "Mobi rear anatomy is a conservative generated interpretation; the canonical image does not show the back.",
-        "Side views are left-facing oblique/profile references, not calibrated 90-degree orthographic projections."
+        "Side views are left-facing oblique/profile references, not calibrated 90-degree orthographic projections.",
+        "Evidence preserves the earlier review declaration; local review captures are not included."
       ],
-      "evidence": "output/imagegen/reference-review-fixes-20261005/review.json",
+      "evidence": "https://github.com/devemberx/mobimon/blob/ecbc87cc13b68312b89446708a63f162ba403896/art/characters/mobi/references/reference.json",
       "date": "2026-10-05"
     },
     "views": [
       {
         "id": "seated_front",
-        "cell_rect_px": [
-          0,
-          0,
-          512,
-          494
-        ],
+        "cell_rect_px": [0, 0, 512, 494],
         "view_description": "front-facing",
-        "head_core_box_px_estimate": [
-          111,
-          132,
-          432,
-          372
-        ],
+        "head_core_box_px_estimate": [111, 132, 432, 372],
         "ground_y_px_estimate": 492,
-        "root_anchor_px_estimate": [
-          269,
-          492
-        ],
-        "head_width_px_estimate": 321,
-        "head_height_px_estimate": 240,
+        "root_anchor_px_estimate": [269, 492],
         "prop": "steering_wheel"
       },
       {
         "id": "seated_side_left",
-        "cell_rect_px": [
-          512,
-          0,
-          1024,
-          494
-        ],
+        "cell_rect_px": [512, 0, 1024, 494],
         "view_description": "left-facing oblique/profile; angle not calibrated",
-        "head_core_box_px_estimate": [
-          637,
-          134,
-          931,
-          373
-        ],
+        "head_core_box_px_estimate": [637, 134, 931, 373],
         "ground_y_px_estimate": 490,
-        "root_anchor_px_estimate": [
-          776,
-          490
-        ],
-        "head_width_px_estimate": 294,
-        "head_height_px_estimate": 239,
+        "root_anchor_px_estimate": [776, 490],
         "prop": "steering_wheel"
       },
       {
         "id": "seated_back",
-        "cell_rect_px": [
-          1024,
-          0,
-          1536,
-          494
-        ],
+        "cell_rect_px": [1024, 0, 1536, 494],
         "view_description": "rear-facing",
-        "head_core_box_px_estimate": [
-          1102,
-          135,
-          1411,
-          380
-        ],
+        "head_core_box_px_estimate": [1102, 135, 1411, 380],
         "ground_y_px_estimate": 491,
-        "root_anchor_px_estimate": [
-          1254,
-          491
-        ],
-        "head_width_px_estimate": 309,
-        "head_height_px_estimate": 245,
+        "root_anchor_px_estimate": [1254, 491],
         "prop": "steering_wheel"
       },
       {
         "id": "standing_front",
-        "cell_rect_px": [
-          0,
-          494,
-          512,
-          1024
-        ],
+        "cell_rect_px": [0, 494, 512, 1024],
         "view_description": "front-facing",
-        "head_core_box_px_estimate": [
-          111,
-          610,
-          432,
-          848
-        ],
+        "head_core_box_px_estimate": [111, 610, 432, 848],
         "ground_y_px_estimate": 982,
-        "root_anchor_px_estimate": [
-          269,
-          982
-        ],
-        "head_width_px_estimate": 321,
-        "head_height_px_estimate": 238,
+        "root_anchor_px_estimate": [269, 982],
         "prop": null
       },
       {
         "id": "standing_side_left",
-        "cell_rect_px": [
-          512,
-          494,
-          1024,
-          1024
-        ],
+        "cell_rect_px": [512, 494, 1024, 1024],
         "view_description": "left-facing oblique/profile; angle not calibrated",
-        "head_core_box_px_estimate": [
-          629,
-          597,
-          920,
-          838
-        ],
+        "head_core_box_px_estimate": [629, 597, 920, 838],
         "ground_y_px_estimate": 982,
-        "root_anchor_px_estimate": [
-          776,
-          982
-        ],
-        "head_width_px_estimate": 291,
-        "head_height_px_estimate": 241,
+        "root_anchor_px_estimate": [776, 982],
         "prop": null
       },
       {
         "id": "standing_back",
-        "cell_rect_px": [
-          1024,
-          494,
-          1536,
-          1024
-        ],
+        "cell_rect_px": [1024, 494, 1536, 1024],
         "view_description": "rear-facing",
-        "head_core_box_px_estimate": [
-          1104,
-          611,
-          1407,
-          844
-        ],
+        "head_core_box_px_estimate": [1104, 611, 1407, 844],
         "ground_y_px_estimate": 982,
-        "root_anchor_px_estimate": [
-          1254,
-          982
-        ],
-        "head_width_px_estimate": 303,
-        "head_height_px_estimate": 233,
+        "root_anchor_px_estimate": [1254, 982],
         "prop": null
       }
-    ],
-    "compositing": {
-      "method": "Localized source-part head scaling with smooth neck attachment",
-      "before_sha256": "eed3224e3f4133cf67722440a6ebd3ae9d043a26972d40d68b4bcc5e7d97259e",
-      "after_sha256": "004d27b4c7d138b0d0fb5a0a73cbe5d92723bd94367b0ac3e3834ac794d9eef6",
-      "mask_sha256": "d81a48cb5c59040486d6fb010c330dfca0630586cfc91ff3aace8bb26fc8d511",
-      "polygons_px": [
-        [
-          [
-            775,
-            494
-          ],
-          [
-            918,
-            494
-          ],
-          [
-            918,
-            590
-          ],
-          [
-            940,
-            635
-          ],
-          [
-            940,
-            819
-          ],
-          [
-            882,
-            849
-          ],
-          [
-            681,
-            849
-          ],
-          [
-            614,
-            804
-          ],
-          [
-            614,
-            640
-          ],
-          [
-            757,
-            583
-          ]
-        ]
-      ],
-      "outside_mask_changed_pixels": 0,
-      "evidence": "output/imagegen/reference-review-fixes-20261005/review.json",
-      "previous_revision": {
-        "regions_px": [
-          [
-            1115,
-            375,
-            1403,
-            504
-          ],
-          [
-            1134,
-            362,
-            1175,
-            410
-          ],
-          [
-            1348,
-            362,
-            1385,
-            410
-          ],
-          [
-            1134,
-            353,
-            1183,
-            423
-          ],
-          [
-            1340,
-            353,
-            1386,
-            423
-          ]
-        ],
-        "outside_mask_changed_pixels": 0,
-        "method": "Original RGB plus reviewed generated patches",
-        "feather_radius_px": 2,
-        "head_contour_feather_px": null,
-        "canonical_paste": null,
-        "original_sha256": "85fdbe23084fa0e74c407ab3d7fd508c44f08f22dfc50137c2c628d82e44687a",
-        "original_git_commit": "26ec198f29077a0d3c0c069ca62b34439e39b401",
-        "mask_sha256": "cd1a994f09ea5e53c746dcc5d99716858426c69abef655b1975ff6c84b14c5a0",
-        "followup": {
-          "regions_px": [
-            [
-              1134,
-              362,
-              1175,
-              410
-            ],
-            [
-              1348,
-              362,
-              1385,
-              410
-            ]
-          ],
-          "before_sha256": "25b9e2ec77b6e0cade6364ad4fd1308171aecde30819a4f1109a64a488957b10",
-          "after_sha256": "d99f65c561288307e0ebf21d8552894a22050fca233eda5cbe849a62d879b2d1",
-          "mask_sha256": "cdebd9e2433894b88040523a7a19b08d1e77c26758c70d4ec01c56ca8737f088",
-          "feather_radius_px": 2,
-          "outside_mask_changed_pixels": 0,
-          "outside_combined_mask_changed_pixels": 0,
-          "method": "Original pixels plus reviewed image_gen patches; original gray backdrop preserved or reconstructed where old geometry was removed."
-        },
-        "latest_revision": {
-          "regions_px": [
-            [
-              1134,
-              353,
-              1183,
-              423
-            ],
-            [
-              1340,
-              353,
-              1386,
-              423
-            ]
-          ],
-          "before_sha256": "d99f65c561288307e0ebf21d8552894a22050fca233eda5cbe849a62d879b2d1",
-          "after_sha256": "eed3224e3f4133cf67722440a6ebd3ae9d043a26972d40d68b4bcc5e7d97259e",
-          "mask_sha256": "9ae30f95e998f84d1d5afeca48b6b848fda5dd2acea735d6a1234d4ddb34c763",
-          "feather_radius_px": 2,
-          "outside_mask_changed_pixels": 0,
-          "outside_combined_mask_changed_pixels": 0,
-          "method": "Original pixels plus reviewed image_gen patches; original gray backdrop preserved or reconstructed where old geometry was removed."
-        }
-      }
-    },
-    "correction_reference": {
-      "path": "art/items/mobi_goggles/references/mobi_goggles_turnaround.png",
-      "sha256": "75ada5b6a752db4da3fd91bdf4dd5b66e1eb766eadbc14e233f5f7ed8844dce4",
-      "view": "seated_back",
-      "scope": "Upper-arm attachment and silhouette selected by the user; goggles are not applied to the base character."
-    }
+    ]
   },
   "identity_constraints": [
     "Two cyan-to-lilac sprout leaves on a short cyan stem; never upright rabbit ears.",
@@ -415,25 +112,5 @@
     "Compact soft body and short rounded limbs; no tail is established by the canonical front. Rear reference uses a plain back.",
     "Seated wheel-holding rear view retains only narrow upper-arm edges below the head; forward hands and feet are occluded by the torso. Do not widen the torso to hide limbs.",
     "Match the seated rear upper-arm silhouettes in mobi_goggles: slender vertical oval crescents hugging the torso, with upper endpoints hidden under the head and smooth outward-then-inward curves. No horizontal fin, free top tip or shoulder shelf."
-  ],
-  "animation_contract": {
-    "reference_inputs": [
-      "canonical",
-      "turnaround"
-    ],
-    "pose_selection": {
-      "idle": "Preserve canonical seated default.",
-      "locomotion": "Use standing reference to expose limb attachments; add action-specific key poses before generating a cycle."
-    },
-    "default_prop_policy": "Wheel is a seated pose prop, not equipped clothing. Empty-handed standing is an additional anatomy reference, not an app appearance replacement.",
-    "scale": "Choose one anatomical scale from the canonical head width. Reuse it for a whole clip; never fit each frame independently to its nontransparent bounds.",
-    "anchors": "Keep a fixed root and ground plane; represent jumping and travel as intentional root offsets. Preserve crop offsets when exporting trimmed frames.",
-    "review_tolerances": {
-      "status": "initial review thresholds, not anatomical truth",
-      "same_view_head_dimension_drift_fraction_max": 0.08,
-      "same_pose_ground_spread_sheet_px_max": 10
-    },
-    "rendering": "Use one renderer-specific transform per clip/pose, not per-frame auto-centering. Do not impose identical whole-body heights on seated and standing poses.",
-    "validation": "Review actual-size playback, contact points, loop seam and transitions into/out of seated idle; static references alone do not validate motion."
-  }
+  ]
 }

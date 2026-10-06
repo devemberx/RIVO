@@ -73,6 +73,46 @@ class ReferenceGateTest(unittest.TestCase):
         self.assertEqual(result["input_review_status"], "matched")
         self.assertEqual(result["status"], "reference_gate_passed")
 
+    def test_unchanged_master_does_not_require_duplicate_source(self):
+        self.update("art/characters/luna/references/reference.json",
+                    lambda d: d["canonical"].pop("source", None))
+        self.assertEqual(PREFLIGHT.audit(self.repo, "luna")["status"], "reference_checks_passed")
+
+    def test_item_resolves_base_images_without_copied_records(self):
+        self.update(ITEM_MANIFEST, lambda d: d.update(base_character={
+            key: value for key, value in d["base_character"].items()
+            if key in ("manifest_path", "manifest_sha256")
+        }))
+        self.assertEqual(self.check()["asset_variant"], "hat")
+
+    def test_shared_contract_is_bound_to_input_review(self):
+        contract = ".agents/skills/character-animation/references/production.md"
+        result = self.check()
+        self.assertIn(contract, result["checked_sha256"])
+        review = self.review_record(result)
+        path = self.repo / contract
+        path.write_text(path.read_text() + "\nChanged shared rule.\n")
+        with self.assertRaisesRegex(ValueError, "Reviewed input inventory mismatch"):
+            PREFLIGHT.audit(self.repo, "luna", "accessory:luna_cap", review)
+
+    def test_cap_geometry_uses_fitted_head_instead_of_base_canvas(self):
+        geometry = self.check()["geometry"]["item"]
+        self.assertAlmostEqual(geometry["attachment_points_head_uv"]["badge"][0], 0.6383, places=4)
+        self.assertAlmostEqual(geometry["item_width_over_head_width"], 0.9082, places=4)
+
+    def test_invalid_head_box_cannot_produce_scale(self):
+        for box in ([175, 345, 175, 825], [175, 345, 925, 345], [175, 345, float("nan"), 825]):
+            with self.subTest(box=box):
+                self.update(ITEM_MANIFEST, lambda d: d["canonical_fitted"].update(
+                    fitted_head_core_box_px_estimate=box))
+                with self.assertRaisesRegex(ValueError, "Invalid head box"):
+                    self.check()
+
+    def test_revised_master_requires_original_source(self):
+        self.update(ITEM_MANIFEST, lambda d: d["canonical_fitted"].pop("source"))
+        with self.assertRaisesRegex(ValueError, "Missing original source"):
+            self.check()
+
     def test_unreviewed_base_contract_change_cannot_authorize_generation(self):
         baseline = PREFLIGHT.audit(self.repo, "luna")
         review = self.review_record(baseline)
@@ -238,7 +278,7 @@ class ReferenceGateTest(unittest.TestCase):
             self.check()
 
     def test_unknown_schema_blocks(self):
-        self.update(ITEM_MANIFEST, lambda d: d.update(schema_version=2))
+        self.update(ITEM_MANIFEST, lambda d: d.update(schema_version=99))
         with self.assertRaisesRegex(ValueError, "Unsupported schema"):
             self.check()
 

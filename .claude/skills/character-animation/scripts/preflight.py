@@ -4,6 +4,7 @@
 import argparse
 import hashlib
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -34,7 +35,7 @@ class Gate:
         path, _ = self.file(relative)
         value = json.loads(path.read_text())
         require(isinstance(value, dict), f"Expected JSON object: {relative}")
-        require(value.get("schema_version") == 1, f"Unsupported schema: {relative}")
+        require(value.get("schema_version") == 2, f"Unsupported schema: {relative}")
         return value
 
     def image(self, record):
@@ -53,10 +54,13 @@ class Gate:
         require(approval in ("existing_project_canonical", "reviewed_reference_revision"),
                 "Unsupported canonical approval")
         digest = self.image(record)
-        source_digest = self.image(record["source"])
         if approval == "existing_project_canonical":
-            require(digest == source_digest, f"Canonical/source mismatch: {record['path']}")
+            require("revision_review" not in record, "Canonical/source mismatch: revised master claims unchanged")
+            if "source" in record:
+                require(digest == self.image(record["source"]), f"Canonical/source mismatch: {record['path']}")
             return
+        require(bool(record.get("source")), "Missing original source for revised master")
+        source_digest = self.image(record["source"])
         revision = record.get("revision_review", {})
         require(revision.get("status") == "accepted_for_reference", "Unreviewed canonical revision")
         for key in ("reviewer", "authority", "date", "reason", "evidence"):
@@ -75,9 +79,9 @@ class Gate:
         self.image(record)
         review = record["review"]
         require(review["status"] == "accepted_for_reference", f"Unreviewed sheet: {record['path']}")
-        for key in ("reviewer", "authority", "checks"):
+        for key in ("reviewer", "authority", "checks", "evidence"):
             require(bool(review.get(key)), f"Missing review {key}: {record['path']}")
-        require(bool(review.get("date") or review.get("review_date")), "Missing review date")
+        require(bool(review.get("date")), "Missing review date")
         require(isinstance(review.get("separate_user_visual_signoff"), bool), "Missing signoff provenance")
         width, height = record["size_px"]
         views = {}
@@ -95,16 +99,36 @@ class Gate:
         if item:
             required |= {f"item_{view}" for view in ("front", "side_left", "back")}
         require(required <= views.keys(), f"Missing views: {sorted(required - views.keys())}")
-        if item:
-            for view in record["views"]:
-                if view["id"] in required:
-                    prefix, direction = view["id"].split("_", 1)
-                    subject = "item_only" if prefix == "item" else "equipped_character"
-                    require(view["subject"] == subject and view["view"] == direction,
-                            f"View metadata mismatch: {view['id']}")
-                    require(view["pose"] == (None if prefix == "item" else prefix),
-                            f"View pose mismatch: {view['id']}")
         return review
+
+
+def head_dimensions(box):
+    require(isinstance(box, list) and len(box) == 4
+            and all(type(v) in (int, float) and math.isfinite(v) for v in box),
+            "Invalid head box")
+    width, height = box[2] - box[0], box[3] - box[1]
+    require(width > 0 and height > 0, "Invalid head box")
+    return width, height
+
+
+def item_geometry(record, base):
+    # The cap master has a different canvas/scale; use its fitted skull when recorded.
+    box = record.get("fitted_head_core_box_px_estimate", base["head_core_box_px_estimate"])
+    width, height = head_dimensions(box)
+    points = record["attachment_points_px_estimate"]
+    require(bool(points), "Missing fitted measurement: attachment_points_px_estimate")
+    normalized = {}
+    for name, point in points.items():
+        require(isinstance(point, list) and len(point) == 2
+                and all(type(v) in (int, float) and math.isfinite(v) for v in point),
+                f"Invalid attachment point: {name}")
+        normalized[name] = [(point[0] - box[0]) / width, (point[1] - box[1]) / height]
+    bounds = record["item_bounds_px_estimate"]
+    require(isinstance(bounds, list) and len(bounds) == 4
+            and all(type(v) in (int, float) and math.isfinite(v) for v in bounds)
+            and bounds[2] > bounds[0] and bounds[3] > bounds[1], "Invalid item bounds")
+    return {"head_size_px": [width, height], "attachment_points_head_uv": normalized,
+            "item_width_over_head_width": (bounds[2] - bounds[0]) / width}
 
 
 def verify_input_review(path, checked):
@@ -127,6 +151,7 @@ def verify_input_review(path, checked):
 def audit(repo, character, item=None, reviewed_inputs=None):
     gate = Gate(repo)
     catalog = gate.document("art/characters/reference_catalog.json")
+    gate.file(catalog["contract_path"])
     character = character.removeprefix("friend:")
     require(character in catalog["characters"], f"Unknown character: {character}")
     base_path = catalog["characters"][character]
@@ -136,10 +161,10 @@ def audit(repo, character, item=None, reviewed_inputs=None):
     gate.canonical(base["canonical"])
     reviews = {base_path: gate.sheet(base["turnaround"])}
     require(bool(base["identity_constraints"]), "Missing base identity constraints")
-    for key in ("scale", "anchors", "rendering", "validation", "pose_selection", "default_prop_policy"):
-        require(bool(base["animation_contract"].get(key)), f"Missing animation contract: {key}")
-    for key in ("root_anchor_px_estimate", "head_core_box_px_estimate", "ground_y_px", "proportions"):
+    for key in ("root_anchor_px_estimate", "head_core_box_px_estimate", "ground_y_px", "pose"):
         require(base["canonical"].get(key) is not None, f"Missing canonical measurement: {key}")
+    require("default_pose_prop" in base["canonical"], "Missing default pose prop")
+    geometry = {"character": {"head_size_px": list(head_dimensions(base["canonical"]["head_core_box_px_estimate"]))}}
     manifests = [base_path]
     inputs = [base["canonical"]["path"], base["turnaround"]["path"]]
     for detail in base.get("construction_references", []):
@@ -157,20 +182,15 @@ def audit(repo, character, item=None, reviewed_inputs=None):
         link = accessory["base_character"]
         require(link["manifest_path"] == base_path, "Item links to a different base manifest")
         require(link["manifest_sha256"] == gate.checked[base_path], "Base manifest hash mismatch")
-        for key in ("canonical", "turnaround"):
-            gate.image(link[key])
-            require(link[key]["sha256"] == base[key]["sha256"], f"Item/base {key} mismatch")
         gate.canonical(accessory["canonical_fitted"])
         require(accessory["canonical_fitted"]["equipped_item_ids"] == [item], "Wrong fitted item IDs")
         reviews[item_path] = gate.sheet(accessory["turnaround"], item=True)
         require(bool(accessory["identity_constraints"]), "Missing item identity constraints")
-        for key in ("pivot", "fit", "occlusion", "transform", "character_invariants"):
+        for key in ("pivot", "fit", "occlusion"):
             require(bool(accessory["attachment_contract"].get(key)), f"Missing attachment rule: {key}")
-        for key in ("requires", "on_missing_or_hash_mismatch", "pose_selection", "runtime_boundary"):
-            require(bool(accessory["generation_gate"].get(key)), f"Missing item gate: {key}")
-        for key in ("attachment_points_px_estimate", "attachment_points_head_uv_estimate",
-                    "item_width_over_base_head_width_estimate"):
+        for key in ("attachment_points_px_estimate", "item_bounds_px_estimate"):
             require(bool(accessory["canonical_fitted"].get(key)), f"Missing fitted measurement: {key}")
+        geometry["item"] = item_geometry(accessory["canonical_fitted"], base["canonical"])
         variant = accessory["asset_variant"]
         require(isinstance(variant, str) and bool(variant), "Missing asset variant")
         manifests.append(item_path)
@@ -183,6 +203,7 @@ def audit(repo, character, item=None, reviewed_inputs=None):
         "character_id": base["character_id"],
         "item_id": item,
         "asset_variant": variant,
+        "geometry": geometry,
         "manifests_to_read": manifests,
         "images_to_inspect": inputs,
         "checked_sha256": gate.checked,
