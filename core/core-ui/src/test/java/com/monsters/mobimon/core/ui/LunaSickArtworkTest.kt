@@ -20,6 +20,47 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class LunaSickArtworkTest {
     @Test
+    fun exposedTorsoRemainsContinuousBehindTheNearHand() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        LunaSickArtworkCache.clear()
+        for (appearance in LunaAppearance.entries) {
+            val body = requireNotNull(LunaSickArtworkCache.getOrLoad(context, appearance)).body.asAndroidBitmap()
+            // This exposed flank was erased when the foreground paw was reduced.
+            for (y in 364 until 369) {
+                for (x in 190 until 197) {
+                    assertTrue(
+                        "$appearance must retain solid torso skin behind the hand at ($x, $y)",
+                        Color.alpha(body.getPixel(x, y)) >= 250,
+                    )
+                }
+            }
+        }
+    }
+
+    @Test
+    fun exposedFlankShadingHasNoOpaqueMaskSeam() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        LunaSickArtworkCache.clear()
+        for (appearance in LunaAppearance.entries) {
+            val body = requireNotNull(LunaSickArtworkCache.getOrLoad(context, appearance)).body.asAndroidBitmap()
+            // This continuous skin region previously contained a straight white mask edge.
+            for (y in 416 until 429) {
+                for (x in 167 until 179) {
+                    val left = body.getPixel(x, y)
+                    val right = body.getPixel(x + 1, y)
+                    val jump =
+                        maxOf(
+                            kotlin.math.abs(Color.red(left) - Color.red(right)),
+                            kotlin.math.abs(Color.green(left) - Color.green(right)),
+                            kotlin.math.abs(Color.blue(left) - Color.blue(right)),
+                        )
+                    assertTrue("$appearance flank shading must remain continuous at ($x, $y)", jump <= 12)
+                }
+            }
+        }
+    }
+
+    @Test
     fun sickLayersShareHeatAndPreserveStillPoseAndLoopContact() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         LunaSickArtworkCache.clear()
