@@ -34,6 +34,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.roundToInt
@@ -82,7 +83,12 @@ internal object MobiIdleTimeline {
 
 /** Canonical fitted first frames stay available before the gesture layers load. */
 private object MobiIdleFirstFrameCache {
-    private val frames = mutableMapOf<String, ImageBitmap>()
+    private val frames = ConcurrentHashMap<String, ImageBitmap>()
+
+    fun peek(assetPath: String): ImageBitmap? = frames[assetPath]
+
+    @Synchronized
+    fun clear() = frames.clear()
 
     fun getOrLoad(
         context: Context,
@@ -117,16 +123,23 @@ internal object MobiSpriteCache {
 
     fun peek(accessoryId: String? = null): ImageBitmap? = MobiIdleArtworkCache.peek(accessoryId)?.original
 
+    fun peekFirstFrame(accessoryId: String? = null): ImageBitmap? =
+        MobiIdleFirstFrameCache.peek(firstFramePath(accessoryId))
+
+    private fun firstFramePath(accessoryId: String?): String {
+        val appearance = mobiAppearanceName(accessoryId)
+        return "characters/mobi/$appearance/idle_breath/mobi_idle_breath_${appearance}_01.png"
+    }
+
     fun firstFrame(
         context: Context,
         accessoryId: String? = null,
-    ): ImageBitmap? {
-        val appearance = mobiAppearanceName(accessoryId)
-        val path = "characters/mobi/$appearance/idle_breath/mobi_idle_breath_${appearance}_01.png"
-        return MobiIdleFirstFrameCache.getOrLoad(context, path)
-    }
+    ): ImageBitmap? = MobiIdleFirstFrameCache.getOrLoad(context, firstFramePath(accessoryId))
 
-    fun clear() = MobiIdleArtworkCache.clear()
+    fun clear() {
+        MobiIdleArtworkCache.clear()
+        MobiIdleFirstFrameCache.clear()
+    }
 
     fun getOrLoad(
         context: Context,
@@ -144,14 +157,20 @@ internal fun NormalMobiIdleAnimation(
     animateFrames: Boolean = true,
 ) {
     val context = LocalContext.current.applicationContext
-    val firstFrame = remember(context, accessoryId) { MobiSpriteCache.firstFrame(context, accessoryId) }
+    // Equipment changes reset the producer before either image or gesture layers arrive.
+    val firstFrame by androidx.compose.runtime.key(accessoryId) {
+        produceState<ImageBitmap?>(MobiSpriteCache.peekFirstFrame(accessoryId), context) {
+            value = withContext(Dispatchers.IO) { MobiSpriteCache.firstFrame(context, accessoryId) }
+        }
+    }
     var artwork by remember(context, accessoryId) { mutableStateOf(MobiIdleArtworkCache.peek(accessoryId)) }
     LaunchedEffect(context, accessoryId, animateFrames) {
         if (!animateFrames) return@LaunchedEffect
         val loaded = withContext(Dispatchers.IO) { MobiIdleArtworkCache.getOrLoad(context, accessoryId) }
         artwork = loaded
     }
-    if (firstFrame == null) {
+    val fittedFirstFrame = firstFrame
+    if (fittedFirstFrame == null) {
         Box(modifier.testTag("mobi-animation-loading-${mobiAppearanceName(accessoryId)}"))
         return
     }
@@ -181,7 +200,7 @@ internal fun NormalMobiIdleAnimation(
                 compositingStrategy = CompositingStrategy.Offscreen
                 transformOrigin = TransformOrigin(0.5f, 0.9f)
                 clip = false
-            }.mobiIdleParts(firstFrame, if (animate) artwork else null) {
+            }.mobiIdleParts(fittedFirstFrame, if (animate) artwork else null) {
                 if (animate) elapsed.longValue else 0L
             },
     )
