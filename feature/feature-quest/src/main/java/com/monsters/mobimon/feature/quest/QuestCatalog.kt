@@ -6,6 +6,7 @@ import com.monsters.mobimon.core.domain.DrivingQuestIds
 import com.monsters.mobimon.core.domain.PointQuestCatalog
 import com.monsters.mobimon.core.domain.PointQuestSchedule
 import com.monsters.mobimon.core.domain.VehicleSnapshot
+import com.monsters.mobimon.core.domain.hasCustomBackground
 import com.monsters.mobimon.core.navigation.VehicleRoute
 import com.monsters.mobimon.core.presentation.CompanionAppearanceState
 import com.monsters.mobimon.core.presentation.PointBalanceState
@@ -245,7 +246,7 @@ private val hiddenContent =
             R.string.quest_hidden_background_name,
             R.string.quest_hidden_background_desc,
         ) {
-            !it.backgroundId.isNullOrBlank() && it.backgroundId != "none" && it.backgroundId != "background:default"
+            hasCustomBackground(it.backgroundId, it.backgroundPropId, it.backgroundEffectId, it.backgroundOverlayId)
         },
         HiddenQuestContent(
             DrivingQuestIds.HIDDEN_NEW_FRIEND,
