@@ -30,92 +30,53 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 
-internal object MobiCollapsedTimeline {
-    const val COLUMNS = 6
-    const val ROWS = 4
-    const val FRAME_COUNT = COLUMNS * ROWS
-    const val CYCLE_MS = 4_050L
-
-    fun frameAt(elapsedNanos: Long): Int {
-        val cycleNanos = CYCLE_MS * 1_000_000L
-        val phase = elapsedNanos.coerceAtLeast(0L) % cycleNanos
-        val progress = phase.toDouble() / cycleNanos
-        return (progress * FRAME_COUNT).toInt().coerceIn(0, FRAME_COUNT - 1)
-    }
-
-    fun blendAt(
-        elapsedNanos: Long,
-        frame: Int = frameAt(elapsedNanos),
-    ): Float {
-        val cycleNanos = CYCLE_MS * 1_000_000L
-        val phase = elapsedNanos.coerceAtLeast(0L) % cycleNanos
-        val progress = phase.toDouble() / cycleNanos
-        val frameProgress = (progress * FRAME_COUNT) - frame
-        return frameProgress.toFloat().coerceIn(0f, 1f)
-    }
-}
-
-internal object MobiDizzyStarsTimeline {
-    const val COLUMNS = 6
-    const val ROWS = 2
-    const val FRAME_COUNT = COLUMNS * ROWS
-    const val CYCLE_MS = 1_538L
-
-    fun frameAt(elapsedNanos: Long): Int {
-        val cycleNanos = CYCLE_MS * 1_000_000L
-        val phase = elapsedNanos.coerceAtLeast(0L) % cycleNanos
-        val progress = phase.toDouble() / cycleNanos
-        return (progress * FRAME_COUNT).toInt().coerceIn(0, FRAME_COUNT - 1)
-    }
-}
-
 internal object MobiCollapsedSpriteCache {
     const val CELL = 408
     const val LOGICAL_CELL = 256
-    const val DEFAULT_ASSET_PATH = "characters/mobi/normal/sick/mobi_sick_normal_collapsed_sprite.png"
+    const val DEFAULT_ASSET_PATH = "characters/mobi/normal/sick/mobi_sick_normal.webp"
 
     private fun assetPathFor(accessoryId: String?): String =
         when (accessoryId) {
             "accessory:mobi_headphones" ->
-                "characters/mobi/headphones/sick/mobi_sick_headphones_collapsed_sprite.png"
+                "characters/mobi/headphones/sick/mobi_sick_headphones.webp"
             "accessory:mobi_goggles" ->
-                "characters/mobi/goggles/sick/mobi_sick_goggles_collapsed_sprite.png"
+                "characters/mobi/goggles/sick/mobi_sick_goggles.webp"
             else -> DEFAULT_ASSET_PATH
         }
 
-    @Volatile private var cached: ImageBitmap? = null
+    private data class Entry(
+        val accessoryId: String?,
+        val image: ImageBitmap,
+    )
 
-    @Volatile private var cachedAccessoryId: String? = null
+    @Volatile private var entry: Entry? = null
 
-    fun peek(accessoryId: String? = null): ImageBitmap? = if (cachedAccessoryId == accessoryId) cached else null
+    fun peek(accessoryId: String? = null): ImageBitmap? = entry?.takeIf { it.accessoryId == accessoryId }?.image
 
+    @Synchronized
     fun clear() {
-        cached = null
-        cachedAccessoryId = null
+        entry = null
     }
 
     fun getOrLoad(
         context: Context,
         accessoryId: String? = null,
     ): ImageBitmap? {
-        val current = cached
-        if (current != null && cachedAccessoryId == accessoryId) return current
+        peek(accessoryId)?.let { return it }
         return synchronized(this) {
-            val syncCurrent = cached
-            if (syncCurrent != null && cachedAccessoryId == accessoryId) return syncCurrent
+            peek(accessoryId)?.let { return it }
             val assets = context.applicationContext.assets
             val assetPath = assetPathFor(accessoryId)
+            val sourceSize = MobiSickArtworkSpec.forAccessory(accessoryId).sourceSize
             val options = BitmapFactory.Options().apply { inScaled = false }
             try {
                 assets.open(assetPath).use { stream ->
                     val bitmap = requireNotNull(BitmapFactory.decodeStream(stream, null, options))
                     require(
-                        bitmap.width == CELL * MobiCollapsedTimeline.COLUMNS &&
-                            bitmap.height == CELL * MobiCollapsedTimeline.ROWS,
+                        bitmap.width == sourceSize && bitmap.height == sourceSize,
                     )
                     bitmap.asImageBitmap().also {
-                        cachedAccessoryId = accessoryId
-                        cached = it
+                        entry = Entry(accessoryId, it)
                     }
                 }
             } catch (_: java.io.IOException) {
@@ -126,8 +87,8 @@ internal object MobiCollapsedSpriteCache {
 }
 
 internal object MobiDizzyStarsSpriteCache {
-    const val CELL = 408
-    const val ASSET_PATH = "characters/mobi/normal/sick/mobi_sick_normal_stars_sprite.png"
+    const val CELL = 1254
+    const val ASSET_PATH = "characters/mobi/normal/sick/mobi_sick_star.webp"
 
     @Volatile private var cached: ImageBitmap? = null
 
@@ -143,8 +104,7 @@ internal object MobiDizzyStarsSpriteCache {
                 assets.open(ASSET_PATH).use { stream ->
                     val bitmap = requireNotNull(BitmapFactory.decodeStream(stream, null, options))
                     require(
-                        bitmap.width == CELL * MobiDizzyStarsTimeline.COLUMNS &&
-                            bitmap.height == CELL * MobiDizzyStarsTimeline.ROWS,
+                        bitmap.width == CELL && bitmap.height == CELL,
                     )
                     bitmap.asImageBitmap().also { cached = it }
                 }
@@ -165,6 +125,7 @@ fun MobiIdleBreathAnimation(
     vehicleWarning: Boolean = false,
     vehicleHungry: Boolean = false,
     animateNormal: Boolean = true,
+    animateSick: Boolean = true,
     motionEnabled: Boolean = LocalMobiMonMotionEnabled.current,
 ) {
     val context = LocalContext.current.applicationContext
@@ -198,7 +159,7 @@ fun MobiIdleBreathAnimation(
         }
     var lastReadyState by remember(accessoryId) {
         mutableStateOf(
-            if (vehicleWarning && sprite != null) {
+            if (vehicleWarning && sprite != null && starsSprite != null) {
                 CompanionStatus.SICK
             } else if (vehicleHungry) {
                 CompanionStatus.HUNGRY
@@ -208,7 +169,14 @@ fun MobiIdleBreathAnimation(
         )
     }
     // Keep the outgoing pose visible until the warning sprite can be drawn.
-    val visibleState = if (requestedState == CompanionStatus.SICK && sprite == null) lastReadyState else requestedState
+    val visibleState =
+        if (requestedState == CompanionStatus.SICK &&
+            (sprite == null || starsSprite == null)
+        ) {
+            lastReadyState
+        } else {
+            requestedState
+        }
     LaunchedEffect(visibleState) { lastReadyState = visibleState }
 
     BoxWithConstraints(
@@ -246,11 +214,13 @@ fun MobiIdleBreathAnimation(
                     }
                 CompanionStatus.SICK -> {
                     val sheet = sprite
-                    if (sheet != null) {
+                    val stars = starsSprite
+                    if (sheet != null && stars != null) {
                         Box(Modifier.fillMaxSize().testTag("mobi-sick-layer"), contentAlignment = Alignment.Center) {
                             val elapsed = remember { mutableLongStateOf(0L) }
-                            LaunchedEffect(Unit) {
+                            LaunchedEffect(animateSick) {
                                 elapsed.longValue = 0L
+                                if (!animateSick) return@LaunchedEffect
                                 val origin = withInfiniteAnimationFrameNanos { it }
                                 while (isActive) elapsed.longValue = withInfiniteAnimationFrameNanos { it } - origin
                             }
@@ -261,50 +231,13 @@ fun MobiIdleBreathAnimation(
                                         translationY =
                                             size.minDimension * MobiCollapsedSpriteCache.LOGICAL_CELL /
                                             MobiCollapsedSpriteCache.CELL *
-                                            fallbackAsset.translationYFraction + size.minDimension * 0.04f
+                                            fallbackAsset.translationYFraction
                                         compositingStrategy = CompositingStrategy.Offscreen
                                         clip = false
-                                    }.mobiSpriteFrames(
-                                        sheet,
-                                        MobiCollapsedTimeline.COLUMNS,
-                                        MobiCollapsedTimeline.ROWS,
-                                        blendFrames = false,
-                                    ) {
-                                        if (enabled) {
-                                            val time = elapsed.longValue
-                                            val frame = MobiCollapsedTimeline.frameAt(time)
-                                            frame + MobiCollapsedTimeline.blendAt(time, frame)
-                                        } else {
-                                            0f
-                                        }
+                                    }.mobiSickArtwork(sheet, stars, MobiSickArtworkSpec.forAccessory(accessoryId)) {
+                                        if (animateSick) elapsed.longValue else 0L
                                     },
                             )
-                            val stars = starsSprite
-                            if (stars != null) {
-                                val starsExtent = extent * 0.45f
-                                Box(
-                                    Modifier
-                                        .requiredSize(starsExtent)
-                                        .graphicsLayer {
-                                            translationX = size.width * 0.05f
-                                            translationY = -size.height * 0.25f
-                                            compositingStrategy = CompositingStrategy.Offscreen
-                                            clip = false
-                                        }.mobiSpriteFrames(
-                                            stars,
-                                            MobiDizzyStarsTimeline.COLUMNS,
-                                            MobiDizzyStarsTimeline.ROWS,
-                                            blendFrames = false,
-                                        ) {
-                                            if (enabled) {
-                                                val time = elapsed.longValue
-                                                MobiDizzyStarsTimeline.frameAt(time).toFloat()
-                                            } else {
-                                                0f
-                                            }
-                                        },
-                                )
-                            }
                         }
                     }
                 }

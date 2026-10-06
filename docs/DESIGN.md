@@ -140,8 +140,9 @@ and the “작은 도전, 큰 여정” message.
 
 [Store](../feature/feature-customization/src/main/java/com/monsters/mobimon/feature/customization/CustomizationScreen.kt)
 places preview/actions left and catalog right: two columns for backgrounds,
-three for friends, clothes, effects and props. Allow per-friend clothing previews
-and an owned filter. Show the first frame while animations load; still cards use
+three for friends, clothes, effects and props. Enter Clothes on the equipped friend;
+reset clothing previews when the equipped friend changes. Allow per-friend clothing
+previews and an owned filter. Show the first frame while animations load; still cards use
 the same frame. Panels scroll for enlarged text.
 
 Preview stays local until Apply. Equipment persists per friend; purchases grant
@@ -233,6 +234,11 @@ Hungry rendering loads pre-extracted lossless WebP parts and precomputed facial
 morph data; the six-second timeline is procedural, not an animated WebP file.
 Hungry body/equipment textures and expression parts retain the idle master's
 pixel density; logical animation coordinates must not limit texture resolution.
+Sick appearances share a
+4.8-second grounded breath and brief sleepy eye opening, with three stars on a
+2.4-second orbit. The fixed-color blue orbit stays broken around each star;
+the home movement preference stops travel while these gestures continue.
+Explicit nonanimated previews hold the first pose. See [sick motion](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/MobiSickArtwork.kt).
 
 Respect the shared motion preference; animation never authorizes commands.
 Settings controls floating wandering; unknown/failed reads keep it stationary.

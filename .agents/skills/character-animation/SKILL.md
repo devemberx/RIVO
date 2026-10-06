@@ -71,6 +71,14 @@ requested connections. Follow [coordinate rules](references/production.md#motion
 and action-specific continuity guidance. Numerical diagnostics are optional tools
 for suspected drift/contact/spacing defects, not a requirement for every gesture.
 
+For looping animation review, deliver the dark card-style
+[comparison HTML](references/review-export.md#comparison-html) by default: before
+and after on one clock, equipped variants, speed/background/size controls, seek
+and key poses. Use the helper for procedural Canvas adapters as well as atlas
+players. For new motion without an earlier clip, hold a reviewed reference pose
+on the left and label it as a still reference. Do not bake a procedural clip just
+to fit a frame-only review tool.
+
 ## 4. Accept only observed, evidenced results
 
 Use the [acceptance checks](references/review-export.md#acceptance-evidence).
