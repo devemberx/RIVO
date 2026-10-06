@@ -117,7 +117,7 @@
     },
     "item_width_over_base_head_width_estimate": 0.7833,
     "item_width_over_fitted_head_width_estimate": 0.9082,
-    "notes": "Direct crop of the original fitted character; no cap enlargement or redrawing. Fit uses the source fitted skull width, not the standalone product icon or obsolete runtime cap. Runtime sprites remain a separate migration.",
+    "notes": "Final geometry and fitted-scale authority. Derive all runtime fits and turnaround views from this master, using its fitted skull width. The item sheet records provenance; the turnaround must never redefine the master.",
     "derivation": {
       "source_crop_px": [
         985,
@@ -152,14 +152,14 @@
   },
   "turnaround": {
     "path": "art/items/luna_cap/references/luna_cap_turnaround.png",
-    "sha256": "43bb1a2bd7e7e4442004a50b6933f651e4439a547aabdf4c436832a8e25493c1",
+    "sha256": "255b46ccf3b2f35ecbca770c13a252274500806c5e0242e3caee86bd3fd392af",
     "size_px": [
       1254,
       1254
     ],
     "mode": "RGB",
-    "tool": "Built-in image_gen followed by user-authorized regional Python compositing",
-    "generation_source_name": "exec-47bd9194-4133-4b30-9572-232a7f7421c4.png",
+    "tool": "image_gen master-guided side/rear views plus user-authorized direct master/source pixel compositing in front views",
+    "generation_source_name": "exec-48b2a824-22b5-4ec0-b654-afe321d2e6ea.png",
     "background": "opaque neutral gray; reference-only, not runtime animation frames",
     "layout": {
       "columns": 3,
@@ -318,16 +318,16 @@
     "review": {
       "status": "accepted_for_reference",
       "reviewer": "Codex",
-      "authority": "User selected the original large cap in core-ui mobimon_luna_items.png, requested removal of obsolete small references and compositing residue, and required both ears hidden in left-facing side views. Python compositing was explicitly authorized.",
+      "authority": "User explicitly designated the current seated front master as the final authority and required the turnaround to follow it; Python source-pixel compositing was already authorized.",
       "date": "2026-10-06",
       "separate_user_visual_signoff": false,
-      "evidence": "output/imagegen/character-animation/luna-cap-source-401/reference-review.json",
+      "evidence": "output/imagegen/character-animation/luna-cap-source-401/master-authority-review.json",
       "checks": [
-        "Inspected full sheet against the direct original-source master for cap proportion, smooth crown and brim, and consistent front/rear tilt.",
-        "Inspected seated and standing left-facing cells: no white ear or purple inner ear protrudes above or behind the cap. Front and rear exposed ears remain.",
-        "Inspected seated steering wheel, empty-handed standing pose, tail attachment/curl and complete silhouettes.",
-        "Static reference review only; new runtime clips and continuous playback remain pending.",
-        "All three left-side sprouts show narrower projected leaf surfaces and near/far overlap. Complete side cells preserve continuous crown edges; front/rear columns are pixel-identical to the ear-corrected sheet."
+        "Seated front is a uniform 0.359-scale copy of the unchanged canonical master, placed at (7,326).",
+        "Front item and standing-front cap use the same source cap pixels as the master, with uniform scales 0.83 and 269/435 respectively; crown, brim, badge and asymmetric leaves are not redrawn.",
+        "Side/rear columns were edited with the unchanged master as primary reference. Both side ears stay hidden, side leaves remain foreshortened and overlapping, and rear tilt/sprout orientation reverses.",
+        "Inspected complete sheet and enlarged crown/brim boundaries. Complete side/rear cells avoid masks cutting across silhouettes; blending occurs only in empty inter-column gray.",
+        "Static reference review only. Runtime idle/happy fit comparison is retained separately; final continuous motion observation remains pending."
       ],
       "limits": [
         "Hidden surfaces are generated interpretations, not surveyed geometry. Side views are not calibrated orthographic projections.",
@@ -335,18 +335,44 @@
       ]
     },
     "compositing": {
-      "regions_px": [
+      "method": "Direct master seated-front copy and front cap source pixels; complete generated side/rear columns, with 24px cosine blend only in empty inter-column gray.",
+      "seated_master_transform": [
         [
-          418,
+          0.359,
           0,
-          836,
-          1254
+          7
+        ],
+        [
+          0,
+          0.359,
+          326
         ]
       ],
-      "method": "Complete side-view cells; cosine blend only through empty inter-column background, preserving all front and rear artwork",
-      "outside_mask_changed_pixels": 0,
-      "mask_sha256": "489eefd6992824444cd535c1a72efa46a46b9e33098d20876df5c1b80cde07ec",
-      "background_blend_width_px": 24
+      "source_cap_front_item_transform": [
+        [
+          0.83,
+          0,
+          -21.53
+        ],
+        [
+          0,
+          0.83,
+          47.30000000000001
+        ]
+      ],
+      "source_cap_standing_transform": [
+        [
+          0.6183908045977011,
+          0,
+          61.04827586206898
+        ],
+        [
+          0,
+          0.6183908045977011,
+          754.5057471264367
+        ]
+      ],
+      "mask_sha256": "d00432459c119795eeca0f00693c6e2215535cc52faac8f3408ace690f53c92f"
     }
   },
   "identity_constraints": [
@@ -359,7 +385,7 @@
   "attachment_contract": {
     "pivot": "crown_contact",
     "fit": [
-      "Use the large fitted cap from mobimon_luna_items.png; no small-cap variant is supported.",
+      "The canonical_fitted seated front master is the final authority for cap shape and fitted scale. The original item sheet is its provenance; all turnaround and runtime variants must follow the master. No small-cap variant is supported.",
       "Cap tilts down toward screen right in front. Preserve the opposite exposed ear tip and purple interior exactly as in the source master; do not expand the crown across that ear tip.",
       "Front: anatomical-left ear is completely hidden. Rear: the corresponding screen-left ear is hidden and the tilt reverses.",
       "Left-facing side/oblique views: both ears are occluded by the cap; no white tip or purple interior may protrude behind the crown.",
