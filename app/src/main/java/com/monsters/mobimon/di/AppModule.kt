@@ -3,6 +3,7 @@ package com.monsters.mobimon.di
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import com.monsters.mobimon.core.database.AppDatabase
+import com.monsters.mobimon.core.database.DataStoreDriveEvidenceStore
 import com.monsters.mobimon.core.database.DataStoreSettingsRepository
 import com.monsters.mobimon.core.database.PointEconomyRepository
 import com.monsters.mobimon.core.database.RoomCompanionRepository
@@ -10,6 +11,7 @@ import com.monsters.mobimon.core.domain.Clock
 import com.monsters.mobimon.core.domain.CurrentAppUse
 import com.monsters.mobimon.core.domain.CurrentVehicleEvidence
 import com.monsters.mobimon.core.domain.DefaultPointQuestCatalog
+import com.monsters.mobimon.core.domain.DriveEvidenceAccumulator
 import com.monsters.mobimon.core.domain.IdGenerator
 import com.monsters.mobimon.core.domain.PetRepository
 import com.monsters.mobimon.core.domain.PointEconomy
@@ -28,6 +30,7 @@ import com.monsters.mobimon.debug.DebugVssProvider
 import com.monsters.mobimon.runtime.AppUseStateSource
 import com.monsters.mobimon.runtime.CompanionRuntime
 import com.monsters.mobimon.runtime.DebugAwareSignalSourceProvider
+import com.monsters.mobimon.runtime.DriveEvidenceProducer
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -150,6 +153,25 @@ object AppModule {
     @Provides
     @Singleton
     fun settings(dataStore: DataStore<Preferences>): SettingsRepository = DataStoreSettingsRepository(dataStore)
+
+    @Provides
+    @Singleton
+    fun driveEvidence(
+        vehicle: VehicleRepository,
+        dataStore: DataStore<Preferences>,
+        points: PointEconomy,
+        ids: IdGenerator,
+        utcClock: UtcClock,
+        scope: CoroutineScope,
+    ): DriveEvidenceProducer =
+        DriveEvidenceProducer(
+            vehicle,
+            DataStoreDriveEvidenceStore(dataStore),
+            points,
+            DriveEvidenceAccumulator(ids),
+            utcClock,
+            scope,
+        )
 
     @Provides
     @Singleton
