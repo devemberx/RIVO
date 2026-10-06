@@ -206,13 +206,17 @@ split rewards across Room/DataStore or replace committed data on conflict. V1–
 migrations preserve identities, evidence, rewards and equipment, including both V3
 forms; legacy XP is compatibility data, not progression.
 
+Point quest occurrences are one-time, reset-zone day, ISO week, drive ID (none means not met)
+or capped daily keys recording cumulative units, so a claim awards only new units up to
+the cap. Quest status is completed only when its current occurrence is committed;
+day/week changes are rechecked each minute.
+
 ## Planned features
 
 ### Points, cosmetics and quest occurrences
 
-Production rewards need trusted vehicle evidence and occurrence IDs/counts. Recurrence,
-reset time and interrupted runs require explicit rules; completed IDs alone do not
-establish repeat eligibility.
+Production rewards need trusted vehicle evidence, including drive IDs and daily counts;
+only the Debug overlay supplies them today. Interrupted runs require explicit rules.
 
 ### Shared vehicle condition and overlay
 

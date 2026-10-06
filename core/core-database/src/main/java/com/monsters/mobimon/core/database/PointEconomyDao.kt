@@ -44,6 +44,12 @@ interface PointEconomyDao {
         occurrenceKey: String,
     ): PointQuestCompletionEntity?
 
+    @Query("SELECT occurrenceKey FROM point_quest_completions WHERE profileId = :profileId AND questId = :questId")
+    suspend fun questOccurrenceKeys(
+        profileId: String,
+        questId: String,
+    ): List<String>
+
     @Query("SELECT * FROM point_quest_completions WHERE profileId = :profileId ORDER BY completedAtUtcMillis")
     suspend fun questCompletions(profileId: String): List<PointQuestCompletionEntity>
 
