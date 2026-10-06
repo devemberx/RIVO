@@ -247,9 +247,12 @@ build cached body, eye and hat-sprout layers; sunglasses need no eye overlay.
 The sprout moves about its retained root while the cap stays fitted from the
 master head width and eye line. Equipment changes
 preserve the breath phase; still previews hold the open-eye rest pose.
-Cap idle and happy use the large fitted cap from the registered item reference.
-Idle restores the original body origin beneath added top padding, including still
-and reduced-motion rendering. Other cap action/status clips retain their earlier
+Hungry reuses these same body and equipment sources, adding small WebP face and
+fish-thought layers with continuous local motion. It keeps the idle anatomical
+scale and ground anchor; the sunglasses mask preserves the lens edges. Cap idle,
+hungry and happy use the large fitted cap from the registered item reference.
+Idle and hungry restore the original body origin beneath added top padding,
+including still rendering. Other cap action/status clips retain their earlier
 artwork until separately migrated.
 
 Respect the shared motion preference; animation never authorizes commands.

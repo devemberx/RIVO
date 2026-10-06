@@ -12,7 +12,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
@@ -91,7 +91,7 @@ internal object LunaIdleTimeline {
         (elapsedNanos.coerceAtLeast(0L) % CYCLE_NANOS) in 1_020_000_000L until 1_140_000_000L
 }
 
-// Hat frames add 192 source pixels above the original 1254-square body canvas.
+// Idle and hungry hat sources add 192 pixels above the original 1254-square body canvas.
 // Restore that origin for animated frames and the first-frame/reduced-motion fallback.
 internal fun lunaIdleDestination(
     side: Int,
@@ -109,11 +109,29 @@ fun LunaIdleBreathAnimation(
     appearance: LunaAppearance = LunaAppearance.NORMAL,
     animateFrames: Boolean = true,
 ) {
+    LunaSourceLayerAnimation(modifier, contentDescription, appearance, animateFrames, hungry = false)
+}
+
+/** Idle and hungry use the same pose, equipment, clock and source-coordinate restoration. */
+@Composable
+internal fun LunaSourceLayerAnimation(
+    modifier: Modifier,
+    contentDescription: String?,
+    appearance: LunaAppearance,
+    animateFrames: Boolean,
+    hungry: Boolean,
+) {
     val context = LocalContext.current
     val firstFrame =
         remember(context, appearance) {
             LunaFirstFrameCache.getOrLoad(context, LunaActiveAnimation.IDLE, appearance)
         }
+    var hungryParts by remember(context, hungry) {
+        mutableStateOf(if (hungry) LunaHungryPartsCache.peek() else null)
+    }
+    LaunchedEffect(context, hungry) {
+        if (hungry) hungryParts = withContext(Dispatchers.IO) { LunaHungryPartsCache.getOrLoad(context) }
+    }
     var artwork by remember(context, appearance) { mutableStateOf(LunaIdleArtworkCache.peek(appearance)) }
     LaunchedEffect(context, appearance, animateFrames) {
         if (animateFrames) {
@@ -141,7 +159,7 @@ fun LunaIdleBreathAnimation(
                 translationX = size.width * asset.translationXFraction
                 translationY = size.height * asset.translationYFraction
             }.testTag(
-                "luna-animation-${if (firstFrame == null && artwork == null) "loading" else "frame"}-${appearance.assetName}",
+                "luna-animation-${if ((firstFrame == null && artwork == null) || (hungry && hungryParts == null)) "loading" else "frame"}-${appearance.assetName}",
             ).semantics { if (contentDescription != null) this.contentDescription = contentDescription }
             .drawWithCache {
                 val side = size.minDimension.toInt()
@@ -152,29 +170,33 @@ fun LunaIdleBreathAnimation(
                         ((size.height - side) / 2).toInt() + origin.y,
                     )
                 val pivot = Offset(size.width / 2f, (size.height - side) / 2f + side * LunaIdleTimeline.GROUND_FRACTION)
-                val renderer = artwork?.let(::LunaIdleRenderer)
+                val loaded = if (animateFrames) artwork else null
+                val sources =
+                    loaded ?: firstFrame?.let {
+                        LunaIdleArtwork(it, it.asAndroidBitmap(), null, null)
+                    }
+                val renderer = sources?.let(::LunaIdleRenderer)
+                val hungryRenderer = hungryParts?.let(::LunaHungryRenderer)
                 onDrawBehind {
                     val time = if (animateFrames) elapsed.longValue else 0L
                     scale(LunaIdleTimeline.scaleAt(time), pivot = pivot) {
-                        if (animateFrames && renderer != null) {
+                        if (renderer != null) {
                             drawIntoCanvas { canvas ->
                                 val native = canvas.nativeCanvas
                                 val save = native.save()
                                 native.translate(offset.x.toFloat(), offset.y.toFloat())
                                 native.scale(
                                     destination.width / 1254f,
-                                    destination.height / (artwork!!.body.height * 2f),
+                                    destination.height / (sources.body.height * 2f),
                                 )
                                 renderer.draw(native, time)
+                                if (hungryRenderer != null) {
+                                    // Eye and mouth regions never overlap; cap pixels are shared unchanged.
+                                    if (appearance == LunaAppearance.HAT) native.translate(0f, 192f)
+                                    hungryRenderer.draw(native, time, appearance)
+                                }
                                 native.restoreToCount(save)
                             }
-                        } else if (firstFrame != null) {
-                            drawImage(
-                                firstFrame,
-                                dstOffset = offset,
-                                dstSize = destination,
-                                filterQuality = FilterQuality.Low,
-                            )
                         }
                     }
                 }
