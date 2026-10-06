@@ -144,9 +144,9 @@ internal class LunaHungryRenderer(
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
     private val skinBounds = RectF(492f, 534f, 738f, 672f)
     private val mouthBounds = RectF(550f, 541f, 680f, 643f)
-    private val cloudBounds = RectF(928.55f, -338.1f, 1349.45f, 0f)
+    private val cloudBounds = RectF(1034f, -210f, 1400f, 84f)
     private val dotBounds =
-        arrayOf(RectF(1015.9f, 45.9f, 1048.1f, 78.1f), RectF(1027.85f, -9.15f, 1076.15f, 39.15f))
+        arrayOf(RectF(1035f, 126f, 1063f, 154f), RectF(1069f, 79f, 1111f, 121f))
     private val dropBounds = RectF()
     private val stem = Path()
     private val stemPaint =

@@ -105,7 +105,7 @@ class LunaHungryArtworkTest {
                                 (x in 246..369 && y in 450..535) ||
                                     (x in 312..335 && y in 500..555) ||
                                     (x in 321..335 && y in 510..735) ||
-                                    (x in 460..686 && y in 15..246),
+                                    (x in 510..705 && y in 80..275),
                             )
                             changes++
                         }

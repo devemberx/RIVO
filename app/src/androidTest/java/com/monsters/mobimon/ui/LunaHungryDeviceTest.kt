@@ -95,12 +95,12 @@ class LunaHungryDeviceTest {
             val transition = capture(it, "transition")
             val background = transition.getPixel(0, 0)
             var thoughtPixels = 0
-            for (y in (transition.height * .06f).toInt() until (transition.height * .17f).toInt()) {
-                for (x in (transition.width * .62f).toInt() until (transition.width * .92f).toInt()) {
+            for (y in (transition.height * .12f).toInt() until (transition.height * .22f).toInt()) {
+                for (x in (transition.width * .76f).toInt() until (transition.width * .95f).toInt()) {
                     if (transition.getPixel(x, y) != background) thoughtPixels++
                 }
             }
-            assertTrue("The fading thought cloud must not clip at the avatar slot", thoughtPixels > 5)
+            assertTrue("The fading thought cloud stays visible beside the head", thoughtPixels > 5)
             transition.recycle()
         }
         compose.mainClock.advanceTimeBy(240)
