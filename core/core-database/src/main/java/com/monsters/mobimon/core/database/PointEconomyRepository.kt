@@ -219,10 +219,8 @@ class PointEconomyRepository(
                     dao.deleteEquipped(profileId, storageSlot)
                     dao.deleteEquipped(profileId, rawSlot)
                     dao.deleteEquipped(profileId, "ACCESSORY")
-                    if (rawSlot == "BACKGROUND") {
+                    if (rawSlot == "BACKGROUND_PROP" || rawSlot == "BACKGROUND_EFFECT") {
                         dao.deleteEquipped(profileId, "BACKGROUND_OVERLAY")
-                        dao.deleteEquipped(profileId, "BACKGROUND_PROP")
-                        dao.deleteEquipped(profileId, "BACKGROUND_EFFECT")
                     }
                     return@withTransaction EquipResult.Applied
                 }
