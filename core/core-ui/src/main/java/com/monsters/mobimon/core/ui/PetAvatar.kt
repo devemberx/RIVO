@@ -524,6 +524,7 @@ fun PetAvatar(
                             modifier = Modifier.fillMaxSize(),
                             onFinished = onDisappeared,
                             isDisappearing = isDisappearing,
+                            accessoryId = equippedAccessory,
                         ) {
                             MobiIdleBreathAnimation(
                                 modifier = Modifier.fillMaxSize(),
@@ -532,6 +533,7 @@ fun PetAvatar(
                                 vehicleWarning = isSick,
                                 vehicleHungry = isHungry,
                                 animateNormal = isAnimated && hasMobiIdleSprite,
+                                animateSick = isAnimated,
                                 motionEnabled = motionEnabled,
                             )
                         }

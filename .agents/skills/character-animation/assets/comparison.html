@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>애니메이션 비교 검토</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#101b2b;color:#f2f5fa;font:15px/1.6 system-ui,sans-serif}main{max-width:1080px;margin:auto;padding:36px 24px}h1{font-size:28px;margin:0 0 8px}p{color:#b9c8d8;margin:8px 0 22px}.badge{font-size:12px;color:#9de5e6;letter-spacing:.1em}section{display:flex;gap:22px;flex-wrap:wrap}.card{flex:1;min-width:280px;border:1px solid #354154;border-radius:20px;background:#172437;padding:20px}.card h2{font-size:17px;margin:0}.stage{min-height:340px;display:grid;place-items:center;margin:14px 0;border-radius:12px;background:#24354b;overflow:hidden}.stage canvas{max-width:100%;height:auto;object-fit:contain}.caption{font-size:13px;color:#b9c8d8;min-height:44px}.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:24px 0}button,select{background:#273b50;color:#fff;border:1px solid #607286;padding:10px 16px;border-radius:10px;font:inherit;cursor:pointer}button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #9de5e6;outline-offset:3px}label{display:flex;align-items:center;gap:8px}input[type=range]{width:100%;accent-color:#96e6e5}#status{font-variant-numeric:tabular-nums;color:#bdd1df;font-size:13px}.light .stage,.light .keys canvas{background:#f2eee6}.keys{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}.keys canvas{width:100%;background:#24354b;border-radius:12px}.keys figure{margin:0}.keys figcaption{font-size:12px;color:#bdcbd9}.notes{border-top:1px solid #354154;padding-top:16px;font-size:13px}@media(max-width:700px){main{padding:24px 16px}.keys{grid-template-columns:repeat(2,1fr)}}
+</style>
+<main><span class="badge">ANIMATION / COMPARISON / REVIEW PENDING</span><h1 id="title"></h1><p id="summary"></p>
+<section><article class="card"><h2 id="beforeLabel"></h2><div class="stage"><canvas id="before" aria-label="기존 애니메이션"></canvas></div><div id="beforeCaption" class="caption"></div></article>
+<article class="card"><h2 id="afterLabel"></h2><div class="stage"><canvas id="after" aria-label="새 애니메이션"></canvas></div><div id="afterCaption" class="caption"></div></article></section>
+<fieldset id="controls" disabled style="border:0;padding:0"><div class="controls">
+<button id="pause" type="button">일시 정지</button><button id="restart" type="button">처음부터</button>
+<label>착용 상태 <select id="variant"></select></label><label>속도 <select id="speed"><option value="1">1배속</option><option value="0.25">0.25배속</option></select></label>
+<button id="background" type="button">밝은 배경</button>
+<label>크기 <select id="size"></select></label></div><label for="seek">새 동작의 시간</label><input id="seek" type="range" min="0" step="1" value="0"></fieldset>
+<div id="status" role="status">이미지 준비 중…</div><h2 style="font-size:18px;margin-top:28px">주요 포즈</h2><div class="keys" id="keys"></div>
+<div class="notes">검토 대기 중입니다. 각 착용 상태를 1배속과 0.25배속으로 각각 3회 확인하고 관찰 결과를 기록해 주세요. 브라우저 비교 화면은 Android 렌더링·기기 성능 검증을 대신하지 않습니다. 크기는 CSS px이며 실제 표시 크기와 DPR을 아래에 함께 기록합니다.</div></main>
+<script>
+const spec=__REVIEW_SPEC__;
+__RENDERER__
+const $=id=>document.getElementById(id);
+for(const id of ['title','summary','beforeLabel','afterLabel','beforeCaption','afterCaption'])$(id).textContent=spec[id]||'';
+document.title=spec.title; $('seek').max=spec.duration_ms;
+for(const v of spec.variants)$('variant').add(new Option(v.label,v.id));
+for(const size of spec.display_sizes_css_px)$('size').add(new Option(size+'px',size));
+$('size').value=spec.display_sizes_css_px[Math.min(1,spec.display_sizes_css_px.length-1)];
+let elapsed=0,playing=!matchMedia('(prefers-reduced-motion: reduce)').matches,last=null,maxGap=0,renderer=null;
+function resetTiming(){last=null;maxGap=0;}
+function setPlaying(value){playing=value;$('pause').textContent=playing?'일시 정지':'재생';resetTiming();}
+function resize(){for(const id of ['before','after']){const c=$(id),width=+$('size').value;c.width=Math.round(width*devicePixelRatio);c.height=Math.round(c.width*spec.canvas_px[1]/spec.canvas_px[0]);c.style.width=width+'px';c.style.height='auto';}render();}
+function render(){if(!renderer)return;const ms=elapsed,v=$('variant').value;renderer.drawBefore($('before'),ms,v);renderer.drawAfter($('after'),ms,v);$('seek').value=ms%spec.duration_ms;const rect=$('after').getBoundingClientRect();$('status').textContent=`${(ms%spec.duration_ms/1000).toFixed(2)} / ${(spec.duration_ms/1000).toFixed(2)}초 · ${Math.floor(ms/spec.duration_ms)}회 반복 · ${$('speed').value}배속 · ${rect.width.toFixed(0)} CSS px / ${(rect.width*devicePixelRatio).toFixed(0)} 표시 px · DPR ${devicePixelRatio} · 최대 RAF ${maxGap.toFixed(1)}ms`;}
+function keys(){if(!renderer)return;$('keys').replaceChildren();for(const sample of spec.samples){const figure=document.createElement('figure'),c=document.createElement('canvas'),cap=document.createElement('figcaption');c.width=spec.canvas_px[0];c.height=spec.canvas_px[1];cap.textContent=`${(sample.ms/1000).toFixed(2)}초 · ${sample.label}`;figure.append(c,cap);$('keys').append(figure);renderer.drawAfter(c,sample.ms,$('variant').value);}}
+function loop(now){if(last!==null&&playing&&!document.hidden){const gap=now-last;maxGap=Math.max(maxGap,gap);elapsed+=gap*Number($('speed').value);}last=now;render();requestAnimationFrame(loop);}
+$('pause').onclick=()=>setPlaying(!playing);$('restart').onclick=()=>{elapsed=0;resetTiming();render();};$('speed').onchange=resetTiming;
+$('background').onclick=()=>{document.body.classList.toggle('light');$('background').textContent=document.body.classList.contains('light')?'어두운 배경':'밝은 배경';};
+$('size').onchange=resize;
+$('variant').onchange=()=>{resetTiming();keys();render();};
+$('seek').oninput=()=>{setPlaying(false);elapsed=+$('seek').value;render();};
+document.addEventListener('visibilitychange',resetTiming);window.addEventListener('resize',resize);
+Promise.all(Object.entries(spec.images).map(async([name,src])=>{const image=new Image();image.src=src;await image.decode();return [name,image];})).then(entries=>{renderer=createAnimationReview(Object.fromEntries(entries));$('controls').disabled=false;setPlaying(playing);resize();keys();requestAnimationFrame(loop);}).catch(error=>{$('status').textContent='미리보기 준비 실패: '+error.message;});
+// Deterministic sampling is evidence, never automatic visual acceptance.
+window.animationReview={seek(ms){elapsed=ms;setPlaying(false);render();},get stats(){return {ready:!!renderer,elapsed,maxGap,variant:$('variant').value,dpr:devicePixelRatio};}};
+</script></html>

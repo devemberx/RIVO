@@ -7,9 +7,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.FilterQuality
@@ -49,25 +50,32 @@ internal fun MobiAppearAnimation(
 ) {
     val context = LocalContext.current.applicationContext
     val finished by rememberUpdatedState(onFinished)
-    val sheet by produceState<Pair<Boolean, ImageBitmap?>>(false to null, context) {
+    val appearanceName = mobiAppearanceName(accessoryId)
+    var sheet by remember(context, appearanceName) {
+        mutableStateOf<Pair<Boolean, ImageBitmap?>>(false to null)
+    }
+    LaunchedEffect(context, appearanceName) {
         val image =
             withContext(Dispatchers.IO) {
                 try {
-                    context.assets.open("characters/mobi/normal/appear/mobi_appear_normal_sprite.png").use {
-                        val options =
-                            BitmapFactory.Options().apply {
-                                inSampleSize = 2
-                                inScaled = false
-                            }
-                        BitmapFactory.decodeStream(it, null, options)?.asImageBitmap()
-                    }
+                    context.assets
+                        .open(
+                            "characters/mobi/$appearanceName/appear/mobi_appear_${appearanceName}_sprite.png",
+                        ).use {
+                            val options =
+                                BitmapFactory.Options().apply {
+                                    inSampleSize = 2
+                                    inScaled = false
+                                }
+                            BitmapFactory.decodeStream(it, null, options)?.asImageBitmap()
+                        }
                 } catch (_: java.io.IOException) {
                     null
                 }
             }
-        value = true to image
+        sheet = true to image
     }
-    val elapsed = remember { mutableLongStateOf(0L) }
+    val elapsed = remember(appearanceName) { mutableLongStateOf(0L) }
     LaunchedEffect(sheet) {
         if (!sheet.first) return@LaunchedEffect
         if (sheet.second != null) {
