@@ -288,7 +288,15 @@ class PointEconomyRepository(
                 val isHiddenQuest = questId.startsWith("quest_hidden_")
                 val drivingResult = drivingEvaluator.evaluateById(questId, _driveEvaluation.value)
                 if (!isHiddenQuest) {
-                    if (current != displayedSnapshot) return@withTransaction PointAwardResult.EvidenceChanged
+                    // Publications can advance while the claim waits for the transaction.
+                    // Revalidate both observations, retaining source/session and ordering guards.
+                    if (evaluator.validateSnapshot(displayedSnapshot, expectedSource, clock.nowMillis()) != null ||
+                        current.epoch != displayedSnapshot.epoch ||
+                        current.sequence < displayedSnapshot.sequence ||
+                        current.receivedAtMillis < displayedSnapshot.receivedAtMillis
+                    ) {
+                        return@withTransaction PointAwardResult.EvidenceChanged
+                    }
                     if (drivingResult != null &&
                         !drivingResult.isSatisfied
                     ) {
