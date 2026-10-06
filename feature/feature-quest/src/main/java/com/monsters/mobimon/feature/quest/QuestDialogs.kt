@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -32,10 +33,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -55,8 +58,11 @@ internal fun QuestRewardSuccessModal(
     outfitId: String?,
     backgroundId: String?,
     scale: Float,
+    viewportWidth: Dp,
+    viewportHeight: Dp,
     onConfirm: () -> Unit,
 ) {
+    val parentDensity = LocalDensity.current
     val motionEnabled = LocalMobiMonMotionEnabled.current
     val entrance = remember(motionEnabled) { Animatable(if (motionEnabled) 0f else 1f) }
     val avatarPop = remember(motionEnabled) { Animatable(if (motionEnabled) 0.75f else 1f) }
@@ -70,163 +76,165 @@ internal fun QuestRewardSuccessModal(
         onDismissRequest = onConfirm,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        BoxWithConstraints(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(Color(0xBF050C16))
-                    .clickable(onClick = onConfirm),
-            contentAlignment = Alignment.Center,
-        ) {
-            val modalScale = minOf(scale, maxWidth.value / 1120f, maxHeight.value / 940f)
-            Box(
+        CompositionLocalProvider(LocalDensity provides parentDensity) {
+            BoxWithConstraints(
                 modifier =
                     Modifier
-                        .width(1040.dp * modalScale)
-                        .height(880.dp * modalScale)
-                        .graphicsLayer {
-                            val progress = entrance.value
-                            alpha = progress
-                            scaleX = 0.94f + progress * 0.06f
-                            scaleY = 0.94f + progress * 0.06f
-                            translationY = (1f - progress) * 24.dp.toPx()
-                        }.clip(RoundedCornerShape(32.dp * modalScale))
-                        .background(Colors.panel)
-                        .border(2.dp * modalScale, Colors.border, RoundedCornerShape(32.dp * modalScale))
-                        .clickable {}
-                        .testTag("quest-reward-success-modal"),
+                        .size(viewportWidth, viewportHeight)
+                        .background(Color(0xBF050C16))
+                        .clickable(onClick = onConfirm),
+                contentAlignment = Alignment.Center,
             ) {
+                val modalScale = minOf(scale, maxWidth.value / 1120f, maxHeight.value / 940f)
                 Box(
                     modifier =
                         Modifier
-                            .align(Alignment.TopCenter)
-                            .offset(y = 48.dp * modalScale)
-                            .widthIn(min = 160.dp * modalScale)
-                            .height(44.dp * modalScale)
-                            .clip(RoundedCornerShape(22.dp * modalScale))
-                            .background(Colors.raised)
-                            .padding(horizontal = 20.dp * modalScale),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text =
-                            stringResource(
-                                if (bonusPoints >
-                                    0
-                                ) {
-                                    R.string.quest_modal_badge_weather_bonus
-                                } else {
-                                    R.string.quest_modal_badge
-                                },
-                            ),
-                        style = questTextStyle(24f, modalScale, color = Colors.accent),
-                    )
-                }
-                PetAvatar(
-                    modifier =
-                        Modifier
-                            .align(Alignment.TopCenter)
-                            .offset(y = 112.dp * modalScale)
-                            .size(360.dp * modalScale)
+                            .width(1040.dp * modalScale)
+                            .height(880.dp * modalScale)
                             .graphicsLayer {
-                                scaleX = avatarPop.value
-                                scaleY = avatarPop.value
-                            },
-                    appearanceKey = "GOLDEN",
-                    friendId = friendId,
-                    accessoryId = accessoryId,
-                    outfitId = outfitId,
-                    backgroundId = backgroundId,
-                    emotion = PetEmotion.HAPPY,
-                )
-                Text(
-                    text = stringResource(R.string.quest_modal_title, points),
-                    style = questTextStyle(46f, modalScale, bold = true, color = Colors.text),
-                    textAlign = TextAlign.Center,
-                    modifier =
-                        Modifier.align(Alignment.TopCenter).offset(y = 480.dp * modalScale).width(
-                            900.dp * modalScale,
-                        ),
-                )
-                Text(
-                    text =
-                        stringResource(R.string.quest_modal_subtitle).replace(
-                            "모비",
-                            when (friendId) {
-                                "friend:luna" -> "루나"
-                                "friend:las" -> "라스"
-                                else -> "모비"
-                            },
-                        ),
-                    style = questTextStyle(30f, modalScale, color = Colors.muted),
-                    textAlign = TextAlign.Center,
-                    modifier =
-                        Modifier.align(Alignment.TopCenter).offset(y = 550.dp * modalScale).width(
-                            900.dp * modalScale,
-                        ),
-                )
-                if (bonusPoints > 0) {
+                                val progress = entrance.value
+                                alpha = progress
+                                scaleX = 0.94f + progress * 0.06f
+                                scaleY = 0.94f + progress * 0.06f
+                                translationY = (1f - progress) * 24.dp.toPx()
+                            }.clip(RoundedCornerShape(32.dp * modalScale))
+                            .background(Colors.panel)
+                            .border(2.dp * modalScale, Colors.border, RoundedCornerShape(32.dp * modalScale))
+                            .clickable {}
+                            .testTag("quest-reward-success-modal"),
+                ) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopCenter)
+                                .offset(y = 48.dp * modalScale)
+                                .widthIn(min = 160.dp * modalScale)
+                                .height(44.dp * modalScale)
+                                .clip(RoundedCornerShape(22.dp * modalScale))
+                                .background(Colors.raised)
+                                .padding(horizontal = 20.dp * modalScale),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text =
+                                stringResource(
+                                    if (bonusPoints >
+                                        0
+                                    ) {
+                                        R.string.quest_modal_badge_weather_bonus
+                                    } else {
+                                        R.string.quest_modal_badge
+                                    },
+                                ),
+                            style = questTextStyle(24f, modalScale, color = Colors.accent),
+                        )
+                    }
+                    PetAvatar(
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopCenter)
+                                .offset(y = 112.dp * modalScale)
+                                .size(360.dp * modalScale)
+                                .graphicsLayer {
+                                    scaleX = avatarPop.value
+                                    scaleY = avatarPop.value
+                                },
+                        appearanceKey = "GOLDEN",
+                        friendId = friendId,
+                        accessoryId = accessoryId,
+                        outfitId = outfitId,
+                        backgroundId = backgroundId,
+                        emotion = PetEmotion.HAPPY,
+                    )
                     Text(
-                        text = stringResource(R.string.quest_modal_weather_bonus, bonusPoints),
-                        style = questTextStyle(26f, modalScale, bold = true, color = Colors.accent),
+                        text = stringResource(R.string.quest_modal_title, points),
+                        style = questTextStyle(46f, modalScale, bold = true, color = Colors.text),
                         textAlign = TextAlign.Center,
                         modifier =
-                            Modifier.align(Alignment.TopCenter).offset(y = 600.dp * modalScale).width(
+                            Modifier.align(Alignment.TopCenter).offset(y = 480.dp * modalScale).width(
                                 900.dp * modalScale,
                             ),
                     )
-                }
-                Box(
-                    modifier =
-                        Modifier
-                            .align(Alignment.TopCenter)
-                            .offset(y = (if (bonusPoints > 0) 650 else 610).dp * modalScale)
-                            .width(if (bonusPoints > 0) 640.dp * modalScale else 520.dp * modalScale)
-                            .height(64.dp * modalScale)
-                            .clip(RoundedCornerShape(32.dp * modalScale))
-                            .background(Color(0xFF0E2034))
-                            .border(1.dp * modalScale, Color(0xFF2A4968), RoundedCornerShape(32.dp * modalScale)),
-                    contentAlignment = Alignment.Center,
-                ) {
                     Text(
                         text =
-                            if (bonusPoints > 0) {
-                                stringResource(R.string.quest_modal_chip_weather_bonus, points, bonusPoints)
-                            } else {
-                                stringResource(R.string.quest_modal_chip, points)
-                            },
-                        style =
-                            questTextStyle(
-                                if (bonusPoints >
-                                    0
-                                ) {
-                                    28f
-                                } else {
-                                    32f
+                            stringResource(R.string.quest_modal_subtitle).replace(
+                                "모비",
+                                when (friendId) {
+                                    "friend:luna" -> "루나"
+                                    "friend:las" -> "라스"
+                                    else -> "모비"
                                 },
-                                modalScale,
-                                bold = true,
-                                color = Colors.success,
+                            ),
+                        style = questTextStyle(30f, modalScale, color = Colors.muted),
+                        textAlign = TextAlign.Center,
+                        modifier =
+                            Modifier.align(Alignment.TopCenter).offset(y = 550.dp * modalScale).width(
+                                900.dp * modalScale,
                             ),
                     )
-                }
-                Box(
-                    modifier =
-                        Modifier
-                            .align(Alignment.TopCenter)
-                            .offset(y = (if (bonusPoints > 0) 750 else 710).dp * modalScale)
-                            .width(440.dp * modalScale)
-                            .height(96.dp * modalScale)
-                            .clip(RoundedCornerShape(20.dp * modalScale))
-                            .background(Colors.button)
-                            .clickable(role = Role.Button, onClick = onConfirm)
-                            .testTag("quest-modal-btn-confirm"),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = stringResource(R.string.quest_action_confirm),
-                        style = questTextStyle(38f, modalScale, bold = true, color = Colors.onButton),
-                    )
+                    if (bonusPoints > 0) {
+                        Text(
+                            text = stringResource(R.string.quest_modal_weather_bonus, bonusPoints),
+                            style = questTextStyle(26f, modalScale, bold = true, color = Colors.accent),
+                            textAlign = TextAlign.Center,
+                            modifier =
+                                Modifier.align(Alignment.TopCenter).offset(y = 600.dp * modalScale).width(
+                                    900.dp * modalScale,
+                                ),
+                        )
+                    }
+                    Box(
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopCenter)
+                                .offset(y = (if (bonusPoints > 0) 650 else 610).dp * modalScale)
+                                .width(if (bonusPoints > 0) 640.dp * modalScale else 520.dp * modalScale)
+                                .height(64.dp * modalScale)
+                                .clip(RoundedCornerShape(32.dp * modalScale))
+                                .background(Color(0xFF0E2034))
+                                .border(1.dp * modalScale, Color(0xFF2A4968), RoundedCornerShape(32.dp * modalScale)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text =
+                                if (bonusPoints > 0) {
+                                    stringResource(R.string.quest_modal_chip_weather_bonus, points, bonusPoints)
+                                } else {
+                                    stringResource(R.string.quest_modal_chip, points)
+                                },
+                            style =
+                                questTextStyle(
+                                    if (bonusPoints >
+                                        0
+                                    ) {
+                                        28f
+                                    } else {
+                                        32f
+                                    },
+                                    modalScale,
+                                    bold = true,
+                                    color = Colors.success,
+                                ),
+                        )
+                    }
+                    Box(
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopCenter)
+                                .offset(y = (if (bonusPoints > 0) 750 else 710).dp * modalScale)
+                                .width(440.dp * modalScale)
+                                .height(96.dp * modalScale)
+                                .clip(RoundedCornerShape(20.dp * modalScale))
+                                .background(Colors.button)
+                                .clickable(role = Role.Button, onClick = onConfirm)
+                                .testTag("quest-modal-btn-confirm"),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.quest_action_confirm),
+                            style = questTextStyle(38f, modalScale, bold = true, color = Colors.onButton),
+                        )
+                    }
                 }
             }
         }
