@@ -247,10 +247,16 @@ build cached body, eye and hat-sprout layers; sunglasses need no eye overlay.
 The sprout moves about its retained root while the cap stays fitted from the
 master head width and eye line. Equipment changes
 preserve the breath phase; still previews hold the open-eye rest pose.
-Cap idle and happy use the large fitted cap from the registered item reference.
-Idle restores the original body origin beneath added top padding, including still
-and reduced-motion rendering. Other cap action/status clips retain their earlier
-artwork until separately migrated.
+Cap idle, hungry, sick and happy use the large fitted cap from the registered item reference.
+Idle and hungry restore the original body origin beneath added cap padding, including still
+and reduced-motion rendering. Hungry keeps its existing frame timeline; the fitted cap
+follows measured skull motion and its thought bubble clears the raised sprout. Run
+and transition cap artwork remain deferred.
+Luna sick appearances use WebP body/heat layers and small local sweat atlases. A
+small 2.2-second ground-anchored breath and continuous heat pulse retain the
+collapsed pose and blush. The sweat patches preserve the original flowing drops
+and revealed skin, interpolating the authored timing without replaying full bodies. Equipped cap geometry follows the registered
+master; explicit still previews hold the same first pose. See [sick layers](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/LunaSickAnimation.kt).
 
 Respect the shared motion preference; animation never authorizes commands.
 Settings controls floating wandering; unknown/failed reads keep it stationary.
