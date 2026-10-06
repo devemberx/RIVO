@@ -182,6 +182,7 @@ class DrivingQuestEvaluator(
             earnedPoints = earned,
             weatherCondition = data.weather,
             reason = reason,
+            dailyCount = effectiveCount,
         )
     }
 
