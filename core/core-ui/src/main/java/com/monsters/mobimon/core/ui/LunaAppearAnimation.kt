@@ -87,13 +87,16 @@ internal fun LunaAppearAnimation(
                 ) { LunaAppearTimeline.frameAt(elapsed.longValue) },
         )
         // Keep the destination composed, so the handoff cannot flash while idle frames decode.
-        LunaIdleBreathAnimation(
-            modifier =
-                Modifier.fillMaxSize().graphicsLayer {
-                    alpha = LunaAppearTimeline.idleBlendAt(elapsed.longValue)
-                },
-            appearance = appearance,
-            animateFrames = false,
-        )
+        CharacterFadeLayer(
+            alpha = { LunaAppearTimeline.idleBlendAt(elapsed.longValue) },
+            modifier = Modifier.fillMaxSize(),
+            topOutsetFraction = if (appearance == LunaAppearance.HAT) LunaIdleTimeline.HAT_TOP_OUTSET_FRACTION else 0f,
+        ) {
+            LunaIdleBreathAnimation(
+                modifier = Modifier.fillMaxSize(),
+                appearance = appearance,
+                animateFrames = false,
+            )
+        }
     }
 }

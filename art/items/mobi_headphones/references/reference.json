@@ -1,58 +1,21 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "item_id": "accessory:mobi_headphones",
   "character_id": "friend:mobi",
   "asset_variant": "headphones",
-  "issue": 396,
-  "coordinates": {
-    "paths": "repository-relative",
-    "rectangles": "[left,top,right,bottom), pixels; x right, y down",
-    "landmarks": "Manual visual estimates on canonical fitted PNG; item box excludes character anatomy.",
-    "head_normalization": "(point - base head-box top-left) / base head-box dimensions. Values may fall outside 0..1 for equipment extending past head."
-  },
   "base_character": {
     "manifest_path": "art/characters/mobi/references/reference.json",
-    "manifest_sha256": "a5c161ca4b16b5ac0105f60a54391ac22f00f352979ecb9f2122483f4125c42d",
-    "canonical": {
-      "path": "core/core-ui/src/main/assets/characters/mobi/normal/idle_breath/mobi_idle_breath_normal_01.png",
-      "sha256": "25f5e692bb3a4e9783a42b9752e7990e737213eeb944b560cf6dfc6b7b96c81c",
-      "size_px": [
-        1254,
-        1254
-      ],
-      "mode": "RGBA"
-    },
-    "turnaround": {
-      "path": "art/characters/mobi/references/mobi_turnaround.png",
-      "sha256": "004d27b4c7d138b0d0fb5a0a73cbe5d92723bd94367b0ac3e3834ac794d9eef6",
-      "size_px": [
-        1536,
-        1024
-      ],
-      "mode": "RGB"
-    },
-    "head_core_box_px_estimate": [
-      240,
-      295,
-      1000,
-      857
-    ]
+    "manifest_sha256": "e4721e96c90f9a9f911f92c3ea5a950207d6336a9a3e65f07ae20cbb2d9cf7ac"
   },
   "canonical_fitted": {
     "path": "art/items/mobi_headphones/references/mobi_headphones_seated_front_master.png",
     "sha256": "d87d3aa1e05a6da2685f62ccab4992d916d946577ae447e2f8077b8ea968b3e6",
-    "size_px": [
-      1254,
-      1254
-    ],
+    "size_px": [1254, 1254],
     "mode": "RGBA",
     "source": {
       "path": "core/core-ui/src/main/assets/characters/mobi/headphones/idle_breath/mobi_idle_breath_headphones_01.png",
       "sha256": "37c94c383c0356c8c2cb09061aa6f523c8c7bc9d74c7baef57e0e579bd1bc30e",
-      "size_px": [
-        1254,
-        1254
-      ],
+      "size_px": [1254, 1254],
       "mode": "RGBA"
     },
     "approval": "reviewed_reference_revision",
@@ -60,49 +23,14 @@
     "equipped_item_ids": [
       "accessory:mobi_headphones"
     ],
-    "alpha_bounds_px": [
-      108,
-      56,
-      1123,
-      1157
-    ],
+    "alpha_bounds_px": [108, 56, 1123, 1157],
     "alpha_threshold": 128,
-    "item_bounds_px_estimate": [
-      108,
-      252,
-      1123,
-      802
-    ],
+    "item_bounds_px_estimate": [108, 252, 1123, 802],
     "attachment_points_px_estimate": {
-      "crown_band": [
-        623,
-        276
-      ],
-      "cup_screen_left": [
-        211,
-        639
-      ],
-      "cup_screen_right": [
-        1045,
-        639
-      ]
+      "crown_band": [623, 276],
+      "cup_screen_left": [211, 639],
+      "cup_screen_right": [1045, 639]
     },
-    "attachment_points_head_uv_estimate": {
-      "crown_band": [
-        0.5039,
-        -0.0338
-      ],
-      "cup_screen_left": [
-        -0.0382,
-        0.6121
-      ],
-      "cup_screen_right": [
-        1.0592,
-        0.6121
-      ]
-    },
-    "item_width_over_base_head_width_estimate": 1.3355,
-    "notes": "Localized sprout/headband junction repair. Fitted proportions, anchors and all pixels outside the recorded correction region are preserved. The recorded runtime source remains unchanged.",
     "revision_review": {
       "status": "accepted_for_reference",
       "reviewer": "Codex",
@@ -113,187 +41,59 @@
       "separate_user_visual_signoff": false,
       "source_sha256": "37c94c383c0356c8c2cb09061aa6f523c8c7bc9d74c7baef57e0e579bd1bc30e",
       "revised_sha256": "d87d3aa1e05a6da2685f62ccab4992d916d946577ae447e2f8077b8ea968b3e6",
-      "scope": "reference_only",
-      "tool": "Built-in image_gen with regional Node.js RGBA compositing",
-      "compositing": {
-        "region_px": [
-          570,
-          235,
-          905,
-          340
-        ],
-        "feather_px": 10,
-        "changed_pixels": 30563,
-        "outside_mask_changed_pixels": 0,
-        "width": 1254,
-        "height": 1254,
-        "method": "Built-in image_gen repair, regional RGBA compositing in Node.js"
-      }
+      "scope": "reference_only"
     }
   },
   "turnaround": {
     "path": "art/items/mobi_headphones/references/mobi_headphones_turnaround.png",
     "sha256": "39726974a38ec50b3cbbb00d85fad95d298241ddb75186227895e7f102e25d2d",
-    "size_px": [
-      1254,
-      1254
-    ],
+    "size_px": [1254, 1254],
     "mode": "RGB",
-    "tool": "built-in image_gen patches; user-authorized Python/Pillow regional compositing",
-    "generation_source_name": "exec-5983a4be-1d7f-49a8-ae82-c876f02eee5b.png",
-    "background": "opaque neutral gray; reference-only, not runtime animation frames",
-    "layout": {
-      "columns": 3,
-      "rows": 3,
-      "column_bounds_px": [
-        0,
-        418,
-        836,
-        1254
-      ],
-      "row_bounds_px": [
-        0,
-        345,
-        770,
-        1254
-      ],
-      "note": "Use explicit rectangles; generation does not produce equal-height content rows."
-    },
     "views": [
       {
         "id": "item_front",
-        "subject": "item_only",
-        "pose": null,
-        "view": "front",
-        "rect_px": [
-          0,
-          0,
-          418,
-          345
-        ],
-        "camera": "front-facing",
-        "default_pose_prop": null,
-        "scale_note": "Standalone product view is enlarged for inspection; do not derive fit scale from it."
+        "rect_px": [0, 0, 418, 345],
+        "camera": "front-facing"
       },
       {
         "id": "item_side_left",
-        "subject": "item_only",
-        "pose": null,
-        "view": "side_left",
-        "rect_px": [
-          418,
-          0,
-          836,
-          345
-        ],
-        "camera": "illustrative left-facing oblique/profile; not angle-calibrated",
-        "default_pose_prop": null,
-        "scale_note": "Standalone product view is enlarged for inspection; do not derive fit scale from it."
+        "rect_px": [418, 0, 836, 345],
+        "camera": "illustrative left-facing oblique/profile; not angle-calibrated"
       },
       {
         "id": "item_back",
-        "subject": "item_only",
-        "pose": null,
-        "view": "back",
-        "rect_px": [
-          836,
-          0,
-          1254,
-          345
-        ],
-        "camera": "rear-facing",
-        "default_pose_prop": null,
-        "scale_note": "Standalone product view is enlarged for inspection; do not derive fit scale from it."
+        "rect_px": [836, 0, 1254, 345],
+        "camera": "rear-facing"
       },
       {
         "id": "seated_front",
-        "subject": "equipped_character",
-        "pose": "seated",
-        "view": "front",
-        "rect_px": [
-          0,
-          345,
-          418,
-          770
-        ],
-        "camera": "front-facing",
-        "default_pose_prop": "steering_wheel",
-        "scale_note": "Use canonical fitted source and base head width to establish scale, not sheet cell width."
+        "rect_px": [0, 345, 418, 770],
+        "camera": "front-facing"
       },
       {
         "id": "seated_side_left",
-        "subject": "equipped_character",
-        "pose": "seated",
-        "view": "side_left",
-        "rect_px": [
-          418,
-          345,
-          836,
-          770
-        ],
-        "camera": "illustrative left-facing oblique/profile; not angle-calibrated",
-        "default_pose_prop": "steering_wheel",
-        "scale_note": "Use canonical fitted source and base head width to establish scale, not sheet cell width."
+        "rect_px": [418, 345, 836, 770],
+        "camera": "illustrative left-facing oblique/profile; not angle-calibrated"
       },
       {
         "id": "seated_back",
-        "subject": "equipped_character",
-        "pose": "seated",
-        "view": "back",
-        "rect_px": [
-          836,
-          345,
-          1254,
-          770
-        ],
-        "camera": "rear-facing",
-        "default_pose_prop": "steering_wheel",
-        "scale_note": "Use canonical fitted source and base head width to establish scale, not sheet cell width."
+        "rect_px": [836, 345, 1254, 770],
+        "camera": "rear-facing"
       },
       {
         "id": "standing_front",
-        "subject": "equipped_character",
-        "pose": "standing",
-        "view": "front",
-        "rect_px": [
-          0,
-          770,
-          418,
-          1254
-        ],
-        "camera": "front-facing",
-        "default_pose_prop": null,
-        "scale_note": "Use canonical fitted source and base head width to establish scale, not sheet cell width."
+        "rect_px": [0, 770, 418, 1254],
+        "camera": "front-facing"
       },
       {
         "id": "standing_side_left",
-        "subject": "equipped_character",
-        "pose": "standing",
-        "view": "side_left",
-        "rect_px": [
-          418,
-          770,
-          836,
-          1254
-        ],
-        "camera": "illustrative left-facing oblique/profile; not angle-calibrated",
-        "default_pose_prop": null,
-        "scale_note": "Use canonical fitted source and base head width to establish scale, not sheet cell width."
+        "rect_px": [418, 770, 836, 1254],
+        "camera": "illustrative left-facing oblique/profile; not angle-calibrated"
       },
       {
         "id": "standing_back",
-        "subject": "equipped_character",
-        "pose": "standing",
-        "view": "back",
-        "rect_px": [
-          836,
-          770,
-          1254,
-          1254
-        ],
-        "camera": "rear-facing",
-        "default_pose_prop": null,
-        "scale_note": "Use canonical fitted source and base head width to establish scale, not sheet cell width."
+        "rect_px": [836, 770, 1254, 1254],
+        "camera": "rear-facing"
       }
     ],
     "review": {
@@ -312,41 +112,7 @@
         "Side views are oblique/profile references, not calibrated orthographic projections.",
         "Static reference review does not prove frame-to-frame animation stability; use canonical measurements to correct generated drift."
       ],
-      "evidence": "https://github.com/devemberx/mobimon/issues/396",
-      "corrections": [
-        "Seated wheel-holding rear view retains only narrow upper-arm edges below the head; forward hands and feet are occluded by the torso. Do not widen the torso to hide limbs.",
-        "Small white lower ear tips remain visible below the headphone cushions in both side poses, matching front and rear views."
-      ]
-    },
-    "compositing": {
-      "regions_px": [
-        [
-          649,
-          623,
-          716,
-          655
-        ],
-        [
-          649,
-          1025,
-          716,
-          1068
-        ],
-        [
-          922,
-          638,
-          1161,
-          755
-        ]
-      ],
-      "outside_mask_changed_pixels": 0,
-      "method": "Original RGB plus reviewed generated patches",
-      "feather_radius_px": 2,
-      "head_contour_feather_px": null,
-      "canonical_paste": null,
-      "original_sha256": "00dd9f529924e2289ca08305cb209047eeb8b4909200fb01537c73991097f383",
-      "original_git_commit": "26ec198f29077a0d3c0c069ca62b34439e39b401",
-      "mask_sha256": "574d9c3eac2b37fbba7a01393d600bd48aae07070668cbf1211820f4de37bbb5"
+      "evidence": "https://github.com/devemberx/mobimon/issues/396"
     }
   },
   "identity_constraints": [
@@ -364,18 +130,6 @@
     "occlusion": [
       "Headband and inner cushions behind visible head/sprout as appropriate.",
       "Near cup overlaps upper ear, leaving its small lower tip visible in front, side and rear. Far cup is occluded by head in side view. Standalone item views contain no ear anatomy."
-    ],
-    "transform": "Rigidly follow skull translation/rotation at the canonical relative scale. No independent floating, stretching or per-frame fit-to-bounds.",
-    "character_invariants": "Preserve base head/body ratio, silhouette and anchors. Keep both sprout leaves and stem; do not add a tail or upright ears. Seated wheel-holding rear view retains only narrow upper-arm edges below the head; forward hands and feet are occluded by the torso. Do not widen the torso to hide limbs."
-  },
-  "generation_gate": {
-    "requires": [
-      "base_character canonical and turnaround",
-      "canonical_fitted",
-      "reviewed item turnaround"
-    ],
-    "on_missing_or_hash_mismatch": "Stop generation and resolve missing/unreviewed references; do not invent a replacement.",
-    "pose_selection": "Seated wheel-holding idle and empty-handed standing use the same fitted item geometry and skull attachment.",
-    "runtime_boundary": "Reference-only files under art. No runtime resource replacement or automatic image-path loading is introduced."
+    ]
   }
 }

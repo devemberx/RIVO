@@ -12,7 +12,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import kotlin.math.roundToInt
 
 internal enum class CompanionStatus {
@@ -32,6 +31,7 @@ internal fun CompanionStatusCrossfade(
     state: CompanionStatus,
     motionEnabled: Boolean,
     modifier: Modifier = Modifier,
+    topOutsetFraction: Float = 0f,
     content: @Composable (CompanionStatus) -> Unit,
 ) {
     var pair by remember { mutableStateOf(StatusPair(state, state)) }
@@ -72,14 +72,15 @@ internal fun CompanionStatusCrossfade(
         // Keep each pose's sprite clock at the same keyed call site throughout the fade.
         for (status in visibleStatuses) {
             key(status) {
-                Box(
-                    Modifier.matchParentSize().graphicsLayer {
-                        alpha =
-                            when {
-                                !motionEnabled || pair.outgoing == pair.incoming -> 1f
-                                status == pair.incoming -> fade.value
-                                else -> 1f - fade.value
-                            }
+                CharacterFadeLayer(
+                    modifier = Modifier.matchParentSize(),
+                    topOutsetFraction = topOutsetFraction,
+                    alpha = {
+                        when {
+                            !motionEnabled || pair.outgoing == pair.incoming -> 1f
+                            status == pair.incoming -> fade.value
+                            else -> 1f - fade.value
+                        }
                     },
                 ) {
                     content(status)

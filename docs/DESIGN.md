@@ -32,17 +32,12 @@ unavailable data uses the ordinary unavailable state; success requires a committ
 ### Launcher icon and native splash
 
 Keep the approved launcher artwork and adaptive-mask clearance. The native splash
-uses the common sky color with a transparent icon and ends on the first app frame;
-Opaque activities on Android 14 still show this solid-color system window on launcher
-starts. [Startup](../app/src/main/java/com/monsters/mobimon/ui/StartupLoading.kt)
-shows the approved common sky immediately, expands the icon within it, gathers six curved star trails,
-reveals the equipped Home scene using the shared VSS period/crop, then shows the
-original menu face with Noto Sans KR Regular. Local profile/inventory readiness
-releases it to unchanged Home; failures reach Home's retry UI without waiting for
-OAuth or vehicle evidence. Completed startup does not replay on restoration; system-disabled
-animation uses a still face. After eight seconds a Home escape remains available.
-On a fresh launch the common sky draws before feature initialization and Compose;
-Activity restoration skips this preview and restores the existing shell directly.
+uses the common sky color and ends on the first app frame.
+[Startup](../app/src/main/java/com/monsters/mobimon/ui/StartupLoading.kt) reveals the
+equipped Home scene before the menu face. Local readiness releases Home without
+waiting for OAuth or vehicle evidence. Local failures reach Home's retry UI;
+slow startup offers an escape after eight seconds. Restoration skips the preview,
+and disabled animations use a still face.
 
 ## Reusable Compose library and asset handoff
 
@@ -62,23 +57,18 @@ Full-screen SVGs are references, not runtime assets.
 | Feature artwork/icons | Owning module's `res/drawable[-nodpi]/` |
 | UI references / temporary drafts | [docs/ui](ui/README.md) / ignored `output/imagegen/`, `tmp/imagegen/` |
 
-Luna transition frames with identical bytes share files through
-[LunaScene](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/LunaScene.kt);
-the full 24-frame sequence and its timing remain intact.
-
 #### Character and item references
 
-The [reference catalog](../art/characters/reference_catalog.json) is the common
-entry point for Mobi, Luna, Las and their items. Each `references/` folder holds
-one current master, turnaround and `reference.json`; these are not packaged.
-Manifests own proportions, attachment rules and review status. Preserve the
-canonical identity and scale; derived views do not override the master.
-An explicitly requested master correction records both original-source and revised
-hashes plus review provenance; reference acceptance does not update or validate
-existing runtime motion. Preserve the corrected attachment and occlusion rules in
-each manifest when deriving new views.
-Use the [character animation workflow](../.agents/skills/character-animation/SKILL.md)
-for reference checks, motion review and runtime export.
+The [catalog](../art/characters/reference_catalog.json) selects current masters,
+turnarounds and character/item manifests under `art/`; these are not packaged.
+Manifests own identity, pixel landmarks, fitted geometry, occlusion and review
+declarations. Masters override inferred views; standalone item views do not define
+worn size. The [shared contract](../.agents/skills/character-animation/references/production.md)
+owns coordinate conventions and production rules. Retired source sheets remain
+in Git history; current revised masters retain their
+review provenance and hash checks.
+Use the [animation workflow](../.agents/skills/character-animation/SKILL.md) to check
+current inputs and review playback before export.
 
 #### Character and item asset names
 
@@ -138,6 +128,12 @@ and the “작은 도전, 큰 여정” message. The success popup uses the sele
 friend's happy artwork through
 [PetAvatar](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/PetAvatar.kt);
 Las keeps its celebratory confetti on a transparent background.
+
+The [reward dialog](../feature/feature-quest/src/main/java/com/monsters/mobimon/feature/quest/QuestRewardSuccessContent.kt)
+shares a ground line and confirmation-button inset across friends and equipment.
+Equipment padding does not shrink Mobi/Luna bodies; reserve cap clearance.
+Show weather bonus details once in the green reward line, and give enlarged text
+room by reducing the artwork area.
 
 ## Customization
 
@@ -220,28 +216,21 @@ Network retry retains credentials; disconnect confirms local-only removal.
 
 ## Motion
 
-Keep character identity, scale and ground anchors stable across states. Mobi/Luna
-crossfade normal, hungry and sick poses over 200ms; reduced motion switches
-immediately while gentle idle breathing continues. Las uses restrained robot
-idle, movement, portal, low-battery and malfunction motions; reduced motion keeps
-a representative pose. Vehicle warnings take priority over hunger.
+Keep identity, anatomical scale and ground anchors stable across states. Mobi/Luna
+crossfade status poses; reduced motion switches immediately while gentle idle
+breathing continues. Las reduced motion keeps a representative robot pose.
+Warnings take priority over hunger; explicit nonanimated previews hold a rest pose.
 
-Mobi normal, headphones and goggles idle share the same body motion, blink and
-sprout timing; fitted items follow the head with their own sprout occlusion.
-Still previews retain the canonical open-eye pose.
-Mobi hungry appearances share a six-second loop: a longer carrot thought, a
-scrunched expression and two short hunger shakes. The head dip and expression
-start with the thought bubble fade; equipped crowns use the fitted masters.
-Headphones and goggles follow the head rigidly; reduced motion retains an equipped hungry pose.
-Hungry rendering loads pre-extracted lossless WebP parts and precomputed facial
-morph data; the six-second timeline is procedural, not an animated WebP file.
-Hungry body/equipment textures and expression parts retain the idle master's
-pixel density; logical animation coordinates must not limit texture resolution.
-Sick appearances share a
-4.8-second grounded breath and brief sleepy eye opening, with three stars on a
-2.4-second orbit. The fixed-color blue orbit stays broken around each star;
-the home movement preference stops travel while these gestures continue.
-Explicit nonanimated previews hold the first pose. See [sick motion](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/MobiSickArtwork.kt).
+Mobi equipped idle shares body, blink and sprout timing. Hungry motion keeps the
+six-second carrot-thought, scrunch and two-shake sequence; equipment follows the
+head rigidly. Sick motion uses sleepy breathing and three stars with a broken blue
+orbit. Texture density must preserve the master at the target display size.
+
+Luna idle uses a continuous 2.2-second grounded breath without restarting on
+equipment changes. Cap idle and happy follow the large fitted master and retain
+the body's scale beneath added hat padding, including still previews. Other cap
+actions/statuses retain earlier artwork until separately migrated.
+Status and appearance fades include the cap's headroom without changing the body slot.
 
 Respect the shared motion preference; animation never authorizes commands.
 Settings controls floating wandering; unknown/failed reads keep it stationary.
