@@ -248,11 +248,12 @@ The sprout moves about its retained root while the cap stays fitted from the
 master head width and eye line. Equipment changes
 preserve the breath phase; still previews hold the open-eye rest pose.
 Hungry reuses these same body and equipment sources, adding small WebP face and
-fish-thought layers in a 4.4-second gesture: three dots appear in order before
-the original-size cloud, the mouth opens, and one saliva drop grows and falls
+fish-thought layers in a 4.4-second gesture: two dots appear in order before
+the fish cloud, the mouth opens, and one saliva drop grows and falls
 without changing its attachment position at release. After the drop disappears,
 the cloud fades while the mouth closes for a short rest. Still previews hold the
-visible hungry pose. It keeps the idle anatomical scale and ground anchor;
+visible hungry pose. Hungry reduces body breathing and cap sprout motion to 25% of idle
+amplitude while preserving their rhythm, eye blinks and facial gestures. It keeps the idle anatomical scale and ground anchor;
 the sunglasses mask preserves the lens edges. Cap idle,
 hungry and happy use the large fitted cap from the registered item reference.
 Idle and hungry restore the original body origin beneath added top padding,

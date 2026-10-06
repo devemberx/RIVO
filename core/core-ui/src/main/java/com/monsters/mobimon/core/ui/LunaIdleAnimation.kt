@@ -179,7 +179,10 @@ internal fun LunaSourceLayerAnimation(
                 val hungryRenderer = hungryParts?.let(::LunaHungryRenderer)
                 onDrawBehind {
                     val time = if (animateFrames) elapsed.longValue else 0L
-                    scale(LunaIdleTimeline.scaleAt(time), pivot = pivot) {
+                    scale(
+                        if (hungry) LunaHungryTimeline.breathScaleAt(time) else LunaIdleTimeline.scaleAt(time),
+                        pivot = pivot,
+                    ) {
                         if (renderer != null) {
                             drawIntoCanvas { canvas ->
                                 val native = canvas.nativeCanvas
@@ -189,7 +192,11 @@ internal fun LunaSourceLayerAnimation(
                                     destination.width / 1254f,
                                     destination.height / (sources.body.height * 2f),
                                 )
-                                renderer.draw(native, time)
+                                renderer.draw(
+                                    native,
+                                    time,
+                                    motionFraction = if (hungry) LunaHungryTimeline.IDLE_MOTION_FRACTION else 1f,
+                                )
                                 if (hungryRenderer != null) {
                                     // Eye and mouth regions never overlap; cap pixels are shared unchanged.
                                     if (appearance == LunaAppearance.HAT) native.translate(0f, 192f)

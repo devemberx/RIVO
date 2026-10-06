@@ -150,9 +150,10 @@ internal class LunaIdleRenderer(
     fun draw(
         canvas: Canvas,
         elapsedNanos: Long,
+        motionFraction: Float = 1f,
     ) {
         artwork.sprout?.let {
-            val shift = LunaIdleTimeline.sproutShiftAt(elapsedNanos)
+            val shift = LunaIdleTimeline.sproutShiftAt(elapsedNanos) * motionFraction
             values[1] = -shift / LunaIdleGeometry.SPROUT_LEVER
             values[2] = shift * LunaIdleGeometry.SPROUT_ROOT_Y / LunaIdleGeometry.SPROUT_LEVER
             matrix.setValues(values)

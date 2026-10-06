@@ -105,7 +105,7 @@ class LunaHungryArtworkTest {
                                 (x in 246..369 && y in 450..535) ||
                                     (x in 312..335 && y in 500..555) ||
                                     (x in 321..335 && y in 510..735) ||
-                                    (x in 464..686 && y in 35..246),
+                                    (x in 460..686 && y in 15..246),
                             )
                             changes++
                         }
@@ -137,20 +137,30 @@ class LunaHungryArtworkTest {
 
     @Test
     fun thoughtBuildsBeforeTheDripAndFadesAfterIt() {
-        for (index in 0..2) {
-            val time = (280L + 230L * index) * 1_000_000L
+        for (index in 0..1) {
+            val time = (280L + 340L * index) * 1_000_000L
             assertEquals(1f, LunaHungryTimeline.thoughtAlphaAt(time, index), 0f)
             assertEquals(0f, LunaHungryTimeline.thoughtAlphaAt(time, index + 1), 0f)
         }
-        assertEquals(1f, LunaHungryTimeline.thoughtAlphaAt(960_000_000L, 3), 0f)
+        assertEquals(1f, LunaHungryTimeline.thoughtAlphaAt(960_000_000L, 2), 0f)
         assertEquals(0f, LunaHungryTimeline.dropAlphaAt(960_000_000L), 0f)
         assertEquals(0f, LunaHungryTimeline.mouthScaleAt(1_060_000_000L), 0f)
         assertEquals(.5f, LunaHungryTimeline.mouthScaleAt(1_360_000_000L), .001f)
         assertEquals(1f, LunaHungryTimeline.mouthScaleAt(1_660_000_000L), 0f)
         assertEquals(0f, LunaHungryTimeline.dropAlphaAt(1_660_000_000L), 0f)
         assertEquals(0f, LunaHungryTimeline.dropAlphaAt(3_080_000_000L), 0f)
-        assertEquals(1f, LunaHungryTimeline.thoughtAlphaAt(3_080_000_000L, 3), 0f)
-        assertEquals(0f, LunaHungryTimeline.thoughtAlphaAt(3_530_000_000L, 3), 0f)
+        assertEquals(1f, LunaHungryTimeline.thoughtAlphaAt(3_080_000_000L, 2), 0f)
+        assertEquals(0f, LunaHungryTimeline.thoughtAlphaAt(3_530_000_000L, 2), 0f)
+    }
+
+    @Test
+    fun hungryBreathingStaysSubtleWithoutFreezingOrChangingPhase() {
+        val inhale = LunaHungryTimeline.breathScaleAt(600_000_000L) - 1f
+        val exhale = 1f - LunaHungryTimeline.breathScaleAt(1_700_000_000L)
+        assertTrue("Small inhale stays visible without dominating the gesture", inhale in 0.001f..0.002f)
+        assertTrue("Small exhale retains the original breathing phase", exhale in 0.001f..0.002f)
+        assertEquals(1f, LunaHungryTimeline.breathScaleAt(0L), 0f)
+        assertEquals(1f, LunaHungryTimeline.breathScaleAt(LunaIdleTimeline.CYCLE_NANOS), 0f)
     }
 
     @Test
@@ -176,6 +186,6 @@ class LunaHungryArtworkTest {
             assertEquals(0f, LunaHungryTimeline.dropAlphaAt(time), 0f)
         }
         assertEquals(1f, LunaHungryTimeline.mouthScaleAt(LunaHungryTimeline.STILL_NANOS), 0f)
-        assertEquals(1f, LunaHungryTimeline.thoughtAlphaAt(LunaHungryTimeline.STILL_NANOS, 3), 0f)
+        assertEquals(1f, LunaHungryTimeline.thoughtAlphaAt(LunaHungryTimeline.STILL_NANOS, 2), 0f)
     }
 }

@@ -79,6 +79,9 @@ internal object LunaHungryPartsCache {
 internal object LunaHungryTimeline {
     const val CYCLE_NANOS = 4_400_000_000L
     const val STILL_NANOS = 2_200_000_000L
+    const val IDLE_MOTION_FRACTION = .25f
+
+    fun breathScaleAt(time: Long): Float = 1f + (LunaIdleTimeline.scaleAt(time) - 1f) * IDLE_MOTION_FRACTION
 
     private fun milliseconds(time: Long): Float =
         ((time.coerceAtLeast(0L) % CYCLE_NANOS).toDouble() / 1_000_000.0).toFloat()
@@ -104,7 +107,7 @@ internal object LunaHungryTimeline {
         part: Int,
     ): Float {
         val t = milliseconds(time)
-        val start = if (part == 3) 780f else 100f + part * 230f
+        val start = if (part == 2) 780f else 100f + part * 340f
         return smooth(start, start + 180f, t) * (1f - smooth(3230f, 3530f, t))
     }
 
@@ -141,9 +144,9 @@ internal class LunaHungryRenderer(
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
     private val skinBounds = RectF(492f, 534f, 738f, 672f)
     private val mouthBounds = RectF(550f, 541f, 680f, 643f)
-    private val cloudBounds = RectF(956f, -294f, 1322f, 0f)
+    private val cloudBounds = RectF(928.55f, -338.1f, 1349.45f, 0f)
     private val dotBounds =
-        arrayOf(RectF(1006f, 79f, 1034f, 107f), RectF(1020f, 35f, 1062f, 77f), RectF(1036f, -20f, 1094f, 38f))
+        arrayOf(RectF(1015.9f, 45.9f, 1048.1f, 78.1f), RectF(1027.85f, -9.15f, 1076.15f, 39.15f))
     private val dropBounds = RectF()
     private val stem = Path()
     private val stemPaint =
@@ -194,7 +197,7 @@ internal class LunaHungryRenderer(
             paint.alpha = (255 * LunaHungryTimeline.thoughtAlphaAt(elapsedNanos, index)).toInt()
             canvas.drawBitmap(parts.dot, null, bounds, paint)
         }
-        paint.alpha = (255 * LunaHungryTimeline.thoughtAlphaAt(elapsedNanos, 3)).toInt()
+        paint.alpha = (255 * LunaHungryTimeline.thoughtAlphaAt(elapsedNanos, 2)).toInt()
         canvas.drawBitmap(parts.cloud, null, cloudBounds, paint)
     }
 }
