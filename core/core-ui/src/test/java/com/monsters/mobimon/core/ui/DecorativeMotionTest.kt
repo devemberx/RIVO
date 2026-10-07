@@ -552,6 +552,7 @@ class DecorativeMotionTest {
         val bounds = compose.onNodeWithTag("mobi").fetchSemanticsNode().boundsInRoot
         val normal = pixels("mobi")
         updateStateAndDraw { warning = true }
+        awaitMobiSickArtwork()
         compose.mainClock.advanceTimeBy(800)
         val falling = pixels("mobi")
         assertTrue(normal != falling)
@@ -559,6 +560,7 @@ class DecorativeMotionTest {
         compose.mainClock.advanceTimeBy(200)
         assertTrue(falling != pixels("mobi"))
         updateStateAndDraw { warning = true }
+        awaitMobiSickArtwork()
         compose.mainClock.advanceTimeBy(2600)
         val collapsed = pixels("mobi")
         compose.mainClock.advanceTimeBy(700)
@@ -590,11 +592,19 @@ class DecorativeMotionTest {
                 animateNormal = false,
             )
         }
+        awaitMobiSickArtwork()
         compose.mainClock.advanceTimeBy(400)
         val frameA = pixels("collapsed")
         compose.mainClock.advanceTimeBy(500)
         val frameB = pixels("collapsed")
         assertTrue("Collapsed source pose moves continuously over time", frameA != frameB)
+    }
+
+    private fun awaitMobiSickArtwork() {
+        compose.waitUntil(10_000) {
+            compose.mainClock.advanceTimeByFrame()
+            compose.onAllNodesWithTag("mobi-sick-layer").fetchSemanticsNodes().isNotEmpty()
+        }
     }
 
     @Test

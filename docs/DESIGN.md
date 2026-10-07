@@ -225,12 +225,25 @@ Mobi equipped idle shares body, blink and sprout timing. Hungry motion keeps the
 six-second carrot-thought, scrunch and two-shake sequence; equipment follows the
 head rigidly. Sick motion uses sleepy breathing and three stars with a broken blue
 orbit. Texture density must preserve the master at the target display size.
+Prepare Mobi first frames and the shared sick orbit texture off the UI thread.
+Keep the avatar slot while the matching first frame loads; equipment changes
+must not display the previous item while waiting.
+Hungry facial patches are prepared on the artwork loader worker before the
+selected appearance is published. Playback interpolates unchanged cached
+textures; draw callbacks must not reconstruct pixels or rewrite bitmaps.
 
 Luna idle uses a continuous 2.2-second grounded breath without restarting on
 equipment changes. Cap idle, hungry, sick and happy follow the large fitted master;
 added padding preserves body scale in animated, still and reduced-motion rendering.
-Hungry retains its numbered timeline; run and transition cap artwork remain deferred.
-Status and appearance fades include cap headroom without changing the body slot.
+Run and transition cap artwork remain deferred. Status and appearance fades retain
+equipment/thought overflow without changing the body slot.
+
+Luna hungry reuses idle body, equipment and blinks with 25% body/sprout motion.
+Its 4.4-second gesture leads two dots from the head to a fish cloud below the Home
+greeting, then opens the mouth and grows one saliva drop that falls continuously
+from its attachment point. The cloud fades as the mouth closes for a short rest.
+Still previews hold a visible hungry pose; sunglasses preserve their lens edges.
+
 Luna sick uses WebP body/heat layers and local sweat atlases: a small 4.4-second
 ground-anchored breath and lean retain the collapsed pose, with the original
 2.2-second flowing sweat and heat pulse. Transparent status margins preserve

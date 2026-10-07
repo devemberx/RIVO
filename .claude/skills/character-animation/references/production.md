@@ -118,7 +118,7 @@ Current renderer inspection points (verify current code before editing):
 
 | Owner | Relevant contract |
 | --- | --- |
-| `PetAvatar.kt`, `LunaIdleArtwork.kt`, `LunaIdleAnimation.kt`, `LunaSickAnimation.kt`, `LunaScene.kt` | Luna idle and sick WebP layers, local sweat atlas timing, fixed anchors and master-fitted cap; hungry/run/transitions retain numbered poses |
+| `PetAvatar.kt`, `LunaIdleArtwork.kt`, `LunaIdleAnimation.kt`, `LunaHungryArtwork.kt`, `LunaSickAnimation.kt`, `LunaScene.kt` | Luna idle/hungry shared WebP body/equipment and procedural gestures, sick layers with local sweat timing and fixed anchors; run/transitions retain numbered poses |
 | `MobiIdleAnimation.kt`, `MobiIdleArtwork.kt` | Mobi source parts, eye poses, procedural transforms, first-pose fallback and sampling |
 | `LasIdleAnimation.kt` | Procedural masks/pivots tied to the 475px canonical; never apply them to turnaround sheets |
 | `Las*Animation.kt`, `Luna*Animation.kt` | Entry/exit and status playback, completion callbacks and fallbacks |

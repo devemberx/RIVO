@@ -48,9 +48,6 @@ internal val RUN_FRAME_DURATIONS_MS =
 // Match Luna idle's planted baseline using the shared 0.87 visual scale.
 internal const val LUNA_SICK_TRANSLATION_Y_FRACTION = 0.87f * (1172f - 1048f) / 1254f
 
-// Luna hungry body sits ~77px/1254 left of idle; this recenters it on the idle body.
-internal const val LUNA_HUNGRY_TRANSLATION_X_FRACTION = 0.053f
-
 enum class LunaAppearance(
     internal val assetName: String,
 ) {
@@ -112,52 +109,6 @@ internal object LunaRunAnimationCache {
     }
 }
 
-internal object LunaHungryAnimationCache {
-    @Volatile
-    private var cachedFrames: List<ImageBitmap>? = null
-
-    @Volatile
-    private var cachedAppearance: LunaAppearance = LunaAppearance.NORMAL
-
-    fun peek(): List<ImageBitmap>? = cachedFrames
-
-    fun clear() {
-        cachedFrames = null
-        cachedAppearance = LunaAppearance.NORMAL
-    }
-
-    fun getOrLoadFrames(
-        context: Context,
-        appearance: LunaAppearance = LunaAppearance.NORMAL,
-    ): List<ImageBitmap> {
-        val current = cachedFrames
-        if (current != null && cachedAppearance == appearance) return current
-        return synchronized(this) {
-            val syncCurrent = cachedFrames
-            if (syncCurrent != null && cachedAppearance == appearance) return syncCurrent
-            try {
-                val assetManager = context.applicationContext?.assets ?: context.assets
-                val decodeOptions = BitmapFactory.Options().apply { inSampleSize = 2 }
-                val basePath =
-                    "characters/luna/${appearance.assetName}/hungry/" +
-                        "luna_hungry_${appearance.assetName}_%02d.${if (appearance == LunaAppearance.HAT) "webp" else "png"}"
-                val frames =
-                    (1..24).map { i ->
-                        val path = String.format(Locale.US, basePath, i)
-                        assetManager.open(path).use { stream ->
-                            BitmapFactory.decodeStream(stream, null, decodeOptions)!!.asImageBitmap()
-                        }
-                    }
-                cachedAppearance = appearance
-                cachedFrames = frames
-                frames
-            } catch (_: Exception) {
-                emptyList()
-            }
-        }
-    }
-}
-
 internal enum class LunaActiveAnimation {
     IDLE,
     RUN,
@@ -179,12 +130,11 @@ internal object LunaFirstFrameCache {
             val key = animation to appearance
             frames[key]?.let { return@synchronized it }
             val assetName = appearance.assetName
-            val hungryExtension = if (appearance == LunaAppearance.HAT) "webp" else "png"
             val fileName =
                 when (animation) {
                     LunaActiveAnimation.IDLE -> "idle_breath/luna_idle_breath_${assetName}_base.webp"
                     LunaActiveAnimation.RUN -> "run/luna_run_left_${assetName}_01.png"
-                    LunaActiveAnimation.HUNGRY -> "hungry/luna_hungry_${assetName}_01.$hungryExtension"
+                    LunaActiveAnimation.HUNGRY -> return@synchronized null // Hunger overlays reuse the idle first pose.
                     LunaActiveAnimation.SICK ->
                         return@synchronized LunaSickArtworkCache
                             .getOrLoad(
@@ -211,11 +161,9 @@ internal object LunaFirstFrameCache {
 internal object LunaAnimationManager {
     fun retainOnly(active: LunaActiveAnimation) {
         val retainMotion = active == LunaActiveAnimation.IDLE || active == LunaActiveAnimation.RUN
-        if (!retainMotion) {
-            LunaIdleArtworkCache.clear()
-            LunaRunAnimationCache.clear()
-        }
-        if (active != LunaActiveAnimation.HUNGRY) LunaHungryAnimationCache.clear()
+        if (!retainMotion && active != LunaActiveAnimation.HUNGRY) LunaIdleArtworkCache.clear()
+        if (!retainMotion) LunaRunAnimationCache.clear()
+        if (active != LunaActiveAnimation.HUNGRY) LunaHungryPartsCache.clear()
         if (active != LunaActiveAnimation.SICK) LunaSickArtworkCache.clear()
     }
 
@@ -484,10 +432,10 @@ fun PetAvatar(
                             isHungry -> CompanionStatus.HUNGRY
                             else -> CompanionStatus.NORMAL
                         }
-                    CompanionStatusCrossfade(
+                    LunaStatusCrossfade(
                         state = lunaState,
                         motionEnabled = motionEnabled,
-                        modifier = Modifier.fillMaxSize().lunaStatusViewport(),
+                        modifier = Modifier.fillMaxSize(),
                     ) { state ->
                         LunaStateArtwork(state, appearance, isAnimated)
                     }
@@ -518,23 +466,22 @@ private fun LunaStateArtwork(
 ) {
     val stateName = if (state == CompanionStatus.NORMAL) "idle" else state.name.lowercase()
     Box(Modifier.fillMaxSize().testTag("luna-state-$stateName")) {
-        val nominalSlot = Modifier.fillMaxSize().lunaNominalSlot()
         when (state) {
             CompanionStatus.SICK ->
                 LunaSickAnimation(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().lunaStatusViewport(),
                     appearance = appearance,
                     animateFrames = animateFrames,
                 )
             CompanionStatus.HUNGRY ->
                 LunaHungryAnimation(
-                    modifier = nominalSlot,
+                    modifier = Modifier.fillMaxSize(),
                     appearance = appearance,
                     animateFrames = animateFrames,
                 )
             CompanionStatus.NORMAL ->
                 LunaIdleBreathAnimation(
-                    modifier = nominalSlot,
+                    modifier = Modifier.fillMaxSize(),
                     appearance = appearance,
                     animateFrames = animateFrames,
                 )
@@ -645,21 +592,6 @@ private fun Modifier.lunaStatusViewport(): Modifier =
         layout(constraints.maxWidth, constraints.maxHeight) { child.placeRelative(-inset, -inset) }
     }
 
-private fun Modifier.lunaNominalSlot(): Modifier =
-    layout { measurable, constraints ->
-        val side = minOf(constraints.maxWidth, constraints.maxHeight)
-        val nominalSide = (side / LunaSickTimeline.VIEWPORT_SCALE).roundToInt()
-        val inset = (side - nominalSide) / 2
-        val child =
-            measurable.measure(
-                Constraints.fixed(
-                    constraints.maxWidth - inset * 2,
-                    constraints.maxHeight - inset * 2,
-                ),
-            )
-        layout(constraints.maxWidth, constraints.maxHeight) { child.placeRelative(inset, inset) }
-    }
-
 @Composable
 fun LunaHungryAnimation(
     modifier: Modifier = Modifier,
@@ -667,15 +599,12 @@ fun LunaHungryAnimation(
     appearance: LunaAppearance = LunaAppearance.NORMAL,
     animateFrames: Boolean = true,
 ) {
-    IdleBreathAnimation(
-        LunaHungryAnimationCache::getOrLoadFrames,
-        LunaActiveAnimation.HUNGRY,
-        appearance,
-        true,
-        modifier,
-        contentDescription,
-        animateFrames,
-        extraTranslationXFraction = LUNA_HUNGRY_TRANSLATION_X_FRACTION,
+    LunaSourceLayerAnimation(
+        modifier = modifier,
+        contentDescription = contentDescription,
+        appearance = appearance,
+        animateFrames = animateFrames,
+        hungry = true,
     )
 }
 
