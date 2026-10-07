@@ -42,8 +42,8 @@ private val IDLE_BREATH_FRAME_DURATIONS_MS =
 internal val RUN_FRAME_DURATIONS_MS =
     IntArray(24) { 50 }
 
-// Match Luna idle's planted baseline using the shared 0.87 visual scale.
-internal const val LUNA_SICK_TRANSLATION_Y_FRACTION = 0.87f * (1172f - 1048f) / 1254f
+// Register the source baseline, then lower the collapsed pose onto the Home platform.
+internal const val LUNA_SICK_TRANSLATION_Y_FRACTION = 0.87f * (1172f - 1048f) / 1254f + 0.04f
 
 enum class LunaAppearance(
     internal val assetName: String,

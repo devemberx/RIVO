@@ -250,7 +250,9 @@ Still previews hold a visible hungry pose; sunglasses preserve their lens edges.
 Luna sick uses WebP body/heat layers and local sweat atlases: a small 4.4-second
 ground-anchored breath and lean retain the collapsed pose, with the original
 2.2-second flowing sweat and heat pulse. Transparent status margins preserve
-canonical face scale and ground alignment without shrinking idle or hungry poses.
+the tilted pose; a 10% smaller display scale and left inset keep it clear of Home
+dialogue. Its fixed contact point sits slightly lower on the platform; idle/hungry
+sizes and positions stay unchanged.
 Prepare sick layers and the rest pose on IO; pending equipment keeps its slot,
 and cache invalidation never waits for decoding or retains a late result.
 See [sick layers](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/LunaSickAnimation.kt).
