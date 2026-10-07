@@ -125,14 +125,15 @@ internal object LunaFirstFrameCache {
         context: Context,
         animation: LunaActiveAnimation,
         appearance: LunaAppearance,
-    ): ImageBitmap? =
-        synchronized(this) {
+    ): ImageBitmap? {
+        if (animation == LunaActiveAnimation.IDLE) return LunaIdleArtworkCache.getOrLoadFirstFrame(context, appearance)
+        return synchronized(this) {
             val key = animation to appearance
             frames[key]?.let { return@synchronized it }
             val assetName = appearance.assetName
             val fileName =
                 when (animation) {
-                    LunaActiveAnimation.IDLE -> "idle_breath/luna_idle_breath_${assetName}_base.webp"
+                    LunaActiveAnimation.IDLE -> return@synchronized null
                     LunaActiveAnimation.RUN -> "run/luna_run_left_${assetName}_01.png"
                     LunaActiveAnimation.HUNGRY -> return@synchronized null // Hunger overlays reuse the idle first pose.
                     LunaActiveAnimation.SICK ->
@@ -156,6 +157,7 @@ internal object LunaFirstFrameCache {
                 null
             }
         }
+    }
 }
 
 internal object LunaAnimationManager {

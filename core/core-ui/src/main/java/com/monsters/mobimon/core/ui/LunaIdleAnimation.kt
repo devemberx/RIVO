@@ -123,10 +123,12 @@ internal fun LunaSourceLayerAnimation(
     hungry: Boolean,
 ) {
     val context = LocalContext.current
-    val firstFrame =
-        remember(context, appearance) {
-            LunaFirstFrameCache.getOrLoad(context, LunaActiveAnimation.IDLE, appearance)
-        }
+    var firstFrame by remember(context, appearance) {
+        mutableStateOf(LunaIdleArtworkCache.peekFirstFrame(appearance))
+    }
+    LaunchedEffect(context, appearance) {
+        firstFrame = withContext(Dispatchers.IO) { LunaIdleArtworkCache.getOrLoadFirstFrame(context, appearance) }
+    }
     var hungryParts by remember(context, hungry) {
         mutableStateOf(if (hungry) LunaHungryPartsCache.peek() else null)
     }
