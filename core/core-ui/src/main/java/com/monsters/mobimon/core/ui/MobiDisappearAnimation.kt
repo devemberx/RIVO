@@ -101,7 +101,7 @@ internal fun MobiDisappearAnimation(
                         translationY = size.minDimension * (-48.24f / 1254f)
                         alpha = handoff
                         clip = false
-                    }.mobiSpriteFrames(bitmap, 6, 4, loop = false, blendFrames = false) {
+                    }.characterSpriteFrames(bitmap, 6, 4, loop = false, blendFrames = false) {
                         val playback = (elapsed.longValue - MOBI_DEPARTURE_HANDOFF_NANOS).coerceAtLeast(0L)
                         (playback / (1_000_000_000.0 / 15)).toInt().coerceAtMost(23).toFloat()
                     },

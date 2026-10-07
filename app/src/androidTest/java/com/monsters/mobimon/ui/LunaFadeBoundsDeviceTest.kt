@@ -70,7 +70,7 @@ class LunaFadeBoundsDeviceTest {
         }
         compose.waitUntil(10_000) {
             compose.mainClock.advanceTimeByFrame()
-            compose.onAllNodesWithTag("luna-animation-frame-hat").fetchSemanticsNodes().isNotEmpty()
+            compose.onAllNodesWithTag("luna-appear-atlas-hat").fetchSemanticsNodes().isNotEmpty()
         }
         compose.mainClock.advanceTimeByFrame()
         compose.mainClock.advanceTimeBy(1_504)

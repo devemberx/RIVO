@@ -8,14 +8,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -43,11 +45,11 @@ internal object LunaAppearTimeline {
     fun load(
         context: Context,
         appearance: LunaAppearance = LunaAppearance.NORMAL,
-    ): List<ImageBitmap>? =
-        LunaScene.load(
-            context,
-            "characters/luna/${appearance.assetName}/appear/luna_appear_${appearance.assetName}_%02d.png",
-        ) ?: LunaScene.load(context, "characters/luna/normal/appear/luna_appear_normal_%02d.png")
+        requiredFrameSidePx: Int =
+            LunaScene.requiredFrameSidePx(124 * context.resources.displayMetrics.density, SCENE_SCALE),
+    ): ImageBitmap? =
+        LunaAnimationAtlas.load(context, LunaAtlasAction.APPEAR, appearance, requiredFrameSidePx)
+            ?: LunaAnimationAtlas.load(context, LunaAtlasAction.APPEAR, LunaAppearance.NORMAL, requiredFrameSidePx)
 }
 
 /** One shot at 16fps: a box drops in, Luna peeks out, hops to her seat and hands off to the idle pose. */
@@ -57,26 +59,43 @@ internal fun LunaAppearAnimation(
     appearance: LunaAppearance,
     onFinished: () -> Unit,
 ) {
-    val context = LocalContext.current.applicationContext
-    val finished by rememberUpdatedState(onFinished)
-    val frames by produceState<Pair<Boolean, List<ImageBitmap>?>>(false to null, context, appearance) {
-        value = true to withContext(Dispatchers.IO) { LunaAppearTimeline.load(context, appearance) }
-    }
-    val elapsed = remember { mutableLongStateOf(0L) }
-    LaunchedEffect(frames) {
-        if (!frames.first) return@LaunchedEffect
-        if (frames.second != null) {
-            val start = withFrameNanos { it }
-            while (elapsed.longValue < LunaAppearTimeline.DURATION_NANOS) {
-                elapsed.longValue = withFrameNanos { it } - start
-            }
-        }
-        finished()
-    }
-    val loaded = frames.second ?: return
     BoxWithConstraints(modifier) {
+        val requiredFrameSidePx =
+            LunaScene.requiredFrameSidePx(
+                minOf(constraints.maxWidth, constraints.maxHeight).toFloat(),
+                LunaAppearTimeline.SCENE_SCALE,
+            )
+        val sampleSize = CharacterAnimationAtlas.sampleSizeFor(requiredFrameSidePx)
+        val context = LocalContext.current.applicationContext
+        val finished by rememberUpdatedState(onFinished)
+        var frames by remember(context, appearance, sampleSize) {
+            mutableStateOf<Pair<Boolean, ImageBitmap?>>(false to null)
+        }
+        LaunchedEffect(context, appearance, sampleSize) {
+            frames = true to
+                withContext(Dispatchers.IO) {
+                    LunaAppearTimeline.load(context, appearance, requiredFrameSidePx)
+                }
+        }
+        val elapsed = remember(appearance, sampleSize) { mutableLongStateOf(0L) }
+        LaunchedEffect(frames) {
+            if (!frames.first) return@LaunchedEffect
+            if (frames.second != null) {
+                val start = withFrameNanos { it }
+                while (elapsed.longValue < LunaAppearTimeline.DURATION_NANOS) {
+                    elapsed.longValue = withFrameNanos { it } - start
+                }
+            }
+            finished()
+        }
+        val loaded = frames.second
+        if (loaded == null) {
+            LunaIdleBreathAnimation(Modifier.fillMaxSize(), appearance = appearance, animateFrames = false)
+            return@BoxWithConstraints
+        }
         Box(
             Modifier
+                .testTag("luna-appear-atlas-${appearance.assetName}")
                 .graphicsLayer { alpha = 1f - LunaAppearTimeline.idleBlendAt(elapsed.longValue) }
                 .lunaSceneFrames(
                     minOf(maxWidth, maxHeight),
@@ -90,7 +109,14 @@ internal fun LunaAppearAnimation(
         CharacterFadeLayer(
             alpha = { LunaAppearTimeline.idleBlendAt(elapsed.longValue) },
             modifier = Modifier.fillMaxSize(),
-            topOutsetFraction = if (appearance == LunaAppearance.HAT) LunaIdleTimeline.HAT_TOP_OUTSET_FRACTION else 0f,
+            topOutsetFraction =
+                if (appearance ==
+                    LunaAppearance.HAT
+                ) {
+                    LunaIdleTimeline.HAT_TOP_OUTSET_FRACTION
+                } else {
+                    0f
+                },
         ) {
             LunaIdleBreathAnimation(
                 modifier = Modifier.fillMaxSize(),

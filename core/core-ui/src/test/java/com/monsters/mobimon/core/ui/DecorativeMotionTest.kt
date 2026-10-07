@@ -859,6 +859,10 @@ class DecorativeMotionTest {
                 movingLeft = movingLeft,
             )
         }
+        compose.waitUntil(10_000) {
+            compose.mainClock.advanceTimeByFrame()
+            compose.onAllNodesWithTag("luna-run-atlas-normal").fetchSemanticsNodes().isNotEmpty()
+        }
         val runLeftPixels = pixels("luna-run")
         updateStateAndDraw { movingLeft = false }
         val runRightPixels = pixels("luna-run")

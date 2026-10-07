@@ -115,7 +115,7 @@ internal fun LasHungryAnimation(
                 scaleX = 1.5f
                 scaleY = 1.5f
                 compositingStrategy = CompositingStrategy.Offscreen
-            }.mobiSpriteFrames(
+            }.characterSpriteFrames(
                 sheet = artwork,
                 columns = 6,
                 rows = 8,

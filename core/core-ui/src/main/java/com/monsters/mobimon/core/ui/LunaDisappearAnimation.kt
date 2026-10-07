@@ -3,13 +3,15 @@ package com.monsters.mobimon.core.ui
 import android.content.Context
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,11 +42,11 @@ internal object LunaDisappearTimeline {
     fun load(
         context: Context,
         appearance: LunaAppearance = LunaAppearance.NORMAL,
-    ): List<ImageBitmap>? =
-        LunaScene.load(
-            context,
-            "characters/luna/${appearance.assetName}/disappear/luna_disappear_${appearance.assetName}_%02d.png",
-        ) ?: LunaScene.load(context, "characters/luna/normal/disappear/luna_disappear_normal_%02d.png")
+        requiredFrameSidePx: Int =
+            LunaScene.requiredFrameSidePx(124 * context.resources.displayMetrics.density, SCENE_SCALE),
+    ): ImageBitmap? =
+        LunaAnimationAtlas.load(context, LunaAtlasAction.DISAPPEAR, appearance, requiredFrameSidePx)
+            ?: LunaAnimationAtlas.load(context, LunaAtlasAction.DISAPPEAR, LunaAppearance.NORMAL, requiredFrameSidePx)
 }
 
 /**
@@ -57,25 +59,37 @@ internal fun LunaDisappearAnimation(
     appearance: LunaAppearance,
     onFinished: () -> Unit,
 ) {
-    val context = LocalContext.current.applicationContext
-    val finished by rememberUpdatedState(onFinished)
-    val frames by produceState<Pair<Boolean, List<ImageBitmap>?>>(false to null, context, appearance) {
-        value = true to withContext(Dispatchers.IO) { LunaDisappearTimeline.load(context, appearance) }
-    }
-    val elapsed = remember { mutableLongStateOf(0L) }
-    LaunchedEffect(frames) {
-        if (!frames.first) return@LaunchedEffect
-        if (frames.second != null) {
-            val start = withFrameNanos { it }
-            while (elapsed.longValue < LunaDisappearTimeline.DURATION_NANOS) {
-                elapsed.longValue = withFrameNanos { it } - start
-            }
+    BoxWithConstraints(modifier) {
+        val requiredFrameSidePx =
+            LunaScene.requiredFrameSidePx(
+                minOf(constraints.maxWidth, constraints.maxHeight).toFloat(),
+                LunaDisappearTimeline.SCENE_SCALE,
+            )
+        val sampleSize = CharacterAnimationAtlas.sampleSizeFor(requiredFrameSidePx)
+        val context = LocalContext.current.applicationContext
+        val finished by rememberUpdatedState(onFinished)
+        var frames by remember(context, appearance, sampleSize) {
+            mutableStateOf<Pair<Boolean, ImageBitmap?>>(false to null)
         }
-        finished()
-    }
-    val loaded = frames.second
-    if (loaded != null) {
-        BoxWithConstraints(modifier) {
+        LaunchedEffect(context, appearance, sampleSize) {
+            frames = true to
+                withContext(Dispatchers.IO) {
+                    LunaDisappearTimeline.load(context, appearance, requiredFrameSidePx)
+                }
+        }
+        val elapsed = remember(appearance, sampleSize) { mutableLongStateOf(0L) }
+        LaunchedEffect(frames) {
+            if (!frames.first) return@LaunchedEffect
+            if (frames.second != null) {
+                val start = withFrameNanos { it }
+                while (elapsed.longValue < LunaDisappearTimeline.DURATION_NANOS) {
+                    elapsed.longValue = withFrameNanos { it } - start
+                }
+            }
+            finished()
+        }
+        val loaded = frames.second
+        if (loaded != null) {
             Box(
                 Modifier.lunaSceneFrames(
                     minOf(maxWidth, maxHeight),
@@ -88,8 +102,8 @@ internal fun LunaDisappearAnimation(
             if (elapsed.longValue in LunaDisappearTimeline.SURPRISE_NANOS) {
                 DepartureSurpriseBubble(Modifier.align(Alignment.TopStart))
             }
+        } else if (!frames.first) {
+            LunaIdleBreathAnimation(Modifier.fillMaxSize(), appearance = appearance, animateFrames = false)
         }
-    } else if (!frames.first) {
-        LunaIdleBreathAnimation(modifier, appearance = appearance, animateFrames = false)
     }
 }
