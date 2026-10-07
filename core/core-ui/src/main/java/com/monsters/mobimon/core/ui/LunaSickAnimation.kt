@@ -74,36 +74,45 @@ internal data class LunaSickArtwork(
 
 /** Three equipped bodies share one extracted heat texture, rather than 72 full-frame poses. */
 internal object LunaSickArtworkCache {
-    private val entries = ConcurrentHashMap<LunaAppearance, LunaSickArtwork>()
-    private var heat: ImageBitmap? = null
-
-    fun peek(appearance: LunaAppearance = LunaAppearance.NORMAL): LunaSickArtwork? = entries[appearance]
-
-    @Synchronized
-    fun clear() {
-        entries.clear()
-        heat = null
+    private class Generation {
+        val entries = ConcurrentHashMap<LunaAppearance, LunaSickArtwork>()
+        var heat: ImageBitmap? = null
     }
 
-    @Synchronized
+    @Volatile
+    private var generation = Generation()
+
+    fun peek(appearance: LunaAppearance = LunaAppearance.NORMAL): LunaSickArtwork? = generation.entries[appearance]
+
+    fun clear() {
+        // Status changes must not wait for decoding; late loads only populate their retired generation.
+        generation = Generation()
+    }
+
     fun getOrLoad(
         context: Context,
         appearance: LunaAppearance = LunaAppearance.NORMAL,
     ): LunaSickArtwork? {
-        entries[appearance]?.let { return it }
-        val body =
-            decode(context, "${appearance.assetName}/sick/luna_sick_${appearance.assetName}_base.webp") ?: return null
-        val sharedHeat = heat ?: decode(context, "shared/sick/luna_sick_shared_heat.webp")?.also { heat = it }
-        if (sharedHeat == null) return null
-        val sweat =
-            decode(context, "${appearance.assetName}/sick/luna_sick_${appearance.assetName}_sweat.webp", 732, 1062)
-                ?: return null
-        val bitmap = Bitmap.createBitmap(907, 907, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        canvas.scale(.5f, .5f)
-        val artwork = LunaSickArtwork(body, sharedHeat, sweat, body)
-        LunaSickRenderer(artwork, appearance).draw(canvas, 0L)
-        return artwork.copy(still = bitmap.asImageBitmap()).also { entries[appearance] = it }
+        // Capture before waiting for another decoder so queued requests are invalidated together.
+        val current = generation
+        return synchronized(this) {
+            current.entries[appearance]?.let { return@synchronized it }
+            val body =
+                decode(context, "${appearance.assetName}/sick/luna_sick_${appearance.assetName}_base.webp")
+                    ?: return@synchronized null
+            val sharedHeat =
+                current.heat ?: decode(context, "shared/sick/luna_sick_shared_heat.webp")?.also { current.heat = it }
+            if (sharedHeat == null) return@synchronized null
+            val sweat =
+                decode(context, "${appearance.assetName}/sick/luna_sick_${appearance.assetName}_sweat.webp", 732, 1062)
+                    ?: return@synchronized null
+            val bitmap = Bitmap.createBitmap(907, 907, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            canvas.scale(.5f, .5f)
+            val artwork = LunaSickArtwork(body, sharedHeat, sweat, body)
+            LunaSickRenderer(artwork, appearance).draw(canvas, 0L)
+            artwork.copy(still = bitmap.asImageBitmap()).also { current.entries[appearance] = it }
+        }
     }
 
     private fun decode(
@@ -208,10 +217,6 @@ fun LunaSickAnimation(
     animateFrames: Boolean = true,
 ) {
     val context = LocalContext.current
-    val firstFrame =
-        remember(context, appearance) {
-            LunaFirstFrameCache.getOrLoad(context, LunaActiveAnimation.SICK, appearance)
-        }
     var artwork by remember(context, appearance) { mutableStateOf(LunaSickArtworkCache.peek(appearance)) }
     LaunchedEffect(context, appearance) {
         artwork = withContext(Dispatchers.IO) { LunaSickArtworkCache.getOrLoad(context, appearance) }
@@ -238,7 +243,7 @@ fun LunaSickAnimation(
                     (size.minDimension / LunaSickTimeline.VIEWPORT_SCALE).roundToInt() *
                     LUNA_SICK_TRANSLATION_Y_FRACTION
             }.testTag(
-                "luna-animation-${if (firstFrame == null && artwork == null) "loading" else "frame"}-${appearance.assetName}",
+                "luna-animation-${if (artwork == null) "loading" else "frame"}-${appearance.assetName}",
             ).semantics { if (contentDescription != null) this.contentDescription = contentDescription }
             .drawWithCache {
                 val nominalSide = (size.minDimension / LunaSickTimeline.VIEWPORT_SCALE).roundToInt().toFloat()
@@ -253,13 +258,6 @@ fun LunaSickAnimation(
                         native.scale(nominalSide / 1254f, nominalSide / 1254f)
                         if (renderer != null) {
                             renderer.draw(native, time)
-                        } else if (firstFrame != null) {
-                            native.drawBitmap(
-                                firstFrame.asAndroidBitmap(),
-                                null,
-                                RectF(0f, 0f, LunaSickTimeline.SCENE_SIDE, LunaSickTimeline.SCENE_SIDE),
-                                null,
-                            )
                         }
                         native.restoreToCount(save)
                     }

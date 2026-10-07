@@ -18,7 +18,10 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodes
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
@@ -75,10 +78,7 @@ class LunaSickDeviceTest {
                 }
             }
         }
-        compose.waitUntil(15_000) {
-            compose.mainClock.advanceTimeBy(32)
-            compose.onAllNodesWithTag("luna-state-sick").fetchSemanticsNodes().size == 3
-        }
+        awaitSickArtwork(names)
         compose.mainClock.advanceTimeBy(240)
         val first = names.map { capture(it, "initial") }
         compose.mainClock.advanceTimeBy(550)
@@ -100,6 +100,7 @@ class LunaSickDeviceTest {
         compose.mainClock.advanceTimeBy(80)
         names.forEach { capture(it, "normal-to-sick-fade").recycle() }
         compose.mainClock.advanceTimeBy(240)
+        awaitSickArtwork(names)
         compose.runOnIdle { motion = false }
         compose.mainClock.advanceTimeBy(32)
         val reduced = names.map { capture(it, "reduced") }
@@ -129,6 +130,19 @@ class LunaSickDeviceTest {
             normal.recycle()
         }
         (first + breath + reduced + later + still + stillLater).forEach(Bitmap::recycle)
+    }
+
+    private fun awaitSickArtwork(names: List<String>) {
+        compose.waitUntil(15_000) {
+            compose.mainClock.advanceTimeBy(32)
+            names.all { name ->
+                compose
+                    .onAllNodes(
+                        hasTestTag("luna-animation-frame-$name") and hasAnyAncestor(hasTestTag("luna-state-sick")),
+                    ).fetchSemanticsNodes()
+                    .size == 1
+            }
+        }
     }
 
     private fun capture(
