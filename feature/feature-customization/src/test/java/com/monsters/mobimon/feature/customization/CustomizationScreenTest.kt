@@ -704,4 +704,77 @@ class CustomizationScreenTest {
         compose.onNodeWithText("별빛 모빌").performClick()
         compose.onNodeWithTag("store-preview-star-hanger").assertExists()
     }
+
+    @Test fun equippingNewBackgroundThemeSyncsPreviewWhenSwitchingStoreCategories() {
+        val cyberpunk = CosmeticItem("background:cyberpunk_city", CosmeticSlot.BACKGROUND, 400)
+        val lakePark = CosmeticItem("background:lake_park", CosmeticSlot.BACKGROUND, 200)
+        val hanger = CosmeticItem("background:star_hanger", CosmeticSlot.BACKGROUND, 200)
+        val catalog =
+            listOf(
+                CosmeticItem("friend:mobi", CosmeticSlot.FRIEND, 0),
+                cyberpunk,
+                lakePark,
+                hanger,
+            )
+        var inventory by mutableStateOf(
+            CosmeticInventory(
+                ownedItemIds = setOf("friend:mobi", cyberpunk.id, lakePark.id, hanger.id),
+                equippedItemIds =
+                    mapOf(
+                        CosmeticSlot.FRIEND to "friend:mobi",
+                        CosmeticSlot.BACKGROUND to cyberpunk.id,
+                    ),
+            ),
+        )
+
+        compose.setContent {
+            var selectedId by androidx.compose.runtime.remember { mutableStateOf<String?>(cyberpunk.id) }
+            MobiMonTheme {
+                CustomizationScreen(
+                    inventory = inventory,
+                    catalog = catalog,
+                    selectedItemId = selectedId,
+                    purchasing = false,
+                    purchaseFailed = false,
+                    onSelectItem = { selectedId = it },
+                    onPurchaseItem = { _, _ -> },
+                    onEquipItem = { equipId ->
+                        val propId = if (equipId == "none:background_prop") null else equipId
+                        inventory =
+                            if (isPropItem(equipId)) {
+                                inventory.copy(backgroundPropId = propId)
+                            } else {
+                                inventory.copy(
+                                    equippedItemIds = inventory.equippedItemIds + (CosmeticSlot.BACKGROUND to equipId),
+                                )
+                            }
+                    },
+                    onEquipFriend = {},
+                    pointBalance = 500,
+                    pointLoadFailed = false,
+                )
+            }
+        }
+
+        compose.onNodeWithTag("store-tab-BACKGROUND").performClick()
+        compose.onNodeWithText("배경").performClick()
+        compose.onNodeWithTag("store-item-background:cyberpunk_city").performClick()
+
+        // Switch to PROPS category, select and equip a prop
+        compose.onNodeWithText("소품").performClick()
+        compose.onNodeWithText("별빛 모빌").performClick()
+        compose.onNodeWithText("이 모습 적용").performClick()
+
+        // Switch back to BACKGROUNDS category, select and equip lake_park
+        compose.onNodeWithText("배경").performClick()
+        compose.onNodeWithTag("store-item-background:lake_park").performClick()
+        compose.onNodeWithText("이 모습 적용").performClick()
+
+        // Switch category to PROPS
+        compose.onNodeWithText("소품").performClick()
+
+        // Preview should now reflect both the equipped lake_park background theme and equipped star_hanger prop
+        compose.onNodeWithTag("store-preview-star-hanger").assertExists()
+        compose.onNodeWithTag("preview-background").assertExists()
+    }
 }
