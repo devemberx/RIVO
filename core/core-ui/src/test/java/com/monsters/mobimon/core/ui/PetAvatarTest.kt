@@ -85,7 +85,7 @@ class PetAvatarTest {
     }
 
     @Test
-    fun lunaShowsItsSpriteOnTheFirstRenderedFrame() {
+    fun lunaShowsItsMatchingSpriteAfterColdBackgroundLoad() {
         LunaIdleArtworkCache.clear()
         compose.mainClock.autoAdvance = false
         compose.setContent {
@@ -94,6 +94,13 @@ class PetAvatarTest {
             }
         }
 
+        compose.waitUntil(10_000) {
+            compose.mainClock.advanceTimeByFrame()
+            compose
+                .onAllNodesWithTag("luna-animation-frame-sunglasses", useUnmergedTree = true)
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
         compose.onNodeWithTag("luna-animation-frame-sunglasses", useUnmergedTree = true).assertExists()
         compose.onNodeWithTag("luna-animation-loading-sunglasses", useUnmergedTree = true).assertDoesNotExist()
     }
