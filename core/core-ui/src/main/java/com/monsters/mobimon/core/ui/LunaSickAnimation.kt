@@ -45,6 +45,10 @@ internal object LunaSickTimeline {
 
     // Rotation-invariant canonical/source cheek span; one scale for the complete pose.
     const val ANATOMICAL_SCALE = 1.3368827f
+
+    // The tilted pose needs a smaller footprint and left inset beside Home dialogue.
+    const val POSE_SCALE = 0.9f
+    const val POSE_OFFSET_X = -36f
     const val SOURCE_MARGIN = 280f
     const val SCENE_SIDE = 1814f
     const val VIEWPORT_SCALE = SCENE_SIDE / 1254f
@@ -160,10 +164,13 @@ internal class LunaSickRenderer(
     ) {
         val save = canvas.save()
         val breath = LunaSickTimeline.scaleAt(elapsedNanos)
-        canvas.translate(LunaSickTimeline.SOURCE_MARGIN, LunaSickTimeline.SOURCE_MARGIN)
+        canvas.translate(
+            LunaSickTimeline.SOURCE_MARGIN + LunaSickTimeline.POSE_OFFSET_X,
+            LunaSickTimeline.SOURCE_MARGIN,
+        )
         canvas.scale(
-            LunaSickTimeline.ANATOMICAL_SCALE,
-            LunaSickTimeline.ANATOMICAL_SCALE,
+            LunaSickTimeline.ANATOMICAL_SCALE * LunaSickTimeline.POSE_SCALE,
+            LunaSickTimeline.ANATOMICAL_SCALE * LunaSickTimeline.POSE_SCALE,
             627f,
             LunaSickTimeline.GROUND_Y,
         )
