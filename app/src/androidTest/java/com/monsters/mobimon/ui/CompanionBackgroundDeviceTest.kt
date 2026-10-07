@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -19,6 +20,7 @@ import com.monsters.mobimon.core.domain.SignalSource
 import com.monsters.mobimon.core.domain.VehicleSnapshot
 import com.monsters.mobimon.core.ui.LocalMobiMonMotionEnabled
 import com.monsters.mobimon.core.ui.MobiMonTheme
+import com.monsters.mobimon.core.ui.companionBackgroundRes
 import com.monsters.mobimon.feature.customization.CustomizationScreen
 import com.monsters.mobimon.feature.pet.PetHomeScreen
 import org.junit.Assert.assertEquals
@@ -109,6 +111,14 @@ class CompanionBackgroundDeviceTest {
         periods.forEach { period ->
             compose.runOnIdle { time.value = period }
             compose.onNodeWithTag("store-preview-particles").assertDoesNotExist()
+            val backgroundId = companionBackgroundRes(period, cityId)
+            // Compose idleness does not wait for background decoding on the IO dispatcher.
+            compose.waitUntil(10_000) {
+                compose
+                    .onAllNodesWithTag("store-background-ready-$backgroundId", useUnmergedTree = true)
+                    .fetchSemanticsNodes()
+                    .size == 2
+            }
             previews += fingerprint(compose.onNodeWithTag("preview-background").captureToImage())
             thumbnails +=
                 fingerprint(compose.onNodeWithTag("store-artwork-$cityId", useUnmergedTree = true).captureToImage())
