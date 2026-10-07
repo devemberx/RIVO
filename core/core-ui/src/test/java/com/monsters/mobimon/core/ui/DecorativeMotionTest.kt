@@ -405,6 +405,11 @@ class DecorativeMotionTest {
             emotion = PetEmotion.IDLE
             moving = true
         }
+        // A newly decoded idle fallback can change pixels before the worker publishes the run atlas.
+        compose.waitUntil(10_000) {
+            compose.mainClock.advanceTimeByFrame()
+            compose.onAllNodesWithTag("luna-run-atlas-sunglasses").fetchSemanticsNodes().isNotEmpty()
+        }
         awaitLunaAnimation("luna")
         val run = pixels("luna")
         compose.mainClock.advanceTimeBy(320)
@@ -858,6 +863,10 @@ class DecorativeMotionTest {
                 isMoving = true,
                 movingLeft = movingLeft,
             )
+        }
+        compose.waitUntil(10_000) {
+            compose.mainClock.advanceTimeByFrame()
+            compose.onAllNodesWithTag("luna-run-atlas-normal").fetchSemanticsNodes().isNotEmpty()
         }
         val runLeftPixels = pixels("luna-run")
         updateStateAndDraw { movingLeft = false }

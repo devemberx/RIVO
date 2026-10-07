@@ -265,14 +265,19 @@ interval, not data updates.
 
 The outside-app companion requires opt-in and overlay permission. Non-P or
 unverified parking stops wandering and triggers departure; verified P restores
-entry before wandering resumes. Keep idle visible while loading and preserve
+entry before wandering resumes. Luna entrance loading keeps an empty avatar slot
+until its first frame is ready; run/departure loading keeps idle visible. Preserve
 scale/ground anchors through transitions. A renewed non-P signal during entrance
 queues departure. Hide the overlay while MobiMon is foreground. Target-OEM Home
 placement and lifecycle remain unverified under the
 [platform contract](ARCHITECTURE.md#shared-vehicle-condition-and-overlay).
 
-Mobi run, entrance and departure use 24-pose lossless WebP atlases with 512px
+Mobi and Luna run, entrance and departure share 24-pose lossless WebP atlas
+decoding and drawing with 512px
 cells. Their loaders retain 256px cells for slots up to that pixel extent and
 512px for larger slots, including entrance/departure scale correction. Each
 decoded atlas uses about 6 or 24 MiB of ARGB pixel storage; GPU copies and other
 artwork are additional. Frame order, timing and ground transforms are preserved.
+Luna scene extents include their entrance/departure enlargement and discard only
+the fractional destination pixel when selecting a tier; the 124dp, 160dpi overlay
+uses 256px cells for all three clips.

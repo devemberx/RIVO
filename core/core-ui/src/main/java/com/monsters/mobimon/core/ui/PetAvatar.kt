@@ -1,7 +1,6 @@
 package com.monsters.mobimon.core.ui
 
 import android.content.Context
-import android.graphics.BitmapFactory
 import androidx.compose.animation.core.withInfiniteAnimationFrameNanos
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -21,7 +20,6 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
@@ -36,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
-import java.util.Locale
 import kotlin.math.roundToInt
 
 private val IDLE_BREATH_FRAME_DURATIONS_MS =
@@ -63,52 +60,6 @@ private fun lunaAppearance(accessoryId: String?): LunaAppearance =
         else -> LunaAppearance.NORMAL
     }
 
-internal object LunaRunAnimationCache {
-    @Volatile
-    private var cachedFrames: List<ImageBitmap>? = null
-
-    @Volatile
-    private var cachedAppearance: LunaAppearance = LunaAppearance.NORMAL
-
-    fun peek(): List<ImageBitmap>? = cachedFrames
-
-    fun clear() {
-        cachedFrames = null
-        cachedAppearance = LunaAppearance.NORMAL
-    }
-
-    fun getOrLoadFrames(
-        context: Context,
-        appearance: LunaAppearance = LunaAppearance.NORMAL,
-    ): List<ImageBitmap> {
-        val current = cachedFrames
-        if (current != null && cachedAppearance == appearance) return current
-        return synchronized(this) {
-            val syncCurrent = cachedFrames
-            if (syncCurrent != null && cachedAppearance == appearance) return syncCurrent
-            try {
-                val assetManager = context.applicationContext?.assets ?: context.assets
-                val decodeOptions = BitmapFactory.Options().apply { inSampleSize = 2 }
-                val basePath =
-                    "characters/luna/${appearance.assetName}/run/" +
-                        "luna_run_left_${appearance.assetName}_%02d.png"
-                val frames =
-                    (1..24).map { i ->
-                        val path = String.format(Locale.US, basePath, i)
-                        assetManager.open(path).use { stream ->
-                            BitmapFactory.decodeStream(stream, null, decodeOptions)!!.asImageBitmap()
-                        }
-                    }
-                cachedAppearance = appearance
-                cachedFrames = frames
-                frames
-            } catch (_: Exception) {
-                emptyList()
-            }
-        }
-    }
-}
-
 internal enum class LunaActiveAnimation {
     IDLE,
     RUN,
@@ -117,47 +68,18 @@ internal enum class LunaActiveAnimation {
     NONE,
 }
 
-/** The first sprite frame is drawn before the remaining animation frames finish decoding. */
+/** First poses share the owned artwork caches and their invalidation. */
 internal object LunaFirstFrameCache {
-    private val frames = mutableMapOf<Pair<LunaActiveAnimation, LunaAppearance>, ImageBitmap>()
-
     fun getOrLoad(
         context: Context,
         animation: LunaActiveAnimation,
         appearance: LunaAppearance,
-    ): ImageBitmap? {
-        if (animation == LunaActiveAnimation.IDLE) return LunaIdleArtworkCache.getOrLoadFirstFrame(context, appearance)
-        return synchronized(this) {
-            val key = animation to appearance
-            frames[key]?.let { return@synchronized it }
-            val assetName = appearance.assetName
-            val fileName =
-                when (animation) {
-                    LunaActiveAnimation.IDLE -> return@synchronized null
-                    LunaActiveAnimation.RUN -> "run/luna_run_left_${assetName}_01.png"
-                    LunaActiveAnimation.HUNGRY -> return@synchronized null // Hunger overlays reuse the idle first pose.
-                    LunaActiveAnimation.SICK ->
-                        return@synchronized LunaSickArtworkCache
-                            .getOrLoad(
-                                context,
-                                appearance,
-                            )?.still
-                    LunaActiveAnimation.NONE -> return@synchronized null
-                }
-            try {
-                val assets = context.applicationContext?.assets ?: context.assets
-                val options = BitmapFactory.Options().apply { inSampleSize = 2 }
-                val path = "characters/luna/$assetName/$fileName"
-                assets
-                    .open(path)
-                    .use { stream ->
-                        BitmapFactory.decodeStream(stream, null, options)?.asImageBitmap()
-                    }?.also { frames[key] = it }
-            } catch (_: Exception) {
-                null
-            }
+    ): ImageBitmap? =
+        when (animation) {
+            LunaActiveAnimation.IDLE -> LunaIdleArtworkCache.getOrLoadFirstFrame(context, appearance)
+            LunaActiveAnimation.SICK -> LunaSickArtworkCache.getOrLoad(context, appearance)?.still
+            LunaActiveAnimation.RUN, LunaActiveAnimation.HUNGRY, LunaActiveAnimation.NONE -> null
         }
-    }
 }
 
 internal object LunaAnimationManager {
@@ -491,89 +413,6 @@ private fun LunaStateArtwork(
     }
 }
 
-@Composable
-fun LunaRunAnimation(
-    modifier: Modifier = Modifier,
-    movingLeft: Boolean = true,
-    contentDescription: String? = null,
-    appearance: LunaAppearance = LunaAppearance.NORMAL,
-) {
-    if (!LocalMobiMonMotionEnabled.current) {
-        LunaIdleBreathAnimation(modifier, contentDescription, appearance, animateFrames = false)
-        return
-    }
-    val context = LocalContext.current
-    val firstFrame =
-        remember(context, appearance) {
-            LunaFirstFrameCache.getOrLoad(context, LunaActiveAnimation.RUN, appearance)
-        }
-    var frames by remember(context, appearance) { mutableStateOf<List<ImageBitmap>?>(null) }
-    LaunchedEffect(context, appearance) {
-        val loaded = withContext(Dispatchers.IO) { LunaRunAnimationCache.getOrLoadFrames(context, appearance) }
-        withContext(Dispatchers.Main.immediate) { frames = loaded }
-    }
-
-    if (frames.isNullOrEmpty() && firstFrame == null) {
-        Box(modifier.testTag("luna-animation-loading-${appearance.assetName}"))
-    } else {
-        val loadedFrames = frames.orEmpty()
-        val currentFrameIndex = remember(loadedFrames) { mutableIntStateOf(0) }
-        LaunchedEffect(loadedFrames) {
-            if (loadedFrames.isEmpty()) return@LaunchedEffect
-            var previousTime = withInfiniteAnimationFrameNanos { it }
-            var elapsedNanos = 0L
-            while (isActive) {
-                val time = withInfiniteAnimationFrameNanos { it }
-                elapsedNanos += (time - previousTime).coerceAtMost(100_000_000L)
-                previousTime = time
-                var nextFrame = currentFrameIndex.intValue
-                while (elapsedNanos >= RUN_FRAME_DURATIONS_MS[nextFrame] * 1_000_000L) {
-                    elapsedNanos -= RUN_FRAME_DURATIONS_MS[nextFrame] * 1_000_000L
-                    nextFrame = (nextFrame + 1) % loadedFrames.size
-                }
-                currentFrameIndex.intValue = nextFrame
-            }
-        }
-        val baseAsset = CharacterArtwork.characters.getValue("friend:luna")
-        Box(
-            modifier =
-                modifier
-                    .graphicsLayer {
-                        val flip = if (movingLeft) 1f else -1f
-                        scaleX = baseAsset.visualScale * flip
-                        scaleY = baseAsset.visualScale
-                        translationX = size.width * baseAsset.translationXFraction * flip
-                        translationY = size.height * baseAsset.translationYFraction
-                    }.testTag("luna-animation-frame-${appearance.assetName}")
-                    .semantics { if (contentDescription != null) this.contentDescription = contentDescription }
-                    .drawWithCache {
-                        onDrawBehind {
-                            val frame = loadedFrames.getOrNull(currentFrameIndex.intValue) ?: firstFrame
-                            if (frame != null) {
-                                val side =
-                                    size.minDimension.toInt()
-                                val dstSize =
-                                    androidx.compose.ui.unit
-                                        .IntSize(side, side)
-                                val dstOffset =
-                                    androidx.compose.ui.unit.IntOffset(
-                                        ((size.width - side) / 2).toInt(),
-                                        ((size.height - side) / 2).toInt(),
-                                    )
-                                drawImage(
-                                    image = frame,
-                                    dstOffset = dstOffset,
-                                    dstSize = dstSize,
-                                    filterQuality = androidx.compose.ui.graphics.FilterQuality.Low,
-                                )
-                            }
-                        }
-                    },
-            contentAlignment = Alignment.Center,
-        ) {}
-    }
-}
-
 // The shared 280px margin also contains the cap's 192px top outset during status fades.
 private fun Modifier.lunaStatusViewport(): Modifier =
     layout { measurable, constraints ->
@@ -708,7 +547,7 @@ suspend fun preloadPetRunSprite(
             MobiRunSpriteCache.getOrLoad(context, accessoryId)
         } else if (friendId == "friend:luna") {
             val appearance = lunaAppearance(accessoryId)
-            LunaRunAnimationCache.getOrLoadFrames(context, appearance)
+            LunaRunAnimationCache.getOrLoad(context, appearance)
         } else if (friendId == "friend:las") {
             LasDanceSpriteCache.getOrLoad(context)
         }

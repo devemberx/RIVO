@@ -88,7 +88,7 @@ internal fun MobiAppearAnimation(
                         translationY = size.height * -0.3144204f
                         alpha = 1f - MobiAppearTimeline.idleBlendAt(elapsed.longValue)
                         clip = false
-                    }.mobiSpriteFrames(
+                    }.characterSpriteFrames(
                         bitmap,
                         6,
                         4,

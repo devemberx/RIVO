@@ -135,7 +135,7 @@ internal fun LasTransitionAnimation(
                             alpha = 1f - LasTransitionTimeline.idleAlpha(transition, elapsed.longValue)
                         }
                         clip = false
-                    }.mobiSpriteFrames(
+                    }.characterSpriteFrames(
                         sheet = bitmap,
                         columns = 6,
                         rows = 4,
