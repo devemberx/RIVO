@@ -710,6 +710,7 @@ class StoreReferenceScreenTest {
         val colors = mutableSetOf<Int>()
         listOf("Sunrise", "Morning", "Day", "Afternoon", "Sunset", "Night", "Midnight").forEach { value ->
             compose.runOnIdle { period.value = value }
+            awaitBackground(companionBackgroundRes(value))
             capture(view, "background-${value.lowercase()}")
             compose.runOnIdle {
                 val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
@@ -766,6 +767,7 @@ class StoreReferenceScreenTest {
         listOf("Sunrise", "Morning", "Day", "Afternoon", "Sunset", "Night", "Midnight").forEach { value ->
             compose.runOnIdle { period.value = value }
             compose.onNodeWithTag("store-preview-particles").assertDoesNotExist()
+            awaitBackground(companionBackgroundRes(value, cityId), count = 2)
             capture(view, "cyberpunk-${value.lowercase()}")
             listOf("preview-background", "store-artwork-$cityId").forEach { tag ->
                 val bounds = compose.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
@@ -800,6 +802,18 @@ class StoreReferenceScreenTest {
                     actual.recycle()
                 }
             }
+        }
+    }
+
+    private fun awaitBackground(
+        id: Int,
+        count: Int = 1,
+    ) {
+        compose.waitUntil(10_000) {
+            compose
+                .onAllNodesWithTag("store-background-ready-$id", useUnmergedTree = true)
+                .fetchSemanticsNodes()
+                .size == count
         }
     }
 

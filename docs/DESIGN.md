@@ -142,7 +142,7 @@ places preview/actions left and catalog right: two columns for backgrounds,
 three for friends, clothes, effects and props. Enter Clothes on the equipped friend;
 reset clothing previews when the equipped friend changes. Allow per-friend clothing
 previews and an owned filter. Show the first frame while animations load; still cards use
-the same frame. Panels scroll for enlarged text.
+the same frame. Keep scene slots fixed while backgrounds load. Panels scroll for enlarged text.
 
 Preview stays local until Apply. Equipment persists per friend; purchases grant
 ownership without switching or equipping. Owned items apply without another

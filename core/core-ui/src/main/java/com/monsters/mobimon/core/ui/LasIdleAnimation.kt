@@ -1,5 +1,6 @@
 package com.monsters.mobimon.core.ui
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Paint
@@ -7,14 +8,23 @@ import android.graphics.Rect
 import android.graphics.RectF
 import androidx.compose.animation.core.withInfiniteAnimationFrameNanos
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withContext
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -50,10 +60,22 @@ internal fun LasIdleAnimation(
     animate: Boolean,
 ) {
     val context = LocalContext.current
-    val artwork =
-        remember(context) {
-            LasRigidArtwork(BitmapFactory.decodeResource(context.resources, R.drawable.pet_las_normal_preview))
+    var firstFrame by remember(context) { mutableStateOf(LasIdleArtworkCache.peekFirstFrame()) }
+    var artwork by remember(context) { mutableStateOf(LasIdleArtworkCache.peek()) }
+    LaunchedEffect(context) {
+        firstFrame = withContext(Dispatchers.IO) { LasIdleArtworkCache.firstFrame(context) }
+        artwork = withContext(Dispatchers.Default) { LasIdleArtworkCache.getOrLoad(context) }
+    }
+    val readyArtwork = artwork
+    if (readyArtwork == null) {
+        val still = firstFrame
+        if (still == null) {
+            Box(modifier.testTag("las-idle-loading"))
+        } else {
+            Image(still.asImageBitmap(), null, modifier.testTag("las-idle-first-frame"))
         }
+        return
+    }
     val elapsed = remember { mutableLongStateOf(0L) }
     LaunchedEffect(animate) {
         elapsed.longValue = 0L
@@ -62,18 +84,43 @@ internal fun LasIdleAnimation(
             while (isActive) elapsed.longValue = withInfiniteAnimationFrameNanos { it } - start
         }
     }
-    Canvas(modifier) {
+    Canvas(modifier.testTag("las-idle-ready")) {
         val canvas = drawContext.canvas.nativeCanvas
         val side = size.minDimension
         val checkpoint = canvas.save()
         canvas.translate((size.width - side) / 2f, (size.height - side) / 2f)
-        canvas.scale(side / artwork.size, side / artwork.size)
-        artwork.draw(canvas, if (animate) elapsed.longValue / 1_000_000L % LasIdleTimeline.CYCLE_MS else 0L)
+        canvas.scale(side / readyArtwork.size, side / readyArtwork.size)
+        readyArtwork.draw(canvas, if (animate) elapsed.longValue / 1_000_000L % LasIdleTimeline.CYCLE_MS else 0L)
         canvas.restoreToCount(checkpoint)
     }
 }
 
-private class LasRigidArtwork(
+/** One fixed, nodpi source. Only workers acquire the preparation lock; UI reads never wait. */
+internal object LasIdleArtworkCache {
+    @Volatile private var first: Bitmap? = null
+
+    @Volatile private var prepared: LasRigidArtwork? = null
+
+    fun peekFirstFrame(): Bitmap? = first
+
+    fun peek(): LasRigidArtwork? = prepared
+
+    fun firstFrame(context: Context): Bitmap? =
+        first ?: synchronized(this) {
+            first ?: BitmapFactory.decodeResource(context.resources, R.drawable.pet_las_normal_preview)?.also {
+                it.prepareToDraw()
+                first = it
+            }
+        }
+
+    fun getOrLoad(context: Context): LasRigidArtwork? =
+        prepared ?: synchronized(this) {
+            prepared ?: firstFrame(context)?.let { LasRigidArtwork(it) }?.also { prepared = it }
+        }
+}
+
+// Prepared once on a worker. The mutable draw scratch (paint/vertices) is used only on the UI thread.
+internal class LasRigidArtwork(
     private val master: Bitmap,
 ) {
     val size = master.width.toFloat()
