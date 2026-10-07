@@ -763,12 +763,12 @@ class PetAvatarTest {
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
         val sheet = requireNotNull(LasDanceSpriteCache.getOrLoad(context))
-        assertEquals(1536, sheet.width)
-        assertEquals(1024, sheet.height)
+        assertEquals(1448, sheet.width)
+        assertEquals(1086, sheet.height)
         assertEquals(0, LasDanceTimeline.frame(0))
-        assertEquals(11, LasDanceTimeline.frame(11 * 85L))
-        assertEquals(1, LasDanceTimeline.frame(21 * 85L))
-        assertEquals(0, LasDanceTimeline.frame(22 * 85L))
+        assertEquals(1, LasDanceTimeline.frame(1 * LasDanceTimeline.FRAME_DURATION_MS))
+        assertEquals(47, LasDanceTimeline.frame(47 * LasDanceTimeline.FRAME_DURATION_MS))
+        assertEquals(0, LasDanceTimeline.frame(48 * LasDanceTimeline.FRAME_DURATION_MS))
 
         compose.setContent {
             MobiMonTheme {

@@ -43,16 +43,12 @@ internal object LasDanceSpriteCache {
     }
 }
 
-/** Only the first two rows have clean cell padding. Reverse playback closes the loop. */
+/** 48 frames in an 8x6 sprite sheet. Sequential playback loops smoothly. */
 internal object LasDanceTimeline {
-    private const val FRAME_DURATION_MS = 85L
-    private const val LAST_FRAME = 11
-    private const val STEPS = LAST_FRAME * 2
+    const val FRAME_DURATION_MS = 60L
+    const val FRAME_COUNT = 48
 
-    fun frame(elapsedMs: Long): Int {
-        val step = ((elapsedMs.coerceAtLeast(0L) / FRAME_DURATION_MS) % STEPS).toInt()
-        return if (step <= LAST_FRAME) step else STEPS - step
-    }
+    fun frame(elapsedMs: Long): Int = ((elapsedMs.coerceAtLeast(0L) / FRAME_DURATION_MS) % FRAME_COUNT).toInt()
 }
 
 /** Displays the robot dance only while Las is moving. */
@@ -71,12 +67,12 @@ internal fun LasDanceAnimation(
         return
     }
 
-    var frame by remember(sheet) { mutableIntStateOf(3) }
+    var frame by remember(sheet) { mutableIntStateOf(0) }
     LaunchedEffect(sheet) {
         val start = withInfiniteAnimationFrameNanos { it }
         while (isActive) {
             val elapsedMs = (withInfiniteAnimationFrameNanos { it } - start) / 1_000_000L
-            frame = LasDanceTimeline.frame(elapsedMs + 3 * 85L)
+            frame = LasDanceTimeline.frame(elapsedMs)
         }
     }
     Box(
@@ -84,17 +80,16 @@ internal fun LasDanceAnimation(
             .testTag("las-dance-frame")
             .graphicsLayer {
                 val direction = if (movingLeft) 1f else -1f
-                scaleX = 1.03f * direction
-                scaleY = 1.05f
-                translationX = -size.width * 0.05f * direction
-                translationY = -size.height * 0.05f
+                scaleX = 1.20f * direction
+                scaleY = 1.20f
+                translationX = -size.width * 0.02f * direction
+                translationY = -size.height * 0.02f
             }.characterSpriteFrames(
                 sheet = sheet,
-                columns = 6,
-                rows = 4,
+                columns = 8,
+                rows = 6,
                 blendFrames = false,
                 filterQuality = FilterQuality.High,
-                position = { frame.toFloat() },
-            ),
+            ) { frame.toFloat() },
     )
 }
