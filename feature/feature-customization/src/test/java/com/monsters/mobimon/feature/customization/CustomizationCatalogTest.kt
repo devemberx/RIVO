@@ -249,4 +249,27 @@ class CustomizationCatalogTest {
         assertEquals("background:star_hanger", effectsPresentation.preview.backgroundPropId)
         assertEquals("background:star", effectsPresentation.preview.backgroundEffectId)
     }
+
+    @Test fun equippingThemeResetsStaleSelectionToEquippedThemeInOtherCategories() {
+        val cyberpunk = CosmeticItem("background:cyberpunk_city", CosmeticSlot.BACKGROUND, 400)
+        val lakePark = CosmeticItem("background:lake_park", CosmeticSlot.BACKGROUND, 200)
+        val hanger = CosmeticItem("background:star_hanger", CosmeticSlot.BACKGROUND, 200)
+        val inventory =
+            CosmeticInventory(
+                setOf("friend:mobi", cyberpunk.id, lakePark.id, hanger.id),
+                mapOf(CosmeticSlot.FRIEND to "friend:mobi", CosmeticSlot.BACKGROUND to lakePark.id),
+            )
+
+        val propsPresentation =
+            customizationCatalog(
+                inventory = inventory,
+                catalog = listOf(hanger),
+                tab = CosmeticSlot.BACKGROUND,
+                selectedItemId = hanger.id,
+                category = StoreSpaceCategory.PROPS,
+                selectedBackgroundThemeId = null,
+            )
+
+        assertEquals("background:lake_park", propsPresentation.preview.backgroundId)
+    }
 }

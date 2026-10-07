@@ -107,6 +107,15 @@ fun CustomizationScreen(
             }
         }
     }
+    LaunchedEffect(
+        inventory?.equippedItemIds?.get(CosmeticSlot.BACKGROUND),
+        inventory?.backgroundPropId,
+        inventory?.backgroundEffectId,
+    ) {
+        selectedBackgroundThemeId = null
+        selectedBackgroundPropId = null
+        selectedBackgroundEffectId = null
+    }
     val available = if (storeInventoryReady) catalog else emptyList()
     val scopedCatalog =
         if (tab ==
@@ -208,6 +217,11 @@ fun CustomizationScreen(
                 onTab = {
                     if (!busy) {
                         if (it == CosmeticSlot.ACCESSORY && tab != it) clothesFriend = null
+                        if (it == CosmeticSlot.BACKGROUND && tab != it) {
+                            selectedBackgroundThemeId = null
+                            selectedBackgroundPropId = null
+                            selectedBackgroundEffectId = null
+                        }
                         tab = it
                         onSelectItem(null)
                     }
@@ -221,6 +235,9 @@ fun CustomizationScreen(
                 onCategory = {
                     if (!busy) {
                         category = it
+                        selectedBackgroundThemeId = null
+                        selectedBackgroundPropId = null
+                        selectedBackgroundEffectId = null
                         onSelectItem(null)
                     }
                 },
@@ -249,6 +266,11 @@ fun CustomizationScreen(
                                     } else {
                                         item.id
                                     }
+                                if (tab == CosmeticSlot.BACKGROUND) {
+                                    selectedBackgroundThemeId = null
+                                    selectedBackgroundPropId = null
+                                    selectedBackgroundEffectId = null
+                                }
                                 onEquipItem(equipId)
                             }
                         }
