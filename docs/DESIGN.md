@@ -220,6 +220,7 @@ Keep identity, anatomical scale and ground anchors stable across states. Mobi/Lu
 crossfade status poses; reduced motion switches immediately while gentle idle
 breathing continues. Las reduced motion keeps a representative robot pose.
 Warnings take priority over hunger; explicit nonanimated previews hold a rest pose.
+Las movement plays all 24 dance poses from first to last before repeating.
 
 Mobi equipped idle shares body, blink and sprout timing. Hungry motion keeps the
 six-second carrot-thought, scrunch and two-shake sequence; equipment follows the
