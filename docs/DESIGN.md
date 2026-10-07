@@ -233,7 +233,10 @@ selected appearance is published. Playback interpolates unchanged cached
 textures; draw callbacks must not reconstruct pixels or rewrite bitmaps.
 
 Luna idle uses a continuous 2.2-second grounded breath without restarting on
-equipment changes. Cap idle, hungry, sick and happy follow the large fitted master;
+equipment changes. Prepare idle/hungry first images on IO, including still previews;
+pending equipment keeps its slot without showing the previous item. Idle cache
+invalidation never waits for decoding or retains late first images or layers.
+Cap idle, hungry, sick and happy follow the large fitted master;
 added padding preserves body scale in animated, still and reduced-motion rendering.
 Run and transition cap artwork remain deferred. Status and appearance fades retain
 equipment/thought overflow without changing the body slot.

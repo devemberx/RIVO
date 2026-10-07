@@ -22,6 +22,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -36,6 +38,13 @@ import java.util.concurrent.TimeUnit
 @Config(sdk = [34], qualifiers = "mdpi")
 class LunaAppearLoadingTest {
     @get:Rule val compose = createComposeRule()
+
+    @Before
+    fun prepareIdleFallback() {
+        LunaIdleArtworkCache.clear()
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        assertNotNull(LunaIdleArtworkCache.getOrLoadFirstFrame(context, LunaAppearance.NORMAL))
+    }
 
     @Test
     fun pendingEntranceKeepsEmptySlotUntilAtlasLoads() {
@@ -103,7 +112,7 @@ class LunaAppearLoadingTest {
     }
 
     @Test
-    fun failedAtlasDecodeKeepsIdleFallbackAndFinishesOnce() {
+    fun failedAtlasDecodeKeepsCachedIdleFallbackAndFinishesOnce() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val missingAtlasContext =
             object : ContextWrapper(context) {
