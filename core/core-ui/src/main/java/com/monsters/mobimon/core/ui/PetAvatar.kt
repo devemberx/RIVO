@@ -1,7 +1,6 @@
 package com.monsters.mobimon.core.ui
 
 import android.content.Context
-import android.graphics.BitmapFactory
 import androidx.compose.animation.core.withInfiniteAnimationFrameNanos
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -21,7 +20,6 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
@@ -70,44 +68,17 @@ internal enum class LunaActiveAnimation {
     NONE,
 }
 
-/** The first sprite frame is drawn before the remaining animation frames finish decoding. */
+/** First poses share the owned artwork caches and their invalidation. */
 internal object LunaFirstFrameCache {
-    private val frames = mutableMapOf<Pair<LunaActiveAnimation, LunaAppearance>, ImageBitmap>()
-
     fun getOrLoad(
         context: Context,
         animation: LunaActiveAnimation,
         appearance: LunaAppearance,
     ): ImageBitmap? =
-        synchronized(this) {
-            val key = animation to appearance
-            frames[key]?.let { return@synchronized it }
-            val assetName = appearance.assetName
-            val fileName =
-                when (animation) {
-                    LunaActiveAnimation.IDLE -> "idle_breath/luna_idle_breath_${assetName}_base.webp"
-                    LunaActiveAnimation.RUN -> return@synchronized null // Run poses are drawn directly from the atlas.
-                    LunaActiveAnimation.HUNGRY -> return@synchronized null // Hunger overlays reuse the idle first pose.
-                    LunaActiveAnimation.SICK ->
-                        return@synchronized LunaSickArtworkCache
-                            .getOrLoad(
-                                context,
-                                appearance,
-                            )?.still
-                    LunaActiveAnimation.NONE -> return@synchronized null
-                }
-            try {
-                val assets = context.applicationContext?.assets ?: context.assets
-                val options = BitmapFactory.Options().apply { inSampleSize = 2 }
-                val path = "characters/luna/$assetName/$fileName"
-                assets
-                    .open(path)
-                    .use { stream ->
-                        BitmapFactory.decodeStream(stream, null, options)?.asImageBitmap()
-                    }?.also { frames[key] = it }
-            } catch (_: Exception) {
-                null
-            }
+        when (animation) {
+            LunaActiveAnimation.IDLE -> LunaIdleArtworkCache.getOrLoadFirstFrame(context, appearance)
+            LunaActiveAnimation.SICK -> LunaSickArtworkCache.getOrLoad(context, appearance)?.still
+            LunaActiveAnimation.RUN, LunaActiveAnimation.HUNGRY, LunaActiveAnimation.NONE -> null
         }
 }
 

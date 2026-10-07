@@ -12,6 +12,7 @@ import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import java.util.concurrent.ConcurrentHashMap
 
 /** Fixed source coordinates; the hat adds top padding without rescaling the seated body. */
@@ -49,20 +50,79 @@ internal data class LunaIdleArtwork(
 
 /** Like Mobi idle, construct source layers once on IO and animate them on the display clock. */
 internal object LunaIdleArtworkCache {
-    private val entries = ConcurrentHashMap<LunaAppearance, LunaIdleArtwork>()
+    private class Generation {
+        val firstFrames = ConcurrentHashMap<LunaAppearance, ImageBitmap>()
+        val entries = ConcurrentHashMap<LunaAppearance, LunaIdleArtwork>()
+    }
 
-    fun peek(appearance: LunaAppearance = LunaAppearance.NORMAL): LunaIdleArtwork? = entries[appearance]
+    @Volatile
+    private var generation = Generation()
 
-    @Synchronized
-    fun clear() = entries.clear()
+    fun peek(appearance: LunaAppearance = LunaAppearance.NORMAL): LunaIdleArtwork? = generation.entries[appearance]
 
-    @Synchronized
+    fun peekFirstFrame(appearance: LunaAppearance = LunaAppearance.NORMAL): ImageBitmap? =
+        generation.firstFrames[appearance]
+
+    fun clear() {
+        // Release both caches without waiting for decoding; late loads stay in the retired generation.
+        generation = Generation()
+    }
+
+    fun getOrLoadFirstFrame(
+        context: Context,
+        appearance: LunaAppearance = LunaAppearance.NORMAL,
+    ): ImageBitmap? {
+        val current = generation
+        current.firstFrames[appearance]?.let { return it }
+        return synchronized(this) { loadFirstFrame(context, appearance, current) }
+    }
+
     fun getOrLoad(
         context: Context,
         appearance: LunaAppearance = LunaAppearance.NORMAL,
     ): LunaIdleArtwork? {
-        entries[appearance]?.let { return it }
-        val original = LunaFirstFrameCache.getOrLoad(context, LunaActiveAnimation.IDLE, appearance) ?: return null
+        val current = generation
+        current.entries[appearance]?.let { return it }
+        return synchronized(this) {
+            current.entries[appearance]?.let { return@synchronized it }
+            val original = loadFirstFrame(context, appearance, current) ?: return@synchronized null
+            prepare(context, appearance, original)?.also { current.entries[appearance] = it }
+        }
+    }
+
+    private fun loadFirstFrame(
+        context: Context,
+        appearance: LunaAppearance,
+        current: Generation,
+    ): ImageBitmap? {
+        current.firstFrames[appearance]?.let { return it }
+        return try {
+            val assets = context.applicationContext?.assets ?: context.assets
+            val path =
+                "characters/luna/${appearance.assetName}/idle_breath/" +
+                    "luna_idle_breath_${appearance.assetName}_base.webp"
+            assets.open(path).use {
+                BitmapFactory
+                    .decodeStream(
+                        it,
+                        null,
+                        BitmapFactory.Options().apply {
+                            inSampleSize = 2
+                            inScaled = false
+                        },
+                    )?.asImageBitmap()
+                    ?.also { frame -> current.firstFrames[appearance] = frame }
+            }
+        } catch (_: java.io.IOException) {
+            null
+        }
+    }
+
+    private fun prepare(
+        context: Context,
+        appearance: LunaAppearance,
+        original: ImageBitmap,
+    ): LunaIdleArtwork? {
         val height = if (appearance == LunaAppearance.HAT) 723 else 627
         val destination = RectF(0f, 0f, 1254f, height * 2f)
         val eyes =
@@ -111,7 +171,7 @@ internal object LunaIdleArtworkCache {
                         canvas.drawBitmap(it, null, RectF(0f, top, 1254f, top + 1254f), paint)
                     }
                 }
-            return LunaIdleArtwork(original, body, closed, sprout).also { entries[appearance] = it }
+            return LunaIdleArtwork(original, body, closed, sprout)
         } finally {
             eyes?.recycle()
         }
