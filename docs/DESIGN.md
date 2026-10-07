@@ -233,16 +233,22 @@ selected appearance is published. Playback interpolates unchanged cached
 textures; draw callbacks must not reconstruct pixels or rewrite bitmaps.
 
 Luna idle uses a continuous 2.2-second grounded breath without restarting on
-equipment changes. Cap idle, hungry and happy follow the large fitted master and
-retain the body's scale beneath added hat padding, including still previews.
-Other cap actions/statuses retain earlier artwork until separately migrated.
-Status and appearance fades retain equipment/thought overflow without changing the body slot.
+equipment changes. Cap idle, hungry, sick and happy follow the large fitted master;
+added padding preserves body scale in animated, still and reduced-motion rendering.
+Run and transition cap artwork remain deferred. Status and appearance fades retain
+equipment/thought overflow without changing the body slot.
 
 Luna hungry reuses idle body, equipment and blinks with 25% body/sprout motion.
 Its 4.4-second gesture leads two dots from the head to a fish cloud below the Home
 greeting, then opens the mouth and grows one saliva drop that falls continuously
 from its attachment point. The cloud fades as the mouth closes for a short rest.
 Still previews hold a visible hungry pose; sunglasses preserve their lens edges.
+
+Luna sick uses WebP body/heat layers and local sweat atlases: a small 4.4-second
+ground-anchored breath and lean retain the collapsed pose, with the original
+2.2-second flowing sweat and heat pulse. Transparent status margins preserve
+canonical face scale and ground alignment without shrinking idle or hungry poses.
+See [sick layers](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/LunaSickAnimation.kt).
 
 Respect the shared motion preference; animation never authorizes commands.
 Settings controls floating wandering; unknown/failed reads keep it stationary.

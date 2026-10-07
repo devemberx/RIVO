@@ -24,17 +24,20 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import java.util.Locale
+import kotlin.math.roundToInt
 
 private val IDLE_BREATH_FRAME_DURATIONS_MS =
     IntArray(24) { if (it == 23) 130 else 90 }
@@ -42,8 +45,8 @@ private val IDLE_BREATH_FRAME_DURATIONS_MS =
 internal val RUN_FRAME_DURATIONS_MS =
     IntArray(24) { 50 }
 
-// Luna sick art ends at y=1048/1254; this lowers it onto Mobi's collapsed baseline (0.926 of the slot).
-internal const val LUNA_SICK_TRANSLATION_Y_FRACTION = 0.134f
+// Match Luna idle's planted baseline using the shared 0.87 visual scale.
+internal const val LUNA_SICK_TRANSLATION_Y_FRACTION = 0.87f * (1172f - 1048f) / 1254f
 
 enum class LunaAppearance(
     internal val assetName: String,
@@ -106,52 +109,6 @@ internal object LunaRunAnimationCache {
     }
 }
 
-internal object LunaSickAnimationCache {
-    @Volatile
-    private var cachedFrames: List<ImageBitmap>? = null
-
-    @Volatile
-    private var cachedAppearance: LunaAppearance = LunaAppearance.NORMAL
-
-    fun peek(): List<ImageBitmap>? = cachedFrames
-
-    fun clear() {
-        cachedFrames = null
-        cachedAppearance = LunaAppearance.NORMAL
-    }
-
-    fun getOrLoadFrames(
-        context: Context,
-        appearance: LunaAppearance = LunaAppearance.NORMAL,
-    ): List<ImageBitmap> {
-        val current = cachedFrames
-        if (current != null && cachedAppearance == appearance) return current
-        return synchronized(this) {
-            val syncCurrent = cachedFrames
-            if (syncCurrent != null && cachedAppearance == appearance) return syncCurrent
-            try {
-                val assetManager = context.applicationContext?.assets ?: context.assets
-                val decodeOptions = BitmapFactory.Options().apply { inSampleSize = 2 }
-                val basePath =
-                    "characters/luna/${appearance.assetName}/sick/" +
-                        "luna_sick_${appearance.assetName}_%02d.png"
-                val frames =
-                    (1..24).map { i ->
-                        val path = String.format(Locale.US, basePath, i)
-                        assetManager.open(path).use { stream ->
-                            BitmapFactory.decodeStream(stream, null, decodeOptions)!!.asImageBitmap()
-                        }
-                    }
-                cachedAppearance = appearance
-                cachedFrames = frames
-                frames
-            } catch (_: Exception) {
-                emptyList()
-            }
-        }
-    }
-}
-
 internal enum class LunaActiveAnimation {
     IDLE,
     RUN,
@@ -178,7 +135,12 @@ internal object LunaFirstFrameCache {
                     LunaActiveAnimation.IDLE -> "idle_breath/luna_idle_breath_${assetName}_base.webp"
                     LunaActiveAnimation.RUN -> "run/luna_run_left_${assetName}_01.png"
                     LunaActiveAnimation.HUNGRY -> return@synchronized null // Hunger overlays reuse the idle first pose.
-                    LunaActiveAnimation.SICK -> "sick/luna_sick_${assetName}_01.png"
+                    LunaActiveAnimation.SICK ->
+                        return@synchronized LunaSickArtworkCache
+                            .getOrLoad(
+                                context,
+                                appearance,
+                            )?.still
                     LunaActiveAnimation.NONE -> return@synchronized null
                 }
             try {
@@ -202,7 +164,7 @@ internal object LunaAnimationManager {
         if (!retainMotion && active != LunaActiveAnimation.HUNGRY) LunaIdleArtworkCache.clear()
         if (!retainMotion) LunaRunAnimationCache.clear()
         if (active != LunaActiveAnimation.HUNGRY) LunaHungryPartsCache.clear()
-        if (active != LunaActiveAnimation.SICK) LunaSickAnimationCache.clear()
+        if (active != LunaActiveAnimation.SICK) LunaSickArtworkCache.clear()
     }
 
     fun clearAll() {
@@ -507,7 +469,7 @@ private fun LunaStateArtwork(
         when (state) {
             CompanionStatus.SICK ->
                 LunaSickAnimation(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().lunaStatusViewport(),
                     appearance = appearance,
                     animateFrames = animateFrames,
                 )
@@ -610,6 +572,26 @@ fun LunaRunAnimation(
     }
 }
 
+// The shared 280px margin also contains the cap's 192px top outset during status fades.
+private fun Modifier.lunaStatusViewport(): Modifier =
+    layout { measurable, constraints ->
+        val inset =
+            (
+                minOf(
+                    constraints.maxWidth,
+                    constraints.maxHeight,
+                ) * LunaSickTimeline.SOURCE_MARGIN / 1254f
+            ).roundToInt()
+        val child =
+            measurable.measure(
+                Constraints.fixed(
+                    constraints.maxWidth + inset * 2,
+                    constraints.maxHeight + inset * 2,
+                ),
+            )
+        layout(constraints.maxWidth, constraints.maxHeight) { child.placeRelative(-inset, -inset) }
+    }
+
 @Composable
 fun LunaHungryAnimation(
     modifier: Modifier = Modifier,
@@ -623,25 +605,6 @@ fun LunaHungryAnimation(
         appearance = appearance,
         animateFrames = animateFrames,
         hungry = true,
-    )
-}
-
-@Composable
-fun LunaSickAnimation(
-    modifier: Modifier = Modifier,
-    contentDescription: String? = null,
-    appearance: LunaAppearance = LunaAppearance.NORMAL,
-    animateFrames: Boolean = true,
-) {
-    IdleBreathAnimation(
-        LunaSickAnimationCache::getOrLoadFrames,
-        LunaActiveAnimation.SICK,
-        appearance,
-        true,
-        modifier,
-        contentDescription,
-        animateFrames,
-        extraTranslationYFraction = LUNA_SICK_TRANSLATION_Y_FRACTION,
     )
 }
 
@@ -712,13 +675,11 @@ private fun IdleBreathAnimation(
                             if (frame != null) {
                                 val side =
                                     size.minDimension.toInt()
-                                val dstSize =
-                                    androidx.compose.ui.unit
-                                        .IntSize(side, side)
+                                val (origin, dstSize) = lunaIdleDestination(side, appearance)
                                 val dstOffset =
                                     androidx.compose.ui.unit.IntOffset(
-                                        ((size.width - side) / 2).toInt(),
-                                        ((size.height - side) / 2).toInt(),
+                                        ((size.width - side) / 2).toInt() + origin.x,
+                                        ((size.height - side) / 2).toInt() + origin.y,
                                     )
                                 drawImage(
                                     image = frame,
