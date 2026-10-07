@@ -248,6 +248,8 @@ Luna sick uses WebP body/heat layers and local sweat atlases: a small 4.4-second
 ground-anchored breath and lean retain the collapsed pose, with the original
 2.2-second flowing sweat and heat pulse. Transparent status margins preserve
 canonical face scale and ground alignment without shrinking idle or hungry poses.
+Prepare sick layers and the rest pose on IO; pending equipment keeps its slot,
+and cache invalidation never waits for decoding or retains a late result.
 See [sick layers](../core/core-ui/src/main/java/com/monsters/mobimon/core/ui/LunaSickAnimation.kt).
 
 Respect the shared motion preference; animation never authorizes commands.
