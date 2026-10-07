@@ -1,6 +1,5 @@
 package com.monsters.mobimon.core.ui
 
-import android.graphics.BitmapFactory
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,6 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -22,8 +22,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlin.math.ceil
 
 internal const val MOBI_DEPARTURE_HANDOFF_NANOS = 160_000_000L
 internal const val MOBI_DEPARTURE_DURATION_NANOS = MOBI_DEPARTURE_HANDOFF_NANOS + 1_600_000_000L
@@ -46,32 +47,20 @@ internal fun MobiDisappearAnimation(
     accessoryId: String?,
     idleContent: @Composable () -> Unit,
 ) {
+    var slotSidePx by remember { mutableIntStateOf(0) }
+    val requiredFrameSidePx = ceil(slotSidePx * 1.12f).toInt()
     val context = LocalContext.current.applicationContext
     val finished by rememberUpdatedState(onFinished)
     val appearanceName = mobiAppearanceName(accessoryId)
-    var sheet by remember(context, appearanceName, isDisappearing) {
+    var sheet by remember(context, appearanceName, isDisappearing, requiredFrameSidePx) {
         mutableStateOf<Pair<Boolean, ImageBitmap?>>(false to null)
     }
-    LaunchedEffect(context, appearanceName, isDisappearing) {
+    LaunchedEffect(context, appearanceName, isDisappearing, requiredFrameSidePx) {
         sheet = false to null
-        if (!isDisappearing) return@LaunchedEffect
+        if (!isDisappearing || slotSidePx == 0) return@LaunchedEffect
         val bitmap =
             withContext(Dispatchers.IO) {
-                try {
-                    context.assets
-                        .open(
-                            "characters/mobi/$appearanceName/disappear/mobi_disappear_${appearanceName}_sprite.png",
-                        ).use {
-                            val options =
-                                BitmapFactory.Options().apply {
-                                    inSampleSize = 2
-                                    inScaled = false
-                                }
-                            BitmapFactory.decodeStream(it, null, options)?.asImageBitmap()
-                        }
-                } catch (_: java.io.IOException) {
-                    null
-                }
+                MobiAnimationAtlas.load(context, MobiAtlasAction.DISAPPEAR, accessoryId, requiredFrameSidePx)
             }
         sheet = true to bitmap
     }
@@ -94,7 +83,7 @@ internal fun MobiDisappearAnimation(
         } else {
             0f
         }
-    Box(modifier) {
+    Box(modifier.onSizeChanged { slotSidePx = minOf(it.width, it.height) }) {
         if (handoff < 1f) {
             Box(Modifier.fillMaxSize().graphicsLayer { alpha = 1f - handoff }) { idleContent() }
         }

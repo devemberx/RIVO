@@ -185,24 +185,24 @@ class PetAvatarTest {
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
         val sprite = requireNotNull(MobiRunSpriteCache.getOrLoad(context))
-        assertEquals(3762, sprite.width)
-        assertEquals(2508, sprite.height)
+        assertEquals(1536, sprite.width)
+        assertEquals(1024, sprite.height)
         assertTrue(sprite === MobiRunSpriteCache.getOrLoad(context))
-        assertTrue(context.assets.list("characters/mobi/normal/run")!!.contains("mobi_run_left_normal_sprite.png"))
+        assertTrue(context.assets.list("characters/mobi/normal/run")!!.contains("mobi_run_left_normal_sprite.webp"))
 
         val headphonesSprite = requireNotNull(MobiRunSpriteCache.getOrLoad(context, "accessory:mobi_headphones"))
-        assertEquals(3762, headphonesSprite.width)
-        assertEquals(2508, headphonesSprite.height)
+        assertEquals(1536, headphonesSprite.width)
+        assertEquals(1024, headphonesSprite.height)
         assertTrue(headphonesSprite === MobiRunSpriteCache.getOrLoad(context, "accessory:mobi_headphones"))
         assertTrue(
-            context.assets.list("characters/mobi/headphones/run")!!.contains("mobi_run_left_headphones_sprite.png"),
+            context.assets.list("characters/mobi/headphones/run")!!.contains("mobi_run_left_headphones_sprite.webp"),
         )
 
         val gogglesSprite = requireNotNull(MobiRunSpriteCache.getOrLoad(context, "accessory:mobi_goggles"))
-        assertEquals(3762, gogglesSprite.width)
-        assertEquals(2508, gogglesSprite.height)
+        assertEquals(1536, gogglesSprite.width)
+        assertEquals(1024, gogglesSprite.height)
         assertTrue(gogglesSprite === MobiRunSpriteCache.getOrLoad(context, "accessory:mobi_goggles"))
-        assertTrue(context.assets.list("characters/mobi/goggles/run")!!.contains("mobi_run_left_goggles_sprite.png"))
+        assertTrue(context.assets.list("characters/mobi/goggles/run")!!.contains("mobi_run_left_goggles_sprite.webp"))
     }
 
     @Test

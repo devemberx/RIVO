@@ -265,3 +265,9 @@ scale/ground anchors through transitions. A renewed non-P signal during entrance
 queues departure. Hide the overlay while MobiMon is foreground. Target-OEM Home
 placement and lifecycle remain unverified under the
 [platform contract](ARCHITECTURE.md#shared-vehicle-condition-and-overlay).
+
+Mobi run, entrance and departure use 24-pose lossless WebP atlases with 512px
+cells. Their loaders retain 256px cells for slots up to that pixel extent and
+512px for larger slots, including entrance/departure scale correction. Each
+decoded atlas uses about 6 or 24 MiB of ARGB pixel storage; GPU copies and other
+artwork are additional. Frame order, timing and ground transforms are preserved.
