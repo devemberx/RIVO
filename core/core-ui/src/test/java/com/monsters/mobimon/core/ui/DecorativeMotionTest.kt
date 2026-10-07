@@ -302,6 +302,8 @@ class DecorativeMotionTest {
                 }
             }
         }
+        // The idle fallback already breathes while the run frames are still decoding.
+        awaitLunaAnimation("running")
         awaitLunaAnimation("moving")
         val first = pixels("moving")
         compose.mainClock.advanceTimeBy(320)
@@ -313,7 +315,10 @@ class DecorativeMotionTest {
         // Neighbouring cells rasterize slightly differently, so compare against the run cycle's distance.
         val idleDistance = moving.indices.count { moving[it] != idle[it] }
         val runDistance = moving.indices.count { moving[it] != running[it] }
-        assertTrue("Reduced motion swaps running for the idle breath", idleDistance * 4 < runDistance)
+        assertTrue(
+            "Reduced motion swaps running for the idle breath: idle=$idleDistance, run=$runDistance",
+            idleDistance * 4 < runDistance,
+        )
     }
 
     @Test
@@ -399,6 +404,11 @@ class DecorativeMotionTest {
         updateStateAndDraw {
             emotion = PetEmotion.IDLE
             moving = true
+        }
+        // A newly decoded idle fallback can change pixels before the worker publishes the run atlas.
+        compose.waitUntil(10_000) {
+            compose.mainClock.advanceTimeByFrame()
+            compose.onAllNodesWithTag("luna-run-atlas-sunglasses").fetchSemanticsNodes().isNotEmpty()
         }
         awaitLunaAnimation("luna")
         val run = pixels("luna")
@@ -547,6 +557,7 @@ class DecorativeMotionTest {
         val bounds = compose.onNodeWithTag("mobi").fetchSemanticsNode().boundsInRoot
         val normal = pixels("mobi")
         updateStateAndDraw { warning = true }
+        awaitMobiSickArtwork()
         compose.mainClock.advanceTimeBy(800)
         val falling = pixels("mobi")
         assertTrue(normal != falling)
@@ -554,6 +565,7 @@ class DecorativeMotionTest {
         compose.mainClock.advanceTimeBy(200)
         assertTrue(falling != pixels("mobi"))
         updateStateAndDraw { warning = true }
+        awaitMobiSickArtwork()
         compose.mainClock.advanceTimeBy(2600)
         val collapsed = pixels("mobi")
         compose.mainClock.advanceTimeBy(700)
@@ -585,11 +597,19 @@ class DecorativeMotionTest {
                 animateNormal = false,
             )
         }
+        awaitMobiSickArtwork()
         compose.mainClock.advanceTimeBy(400)
         val frameA = pixels("collapsed")
         compose.mainClock.advanceTimeBy(500)
         val frameB = pixels("collapsed")
         assertTrue("Collapsed source pose moves continuously over time", frameA != frameB)
+    }
+
+    private fun awaitMobiSickArtwork() {
+        compose.waitUntil(10_000) {
+            compose.mainClock.advanceTimeByFrame()
+            compose.onAllNodesWithTag("mobi-sick-layer").fetchSemanticsNodes().isNotEmpty()
+        }
     }
 
     @Test
@@ -710,6 +730,36 @@ class DecorativeMotionTest {
     }
 
     @Test
+    fun lunaIdleRendersBetweenSpriteTicksAndReturnsToStillPose() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        LunaIdleArtworkCache.getOrLoad(context)
+        var animate by mutableStateOf(false)
+        show {
+            LunaIdleBreathAnimation(
+                modifier = Modifier.size(300.dp).testTag("smooth-idle"),
+                animateFrames = animate,
+            )
+        }
+        val still = pixels("smooth-idle")
+        updateStateAndDraw { animate = true }
+        awaitLunaAnimation("smooth-idle")
+        // A 90ms sprite player must repeat images over six 16ms samples.
+        // Away from the deliberately crisp blink, every display tick now changes.
+        val samples =
+            (0 until 6).map {
+                compose.mainClock.advanceTimeByFrame()
+                pixels("smooth-idle")
+            }
+        assertTrue("Breathing must update between source frames", samples.zipWithNext().all { (a, b) -> a != b })
+        updateStateAndDraw { animate = false }
+        assertTrue("Still preview restores canonical frame", still == pixels("smooth-idle"))
+        compose.mainClock.advanceTimeBy(300)
+        assertTrue("Still preview stays unchanged", still == pixels("smooth-idle"))
+    }
+
+    @Test
     fun lunaPlaysHungryAndSickAnimationsWhenRequested() {
         show {
             Row {
@@ -778,23 +828,29 @@ class DecorativeMotionTest {
     }
 
     @Test
-    fun lunaIdleBreathAnimationMaintainsConsistentDirectionRegardlessOfMovingLeft() {
+    fun lunaIdlePoseMaintainsDirectionForEveryAppearance() {
+        var accessory by mutableStateOf<String?>(null)
         var movingLeft by mutableStateOf(true)
         show {
             PetAvatar(
                 modifier = Modifier.size(180.dp).testTag("luna-idle"),
                 friendId = "friend:luna",
+                accessoryId = accessory,
                 isMoving = false,
+                isAnimated = false,
                 movingLeft = movingLeft,
             )
         }
-        val idleLeftPixels = pixels("luna-idle")
-        updateStateAndDraw { movingLeft = false }
-        val idleRightPixels = pixels("luna-idle")
-        assertTrue(
-            "Luna idle breath pixels must be identical regardless of movingLeft",
-            idleLeftPixels == idleRightPixels,
-        )
+        // Freeze breathing so direction is compared at the same pose and pixel origin.
+        for (item in listOf(null, "accessory:luna_cap", "accessory:luna_sunglasses")) {
+            updateStateAndDraw {
+                accessory = item
+                movingLeft = true
+            }
+            val left = pixels("luna-idle")
+            updateStateAndDraw { movingLeft = false }
+            assertTrue("Idle must not mirror $item", left == pixels("luna-idle"))
+        }
     }
 
     @Test
@@ -807,6 +863,10 @@ class DecorativeMotionTest {
                 isMoving = true,
                 movingLeft = movingLeft,
             )
+        }
+        compose.waitUntil(10_000) {
+            compose.mainClock.advanceTimeByFrame()
+            compose.onAllNodesWithTag("luna-run-atlas-normal").fetchSemanticsNodes().isNotEmpty()
         }
         val runLeftPixels = pixels("luna-run")
         updateStateAndDraw { movingLeft = false }

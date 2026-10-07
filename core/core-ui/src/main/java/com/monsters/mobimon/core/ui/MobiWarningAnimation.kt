@@ -1,6 +1,7 @@
 package com.monsters.mobimon.core.ui
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.compose.animation.core.withInfiniteAnimationFrameNanos
 import androidx.compose.foundation.layout.Box
@@ -151,6 +152,11 @@ fun MobiIdleBreathAnimation(
             value = withContext(Dispatchers.IO) { MobiDizzyStarsSpriteCache.getOrLoad(context) }
         }
     }
+    val ring by produceState<Bitmap?>(MobiSickRingCache.peek(), vehicleWarning) {
+        if (vehicleWarning && value == null) {
+            value = withContext(Dispatchers.IO) { MobiSickRingCache.getOrLoad() }
+        }
+    }
     val requestedState =
         when {
             vehicleWarning -> CompanionStatus.SICK
@@ -159,7 +165,7 @@ fun MobiIdleBreathAnimation(
         }
     var lastReadyState by remember(accessoryId) {
         mutableStateOf(
-            if (vehicleWarning && sprite != null && starsSprite != null) {
+            if (vehicleWarning && sprite != null && starsSprite != null && ring != null) {
                 CompanionStatus.SICK
             } else if (vehicleHungry) {
                 CompanionStatus.HUNGRY
@@ -171,7 +177,7 @@ fun MobiIdleBreathAnimation(
     // Keep the outgoing pose visible until the warning sprite can be drawn.
     val visibleState =
         if (requestedState == CompanionStatus.SICK &&
-            (sprite == null || starsSprite == null)
+            (sprite == null || starsSprite == null || ring == null)
         ) {
             lastReadyState
         } else {
@@ -215,7 +221,8 @@ fun MobiIdleBreathAnimation(
                 CompanionStatus.SICK -> {
                     val sheet = sprite
                     val stars = starsSprite
-                    if (sheet != null && stars != null) {
+                    val preparedRing = ring
+                    if (sheet != null && stars != null && preparedRing != null) {
                         Box(Modifier.fillMaxSize().testTag("mobi-sick-layer"), contentAlignment = Alignment.Center) {
                             val elapsed = remember { mutableLongStateOf(0L) }
                             LaunchedEffect(animateSick) {
@@ -234,7 +241,12 @@ fun MobiIdleBreathAnimation(
                                             fallbackAsset.translationYFraction
                                         compositingStrategy = CompositingStrategy.Offscreen
                                         clip = false
-                                    }.mobiSickArtwork(sheet, stars, MobiSickArtworkSpec.forAccessory(accessoryId)) {
+                                    }.mobiSickArtwork(
+                                        sheet,
+                                        stars,
+                                        MobiSickArtworkSpec.forAccessory(accessoryId),
+                                        preparedRing,
+                                    ) {
                                         if (animateSick) elapsed.longValue else 0L
                                     },
                             )

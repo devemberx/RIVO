@@ -1,7 +1,7 @@
 package com.monsters.mobimon.core.ui
 
-import android.graphics.BitmapFactory
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -16,11 +16,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlin.math.ceil
 
 internal object MobiAppearTimeline {
     const val DURATION_NANOS = 1_400_000_000L
@@ -48,77 +48,66 @@ internal fun MobiAppearAnimation(
     accessoryId: String?,
     onFinished: () -> Unit,
 ) {
-    val context = LocalContext.current.applicationContext
-    val finished by rememberUpdatedState(onFinished)
-    val appearanceName = mobiAppearanceName(accessoryId)
-    var sheet by remember(context, appearanceName) {
-        mutableStateOf<Pair<Boolean, ImageBitmap?>>(false to null)
-    }
-    LaunchedEffect(context, appearanceName) {
-        val image =
-            withContext(Dispatchers.IO) {
-                try {
-                    context.assets
-                        .open(
-                            "characters/mobi/$appearanceName/appear/mobi_appear_${appearanceName}_sprite.png",
-                        ).use {
-                            val options =
-                                BitmapFactory.Options().apply {
-                                    inSampleSize = 2
-                                    inScaled = false
-                                }
-                            BitmapFactory.decodeStream(it, null, options)?.asImageBitmap()
-                        }
-                } catch (_: java.io.IOException) {
-                    null
+    BoxWithConstraints(modifier) {
+        val requiredFrameSidePx = ceil(minOf(constraints.maxWidth, constraints.maxHeight) * 1.3563502f).toInt()
+        val context = LocalContext.current.applicationContext
+        val finished by rememberUpdatedState(onFinished)
+        val appearanceName = mobiAppearanceName(accessoryId)
+        var sheet by remember(context, appearanceName, requiredFrameSidePx) {
+            mutableStateOf<Pair<Boolean, ImageBitmap?>>(false to null)
+        }
+        LaunchedEffect(context, appearanceName, requiredFrameSidePx) {
+            val image =
+                withContext(Dispatchers.IO) {
+                    MobiAnimationAtlas.load(context, MobiAtlasAction.APPEAR, accessoryId, requiredFrameSidePx)
+                }
+            sheet = true to image
+        }
+        val elapsed = remember(appearanceName) { mutableLongStateOf(0L) }
+        LaunchedEffect(sheet) {
+            if (!sheet.first) return@LaunchedEffect
+            if (sheet.second != null) {
+                val start = withFrameNanos { it }
+                while (elapsed.longValue < MobiAppearTimeline.DURATION_NANOS) {
+                    elapsed.longValue = withFrameNanos { it } - start
                 }
             }
-        sheet = true to image
-    }
-    val elapsed = remember(appearanceName) { mutableLongStateOf(0L) }
-    LaunchedEffect(sheet) {
-        if (!sheet.first) return@LaunchedEffect
-        if (sheet.second != null) {
-            val start = withFrameNanos { it }
-            while (elapsed.longValue < MobiAppearTimeline.DURATION_NANOS) {
-                elapsed.longValue = withFrameNanos { it } - start
-            }
+            finished()
         }
-        finished()
-    }
-    val bitmap = sheet.second ?: return
-    Box(modifier) {
-        Box(
-            Modifier
-                .fillMaxSize()
-                .graphicsLayer {
-                    // Measured from alpha bounds of the final entrance and first idle frames.
-                    transformOrigin = TransformOrigin(0f, 0f)
-                    scaleX = 1.2746781f
-                    scaleY = 1.3563502f
-                    translationX = size.width * -0.1584971f
-                    translationY = size.height * -0.3144204f
-                    alpha = 1f - MobiAppearTimeline.idleBlendAt(elapsed.longValue)
-                    clip = false
-                }.mobiSpriteFrames(
-                    bitmap,
-                    6,
-                    4,
-                    loop = false,
-                    blendFrames = false,
-                    filterQuality = FilterQuality.High,
-                ) {
-                    MobiAppearTimeline.frameAt(elapsed.longValue)
-                },
-        )
-        // Keep the destination composed while loading, so the handoff cannot flash a fallback.
-        NormalMobiIdleAnimation(
-            modifier =
-                Modifier.fillMaxSize().graphicsLayer {
-                    alpha = MobiAppearTimeline.idleBlendAt(elapsed.longValue)
-                },
-            accessoryId = accessoryId,
-            animateFrames = false,
-        )
+        val bitmap = sheet.second ?: return@BoxWithConstraints
+        Box(Modifier.fillMaxSize()) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        // Measured from alpha bounds of the final entrance and first idle frames.
+                        transformOrigin = TransformOrigin(0f, 0f)
+                        scaleX = 1.2746781f
+                        scaleY = 1.3563502f
+                        translationX = size.width * -0.1584971f
+                        translationY = size.height * -0.3144204f
+                        alpha = 1f - MobiAppearTimeline.idleBlendAt(elapsed.longValue)
+                        clip = false
+                    }.characterSpriteFrames(
+                        bitmap,
+                        6,
+                        4,
+                        loop = false,
+                        blendFrames = false,
+                        filterQuality = FilterQuality.High,
+                    ) {
+                        MobiAppearTimeline.frameAt(elapsed.longValue)
+                    },
+            )
+            // Keep the destination composed while loading, so the handoff cannot flash a fallback.
+            NormalMobiIdleAnimation(
+                modifier =
+                    Modifier.fillMaxSize().graphicsLayer {
+                        alpha = MobiAppearTimeline.idleBlendAt(elapsed.longValue)
+                    },
+                accessoryId = accessoryId,
+                animateFrames = false,
+            )
+        }
     }
 }

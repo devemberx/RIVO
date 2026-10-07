@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -32,7 +33,7 @@ class PetAvatarTest {
     val compose = createComposeRule()
 
     @Test
-    fun mobiShowsItsSpriteOnTheFirstRenderedFrame() {
+    fun mobiShowsItsCanonicalSpriteAfterColdBackgroundLoad() {
         MobiSpriteCache.clear()
         compose.mainClock.autoAdvance = false
         compose.setContent {
@@ -41,6 +42,7 @@ class PetAvatarTest {
             }
         }
 
+        awaitMobiFirstFrame("headphones")
         compose.onNodeWithTag("mobi-animation-frame-headphones", useUnmergedTree = true).assertExists()
     }
 
@@ -53,8 +55,19 @@ class PetAvatarTest {
             }
         }
 
+        awaitMobiFirstFrame("goggles")
         compose.onNodeWithTag("mobi-animation-frame-goggles", useUnmergedTree = true).assertExists()
         assertNull(MobiSpriteCache.peek("accessory:mobi_goggles"))
+    }
+
+    private fun awaitMobiFirstFrame(appearance: String) {
+        compose.waitUntil(10_000) {
+            compose.mainClock.advanceTimeByFrame()
+            compose
+                .onAllNodesWithTag("mobi-animation-frame-$appearance", useUnmergedTree = true)
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
     }
 
     @Test
@@ -72,8 +85,8 @@ class PetAvatarTest {
     }
 
     @Test
-    fun lunaShowsItsSpriteOnTheFirstRenderedFrame() {
-        LunaAnimationCache.clear()
+    fun lunaShowsItsMatchingSpriteAfterColdBackgroundLoad() {
+        LunaIdleArtworkCache.clear()
         compose.mainClock.autoAdvance = false
         compose.setContent {
             MobiMonTheme {
@@ -81,6 +94,13 @@ class PetAvatarTest {
             }
         }
 
+        compose.waitUntil(10_000) {
+            compose.mainClock.advanceTimeByFrame()
+            compose
+                .onAllNodesWithTag("luna-animation-frame-sunglasses", useUnmergedTree = true)
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
         compose.onNodeWithTag("luna-animation-frame-sunglasses", useUnmergedTree = true).assertExists()
         compose.onNodeWithTag("luna-animation-loading-sunglasses", useUnmergedTree = true).assertDoesNotExist()
     }
@@ -172,24 +192,24 @@ class PetAvatarTest {
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
         val sprite = requireNotNull(MobiRunSpriteCache.getOrLoad(context))
-        assertEquals(3762, sprite.width)
-        assertEquals(2508, sprite.height)
+        assertEquals(1536, sprite.width)
+        assertEquals(1024, sprite.height)
         assertTrue(sprite === MobiRunSpriteCache.getOrLoad(context))
-        assertTrue(context.assets.list("characters/mobi/normal/run")!!.contains("mobi_run_left_normal_sprite.png"))
+        assertTrue(context.assets.list("characters/mobi/normal/run")!!.contains("mobi_run_left_normal_sprite.webp"))
 
         val headphonesSprite = requireNotNull(MobiRunSpriteCache.getOrLoad(context, "accessory:mobi_headphones"))
-        assertEquals(3762, headphonesSprite.width)
-        assertEquals(2508, headphonesSprite.height)
+        assertEquals(1536, headphonesSprite.width)
+        assertEquals(1024, headphonesSprite.height)
         assertTrue(headphonesSprite === MobiRunSpriteCache.getOrLoad(context, "accessory:mobi_headphones"))
         assertTrue(
-            context.assets.list("characters/mobi/headphones/run")!!.contains("mobi_run_left_headphones_sprite.png"),
+            context.assets.list("characters/mobi/headphones/run")!!.contains("mobi_run_left_headphones_sprite.webp"),
         )
 
         val gogglesSprite = requireNotNull(MobiRunSpriteCache.getOrLoad(context, "accessory:mobi_goggles"))
-        assertEquals(3762, gogglesSprite.width)
-        assertEquals(2508, gogglesSprite.height)
+        assertEquals(1536, gogglesSprite.width)
+        assertEquals(1024, gogglesSprite.height)
         assertTrue(gogglesSprite === MobiRunSpriteCache.getOrLoad(context, "accessory:mobi_goggles"))
-        assertTrue(context.assets.list("characters/mobi/goggles/run")!!.contains("mobi_run_left_goggles_sprite.png"))
+        assertTrue(context.assets.list("characters/mobi/goggles/run")!!.contains("mobi_run_left_goggles_sprite.webp"))
     }
 
     @Test
@@ -202,16 +222,24 @@ class PetAvatarTest {
             assertNotNull(MobiRunSpriteCache.peek("accessory:mobi_headphones"))
 
             preloadPetRunSprite(context, "friend:luna", "accessory:luna_cap")
-            assertNotNull(LunaRunAnimationCache.peek())
+            assertNotNull(LunaRunAnimationCache.peek(LunaAppearance.HAT))
         }
 
     @Test
-    fun lunaAnimationCacheLoadsTwentyFourFramesFromAssets() {
+    fun lunaIdleLoadsTwoPosesAndSharesTheFirstFrameFallback() {
         val context =
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
-        val frames = LunaAnimationCache.getOrLoadFrames(context)
-        assertEquals(24, frames.size)
+        val artwork = LunaIdleArtworkCache.getOrLoad(context)!!
+        assertNotNull(artwork.closedEyesBody)
+        assertTrue(
+            artwork.original ===
+                LunaFirstFrameCache.getOrLoad(
+                    context,
+                    LunaActiveAnimation.IDLE,
+                    LunaAppearance.NORMAL,
+                ),
+        )
     }
 
     @Test
@@ -219,7 +247,7 @@ class PetAvatarTest {
         val context =
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
-        assertEquals(24, LunaDisappearTimeline.load(context)?.size)
+        assertEquals(3072, LunaDisappearTimeline.load(context, requiredFrameSidePx = 512)?.width)
         assertEquals(0, LunaDisappearTimeline.frameAt(0L))
         assertEquals(0, LunaDisappearTimeline.frameAt(LunaDisappearTimeline.HOLD_NANOS))
         assertEquals(12, LunaDisappearTimeline.frameAt(LunaDisappearTimeline.HOLD_NANOS + 750_000_000L))
@@ -242,7 +270,7 @@ class PetAvatarTest {
         val context =
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
-        assertEquals(24, LunaAppearTimeline.load(context)?.size)
+        assertEquals(1536, LunaAppearTimeline.load(context, requiredFrameSidePx = 256)?.width)
         assertEquals(0, LunaAppearTimeline.frameAt(0L))
         assertEquals(23, LunaAppearTimeline.frameAt(LunaAppearTimeline.DURATION_NANOS))
         assertEquals(0f, LunaAppearTimeline.idleBlendAt(0L), 0f)
@@ -262,16 +290,16 @@ class PetAvatarTest {
 
     @Test
     fun equippedLunaAppearLoadsItsOwnTwentyFourFrames() {
-        assertEquippedFramesLoaded(LunaAppearTimeline::load)
+        assertEquippedFramesLoaded { context, appearance -> LunaAppearTimeline.load(context, appearance) }
     }
 
     @Test
     fun equippedLunaDisappearLoadsItsOwnTwentyFourFrames() {
-        assertEquippedFramesLoaded(LunaDisappearTimeline::load)
+        assertEquippedFramesLoaded { context, appearance -> LunaDisappearTimeline.load(context, appearance) }
     }
 
     private fun assertEquippedFramesLoaded(
-        load: (android.content.Context, LunaAppearance) -> List<androidx.compose.ui.graphics.ImageBitmap>?,
+        load: (android.content.Context, LunaAppearance) -> androidx.compose.ui.graphics.ImageBitmap?,
     ) {
         val context =
             androidx.test.core.app.ApplicationProvider
@@ -279,11 +307,12 @@ class PetAvatarTest {
         val normal = requireNotNull(load(context, LunaAppearance.NORMAL))
         listOf(LunaAppearance.HAT, LunaAppearance.SUNGLASSES).forEach { appearance ->
             val frames = requireNotNull(load(context, appearance))
-            assertEquals(24, frames.size)
-            // A normal-frame fallback would also have 24 frames; Luna is fully visible mid-sequence.
+            assertEquals(normal.width, frames.width)
+            assertEquals(normal.height, frames.height)
+            // A normal-atlas fallback would also have 24 cells; equipment must alter the artwork.
             assertTrue(
                 appearance.name,
-                !frames[11].asAndroidBitmap().sameAs(normal[11].asAndroidBitmap()),
+                !frames.asAndroidBitmap().sameAs(normal.asAndroidBitmap()),
             )
         }
     }
@@ -353,88 +382,109 @@ class PetAvatarTest {
     }
 
     @Test
-    fun lunaRunAnimationCacheLoadsTwentyFourFramesFromAssets() {
+    fun lunaRunAnimationCacheLoadsTwentyFourCellsFromAssets() {
         val context =
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
-        val frames = LunaRunAnimationCache.getOrLoadFrames(context)
-        assertEquals(24, frames.size)
+        val sheet = requireNotNull(LunaRunAnimationCache.getOrLoad(context))
+        assertEquals(1536, sheet.width)
+        assertEquals(1024, sheet.height)
     }
 
     @Test
-    fun lunaHungryAnimationCacheLoadsTwentyFourFramesFromAssets() {
+    fun lunaHungryUsesSharedPartsWithIdleGeometry() {
         val context =
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
-        val frames = LunaHungryAnimationCache.getOrLoadFrames(context)
-        assertEquals(24, frames.size)
+        val parts = LunaHungryPartsCache.getOrLoad(context)
+        assertNotNull(parts)
+        assertTrue(parts === LunaHungryPartsCache.getOrLoad(context))
     }
 
     @Test
-    fun lunaSickAnimationCacheLoadsTwentyFourFramesFromAssets() {
+    fun lunaSickArtworkLoadsBodyHeatAndMatchingFirstPose() {
         val context =
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
-        val frames = LunaSickAnimationCache.getOrLoadFrames(context)
-        assertEquals(24, frames.size)
+        val artwork = requireNotNull(LunaSickArtworkCache.getOrLoad(context))
+        assertEquals(627, artwork.body.width)
+        assertEquals(627, artwork.heat.height)
+        assertTrue(
+            artwork.still === LunaFirstFrameCache.getOrLoad(context, LunaActiveAnimation.SICK, LunaAppearance.NORMAL),
+        )
     }
 
     @Test
-    fun lunaHatAnimationCachesLoadTwentyFourFramesFromAssets() {
+    fun lunaHatAnimationCachesLoadMatchingLayersAndRunFrames() {
         val context =
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
-        assertEquals(24, LunaAnimationCache.getOrLoadFrames(context, appearance = LunaAppearance.HAT).size)
-        assertEquals(24, LunaRunAnimationCache.getOrLoadFrames(context, appearance = LunaAppearance.HAT).size)
-        assertEquals(24, LunaHungryAnimationCache.getOrLoadFrames(context, appearance = LunaAppearance.HAT).size)
-        assertEquals(24, LunaSickAnimationCache.getOrLoadFrames(context, appearance = LunaAppearance.HAT).size)
+        assertNotNull(LunaIdleArtworkCache.getOrLoad(context, appearance = LunaAppearance.HAT)?.closedEyesBody)
+        assertEquals(1536, LunaRunAnimationCache.getOrLoad(context, appearance = LunaAppearance.HAT)?.width)
+        assertNotNull(LunaHungryPartsCache.getOrLoad(context))
+        assertNotNull(LunaSickArtworkCache.getOrLoad(context, appearance = LunaAppearance.HAT)?.still)
     }
 
     @Test
-    fun lunaSunglassesFramesReplaceCachedNormalAndHatArtwork() =
+    fun lunaIdleCapOccludesRightEarThroughoutBreathing() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        val artwork = LunaIdleArtworkCache.getOrLoad(context, appearance = LunaAppearance.HAT)!!
+        listOf(artwork.original.asAndroidBitmap(), artwork.closedEyesBody!!).forEach { bitmap ->
+            assertEquals(627, bitmap.width)
+            assertEquals(723, bitmap.height)
+            // The former ear must not protrude behind the new crown.
+            assertEquals(0, android.graphics.Color.alpha(bitmap.getPixel(540, 140)))
+            // The opposite ear must remain visible.
+            assertTrue(android.graphics.Color.alpha(bitmap.getPixel(150, 194)) > 240)
+        }
+    }
+
+    @Test
+    fun lunaIdleEquipmentSwitchUsesMatchingArtworkAndNoHiddenEyeTexture() {
+        val context =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+        val normal = LunaIdleArtworkCache.getOrLoad(context, LunaAppearance.NORMAL)!!
+        val hat = LunaIdleArtworkCache.getOrLoad(context, LunaAppearance.HAT)!!
+        val glasses = LunaIdleArtworkCache.getOrLoad(context, LunaAppearance.SUNGLASSES)!!
+        assertNull(glasses.closedEyesBody)
+        assertTrue(glasses.original !== normal.original && glasses.original !== hat.original)
+        assertTrue(glasses === LunaIdleArtworkCache.getOrLoad(context, LunaAppearance.SUNGLASSES))
+        assertTrue(
+            glasses.original ===
+                LunaFirstFrameCache.getOrLoad(
+                    context,
+                    LunaActiveAnimation.IDLE,
+                    LunaAppearance.SUNGLASSES,
+                ),
+        )
+        assertTrue(normal.original === LunaIdleArtworkCache.getOrLoad(context, LunaAppearance.NORMAL)!!.original)
+    }
+
+    @Test
+    fun lunaSunglassesRunAtlasReplacesCachedNormalAndHatArtwork() =
         kotlinx.coroutines.test.runTest {
             val context =
                 androidx.test.core.app.ApplicationProvider
                     .getApplicationContext<android.content.Context>()
-            val loaders =
-                listOf(
-                    LunaAnimationCache::getOrLoadFrames,
-                    LunaRunAnimationCache::getOrLoadFrames,
-                    LunaHungryAnimationCache::getOrLoadFrames,
-                    LunaSickAnimationCache::getOrLoadFrames,
+            val normal = requireNotNull(LunaRunAnimationCache.getOrLoad(context, LunaAppearance.NORMAL))
+            val hat = requireNotNull(LunaRunAnimationCache.getOrLoad(context, LunaAppearance.HAT))
+            val sunglasses = requireNotNull(LunaRunAnimationCache.getOrLoad(context, LunaAppearance.SUNGLASSES))
+            val expected =
+                requireNotNull(
+                    LunaAnimationAtlas.load(context, LunaAtlasAction.RUN, LunaAppearance.SUNGLASSES, 256),
                 )
-            val actions = listOf("idle_breath", "run", "hungry", "sick")
-            loaders.forEachIndexed { index, load ->
-                val normal = load(context, LunaAppearance.NORMAL)
-                val hat = load(context, LunaAppearance.HAT)
-                val sunglasses = load(context, LunaAppearance.SUNGLASSES)
-                assertEquals(24, sunglasses.size)
-                val action = actions[index]
-                val prefix = if (action == "run") "run_left" else action
-                val path = "characters/luna/sunglasses/$action/luna_${prefix}_sunglasses_01.png"
-                val expected =
-                    context.assets.open(path).use {
-                        android.graphics.BitmapFactory.decodeStream(
-                            it,
-                            null,
-                            android.graphics.BitmapFactory
-                                .Options()
-                                .apply { inSampleSize = 2 },
-                        )!!
-                    }
-                assertTrue(
-                    "$action uses approved sunglasses artwork",
-                    sunglasses.first().asAndroidBitmap().sameAs(expected),
-                )
-                expected.recycle()
-                assertTrue(sunglasses !== normal && sunglasses !== hat)
-                assertTrue(sunglasses === load(context, LunaAppearance.SUNGLASSES))
-                assertTrue(sunglasses !== load(context, LunaAppearance.NORMAL))
-            }
+            assertTrue(sunglasses.asAndroidBitmap().sameAs(expected.asAndroidBitmap()))
+            expected.asAndroidBitmap().recycle()
+            assertTrue(sunglasses !== normal && sunglasses !== hat)
+            assertTrue(sunglasses === LunaRunAnimationCache.getOrLoad(context, LunaAppearance.SUNGLASSES))
+            assertTrue(sunglasses !== LunaRunAnimationCache.getOrLoad(context, LunaAppearance.NORMAL))
             preloadPetRunSprite(context, "friend:luna", "accessory:luna_sunglasses")
             assertTrue(
-                LunaRunAnimationCache.peek() ===
-                    LunaRunAnimationCache.getOrLoadFrames(context, LunaAppearance.SUNGLASSES),
+                LunaRunAnimationCache.peek(LunaAppearance.SUNGLASSES) ===
+                    LunaRunAnimationCache.getOrLoad(context, LunaAppearance.SUNGLASSES),
             )
         }
 
@@ -497,9 +547,17 @@ class PetAvatarTest {
         listOf(mobiHappy, lunaHappy, mobiHeadphonesHappy, mobiGogglesHappy, lunaCapHappy, lunaSunglassesHappy)
             .forEach { asset ->
                 val crop = requireNotNull(asset.crop)
-                val canvas = if (asset == mobiHappy) 2508 else 1254
+                val context =
+                    androidx.test.core.app.ApplicationProvider
+                        .getApplicationContext<android.content.Context>()
+                val options =
+                    android.graphics.BitmapFactory
+                        .Options()
+                        .apply { inJustDecodeBounds = true }
+                android.graphics.BitmapFactory.decodeResource(context.resources, asset.resourceId, options)
+                val canvas = options.outHeight
                 assertTrue(crop.x >= 0 && crop.y >= 0)
-                assertTrue(crop.x + crop.width <= canvas && crop.y + crop.height <= canvas)
+                assertTrue(crop.x + crop.width <= options.outWidth && crop.y + crop.height <= canvas)
                 assertTrue(crop.height >= canvas * 0.87)
                 assertEquals(1f, asset.visualScale)
             }
@@ -609,42 +667,49 @@ class PetAvatarTest {
         val context =
             androidx.test.core.app.ApplicationProvider
                 .getApplicationContext<android.content.Context>()
-        LunaAnimationCache.getOrLoadFrames(context)
-        LunaHungryAnimationCache.getOrLoadFrames(context)
-        LunaSickAnimationCache.getOrLoadFrames(context)
-        LunaRunAnimationCache.getOrLoadFrames(context)
+        LunaIdleArtworkCache.getOrLoad(context)
+        LunaHungryPartsCache.getOrLoad(context)
+        LunaSickArtworkCache.getOrLoad(context)
+        LunaRunAnimationCache.getOrLoad(context)
 
-        assertNotNull(LunaAnimationCache.peek())
-        assertNotNull(LunaHungryAnimationCache.peek())
-        assertNotNull(LunaSickAnimationCache.peek())
+        assertNotNull(LunaIdleArtworkCache.peek())
+        assertNotNull(LunaHungryPartsCache.peek())
+        assertNotNull(LunaSickArtworkCache.peek())
         assertNotNull(LunaRunAnimationCache.peek())
 
         LunaAnimationManager.retainOnly(LunaActiveAnimation.IDLE)
-        assertNotNull(LunaAnimationCache.peek())
+        assertNotNull(LunaIdleArtworkCache.peek())
         assertNotNull(LunaRunAnimationCache.peek())
-        assertNull(LunaHungryAnimationCache.peek())
-        assertNull(LunaSickAnimationCache.peek())
+        assertNull(LunaHungryPartsCache.peek())
+        assertNull(LunaSickArtworkCache.peek())
 
-        LunaHungryAnimationCache.getOrLoadFrames(context)
-        LunaSickAnimationCache.getOrLoadFrames(context)
+        LunaHungryPartsCache.getOrLoad(context)
+        LunaSickArtworkCache.getOrLoad(context)
         LunaAnimationManager.retainOnly(LunaActiveAnimation.RUN)
-        assertNotNull(LunaAnimationCache.peek())
+        assertNotNull(LunaIdleArtworkCache.peek())
         assertNotNull(LunaRunAnimationCache.peek())
-        assertNull(LunaHungryAnimationCache.peek())
-        assertNull(LunaSickAnimationCache.peek())
+        assertNull(LunaHungryPartsCache.peek())
+        assertNull(LunaSickArtworkCache.peek())
 
-        LunaHungryAnimationCache.getOrLoadFrames(context)
-        LunaSickAnimationCache.getOrLoadFrames(context)
+        LunaHungryPartsCache.getOrLoad(context)
+        LunaSickArtworkCache.getOrLoad(context)
         LunaAnimationManager.retainOnly(LunaActiveAnimation.HUNGRY)
-        assertNull(LunaAnimationCache.peek())
-        assertNotNull(LunaHungryAnimationCache.peek())
-        assertNull(LunaSickAnimationCache.peek())
+        assertNotNull(LunaIdleArtworkCache.peek())
+        assertNotNull(LunaHungryPartsCache.peek())
+        assertNull(LunaSickArtworkCache.peek())
+        assertNull(LunaRunAnimationCache.peek())
+
+        LunaSickArtworkCache.getOrLoad(context)
+        LunaAnimationManager.retainOnly(LunaActiveAnimation.SICK)
+        assertNull(LunaIdleArtworkCache.peek())
+        assertNull(LunaHungryPartsCache.peek())
+        assertNotNull(LunaSickArtworkCache.peek())
         assertNull(LunaRunAnimationCache.peek())
 
         LunaAnimationManager.clearAll()
-        assertNull(LunaAnimationCache.peek())
-        assertNull(LunaHungryAnimationCache.peek())
-        assertNull(LunaSickAnimationCache.peek())
+        assertNull(LunaIdleArtworkCache.peek())
+        assertNull(LunaHungryPartsCache.peek())
+        assertNull(LunaSickArtworkCache.peek())
         assertNull(LunaRunAnimationCache.peek())
     }
 

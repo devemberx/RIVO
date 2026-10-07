@@ -88,7 +88,7 @@ internal fun LasDanceAnimation(
                 scaleY = 1.05f
                 translationX = -size.width * 0.05f * direction
                 translationY = -size.height * 0.05f
-            }.mobiSpriteFrames(
+            }.characterSpriteFrames(
                 sheet = sheet,
                 columns = 6,
                 rows = 4,

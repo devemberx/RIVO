@@ -69,7 +69,7 @@ internal fun LasSickAnimation(
                 scaleY = 1.125f
                 // Isolate additive frame blending from the home scene behind the sprite.
                 compositingStrategy = CompositingStrategy.Offscreen
-            }.mobiSpriteFrames(
+            }.characterSpriteFrames(
                 sheet = artwork,
                 columns = 6,
                 rows = 4,
