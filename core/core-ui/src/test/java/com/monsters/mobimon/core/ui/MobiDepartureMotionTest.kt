@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import android.view.View
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,6 +52,30 @@ class MobiDepartureMotionTest {
         compose.mainClock.advanceTimeBy(2200)
         assertEquals(0, completions)
         compose.onNodeWithTag("mobi-animation-frame-normal", useUnmergedTree = true).assertExists()
+    }
+
+    @Test fun startingDepartureRetainsTheLiveIdleComposition() {
+        var idleStarts = 0
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            MobiDisappearAnimation(
+                modifier = Modifier.size(124.dp),
+                onFinished = {},
+                isDisappearing = departing,
+                accessoryId = null,
+            ) {
+                DisposableEffect(Unit) {
+                    idleStarts++
+                    onDispose { }
+                }
+            }
+        }
+        compose.mainClock.advanceTimeByFrame()
+        compose.waitForIdle()
+        assertEquals(1, idleStarts)
+        updateDeparting(true)
+        compose.waitForIdle()
+        assertEquals("Loading departure must preserve the live idle clock", 1, idleStarts)
     }
 
     private fun verifyHandoff(size: Int) {
