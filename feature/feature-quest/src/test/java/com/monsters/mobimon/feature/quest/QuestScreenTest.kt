@@ -869,6 +869,7 @@ class QuestScreenTest {
     }
 
     @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun lasCharacterDisplaysLasNameInModal() {
         val reward = QuestRewardSuccess(DrivingQuestIds.SEATBELT, 5)
         render(presentation(friend = "friend:las").copy(rewardSuccess = reward))

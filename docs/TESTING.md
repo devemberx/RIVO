@@ -26,6 +26,9 @@ shared journeys/migrations use `app/src/journeyTest` and
 schedulers, close databases/cancel jobs, and use real Main on devices. Test
 observable behavior, including pending actions, cancellation and late callbacks.
 Screenshots verify layout, not persistence, authorization or providers.
+Use Robolectric native graphics for WebP pixel geometry, such as [Store friend
+selection](../feature/feature-customization/src/test/java/com/monsters/mobimon/feature/customization/ClothesFriendSelectionTest.kt);
+the legacy decoder can return placeholder dimensions.
 
 ## Critical coverage
 

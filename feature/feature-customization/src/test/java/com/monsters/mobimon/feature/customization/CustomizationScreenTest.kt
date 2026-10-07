@@ -30,6 +30,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1248dp-mdpi")
@@ -318,7 +319,9 @@ class CustomizationScreenTest {
         org.junit.Assert.assertEquals(0, friendSwitches)
     }
 
-    @Test fun unownedFriendInClothesTabShowsDisabledBeforePurchaseButtonAndEnablesAfterPurchase() {
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Test
+    fun unownedFriendInClothesTabShowsDisabledBeforePurchaseButtonAndEnablesAfterPurchase() {
         var friendSwitches = 0
         var inventory by mutableStateOf(
             CosmeticInventory(
