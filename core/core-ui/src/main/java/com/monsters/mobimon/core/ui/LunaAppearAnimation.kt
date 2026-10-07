@@ -90,7 +90,11 @@ internal fun LunaAppearAnimation(
         }
         val loaded = frames.second
         if (loaded == null) {
-            LunaIdleBreathAnimation(Modifier.fillMaxSize(), appearance = appearance, animateFrames = false)
+            if (frames.first) {
+                LunaIdleBreathAnimation(Modifier.fillMaxSize(), appearance = appearance, animateFrames = false)
+            } else {
+                Box(Modifier.fillMaxSize())
+            }
             return@BoxWithConstraints
         }
         Box(

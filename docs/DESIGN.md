@@ -262,7 +262,8 @@ interval, not data updates.
 
 The outside-app companion requires opt-in and overlay permission. Non-P or
 unverified parking stops wandering and triggers departure; verified P restores
-entry before wandering resumes. Keep idle visible while loading and preserve
+entry before wandering resumes. Luna entrance loading keeps an empty avatar slot
+until its first frame is ready; run/departure loading keeps idle visible. Preserve
 scale/ground anchors through transitions. A renewed non-P signal during entrance
 queues departure. Hide the overlay while MobiMon is foreground. Target-OEM Home
 placement and lifecycle remain unverified under the
