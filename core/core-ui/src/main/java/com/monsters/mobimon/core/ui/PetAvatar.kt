@@ -553,3 +553,17 @@ suspend fun preloadPetRunSprite(
         }
     }
 }
+
+/** Prepare the idle image before a preview replaces its currently visible clothing. */
+suspend fun preparePetPreviewArtwork(
+    context: Context,
+    friendId: String,
+    accessoryId: String?,
+): Boolean =
+    withContext(Dispatchers.IO) {
+        when (friendId) {
+            "friend:mobi" -> MobiSpriteCache.firstFrame(context, accessoryId) != null
+            "friend:luna" -> LunaIdleArtworkCache.getOrLoadFirstFrame(context, lunaAppearance(accessoryId)) != null
+            else -> true
+        }
+    }

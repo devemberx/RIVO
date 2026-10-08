@@ -606,6 +606,7 @@ private fun StorePreview(
                     .testTag("store-preview-placeholder"),
             )
         } else if (tab != CosmeticSlot.BACKGROUND) {
+            val visibleAccessory = rememberStorePreviewAppearance(preview)
             PetAvatar(
                 Modifier
                     .align(
@@ -614,8 +615,7 @@ private fun StorePreview(
                     .size(characterSize)
                     .testTag("preview-character"),
                 friendId = preview.friendId,
-                accessoryId = preview.accessoryId,
-                outfitId = preview.outfitId,
+                accessoryId = visibleAccessory,
             )
         }
     }
