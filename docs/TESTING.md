@@ -34,6 +34,7 @@ the legacy decoder can return placeholder dimensions.
 
 | Contract | Main coverage |
 | --- | --- |
+| Store clothing handoff | [loading regressions](../feature/feature-customization/src/test/java/com/monsters/mobimon/feature/customization/StoreClothingPreviewLoadingTest.kt) keep Mobi/Luna visible during cold clothing loads, reject superseded completion and leave equipment/purchase writes untouched; device frame pacing needs observed review |
 | Module boundaries, VSS evidence and foreground vehicle state | `verifyModuleBoundaries`; [domain](../core/core-domain/src/test/kotlin/com/monsters/mobimon/core/domain), [VSS](../core/core-vss/src/test/kotlin/com/monsters/mobimon/core/vss), [runtime](../app/src/test/java/com/monsters/mobimon/runtime) |
 | Atomic rewards, purchase/equipment and populated migrations | [database](../core/core-database/src/test/java/com/monsters/mobimon/core/database), `migrationTest`, device database tests |
 | Credentials, bounded identity retries, inline errors, explicit popup recovery and conversation ownership | [auth](../core/core-auth/src/test/java/com/monsters/mobimon/core/auth), [auth feature](../feature/feature-auth/src/test/java/com/monsters/mobimon/feature/auth), [bounded reply correction](../core/core-auth/src/androidTest/java/com/monsters/mobimon/core/auth/CopilotReplyCorrectionDeviceTest.kt), Debug probe fixtures |
