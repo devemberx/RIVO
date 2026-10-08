@@ -842,10 +842,22 @@ class DecorativeMotionTest {
             )
         }
         // Freeze breathing so direction is compared at the same pose and pixel origin.
-        for (item in listOf(null, "accessory:luna_cap", "accessory:luna_sunglasses")) {
+        for ((item, appearance) in listOf(
+            null to "normal",
+            "accessory:luna_cap" to "hat",
+            "accessory:luna_sunglasses" to "sunglasses",
+        )) {
             updateStateAndDraw {
                 accessory = item
                 movingLeft = true
+            }
+            // Compare the same loaded pose, not the asynchronous loading transition.
+            compose.waitUntil(10_000) {
+                compose.mainClock.advanceTimeByFrame()
+                compose
+                    .onAllNodesWithTag("luna-animation-frame-$appearance", useUnmergedTree = true)
+                    .fetchSemanticsNodes()
+                    .isNotEmpty()
             }
             val left = pixels("luna-idle")
             updateStateAndDraw { movingLeft = false }

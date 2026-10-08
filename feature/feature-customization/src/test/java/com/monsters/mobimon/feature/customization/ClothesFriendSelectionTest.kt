@@ -19,9 +19,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1248dp-mdpi")
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 class ClothesFriendSelectionTest {
     @get:Rule val compose = createComposeRule()
 
