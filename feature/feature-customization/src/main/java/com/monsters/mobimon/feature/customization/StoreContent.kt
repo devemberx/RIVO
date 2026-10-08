@@ -1,6 +1,5 @@
 package com.monsters.mobimon.feature.customization
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
@@ -37,7 +36,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
@@ -508,12 +506,7 @@ private fun StoreItemArtwork(
     val visual = CompanionBackgroundCatalog.visual(item.id)
     when {
         item.isRemoval && item.slot == CosmeticSlot.BACKGROUND && category == StoreSpaceCategory.BACKGROUNDS ->
-            Image(
-                painterResource(companionBackgroundRes(timeOfDay)),
-                null,
-                modifier,
-                contentScale = ContentScale.Crop,
-            )
+            StoreBackgroundImage(companionBackgroundRes(timeOfDay), modifier)
         item.isRemoval ->
             Box(modifier, contentAlignment = Alignment.Center) {
                 Icon(painterResource(R.drawable.store_none), null, Modifier.size(48.dp), tint = MobiMonColors.muted)
@@ -531,12 +524,7 @@ private fun StoreItemArtwork(
                     )
             }
         visual is BackgroundVisual.Scene || (item.slot == CosmeticSlot.BACKGROUND && visual == null) ->
-            Image(
-                painterResource(companionBackgroundRes(timeOfDay, item.id)),
-                null,
-                modifier,
-                contentScale = ContentScale.Crop,
-            )
+            StoreBackgroundImage(companionBackgroundRes(timeOfDay, item.id), modifier)
         visual is BackgroundVisual.Effect ->
             FallingParticlesEffect(
                 particleType = visual.kind,
@@ -576,9 +564,8 @@ private fun StorePreview(
                             ) is BackgroundVisual.Effect
                         },
             )
-        Image(
-            painterResource(background.layer.frame.drawableRes),
-            null,
+        StoreBackgroundImage(
+            background.layer.frame.drawableRes,
             (
                 if (zoomBackground) {
                     Modifier
@@ -590,7 +577,6 @@ private fun StorePreview(
                     Modifier.fillMaxSize()
                 }
             ).testTag("preview-background"),
-            contentScale = ContentScale.Crop,
         )
         if (tab != CosmeticSlot.FRIEND) {
             when (background.prop) {

@@ -632,6 +632,10 @@ class PetAvatarTest {
             }
         }
 
+        compose.waitUntil(10_000) {
+            compose.onAllNodesWithTag("las-idle-ready", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+        }
+
         val area = compose.onNodeWithTag("las-avatar").fetchSemanticsNode().boundsInRoot
 
         fun capture(): List<Int> {
