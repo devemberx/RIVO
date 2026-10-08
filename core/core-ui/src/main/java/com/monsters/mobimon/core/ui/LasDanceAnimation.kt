@@ -23,7 +23,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 
 internal object LasDanceSpriteCache {
-    private const val PATH = "characters/las/normal/run/las_robot_dance_sprite.png"
+    private const val PATH = "characters/las/normal/run/las_robot_dance_sprite.webp"
 
     @Volatile
     private var sprite: ImageBitmap? = null

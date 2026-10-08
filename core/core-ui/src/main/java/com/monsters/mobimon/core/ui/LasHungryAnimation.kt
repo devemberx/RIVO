@@ -84,7 +84,7 @@ internal fun LasHungryAnimation(
         value =
             withContext(Dispatchers.IO) {
                 runCatching {
-                    context.assets.open("characters/las/hungry/idle_breath/las_idle_breath_hungry_sprite.png").use {
+                    context.assets.open("characters/las/hungry/idle_breath/las_idle_breath_hungry_sprite.webp").use {
                         BitmapFactory
                             .decodeStream(it, null, BitmapFactory.Options().apply { inScaled = false })
                             ?.asImageBitmap()

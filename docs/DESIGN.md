@@ -74,14 +74,19 @@ current inputs and review playback before export.
 
 Store accessory icons are pre-extracted lossless WebP files in `drawable-nodpi`;
 keep their original crop canvas so Store sizing stays stable. Do not package mixed
-item/reference sheets after all consumers use standalone exports. Reference masters
-remain under `art/`.
+item/reference sheets after all consumers use standalone exports. Convert runtime PNG
+artwork to lossless WebP without changing its canvas or source RGBA pixels. Retain PNG
+where native sampling, color interpretation, decoding latency or packaged size
+would regress:
+Mobi idle first frames and normal happy; Las sick and transitions; Luna sunglasses
+happy; lake-park sunrise; and star-hanger decorations. Reference masters and
+retained source bytes remain under `art/`.
 
 | Use | Name / location | Example |
 | --- | --- | --- |
 | Store accessory icon | `drawable-nodpi/store_item_<character>_<item>.webp` | `store_item_mobi_headphones.webp` |
-| Static character preview or pose | `drawable-nodpi/pet_<character>_<appearance>_<state>.<ext>` | `pet_mobi_headphones_preview.png` |
-| Animation frame, atlas or part | `assets/characters/<character>/<appearance>/<action>/<character>_<action>[_direction]_<appearance>_<part-or-frame>.<ext>` | `mobi_hungry_headphones_base.webp`, `mobi_run_left_normal_sprite.png` |
+| Static character preview or pose | `drawable-nodpi/pet_<character>_<appearance>_<state>.<ext>` | `pet_mobi_headphones_preview.webp` |
+| Animation frame, atlas or part | `assets/characters/<character>/<appearance>/<action>/<character>_<action>[_direction]_<appearance>_<part-or-frame>.<ext>` | `mobi_hungry_headphones_base.webp`, `mobi_run_left_normal_sprite.webp` |
 | Animation data | Same animation prefix and folder with its data extension | `mobi_hungry_normal_face.morph` |
 
 Use `normal` for an unequipped appearance and `shared` for appearance-independent

@@ -721,7 +721,7 @@ class PetAvatarTest {
         assertTrue(
             context.assets
                 .list("characters/las/hungry/idle_breath")!!
-                .contains("las_idle_breath_hungry_sprite.png"),
+                .contains("las_idle_breath_hungry_sprite.webp"),
         )
         compose.setContent {
             MobiMonTheme {

@@ -30,6 +30,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "ko-rKR-w2560dp-h1248dp-mdpi")
@@ -313,12 +314,17 @@ class CustomizationScreenTest {
         compose.onNodeWithText("루나").performClick()
         compose.onNodeWithText("루나 선글라스").performClick()
         compose.onNodeWithText("300 P로 구매하기").assertIsEnabled().performClick()
+        compose.waitUntil(5_000) {
+            compose.onAllNodesWithTag("store-purchase-dialog").fetchSemanticsNodes().isNotEmpty()
+        }
         compose.onNodeWithText("구매하기").performClick()
         org.junit.Assert.assertEquals(1, purchases)
         org.junit.Assert.assertEquals(0, friendSwitches)
     }
 
-    @Test fun unownedFriendInClothesTabShowsDisabledBeforePurchaseButtonAndEnablesAfterPurchase() {
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Test
+    fun unownedFriendInClothesTabShowsDisabledBeforePurchaseButtonAndEnablesAfterPurchase() {
         var friendSwitches = 0
         var inventory by mutableStateOf(
             CosmeticInventory(
