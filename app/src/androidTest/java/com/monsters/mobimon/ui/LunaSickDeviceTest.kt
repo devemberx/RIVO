@@ -122,9 +122,11 @@ class LunaSickDeviceTest {
         compose.onAllNodesWithTag("luna-state-idle").assertCountEquals(3)
         names.forEachIndexed { index, name ->
             val normal = capture(name, "normal-handoff")
+            // Raster edges land on integer pixels after the source and viewport transforms.
+            val loweredGround = with(compose.density) { (220 * 0.04f).dp.roundToPx() }
             assertTrue(
-                "Normal and sick keep their displayed ground anchor",
-                kotlin.math.abs(artworkBottom(normal) - artworkBottom(still[index])) <= 1,
+                "The collapsed pose rests slightly below idle on the platform",
+                kotlin.math.abs(artworkBottom(still[index]) - artworkBottom(normal) - loweredGround) <= 1,
             )
             normal.recycle()
         }

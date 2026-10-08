@@ -173,7 +173,7 @@ class LunaSickArtworkTest {
     }
 
     @Test
-    fun equippedRestFacesKeepCanonicalScaleAndUncoveredHeadGeometry() {
+    fun equippedRestFacesKeepCompactScaleAndUncoveredHeadGeometry() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val normal =
             requireNotNull(
@@ -186,7 +186,7 @@ class LunaSickArtworkTest {
             assertTrue("Expanded scene reserves drawing margins", rest.width == 907 && rest.height == 907)
             if (appearance == LunaAppearance.SUNGLASSES) {
                 // Glasses occlude cheeks; their visible-fragment centroids cannot measure head scale.
-                for (y in 205 until 235) {
+                for (y in 250 until 275) {
                     for (x in 400 until 550) {
                         assertTrue(
                             "Exposed head geometry must match",
@@ -195,10 +195,10 @@ class LunaSickArtworkTest {
                     }
                 }
             } else {
-                val measured = span(pinkCenter(rest, 390, 345, 465, 425), pinkCenter(rest, 615, 475, 700, 560))
+                val measured = span(pinkCenter(rest, 370, 370, 455, 465), pinkCenter(rest, 575, 480, 675, 585))
                 assertTrue(
-                    "$appearance keeps canonical face scale under rotation",
-                    measured / canonicalSpan in .98..1.02,
+                    "$appearance displays the tilted face slightly smaller than idle",
+                    measured / canonicalSpan in 0.88..0.92,
                 )
             }
             for (edge in 0 until rest.width) {
